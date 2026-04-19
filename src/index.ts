@@ -52,10 +52,34 @@ const tandoorClient = new TandoorClient({
   token: TANDOOR_TOKEN,
 });
 
-const server = new McpServer({
-  name: pkg.name,
-  version: pkg.version,
-});
+const server = new McpServer(
+  {
+    name: pkg.name,
+    version: pkg.version,
+  },
+  {
+    // Sent to the client on initialize — seen by the model before tool schemas.
+    // Steers toward the right entry points so complex queries don't start with
+    // a 100-tool scan.
+    instructions: [
+      'Tandoor Recipes MCP server — full access to recipes, meal plans, shopping lists,',
+      'ingredients, cook logs, nutrition, and AI-assisted imports.',
+      '',
+      'Where to start:',
+      '- Current state (read-only): `tandoor://meal-plan/this-week`, `tandoor://pantry/on-hand`,',
+      '  `tandoor://shopping-list/active`, `tandoor://meal-types`.',
+      '- Common workflows: use the `plan_week`, `grocery_list_for_plan`,',
+      '  `what_can_i_make_tonight`, or `import_and_plan` prompts.',
+      '- Recipe search: use `search_recipes` with food/keyword *names* (it resolves IDs',
+      '  for you). Fall back to `list_recipes` for the full filter surface.',
+      '- Write tools return a slim JSON shape by default. Pass `format: "full"` for the raw',
+      '  Tandoor API response when you need substitutes, image URLs, nutrition objects, etc.',
+      '',
+      'Require Tandoor serializer etiquette: foreign-key writes use `{id: n}` envelopes,',
+      'not bare integers. All tools here already handle that — just pass `food_id`, etc.',
+    ].join('\n'),
+  }
+);
 
 // Tool-group profile. Every MCP client loads every tool schema into context
 // on `list_tools`, so ~100 tools × ~400 tokens each is a real cost for small

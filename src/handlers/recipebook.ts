@@ -13,7 +13,7 @@ import type {
   DeleteBookEntryArgs,
 } from '../tools/recipebook.js';
 
-const emit = (o: unknown) => JSON.stringify(o);
+import { emit, slimPaginated } from '../lib/slim.js';
 
 function slimBook(b: any) {
   if (!b) return b;
@@ -37,10 +37,7 @@ function slimBookEntry(e: any) {
   };
 }
 
-function slimPage(p: any, slim: (x: any) => any) {
-  if (!p?.results) return p;
-  return { count: p.count, next: p.next, previous: p.previous, results: p.results.map(slim) };
-}
+const slimPage = slimPaginated;
 
 export async function handleListBooks(
   client: TandoorClient,

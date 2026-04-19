@@ -11,7 +11,7 @@ import type {
 
 type IngredientInput = NonNullable<CreateStepArgs['ingredients']>[number];
 
-const emit = (o: unknown) => JSON.stringify(o);
+import { emit, slimPaginated } from '../lib/slim.js';
 
 function slimStep(s: any) {
   if (!s) return s;
@@ -38,10 +38,7 @@ function slimStep(s: any) {
   };
 }
 
-function slimPage(p: any) {
-  if (!p?.results) return p;
-  return { count: p.count, next: p.next, previous: p.previous, results: p.results.map(slimStep) };
-}
+const slimPage = (p: unknown) => slimPaginated(p, slimStep);
 
 export async function handleListSteps(
   client: TandoorClient,

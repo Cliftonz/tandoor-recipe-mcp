@@ -16,7 +16,7 @@ import type {
   BulkCreateShoppingListRecipeEntriesArgs,
 } from '../tools/shopping.js';
 
-const emit = (o: unknown) => JSON.stringify(o);
+import { emit } from '../lib/slim.js';
 
 function slimEntry(e: any) {
   if (!e) return e;

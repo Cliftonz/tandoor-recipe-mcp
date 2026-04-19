@@ -9,7 +9,7 @@ import type {
   DeleteCookLogArgs,
 } from '../tools/cooklog.js';
 
-const emit = (o: unknown) => JSON.stringify(o);
+import { emit } from '../lib/slim.js';
 
 function slimCookLog(c: any) {
   if (!c) return c;

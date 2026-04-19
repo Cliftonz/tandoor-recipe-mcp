@@ -19,7 +19,7 @@ import type {
   MergeUnitArgs,
 } from '../tools/foodunit.js';
 
-const emit = (o: unknown) => JSON.stringify(o);
+import { emit, slimPaginated } from '../lib/slim.js';
 
 function slimFood(f: any) {
   if (!f) return f;
@@ -49,15 +49,7 @@ function slimUnit(u: any) {
   };
 }
 
-function slimPage(p: any, slim: (x: any) => any) {
-  if (!p?.results) return p;
-  return {
-    count: p.count,
-    next: p.next,
-    previous: p.previous,
-    results: p.results.map(slim),
-  };
-}
+const slimPage = slimPaginated;
 
 // ---------- Food handlers ----------
 

@@ -156,8 +156,9 @@ describe('handleImportRecipeFromUrl fallback chain', () => {
       },
     });
     const out = await handleImportRecipeFromUrl(client, { url: 'https://example.test/recipe' });
-    expect(out).toContain('Imported via Tandoor scraper');
-    expect(out).toContain('"id":42');
+    const parsed = JSON.parse(out);
+    expect(parsed._meta.via).toBe('tandoor-scraper');
+    expect(parsed.recipe.id).toBe(42);
     // We never had to call fetch — Tandoor did the scrape server-side.
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -175,8 +176,9 @@ describe('handleImportRecipeFromUrl fallback chain', () => {
     fetchSpy.mockResolvedValueOnce(new Response(SAMPLE_JSON_LD_PAGE, { status: 200 }));
 
     const out = await handleImportRecipeFromUrl(client, { url: 'https://example.test/recipe' });
-    expect(out).toContain('Imported via JSON-LD fallback');
-    expect(out).toContain('"id":77');
+    const parsed = JSON.parse(out);
+    expect(parsed._meta.via).toBe('json-ld-fallback');
+    expect(parsed.recipe.id).toBe(77);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -211,8 +213,10 @@ describe('handleImportRecipeFromUrl fallback chain', () => {
       create_stub_on_failure: true,
       name: 'My Manual Lasagna',
     });
-    expect(out).toContain('Stub recipe created');
-    expect(out).toContain('"id":100');
+    const parsed = JSON.parse(out);
+    expect(parsed._meta.via).toBe('stub');
+    expect(parsed._meta.attempts).toBeDefined();
+    expect(parsed.recipe.id).toBe(100);
     expect(createRecipe).toHaveBeenCalledTimes(1);
     // Stub should carry the user-supplied name + source_url.
     const body = createRecipe.mock.calls[0][0];

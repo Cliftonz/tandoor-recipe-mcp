@@ -19,6 +19,15 @@ import { TandoorClient } from '../clients/index.js';
 /** Turn a Zod raw shape into the inferred args object. */
 export type InferShape<S extends ZodRawShape> = z.infer<z.ZodObject<S>>;
 
+/**
+ * Context passed to every handler. Carries the MCP request's AbortSignal so
+ * long-running handlers (URL import, AI import, file upload) can cooperate
+ * with client-side cancellation. Short handlers can ignore it.
+ */
+export interface HandlerContext {
+  signal: AbortSignal;
+}
+
 // ---------- Per-tool allow/deny filters ----------
 // Two env vars let callers trim the exposed tool surface without touching
 // code. Both accept a comma-separated list of exact names or glob patterns
@@ -71,7 +80,8 @@ function logSkip(name: string): void {
 
 export type StringHandler<S extends ZodRawShape> = (
   client: TandoorClient,
-  args: InferShape<S>
+  args: InferShape<S>,
+  ctx?: HandlerContext
 ) => Promise<string>;
 
 /**
@@ -105,9 +115,10 @@ export function registerStringTool<S extends ZodRawShape>(
     logSkip(name);
     return;
   }
-  const cb = async (args: InferShape<S>, _extra: unknown): Promise<CallToolResult> => {
+  const cb = async (args: InferShape<S>, extra: { signal?: AbortSignal }): Promise<CallToolResult> => {
+    const signal = extra?.signal ?? new AbortController().signal;
     try {
-      const text = await handler(client, args);
+      const text = await handler(client, args, { signal });
       const structured = tryExtractStructured(text);
       // Build the result in one shot so `structuredContent` keeps its spec
       // typing (Record<string, unknown>) without an intermediate cast.

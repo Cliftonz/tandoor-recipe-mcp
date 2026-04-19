@@ -11,12 +11,11 @@ import type {
   UploadRecipeImageArgs,
   RelatedRecipesArgs,
   AddRecipeToShoppingListArgs,
+  SearchRecipesArgs,
 } from '../tools/recipe.js';
+import type { HandlerContext } from '../lib/register.js';
 
-// Compact JSON output (no indent) saves ~40% tokens vs pretty-print.
-function emit(obj: unknown): string {
-  return JSON.stringify(obj);
-}
+import { emit } from '../lib/slim.js';
 
 // Strip the noisy fields off a Recipe so a single get fits in a normal context.
 // Drops: substitute trees, properties, nutrition, image, shared, created_by,
@@ -337,7 +336,7 @@ export async function saveScrapedRecipe(
   return client.recipes.createRecipe(recipe);
 }
 
-async function fetchUrlHtml(url: string): Promise<string | null> {
+async function fetchUrlHtml(url: string, signal?: AbortSignal): Promise<string | null> {
   try {
     const res = await fetch(url, {
       headers: {
@@ -347,10 +346,13 @@ async function fetchUrlHtml(url: string): Promise<string | null> {
         Accept: 'text/html,application/xhtml+xml',
       },
       redirect: 'follow',
+      signal,
     });
     if (!res.ok) return null;
     return await res.text();
-  } catch {
+  } catch (err) {
+    // Propagate aborts so the caller sees cancellation instead of a silent null.
+    if ((err as any)?.name === 'AbortError') throw err;
     return null;
   }
 }
@@ -537,6 +539,116 @@ export async function jsonLdToScrapedRecipe(
   } as ScrapedRecipe;
 }
 
+/**
+ * Resolve a single name to a Tandoor id via a query-based list lookup. This is
+ * intentionally read-only — unlike `findOrCreateFood`, `search_recipes` should
+ * never create taxonomy rows as a side effect of a search.
+ */
+async function resolveName(
+  client: TandoorClient,
+  kind: 'food' | 'keyword' | 'book',
+  name: string
+): Promise<number | null> {
+  const needle = name.trim().toLowerCase();
+  if (!needle) return null;
+
+  let candidates: Array<{ id: number; name: string }> = [];
+  if (kind === 'food') {
+    const r = await client.foodUnits.listFoods({ query: needle, page_size: 20 });
+    candidates = r.results || [];
+  } else if (kind === 'keyword') {
+    const r = await client.keywords.listKeywords({ query: needle, page_size: 20 });
+    candidates = r.results || [];
+  } else {
+    // Recipe books don't support a `query` filter; list and filter client-side.
+    // Books are typically few (<50) so this is cheap.
+    const r = await client.recipeBooks.listBooks({ page_size: 100 });
+    candidates = r.results || [];
+  }
+
+  const exact = candidates.find((c) => (c.name || '').toLowerCase() === needle);
+  if (exact) return exact.id;
+  // Substring match as a fallback ("chicken breasts" → "chicken").
+  const partial = candidates.find((c) => (c.name || '').toLowerCase().includes(needle));
+  return partial ? partial.id : null;
+}
+
+async function resolveNames(
+  client: TandoorClient,
+  kind: 'food' | 'keyword' | 'book',
+  names: string[] | undefined
+): Promise<{ ids: number[]; unresolved: string[] }> {
+  if (!names || names.length === 0) return { ids: [], unresolved: [] };
+  const pairs = await Promise.all(
+    names.map(async (n) => [n, await resolveName(client, kind, n)] as const)
+  );
+  const ids: number[] = [];
+  const unresolved: string[] = [];
+  for (const [name, id] of pairs) {
+    if (id != null) ids.push(id);
+    else unresolved.push(name);
+  }
+  return { ids, unresolved };
+}
+
+export async function handleSearchRecipes(
+  client: TandoorClient,
+  args: SearchRecipesArgs
+): Promise<string> {
+  const [foods, excludeFoods, keywords, excludeKeywords, books] = await Promise.all([
+    resolveNames(client, 'food', args.foods),
+    resolveNames(client, 'food', args.exclude_foods),
+    resolveNames(client, 'keyword', args.keywords),
+    resolveNames(client, 'keyword', args.exclude_keywords),
+    resolveNames(client, 'book', args.books),
+  ]);
+
+  const unresolved: Record<string, string[]> = {};
+  if (foods.unresolved.length) unresolved.foods = foods.unresolved;
+  if (excludeFoods.unresolved.length) unresolved.exclude_foods = excludeFoods.unresolved;
+  if (keywords.unresolved.length) unresolved.keywords = keywords.unresolved;
+  if (excludeKeywords.unresolved.length) unresolved.exclude_keywords = excludeKeywords.unresolved;
+  if (books.unresolved.length) unresolved.books = books.unresolved;
+
+  // Build list_recipes call with resolved IDs.
+  const listArgs: any = {};
+  if (args.query) listArgs.query = args.query;
+  if (foods.ids.length) listArgs.foods_and = foods.ids;
+  if (excludeFoods.ids.length) listArgs.foods_and_not = excludeFoods.ids;
+  if (keywords.ids.length) listArgs.keywords_or = keywords.ids;
+  if (excludeKeywords.ids.length) listArgs.keywords_or_not = excludeKeywords.ids;
+  if (books.ids.length) listArgs.books_or = books.ids;
+  if (args.rating_gte !== undefined) listArgs.rating_gte = args.rating_gte;
+  if (args.rating_lte !== undefined) listArgs.rating_lte = args.rating_lte;
+  if (args.timescooked_gte !== undefined) listArgs.timescooked_gte = args.timescooked_gte;
+  if (args.timescooked_lte !== undefined) listArgs.timescooked_lte = args.timescooked_lte;
+  if (args.makenow !== undefined) listArgs.makenow = args.makenow;
+  if (args.random !== undefined) listArgs.random = args.random;
+  if (args.sort_order) listArgs.sort_order = args.sort_order;
+  if (args.page !== undefined) listArgs.page = args.page;
+  if (args.page_size !== undefined) listArgs.page_size = args.page_size;
+
+  const result = await client.recipes.listRecipes(listArgs);
+
+  const slimmed = args.format === 'full'
+    ? result
+    : {
+        count: result.count,
+        next: result.next,
+        previous: result.previous,
+        results: (result.results || []).map(slimRecipeOverview),
+      };
+
+  const payload: Record<string, unknown> = { ...slimmed as object };
+  if (Object.keys(unresolved).length > 0) {
+    payload._meta = {
+      unresolved,
+      hint: 'Some names did not match any existing food/keyword/book and were dropped from the filter. Browse list_foods / list_keywords / list_recipe_books to confirm the exact names.',
+    };
+  }
+  return emit(payload);
+}
+
 export async function handleRelatedRecipes(
   client: TandoorClient,
   args: RelatedRecipesArgs
@@ -614,30 +726,36 @@ function guessImageMime(filename: string): string {
 
 export async function handleImportRecipeFromUrl(
   client: TandoorClient,
-  args: ImportRecipeFromUrlArgs
+  args: ImportRecipeFromUrlArgs,
+  ctx?: HandlerContext
 ): Promise<string> {
   const { url } = args;
+  const signal = ctx?.signal;
   const attempts: string[] = [];
+  const checkAbort = () => {
+    if (signal?.aborted) throw signal.reason instanceof Error ? signal.reason : new Error('Aborted');
+  };
 
+  checkAbort();
   // Attempt 1: let Tandoor scrape the URL directly.
   try {
     const resp = await client.recipes.recipeFromSource({ url });
     if (!resp?.error && isUsableScrape(resp?.recipe)) {
       const saved = await saveScrapedRecipe(client, resp.recipe, url);
-      const out = args.format === 'full' ? saved : slimRecipe(saved);
-      return `Imported via Tandoor scraper.\n\n${emit(out)}`;
+      return emit(buildImportResult(saved, 'tandoor-scraper', args.format));
     }
     attempts.push(`tandoor-url: ${resp?.msg || 'no usable recipe returned'}`);
   } catch (err) {
     attempts.push(`tandoor-url: ${err instanceof Error ? err.message : String(err)}`);
   }
 
+  checkAbort();
   // Attempt 2: fetch HTML ourselves and extract schema.org JSON-LD. This is a
   // genuinely different parse path — not a re-submission to the same Tandoor
   // scraper — so it catches cases where Tandoor's server can't reach the URL
   // (firewall / IP block) and cases where Tandoor's extractor doesn't support
   // the site's markup.
-  const html = await fetchUrlHtml(url);
+  const html = await fetchUrlHtml(url, signal);
   if (html) {
     const jld = extractJsonLdRecipe(html);
     if (jld) {
@@ -645,8 +763,7 @@ export async function handleImportRecipeFromUrl(
         const scraped = await jsonLdToScrapedRecipe(client, jld, url);
         if (isUsableScrape(scraped)) {
           const saved = await saveScrapedRecipe(client, scraped, url);
-          const out = args.format === 'full' ? saved : slimRecipe(saved);
-          return `Imported via JSON-LD fallback.\n\n${emit(out)}`;
+          return emit(buildImportResult(saved, 'json-ld-fallback', args.format));
         }
         attempts.push('json-ld: recipe object found but unusable (missing name or steps)');
       } catch (err) {
@@ -683,11 +800,7 @@ export async function handleImportRecipeFromUrl(
       private: false,
     };
     const saved = await client.recipes.createRecipe(stub);
-    const out = args.format === 'full' ? saved : slimRecipe(saved);
-    return (
-      `Stub recipe created — scraping failed.\n` +
-      `Attempts:\n- ${attempts.join('\n- ')}\n\n${emit(out)}`
-    );
+    return emit(buildImportResult(saved, 'stub', args.format, attempts));
   }
 
   // Default: surface the failure. No silent writes.
@@ -695,4 +808,18 @@ export async function handleImportRecipeFromUrl(
     `Could not import ${url}. Retry with create_stub_on_failure=true to write an empty placeholder.\n` +
     `Attempts:\n- ${attempts.join('\n- ')}`
   );
+}
+
+type ImportVia = 'tandoor-scraper' | 'json-ld-fallback' | 'stub';
+
+function buildImportResult(
+  saved: any,
+  via: ImportVia,
+  format: 'slim' | 'full' | undefined,
+  attempts?: string[]
+): Record<string, unknown> {
+  const recipe = format === 'full' ? saved : slimRecipe(saved);
+  const meta: Record<string, unknown> = { via };
+  if (attempts && attempts.length > 0) meta.attempts = attempts;
+  return { recipe, _meta: meta };
 }

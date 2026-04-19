@@ -26,7 +26,7 @@ import type {
   GetServerSettingsArgs,
 } from '../tools/admin.js';
 
-const emit = (o: unknown) => JSON.stringify(o);
+import { emit, slimPaginated } from '../lib/slim.js';
 
 // ---------- Share links ----------
 
@@ -104,9 +104,7 @@ const slimAutomation = (a: any) => a && {
   order: a.order, disabled: a.disabled,
 };
 
-const slimPage = (p: any, slim: (x: any) => any) => p?.results
-  ? { count: p.count, next: p.next, previous: p.previous, results: p.results.map(slim) }
-  : p;
+const slimPage = slimPaginated;
 
 export async function handleListAutomations(
   client: TandoorClient,

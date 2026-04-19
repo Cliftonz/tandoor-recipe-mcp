@@ -13,6 +13,7 @@ import {
   handleUploadRecipeImage,
   handleRelatedRecipes,
   handleAddRecipeToShoppingList,
+  handleSearchRecipes,
 } from '../handlers/recipe.js';
 
 const formatEnum = z.enum(['slim', 'full']).optional()
@@ -157,6 +158,25 @@ export const addRecipeToShoppingListShape = {
   list_recipe: z.number().nullable().optional().describe('Existing shopping-list-recipe id to update'),
 } as const;
 
+export const searchRecipesShape = {
+  query: z.string().optional().describe('Fuzzy match against recipe names'),
+  foods: z.array(z.string()).optional().describe('Food names the recipe must contain ALL of'),
+  exclude_foods: z.array(z.string()).optional().describe('Food names the recipe must NOT contain any of'),
+  keywords: z.array(z.string()).optional().describe('Keyword names — recipe must have ANY of these'),
+  exclude_keywords: z.array(z.string()).optional().describe('Keyword names to exclude'),
+  books: z.array(z.string()).optional().describe('Recipe book names — recipe must be in ANY of these'),
+  rating_gte: z.number().optional(),
+  rating_lte: z.number().optional(),
+  timescooked_gte: z.number().optional(),
+  timescooked_lte: z.number().optional(),
+  makenow: z.boolean().optional().describe('Only recipes makeable with currently on-hand foods'),
+  random: z.boolean().optional(),
+  sort_order: z.string().optional().describe('score | -score | name | -name | lastcooked | -lastcooked | rating | -rating | times_cooked | -times_cooked'),
+  page: z.number().optional(),
+  page_size: z.number().optional(),
+  format: formatEnum,
+} as const;
+
 export type ListRecipesArgs = z.infer<z.ZodObject<typeof listRecipesShape>>;
 export type GetRecipeArgs = z.infer<z.ZodObject<typeof getRecipeShape>>;
 export type CreateRecipeArgs = z.infer<z.ZodObject<typeof createRecipeShape>>;
@@ -165,6 +185,7 @@ export type ImportRecipeFromUrlArgs = z.infer<z.ZodObject<typeof importRecipeFro
 export type UploadRecipeImageArgs = z.infer<z.ZodObject<typeof uploadRecipeImageShape>>;
 export type RelatedRecipesArgs = z.infer<z.ZodObject<typeof relatedRecipesShape>>;
 export type AddRecipeToShoppingListArgs = z.infer<z.ZodObject<typeof addRecipeToShoppingListShape>>;
+export type SearchRecipesArgs = z.infer<z.ZodObject<typeof searchRecipesShape>>;
 
 export function registerRecipeTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_recipes', {
@@ -213,4 +234,10 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
       'Add a recipe\'s ingredients to the shopping list at N servings. Omit ingredients[] to add all. Set servings=0 with list_recipe (id) to delete that shopping-list-recipe.',
     inputSchema: addRecipeToShoppingListShape,
   }, handleAddRecipeToShoppingList);
+
+  registerStringTool(server, client, 'search_recipes', {
+    description:
+      'High-level recipe search. Accepts food/keyword/book *names* (not IDs) and resolves them internally — typically collapses 3-4 round-trips into 1. Example: {foods: ["chicken", "broccoli"], exclude_foods: ["peanuts"], keywords: ["weeknight"]}. For complex ID-based filtering, fall back to list_recipes.',
+    inputSchema: searchRecipesShape,
+  }, handleSearchRecipes);
 }

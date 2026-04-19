@@ -61,6 +61,7 @@ npx -y @clifton/tandoor-recipes-mcp
 | `TANDOOR_MCP_PROFILE` | — | `full` | `basic` exposes core tools only (~40); `full` includes everything (~100) |
 | `TANDOOR_MCP_INCLUDE_ONLY` | — | — | Comma-separated allowlist (glob `*` supported). E.g. `list_*,get_*,create_meal_plan` |
 | `TANDOOR_MCP_EXCLUDE` | — | — | Comma-separated denylist. E.g. `merge_*,delete_*` to hide destructive tools |
+| `TANDOOR_MCP_LOG` | — | — | Stderr trace mode. `request`, `response`, `error`, `all`, or comma list. Bearer token redacted. |
 
 The `basic` profile is useful when context size matters — every MCP client loads every tool schema into the model's context on startup. `INCLUDE_ONLY` and `EXCLUDE` compose on top of the profile for finer control (e.g. "give me only read tools" or "hide destructive ops from this agent").
 
@@ -96,7 +97,9 @@ The `basic` profile is useful when context size matters — every MCP client loa
 All write-returning tools default to a slim JSON shape. Pass `format: "full"` for the raw Tandoor response.
 
 ### Recipes
-`list_recipes` · `get_recipe` · `create_recipe` · `update_recipe` · `import_recipe_from_url` · `upload_recipe_image` · `related_recipes` · `add_recipe_to_shopping_list` · `recipe_ai_properties`
+`search_recipes` · `list_recipes` · `get_recipe` · `create_recipe` · `update_recipe` · `import_recipe_from_url` · `upload_recipe_image` · `related_recipes` · `add_recipe_to_shopping_list` · `recipe_ai_properties`
+
+`search_recipes` is the preferred high-level entry point: it accepts food/keyword/book *names* (not IDs) and resolves them internally. Use `list_recipes` only for the raw ID-based filter surface.
 
 `list_recipes` takes the full Tandoor filter surface: `query`, `sort_order`, `rating[_gte|_lte]`, `timescooked[_gte|_lte]`, `cookedon_[gte|lte]`, `keywords[_or|_and|_or_not|_and_not][]`, `foods[...]`, `books[...]`, `makenow`, `new`, `random`, `internal`, `filter`, date ranges, pagination.
 

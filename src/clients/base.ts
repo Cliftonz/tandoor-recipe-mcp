@@ -2,6 +2,36 @@
 
 import { TandoorConfig } from '../types/index.js';
 
+// ---------- Optional request/response/error trace logging ----------
+// `TANDOOR_MCP_LOG=request,response,error` (or `all`) enables stderr traces
+// with the bearer token redacted. Defaults to silent. stderr not stdout
+// because stdout belongs to the MCP transport.
+
+const LOG_MODES = (() => {
+  const raw = (process.env.TANDOOR_MCP_LOG || '').toLowerCase();
+  if (!raw) return new Set<string>();
+  if (raw === 'all') return new Set(['request', 'response', 'error']);
+  return new Set(raw.split(',').map((s) => s.trim()).filter(Boolean));
+})();
+
+function logRequest(method: string, url: string, bodyPreview?: string): void {
+  if (!LOG_MODES.has('request')) return;
+  const body = bodyPreview ? ` ${bodyPreview.slice(0, 200)}` : '';
+  console.error(`[tandoor-mcp] → ${method} ${url}${body}`);
+}
+
+function logResponse(method: string, url: string, status: number, bodyPreview: string): void {
+  if (!LOG_MODES.has('response')) return;
+  const snippet = bodyPreview.slice(0, 200).replace(/\n/g, ' ');
+  console.error(`[tandoor-mcp] ← ${method} ${url} ${status}${snippet ? ' ' + snippet : ''}`);
+}
+
+function logError(method: string, url: string, err: unknown): void {
+  if (!LOG_MODES.has('error')) return;
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error(`[tandoor-mcp] ✗ ${method} ${url} ${msg}`);
+}
+
 /**
  * Strip a bearer token out of any string we might echo back to the caller.
  * If Tandoor (or an upstream proxy) ever reflects request headers in the
@@ -61,6 +91,7 @@ export class BaseClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    const method = options.method || 'GET';
     const url = `${this.baseUrl}${endpoint}`;
     // Don't set Content-Type for FormData — fetch picks the correct multipart
     // boundary string itself. Forcing application/json breaks multipart uploads.
@@ -71,14 +102,24 @@ export class BaseClient {
       ...((options.headers as Record<string, string>) || {}),
     };
     const isIdempotentBody = isFormData ? false : true; // JSON bodies are safe to replay; we don't retry streams.
+    const bodyPreview = typeof options.body === 'string'
+      ? redactToken(options.body, this.token)
+      : undefined;
+
+    // Aborts skip retry — abort means "stop". Track once per call.
+    const signal = options.signal;
 
     let lastError: unknown;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      if (signal?.aborted) {
+        throw signal.reason instanceof Error ? signal.reason : new Error('Request aborted');
+      }
       try {
+        logRequest(method, url, bodyPreview);
         const response = await fetch(url, { ...options, headers });
 
         // Retry on transient 5xx / 429 before reading the body.
-        if (shouldRetry(response.status) && attempt < MAX_RETRIES && isIdempotentBody) {
+        if (shouldRetry(response.status) && attempt < MAX_RETRIES && isIdempotentBody && !signal?.aborted) {
           const wait = backoffMs(attempt, response.headers.get('retry-after'));
           await sleep(wait);
           continue;
@@ -86,6 +127,7 @@ export class BaseClient {
 
         // Read body exactly once — Response body is a single-use stream.
         const bodyText = await response.text();
+        logResponse(method, url, response.status, bodyText);
 
         if (!response.ok) {
           let errorMessage = `Tandoor API error: ${response.status} ${response.statusText}`;
@@ -131,6 +173,11 @@ export class BaseClient {
         }
       } catch (error) {
         lastError = error;
+        logError(method, url, error);
+        // Aborts propagate immediately — never retry a cancelled request.
+        if (signal?.aborted || (error as any)?.name === 'AbortError') {
+          throw error;
+        }
         // Network errors (DNS failure, socket reset) — worth retrying.
         const isNetwork = error instanceof TypeError || (error as any)?.name === 'FetchError';
         if (isNetwork && attempt < MAX_RETRIES && isIdempotentBody) {

@@ -6,7 +6,7 @@ import { TandoorClient } from '../clients/index.js';
 import { saveScrapedRecipe, slimRecipe, isUsableScrape, ScrapedRecipe } from './recipe.js';
 import type { ListAiProvidersArgs, AiImportRecipeArgs } from '../tools/ai.js';
 
-const emit = (o: unknown) => JSON.stringify(o);
+import { emit } from '../lib/slim.js';
 
 function slimProvider(p: any) {
   if (!p) return p;

@@ -43,7 +43,7 @@ import type {
   DeleteSupermarketCategoryRelationArgs,
 } from '../tools/misc.js';
 
-const emit = (o: unknown) => JSON.stringify(o);
+import { emit, slimPaginated } from '../lib/slim.js';
 
 const slimKeyword = (k: any) => k && {
   id: k.id, name: k.name, label: k.label, description: k.description,
@@ -57,9 +57,7 @@ const slimConversion = (u: any) => u && {
   food: u.food?.name, food_id: u.food?.id,
 };
 
-const slimPage = (p: any, slim: (x: any) => any) => p?.results
-  ? { count: p.count, next: p.next, previous: p.previous, results: p.results.map(slim) }
-  : p;
+const slimPage = slimPaginated;
 
 // ---------- Keywords ----------
 

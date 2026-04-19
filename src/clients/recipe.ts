@@ -177,85 +177,58 @@ export class RecipeClient extends BaseClient {
   }
 
   /**
-   * Search for a keyword by name, or create it if it doesn't exist
+   * Generic find-or-create. Handles the common race where two concurrent
+   * callers both miss the lookup, both POST create, and one hits a uniqueness
+   * violation. On 400/409 we re-list and return whichever one won — no
+   * duplicates, no user-facing error.
+   *
+   * Tandoor returns 400 (not 409) for uniqueness violations on keyword/food,
+   * so we catch both status codes to be safe.
    */
+  private async findOrCreateByName<T extends { id: number; name: string }>(
+    endpoint: string,
+    name: string
+  ): Promise<T> {
+    const doLookup = async (): Promise<T | undefined> => {
+      const searchParams = new URLSearchParams({ query: name });
+      const response = await this.request<{ count: number; results: T[] }>(
+        `${endpoint}?${searchParams.toString()}`
+      );
+      return response.results.find((r) => r.name.toLowerCase() === name.toLowerCase());
+    };
+
+    const existing = await doLookup();
+    if (existing) return existing;
+
+    try {
+      return await this.request<T>(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      });
+    } catch (err) {
+      // Another caller beat us to the insert — re-lookup and return their row.
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/400|409|already exists|unique/i.test(msg)) {
+        const raced = await doLookup();
+        if (raced) return raced;
+      }
+      throw err;
+    }
+  }
+
+  /** Find a keyword by name, or create it if none exists. Race-safe. */
   async findOrCreateKeyword(name: string): Promise<{ id: number; name: string }> {
-    // First, try to find the keyword
-    const searchParams = new URLSearchParams({ query: name });
-    const response = await this.request<{ 
-      count: number; 
-      results: { id: number; name: string; }[] 
-    }>(`/api/keyword/?${searchParams.toString()}`);
-
-    // Check for exact match
-    const exactMatch = response.results.find(
-      k => k.name.toLowerCase() === name.toLowerCase()
-    );
-
-    if (exactMatch) {
-      return exactMatch;
-    }
-
-    // Create new keyword if not found
-    return this.request<{ id: number; name: string }>('/api/keyword/', {
-      method: 'POST',
-      body: JSON.stringify({ name }),
-    });
+    return this.findOrCreateByName('/api/keyword/', name);
   }
 
-  /**
-   * Search for a food by name, or create it if it doesn't exist
-   */
+  /** Find a food by name, or create it if none exists. Race-safe. */
   async findOrCreateFood(name: string): Promise<{ id: number; name: string }> {
-    // First, try to find the food
-    const searchParams = new URLSearchParams({ query: name });
-    const response = await this.request<{ 
-      count: number; 
-      results: { id: number; name: string; }[] 
-    }>(`/api/food/?${searchParams.toString()}`);
-
-    // Check for exact match
-    const exactMatch = response.results.find(
-      f => f.name.toLowerCase() === name.toLowerCase()
-    );
-
-    if (exactMatch) {
-      return exactMatch;
-    }
-
-    // Create new food if not found
-    return this.request<{ id: number; name: string }>('/api/food/', {
-      method: 'POST',
-      body: JSON.stringify({ name }),
-    });
+    return this.findOrCreateByName('/api/food/', name);
   }
 
-  /**
-   * Search for a unit by name
-   */
+  /** Find a unit by name, or create it if none exists. Race-safe. Returns null for empty name. */
   async findOrCreateUnit(name: string): Promise<{ id: number; name: string } | null> {
     if (!name) return null;
-
-    // First, try to find the unit
-    const searchParams = new URLSearchParams({ query: name });
-    const response = await this.request<{ 
-      count: number; 
-      results: { id: number; name: string; }[] 
-    }>(`/api/unit/?${searchParams.toString()}`);
-
-    // Check for exact match
-    const exactMatch = response.results.find(
-      u => u.name.toLowerCase() === name.toLowerCase()
-    );
-
-    if (exactMatch) {
-      return exactMatch;
-    }
-
-    // Create new unit if not found
-    return this.request<{ id: number; name: string }>('/api/unit/', {
-      method: 'POST',
-      body: JSON.stringify({ name }),
-    });
+    return this.findOrCreateByName('/api/unit/', name);
   }
 }
