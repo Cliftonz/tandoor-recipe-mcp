@@ -1,0 +1,63 @@
+{
+  "name": "@clifton/tandoor-recipes-mcp",
+  "version": "1.1.0",
+  "description": "Model Context Protocol server for Tandoor — recipes, meal plans, shopping lists, ingredients, cook logs, nutrition, AI import, and more.",
+  "type": "module",
+  "main": "./build/index.js",
+  "bin": {
+    "tandoor-recipes-mcp": "./build/index.js"
+  },
+  "files": [
+    "build/**/*",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "tandoor",
+    "recipes",
+    "meal-planning",
+    "cooking",
+    "food",
+    "recipe-management",
+    "claude",
+    "anthropic"
+  ],
+  "author": "Zac Clifton",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cliftonz/tandoor-recipe-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Cliftonz/tandoor-recipe-mcp/issues"
+  },
+  "homepage": "https://github.com/Cliftonz/tandoor-recipe-mcp#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.24.3",
+    "zod": "^3.25.0 || ^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "dotenv": "^16.4.7",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.9"
+  }
+}

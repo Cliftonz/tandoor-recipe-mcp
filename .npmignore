@@ -1,0 +1,31 @@
+# Source files (only include build)
+src/
+*.ts
+!*.d.ts
+tsconfig.json
+
+# Development files
+.env
+.env.*
+test-*.js
+test/
+vitest.config.ts
+vitest.e2e.config.ts
+node_modules/
+.github/
+tandoor api specification.yaml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
