@@ -1,10 +1,13 @@
 name: Publish
 
-# Publishes to npm on any `v*` tag push. Uses npm provenance so the package
-# page shows a verifiable link to the GitHub Actions run that built it.
-# Secrets required: NPM_TOKEN (Automation token, not Classic). The id-token
-# permission below is what lets the runner sign the provenance attestation
-# with sigstore — no extra setup needed.
+# Publishes to npm on any `v*` tag push via npm Trusted Publishing (OIDC).
+# No NPM_TOKEN secret — npm exchanges the GitHub OIDC token for a short-lived
+# publish credential. Requires:
+#   - `id-token: write` permission (below) so the runner can mint the OIDC token
+#   - Trusted Publisher configured on npmjs.com for this package/scope, pointing
+#     at Cliftonz/tandoor-recipe-mcp + workflow `publish.yml`
+#   - npm CLI >= 11.5.1 (Node 22 ships 10.x, so we upgrade in-job)
+# Provenance attestation is emitted automatically alongside the publish.
 
 on:
   push:
@@ -27,6 +30,9 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
+      - name: Upgrade npm (trusted publishing needs >= 11.5.1)
+        run: npm install -g npm@latest
+
       - name: Install
         run: npm ci
 
@@ -48,5 +54,3 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
