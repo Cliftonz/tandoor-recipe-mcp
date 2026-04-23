@@ -47,7 +47,7 @@ Polish pass informed by an HN-commenter-style self-review.
 
 ## 1.0.0 — Initial fork
 
-Full Tandoor API coverage (~100 tools) under `@clifton/tandoor-recipes-mcp`.
+Full Tandoor API coverage (~100 tools) under `@cliftonz/tandoor-recipes-mcp`.
 
 - Recipes, meal plans, ingredients, steps, shopping lists, cook logs, recipe books, foods, units, keywords, supermarket categories, property types, custom filters, unit conversions, automations, user files, user prefs, activity logs.
 - URL recipe import with Tandoor-scraper-first fallback chain.

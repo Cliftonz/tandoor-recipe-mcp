@@ -1,6 +1,6 @@
 # Tandoor Recipes MCP
 
-[![npm version](https://img.shields.io/npm/v/@clifton/tandoor-recipes-mcp.svg)](https://www.npmjs.com/package/@clifton/tandoor-recipes-mcp)
+[![npm version](https://img.shields.io/npm/v/@cliftonz/tandoor-recipes-mcp.svg)](https://www.npmjs.com/package/@cliftonz/tandoor-recipes-mcp)
 
 A Model Context Protocol (MCP) server that gives LLM agents full read/write access to a [Tandoor Recipes](https://tandoor.dev) instance — recipes, meal plans, ingredients, shopping lists, cook logs, nutrition, and AI-powered URL/image imports.
 
@@ -20,13 +20,13 @@ A Model Context Protocol (MCP) server that gives LLM agents full read/write acce
 ## Install
 
 ```bash
-npm install -g @clifton/tandoor-recipes-mcp
+npm install -g @cliftonz/tandoor-recipes-mcp
 ```
 
 Or `npx` without installing:
 
 ```bash
-npx -y @clifton/tandoor-recipes-mcp
+npx -y @cliftonz/tandoor-recipes-mcp
 ```
 
 ## Configure
@@ -41,7 +41,7 @@ npx -y @clifton/tandoor-recipes-mcp
   "mcpServers": {
     "tandoor": {
       "command": "npx",
-      "args": ["-y", "@clifton/tandoor-recipes-mcp"],
+      "args": ["-y", "@cliftonz/tandoor-recipes-mcp"],
       "env": {
         "TANDOOR_URL": "https://your-tandoor-instance.com",
         "TANDOOR_TOKEN": "your-api-token",
