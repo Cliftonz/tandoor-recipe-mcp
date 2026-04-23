@@ -31,5 +31,6 @@ yarn-error.log*
 # OS
 Thumbs.db
 
-# Claude Code session state
-.claude/
+# Claude Code session state (keep shared settings.json, ignore personal overrides)
+.claude/*
+!.claude/settings.json

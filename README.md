@@ -34,7 +34,16 @@ npx -y @cliftonz/tandoor-recipes-mcp
 1. In Tandoor: **Settings → API Tokens → Create new token**.
 2. Point your MCP client at the server.
 
-### Claude Desktop / Claude Code
+### Claude Code — one-shot plugin install
+
+```
+/plugin marketplace add Cliftonz/tandoor-recipe-mcp
+/plugin install tandoor-recipes-mcp@cliftonz-tandoor
+```
+
+Claude Code prompts you for `TANDOOR_URL` and `TANDOOR_TOKEN` on install and stores the token securely. No `mcpServers` JSON editing needed.
+
+### Claude Desktop / Claude Code — manual config
 
 ```json
 {
@@ -48,6 +57,27 @@ npx -y @cliftonz/tandoor-recipes-mcp
         "TANDOOR_MCP_PROFILE": "full"
       }
     }
+  }
+}
+```
+
+### Recommended Claude Code permissions
+
+The repo ships a `.claude/settings.json` that auto-allows read tools and prompts for everything else. Copy these into your own project's `.claude/settings.json` to reduce permission friction:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "mcp__tandoor__list_*",
+      "mcp__tandoor__get_*"
+    ],
+    "ask": [
+      "mcp__tandoor__create_*",
+      "mcp__tandoor__update_*",
+      "mcp__tandoor__delete_*",
+      "mcp__tandoor__merge_*"
+    ]
   }
 }
 ```

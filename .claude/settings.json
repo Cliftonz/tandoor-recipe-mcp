@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "mcp__tandoor__list_*",
+      "mcp__tandoor__get_*"
+    ],
+    "ask": [
+      "mcp__tandoor__create_*",
+      "mcp__tandoor__update_*",
+
+      "mcp__tandoor__delete_*",
+      "mcp__tandoor__merge_*"
+    ]
+  }
+}

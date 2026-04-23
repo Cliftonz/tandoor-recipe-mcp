@@ -1,0 +1,15 @@
+{
+  "name": "cliftonz-tandoor",
+  "owner": {
+    "name": "Zac Clifton",
+    "url": "https://github.com/Cliftonz"
+  },
+  "plugins": [
+    {
+      "name": "tandoor-recipes-mcp",
+      "source": "./",
+      "description": "Tandoor Recipes MCP server — full Tandoor API coverage with resources, prompts, and AI URL/image import.",
+      "version": "1.2.5"
+    }
+  ]
+}

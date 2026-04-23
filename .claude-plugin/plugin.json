@@ -1,0 +1,54 @@
+{
+  "name": "tandoor-recipes-mcp",
+  "version": "1.2.5",
+  "description": "Tandoor Recipes MCP server — recipes, meal plans, shopping lists, ingredients, cook logs, nutrition, AI import.",
+  "author": {
+    "name": "Zac Clifton",
+    "url": "https://github.com/Cliftonz"
+  },
+  "repository": "https://github.com/Cliftonz/tandoor-recipe-mcp",
+  "homepage": "https://github.com/Cliftonz/tandoor-recipe-mcp#readme",
+  "license": "MIT",
+  "keywords": [
+    "tandoor",
+    "recipes",
+    "meal-planning",
+    "cooking",
+    "mcp"
+  ],
+  "userConfig": {
+    "tandoor_url": {
+      "type": "string",
+      "title": "Tandoor URL",
+      "description": "Base URL of your Tandoor instance (e.g. https://tandoor.example.com)",
+      "required": true
+    },
+    "tandoor_token": {
+      "type": "string",
+      "title": "Tandoor API Token",
+      "description": "API token with write access. Create one at Settings → API Tokens in Tandoor.",
+      "sensitive": true,
+      "required": true
+    },
+    "tandoor_mcp_profile": {
+      "type": "string",
+      "title": "Tool Profile",
+      "description": "`basic` exposes ~40 core tools (smaller context). `full` includes all ~100 tools.",
+      "default": "full"
+    }
+  },
+  "mcpServers": {
+    "tandoor": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@cliftonz/tandoor-recipes-mcp"
+      ],
+      "env": {
+        "TANDOOR_URL": "${user_config.tandoor_url}",
+        "TANDOOR_TOKEN": "${user_config.tandoor_token}",
+        "TANDOOR_MCP_PROFILE": "${user_config.tandoor_mcp_profile}"
+      }
+    }
+  }
+}
