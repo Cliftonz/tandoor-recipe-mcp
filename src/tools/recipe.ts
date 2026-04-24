@@ -14,6 +14,7 @@ import {
   handleRelatedRecipes,
   handleAddRecipeToShoppingList,
   handleSearchRecipes,
+  handleRecipeBatchUpdate,
 } from '../handlers/recipe.js';
 
 const formatEnum = z.enum(['slim', 'full']).optional()
@@ -187,6 +188,29 @@ export type RelatedRecipesArgs = z.infer<z.ZodObject<typeof relatedRecipesShape>
 export type AddRecipeToShoppingListArgs = z.infer<z.ZodObject<typeof addRecipeToShoppingListShape>>;
 export type SearchRecipesArgs = z.infer<z.ZodObject<typeof searchRecipesShape>>;
 
+// Mirrors Tandoor's RecipeBatchUpdate serializer. `recipes` is the target set;
+// all other fields are optional mutations applied across that set.
+export const recipeBatchUpdateShape = {
+  recipes: z.array(z.number()),
+  keywords_add: z.array(z.number()).optional(),
+  keywords_remove: z.array(z.number()).optional(),
+  keywords_set: z.array(z.number()).optional(),
+  keywords_remove_all: z.boolean().optional(),
+  working_time: z.number().nullable().optional(),
+  waiting_time: z.number().nullable().optional(),
+  servings: z.number().nullable().optional(),
+  servings_text: z.string().nullable().optional(),
+  private: z.boolean().nullable().optional(),
+  shared_add: z.array(z.number()).optional(),
+  shared_remove: z.array(z.number()).optional(),
+  shared_set: z.array(z.number()).optional(),
+  shared_remove_all: z.boolean().optional(),
+  show_ingredient_overview: z.boolean().nullable().optional(),
+  clear_description: z.boolean().nullable().optional(),
+} as const;
+
+export type RecipeBatchUpdateArgs = z.infer<z.ZodObject<typeof recipeBatchUpdateShape>>;
+
 export function registerRecipeTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_recipes', {
     description:
@@ -240,4 +264,9 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
       'High-level recipe search. Accepts food/keyword/book *names* (not IDs) and resolves them internally — typically collapses 3-4 round-trips into 1. Example: {foods: ["chicken", "broccoli"], exclude_foods: ["peanuts"], keywords: ["weeknight"]}. For complex ID-based filtering, fall back to list_recipes.',
     inputSchema: searchRecipesShape,
   }, handleSearchRecipes);
+
+  registerStringTool(server, client, 'recipe_batch_update', {
+    description: 'Apply a narrow set of bulk mutations across many recipes in one call via Tandoor\'s /api/recipe/batch_update/ endpoint. Required: recipes[]. Optional (all apply to every recipe in recipes[]): keywords_add/remove/set/remove_all, shared_add/remove/set/remove_all, working_time, waiting_time, servings, servings_text, private, show_ingredient_overview, clear_description. Does NOT support bulk step/ingredient edits — those still need update_recipe per-item. Use for: bulk keyword retagging, sharing recipes with a user across a set, flipping privacy on many recipes at once.',
+    inputSchema: recipeBatchUpdateShape,
+  }, handleRecipeBatchUpdate);
 }

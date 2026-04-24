@@ -127,14 +127,14 @@ The `basic` profile is useful when context size matters — every MCP client loa
 All write-returning tools default to a slim JSON shape. Pass `format: "full"` for the raw Tandoor response.
 
 ### Recipes
-`search_recipes` · `list_recipes` · `get_recipe` · `create_recipe` · `update_recipe` · `import_recipe_from_url` · `upload_recipe_image` · `related_recipes` · `add_recipe_to_shopping_list` · `recipe_ai_properties`
+`search_recipes` · `list_recipes` · `get_recipe` · `create_recipe` · `update_recipe` · `import_recipe_from_url` · `upload_recipe_image` · `related_recipes` · `add_recipe_to_shopping_list` · `recipe_ai_properties` · `recipe_batch_update`
 
 `search_recipes` is the preferred high-level entry point: it accepts food/keyword/book *names* (not IDs) and resolves them internally. Use `list_recipes` only for the raw ID-based filter surface.
 
 `list_recipes` takes the full Tandoor filter surface: `query`, `sort_order`, `rating[_gte|_lte]`, `timescooked[_gte|_lte]`, `cookedon_[gte|lte]`, `keywords[_or|_and|_or_not|_and_not][]`, `foods[...]`, `books[...]`, `makenow`, `new`, `random`, `internal`, `filter`, date ranges, pagination.
 
-### Meal plans
-`list_meal_plans` · `get_meal_plan` · `create_meal_plan` · `update_meal_plan` · `delete_meal_plan` · `auto_meal_plan` · `list_meal_types`
+### Meal plans (`bulk_create_meal_plans` for week-planning)
+`list_meal_plans` · `get_meal_plan` · `create_meal_plan` · `update_meal_plan` · `delete_meal_plan` · `auto_meal_plan` · `list_meal_types` · `bulk_create_meal_plans`
 
 ### Ingredients + steps
 `list_ingredients` · `get_ingredient` · `create_ingredient` · `update_ingredient` · `delete_ingredient` · `parse_ingredient`
@@ -144,7 +144,7 @@ All write-returning tools default to a slim JSON shape. Pass `format: "full"` fo
 `list_shopping_entries` · `get_shopping_entry` · `create_shopping_entry` · `update_shopping_entry` · `delete_shopping_entry` · `bulk_check_shopping_entries` · `list_shopping_list_recipes` · `get_shopping_list_recipe` · `create_shopping_list_recipe` · `update_shopping_list_recipe` · `delete_shopping_list_recipe` · `bulk_create_shopping_list_recipe_entries`
 
 ### Foods + units + keywords + categories *(full profile)*
-`list_foods` · `get_food` · `create_food` · `update_food` · `delete_food` · `merge_food` · `move_food` · `food_shopping_update` · `food_fdc_lookup` · `food_ai_properties`
+`list_foods` · `get_food` · `create_food` · `update_food` · `delete_food` · `merge_food` · `move_food` · `food_shopping_update` · `food_fdc_lookup` · `food_ai_properties` · `food_batch_update`
 `list_units` · `get_unit` · `create_unit` · `update_unit` · `delete_unit` · `merge_unit`
 `list_unit_conversions` · `get_unit_conversion` · `create_unit_conversion` · `update_unit_conversion` · `delete_unit_conversion`
 `list_keywords` · `get_keyword` · `create_keyword` · `update_keyword` · `delete_keyword` · `merge_keyword` · `move_keyword`

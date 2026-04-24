@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## 1.3.0 — 2026-04-24
+
+Three new batch tools for fewer round-trips on "operate on a set" workflows.
+
+### Added
+- **`food_batch_update`** — exposes Tandoor's `/api/food/batch_update/` endpoint. Apply `category`, `on_hand`, substitute links, inherit fields, and parent across many foods in one call. Client method existed since 1.0.0 but had no tool. Typed Zod shape mirrors `FoodBatchUpdate`.
+- **`recipe_batch_update`** — exposes Tandoor's `/api/recipe/batch_update/` endpoint. Bulk keyword retagging, bulk share-user changes, bulk servings/working_time/private/etc. Narrow set — no bulk ingredient or step edits.
+- **`bulk_create_meal_plans`** — client-side batched `create_meal_plan`. Tandoor has no server-side bulk endpoint here, so the handler dedupes unique recipe_ids + meal_type_ids across entries, hydrates each unique id ONCE in parallel, then POSTs all entries via `Promise.allSettled`. For a 7-entry week plan referencing 3 unique meal_types + 5 unique recipes: drops from 21 HTTP calls to 13, eliminates per-entry retry-budget duplication, and surfaces partial success (`{count, created, failed}`) so the caller can retry only the failed entries.
+
+### Tests
+- 125 → 138 tests. New coverage: payload forwarding + empty-array guards for `food_batch_update` / `recipe_batch_update`; dedup behavior, partial-failure aggregation, per-entry validation, abort signal propagation, and prompt-injection slim-response proof for `bulk_create_meal_plans`.
+
 ## 1.2.7 — 2026-04-24
 
 ### Added

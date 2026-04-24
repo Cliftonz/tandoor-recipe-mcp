@@ -10,14 +10,15 @@ import {
   handleUpdateMealPlan,
   handleDeleteMealPlan,
   handleAutoMealPlan,
+  handleBulkCreateMealPlans,
   __test__ as mealPlanInternals,
 } from '../src/handlers/mealplan.js';
-import { handleListFoods, handleCreateFood, handleUpdateFood, handleMergeFood, handleFoodShoppingUpdate, handleFoodFdcLookup } from '../src/handlers/foodunit.js';
+import { handleListFoods, handleCreateFood, handleUpdateFood, handleMergeFood, handleFoodShoppingUpdate, handleFoodFdcLookup, handleFoodBatchUpdate } from '../src/handlers/foodunit.js';
 import { handleCreateCookLog, handleListCookLogs } from '../src/handlers/cooklog.js';
 import { handleCreateShoppingEntry, handleBulkCheckShoppingEntries } from '../src/handlers/shopping.js';
 import { handleCreateStep } from '../src/handlers/step.js';
 import { handleCreateBook, handleCreateBookEntry } from '../src/handlers/recipebook.js';
-import { handleSearchRecipes } from '../src/handlers/recipe.js';
+import { handleSearchRecipes, handleRecipeBatchUpdate } from '../src/handlers/recipe.js';
 import { slimPaginated, emit } from '../src/lib/slim.js';
 
 // ---------- Shared helpers from src/lib/slim.ts ----------
@@ -760,5 +761,225 @@ describe('search_recipes handler', () => {
     expect(call.sort_order).toBe('-rating');
     expect(call.makenow).toBe(true);
     expect(call.page_size).toBe(10);
+  });
+});
+
+// ---------- Batch / bulk handlers (1.3.0) ----------
+
+describe('handleFoodBatchUpdate', () => {
+  it('forwards the full payload to foodBatchUpdate and reports count', async () => {
+    const foodBatchUpdate = vi.fn(async (b) => ({ updated: b.foods.length }));
+    const client = { foodUnits: { foodBatchUpdate } } as any;
+    const out = await handleFoodBatchUpdate(client, {
+      foods: [1, 2, 3],
+      category: 5,
+      on_hand: true,
+      substitute_add: [10, 11],
+    });
+    expect(foodBatchUpdate.mock.calls[0][0]).toEqual({
+      foods: [1, 2, 3],
+      category: 5,
+      on_hand: true,
+      substitute_add: [10, 11],
+    });
+    expect(out).toContain('Batch-updated 3 food(s)');
+  });
+
+  it('rejects empty foods[] without hitting Tandoor', async () => {
+    const foodBatchUpdate = vi.fn();
+    const client = { foodUnits: { foodBatchUpdate } } as any;
+    await expect(handleFoodBatchUpdate(client, { foods: [] } as any)).rejects.toThrow(/non-empty/);
+    expect(foodBatchUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleRecipeBatchUpdate', () => {
+  it('forwards the full payload to recipeBatchUpdate and reports count', async () => {
+    const recipeBatchUpdate = vi.fn(async (b) => ({ updated: b.recipes.length }));
+    const client = { recipes: { recipeBatchUpdate } } as any;
+    const out = await handleRecipeBatchUpdate(client, {
+      recipes: [1, 2, 3, 4],
+      keywords_add: [9],
+      private: true,
+    });
+    expect(recipeBatchUpdate.mock.calls[0][0]).toEqual({
+      recipes: [1, 2, 3, 4],
+      keywords_add: [9],
+      private: true,
+    });
+    expect(out).toContain('Batch-updated 4 recipe(s)');
+  });
+
+  it('rejects empty recipes[] without hitting Tandoor', async () => {
+    const recipeBatchUpdate = vi.fn();
+    const client = { recipes: { recipeBatchUpdate } } as any;
+    await expect(handleRecipeBatchUpdate(client, { recipes: [] } as any)).rejects.toThrow(/non-empty/);
+    expect(recipeBatchUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleBulkCreateMealPlans', () => {
+  function mkClient(over: any = {}) {
+    return {
+      mealPlans: {
+        createMealPlan: vi.fn(async (b) => ({ id: Math.floor(Math.random() * 1000), ...b })),
+        getMealType: vi.fn(async (id: number) => ({ id, name: id === 1 ? 'Breakfast' : id === 2 ? 'Lunch' : 'Dinner' })),
+      },
+      recipes: {
+        getRecipe: vi.fn(async (id: number) => ({ id, name: `recipe-${id}`, keywords: [] })),
+      },
+      ...over,
+    } as any;
+  }
+
+  it('dedupes meal_type + recipe ids — fetches each unique id exactly once', async () => {
+    const client = mkClient();
+    await handleBulkCreateMealPlans(client, {
+      entries: [
+        { recipe_id: 10, meal_type_id: 2, servings: 2, from_date: '2026-05-04' },
+        { recipe_id: 10, meal_type_id: 2, servings: 2, from_date: '2026-05-05' }, // dupe recipe + meal_type
+        { recipe_id: 11, meal_type_id: 2, servings: 2, from_date: '2026-05-06' }, // new recipe, same meal_type
+        { recipe_id: 10, meal_type_id: 3, servings: 2, from_date: '2026-05-07' }, // same recipe, new meal_type
+      ],
+    });
+    // 2 unique recipes (10, 11) → 2 getRecipe calls, not 4
+    expect(client.recipes.getRecipe).toHaveBeenCalledTimes(2);
+    // 2 unique meal_types (2, 3) → 2 getMealType calls, not 4
+    expect(client.mealPlans.getMealType).toHaveBeenCalledTimes(2);
+    // All 4 entries still POSTed
+    expect(client.mealPlans.createMealPlan).toHaveBeenCalledTimes(4);
+  });
+
+  it('continues on partial failure — collects both successes and errors', async () => {
+    const createMealPlan = vi.fn()
+      .mockResolvedValueOnce({ id: 101, recipe: { id: 10 }, meal_type: { id: 2 } })
+      .mockRejectedValueOnce(new Error('Tandoor API error: 400 Bad Request'))
+      .mockResolvedValueOnce({ id: 103, recipe: { id: 11 }, meal_type: { id: 2 } });
+    const client = mkClient({
+      mealPlans: {
+        createMealPlan,
+        getMealType: vi.fn(async (id: number) => ({ id, name: 'Lunch' })),
+      },
+    });
+    const out = await handleBulkCreateMealPlans(client, {
+      entries: [
+        { recipe_id: 10, meal_type_id: 2, servings: 1, from_date: '2026-05-04' },
+        { recipe_id: 10, meal_type_id: 2, servings: 1, from_date: '2026-05-05' },
+        { recipe_id: 11, meal_type_id: 2, servings: 1, from_date: '2026-05-06' },
+      ],
+    });
+    const parsed = JSON.parse(out.split('\n\n')[1]);
+    expect(parsed.count).toBe(3);
+    expect(parsed.created).toHaveLength(2);
+    expect(parsed.failed).toHaveLength(1);
+    expect(parsed.failed[0]).toEqual({ index: 1, error: expect.stringContaining('400') });
+  });
+
+  it('validates each entry requires recipe_id OR title before any network call', async () => {
+    const client = mkClient();
+    await expect(
+      handleBulkCreateMealPlans(client, {
+        entries: [
+          { recipe_id: 10, meal_type_id: 2, servings: 1, from_date: '2026-05-04' },
+          { meal_type_id: 2, servings: 1, from_date: '2026-05-05' } as any, // missing both
+        ],
+      })
+    ).rejects.toThrow(/entries\[1\].*recipe_id or title/);
+    expect(client.recipes.getRecipe).not.toHaveBeenCalled();
+    expect(client.mealPlans.createMealPlan).not.toHaveBeenCalled();
+  });
+
+  it('rejects empty entries[] array', async () => {
+    const client = mkClient();
+    await expect(
+      handleBulkCreateMealPlans(client, { entries: [] })
+    ).rejects.toThrow(/non-empty/);
+    expect(client.mealPlans.createMealPlan).not.toHaveBeenCalled();
+  });
+
+  it('promotes bare dates, stringifies servings, hydrates recipe+meal_type per entry', async () => {
+    const client = mkClient();
+    await handleBulkCreateMealPlans(client, {
+      entries: [
+        { recipe_id: 10, meal_type_id: 2, servings: 2, from_date: '2026-05-04' },
+      ],
+    });
+    const body = client.mealPlans.createMealPlan.mock.calls[0][0];
+    expect(body.from_date).toBe('2026-05-04T00:00:00');
+    expect(body.servings).toBe('2');
+    expect(body.recipe).toEqual({ id: 10, name: 'recipe-10', keywords: [] });
+    expect(body.meal_type).toEqual({ id: 2, name: 'Lunch' });
+  });
+
+  it('title-only entries skip recipe hydration but still hydrate meal_type', async () => {
+    const client = mkClient();
+    await handleBulkCreateMealPlans(client, {
+      entries: [
+        { title: 'Leftovers', meal_type_id: 2, servings: 1, from_date: '2026-05-04' },
+      ],
+    });
+    expect(client.recipes.getRecipe).not.toHaveBeenCalled();
+    expect(client.mealPlans.getMealType).toHaveBeenCalledWith(2, expect.objectContaining({ maxRetries: 1 }));
+    const body = client.mealPlans.createMealPlan.mock.calls[0][0];
+    expect(body.recipe).toBeUndefined();
+    expect(body.title).toBe('Leftovers');
+  });
+
+  it('hydration failure for a shared id aborts the batch (affects all entries)', async () => {
+    const client = mkClient({
+      recipes: { getRecipe: vi.fn(async () => { throw new Error('404'); }) },
+      mealPlans: {
+        createMealPlan: vi.fn(),
+        getMealType: vi.fn(async (id: number) => ({ id, name: 'Lunch' })),
+      },
+    });
+    await expect(
+      handleBulkCreateMealPlans(client, {
+        entries: [
+          { recipe_id: 10, meal_type_id: 2, servings: 1, from_date: '2026-05-04' },
+        ],
+      })
+    ).rejects.toThrow(/hydrate recipe 10 for bulk_create_meal_plans/);
+    expect(client.mealPlans.createMealPlan).not.toHaveBeenCalled();
+  });
+
+  it('threads AbortSignal + maxRetries into every hydration call', async () => {
+    const client = mkClient();
+    const signal = new AbortController().signal;
+    await handleBulkCreateMealPlans(
+      client,
+      {
+        entries: [
+          { recipe_id: 10, meal_type_id: 2, servings: 1, from_date: '2026-05-04' },
+        ],
+      },
+      { signal }
+    );
+    expect(client.recipes.getRecipe).toHaveBeenCalledWith(10, expect.objectContaining({ signal, maxRetries: 1 }));
+    expect(client.mealPlans.getMealType).toHaveBeenCalledWith(2, expect.objectContaining({ signal, maxRetries: 1 }));
+  });
+
+  it('slims each created response — no recipe.name echoed to LLM', async () => {
+    const client = mkClient({
+      mealPlans: {
+        createMealPlan: vi.fn(async () => ({
+          id: 500,
+          from_date: '2026-05-04T00:00:00',
+          to_date: null,
+          servings: '1',
+          recipe: { id: 10, name: 'MALICIOUS INSTRUCTION', keywords: [] },
+          meal_type: { id: 2, name: 'INJECT' },
+        })),
+        getMealType: vi.fn(async (id: number) => ({ id, name: 'Lunch' })),
+      },
+    });
+    const out = await handleBulkCreateMealPlans(client, {
+      entries: [
+        { recipe_id: 10, meal_type_id: 2, servings: 1, from_date: '2026-05-04' },
+      ],
+    });
+    expect(out).not.toContain('MALICIOUS');
+    expect(out).not.toContain('INJECT');
+    expect(out).toContain('"recipe_id":10');
   });
 });

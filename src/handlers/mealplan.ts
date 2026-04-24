@@ -33,6 +33,7 @@ import type {
   UpdateMealPlanArgs,
   DeleteMealPlanArgs,
   AutoMealPlanArgs,
+  BulkCreateMealPlansArgs,
 } from '../tools/mealplan.js';
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
@@ -264,6 +265,112 @@ export async function handleListMealTypes(
 ): Promise<string> {
   const mealTypes = await client.mealPlans.listMealTypes();
   return JSON.stringify(mealTypes, null, 2);
+}
+
+/**
+ * Client-side batched create_meal_plan. Tandoor has no server-side bulk
+ * endpoint for meal plans, so we:
+ *   1. Dedupe unique recipe_ids + meal_type_ids across entries.
+ *   2. Hydrate each unique id ONCE (parallel Promise.all) — shares the cost
+ *      across all entries that reference the same recipe/meal_type.
+ *   3. Build hydrated bodies + POST in parallel via Promise.allSettled so one
+ *      Tandoor rejection doesn't tank the whole batch.
+ *   4. Return {count, created, failed} so the caller can retry just the bad
+ *      entries instead of redoing the full batch.
+ *
+ * For 7 entries (week plan) referencing 3 unique meal_types + 5 unique
+ * recipes, this drops from 21 calls (7×3) to 13 (5 recipe GET + 3 meal_type
+ * GET + 7 POST), plus eliminates the per-entry retry-budget duplication.
+ */
+export async function handleBulkCreateMealPlans(
+  client: TandoorClient,
+  args: BulkCreateMealPlansArgs,
+  ctx?: HandlerContext
+): Promise<string> {
+  if (!args.entries || args.entries.length === 0) {
+    throw new Error('entries must be a non-empty array');
+  }
+
+  // Validate and collect unique ids before any network call.
+  args.entries.forEach((e, i) => {
+    if (!e.recipe_id && !e.title) {
+      throw new Error(`entries[${i}]: either recipe_id or title must be provided`);
+    }
+  });
+
+  const recipeIds = Array.from(new Set(
+    args.entries.map((e) => e.recipe_id).filter((v): v is number => typeof v === 'number')
+  ));
+  const mealTypeIds = Array.from(new Set(args.entries.map((e) => e.meal_type_id)));
+
+  const signal = ctx?.signal;
+  const hydrateOpts = { signal, maxRetries: HYDRATION_MAX_RETRIES };
+
+  // Hydrate all unique ids in one fan-out.
+  const [recipeList, mealTypeList] = await Promise.all([
+    Promise.all(recipeIds.map((id) =>
+      client.recipes.getRecipe(id, hydrateOpts).catch((err) => {
+        throw new Error(`Failed to hydrate recipe ${id} for bulk_create_meal_plans: ${err instanceof Error ? err.message : String(err)}`);
+      })
+    )),
+    Promise.all(mealTypeIds.map((id) =>
+      client.mealPlans.getMealType(id, hydrateOpts).catch((err) => {
+        throw new Error(`Failed to hydrate meal_type ${id} for bulk_create_meal_plans: ${err instanceof Error ? err.message : String(err)}`);
+      })
+    )),
+  ]);
+
+  // Validate shapes and index for fast lookup.
+  const recipeMap = new Map<number, any>();
+  recipeIds.forEach((id, i) => {
+    assertRef(recipeList[i], 'recipe', id);
+    recipeMap.set(id, recipeList[i]);
+  });
+  const mealTypeMap = new Map<number, any>();
+  mealTypeIds.forEach((id, i) => {
+    assertRef(mealTypeList[i], 'meal_type', id);
+    mealTypeMap.set(id, mealTypeList[i]);
+  });
+
+  // POST each entry in parallel. Individual rejections do NOT abort the batch.
+  const results = await Promise.allSettled(
+    args.entries.map((entry) => {
+      const recipe = entry.recipe_id ? recipeMap.get(entry.recipe_id) : null;
+      const mealType = mealTypeMap.get(entry.meal_type_id)!;
+      const body: any = {
+        servings: String(entry.servings),
+        from_date: appendMidnightIfDateOnly(entry.from_date),
+        meal_type: { id: mealType.id, name: mealType.name },
+      };
+      if (recipe) {
+        body.recipe = {
+          id: recipe.id,
+          name: recipe.name,
+          keywords: slimKeywords(recipe.keywords),
+        };
+      }
+      if (entry.title) body.title = entry.title;
+      if (entry.to_date) body.to_date = appendMidnightIfDateOnly(entry.to_date);
+      if (entry.note) body.note = entry.note;
+      if (entry.addshopping !== undefined) body.addshopping = entry.addshopping;
+      return client.mealPlans.createMealPlan(body);
+    })
+  );
+
+  const created: Array<Record<string, unknown> & { index: number }> = [];
+  const failed: Array<{ index: number; error: string }> = [];
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled') {
+      created.push({ index: i, ...slimCreated(r.value) });
+    } else {
+      const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
+      failed.push({ index: i, error: msg });
+    }
+  });
+
+  const summary = `Batch created ${created.length} of ${args.entries.length} meal plan(s)` +
+    (failed.length > 0 ? `; ${failed.length} failed` : '') + '.';
+  return `${summary}\n\n${JSON.stringify({ count: args.entries.length, created, failed })}`;
 }
 
 // Test-only exports — not part of the public handler surface.

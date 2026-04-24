@@ -12,6 +12,7 @@ import type {
   RelatedRecipesArgs,
   AddRecipeToShoppingListArgs,
   SearchRecipesArgs,
+  RecipeBatchUpdateArgs,
 } from '../tools/recipe.js';
 import type { HandlerContext } from '../lib/register.js';
 
@@ -822,4 +823,15 @@ function buildImportResult(
   const meta: Record<string, unknown> = { via };
   if (attempts && attempts.length > 0) meta.attempts = attempts;
   return { recipe, _meta: meta };
+}
+
+export async function handleRecipeBatchUpdate(
+  client: TandoorClient,
+  args: RecipeBatchUpdateArgs
+): Promise<string> {
+  if (!args.recipes || args.recipes.length === 0) {
+    throw new Error('recipes must be a non-empty array of recipe IDs');
+  }
+  const r = await client.recipes.recipeBatchUpdate(args);
+  return `Batch-updated ${args.recipes.length} recipe(s).\n\n${emit(r)}`;
 }

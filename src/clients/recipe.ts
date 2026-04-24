@@ -140,6 +140,20 @@ export class RecipeClient extends BaseClient {
     });
   }
 
+  /**
+   * Batch-update keyword tags, serving counts, shared users, privacy, and a
+   * handful of other flags across many recipes in one call. Narrow set of
+   * fields — see RecipeBatchUpdate in the Tandoor API spec. Use for bulk
+   * keyword retagging ("add keyword X to these 50 recipes") rather than
+   * arbitrary per-recipe edits.
+   */
+  async recipeBatchUpdate(body: any): Promise<any> {
+    return this.request('/api/recipe/batch_update/', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
+  }
+
   /** AI-generate recipe properties (nutrition etc.) via configured AI provider. */
   async recipeAiProperties(id: number, body: any = {}, provider?: number): Promise<any> {
     const q = provider !== undefined ? `?provider=${provider}` : '';

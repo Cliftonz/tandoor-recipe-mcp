@@ -20,6 +20,7 @@ import {
   handleUpdateUnit,
   handleDeleteUnit,
   handleMergeUnit,
+  handleFoodBatchUpdate,
 } from '../handlers/foodunit.js';
 
 const formatEnum = z.enum(['slim', 'full']).optional();
@@ -109,6 +110,31 @@ export const updateUnitShape = {
 export const deleteUnitShape = { id: z.number() } as const;
 export const mergeUnitShape = { id: z.number(), target: z.number() } as const;
 
+// Mirrors Tandoor's FoodBatchUpdate serializer. `foods` is the target set;
+// all other fields are optional mutations applied across that set.
+export const foodBatchUpdateShape = {
+  foods: z.array(z.number()),
+  category: z.number().nullable().optional(),
+  substitute_add: z.array(z.number()).optional(),
+  substitute_remove: z.array(z.number()).optional(),
+  substitute_set: z.array(z.number()).optional(),
+  substitute_remove_all: z.boolean().optional(),
+  inherit_fields_add: z.array(z.number()).optional(),
+  inherit_fields_remove: z.array(z.number()).optional(),
+  inherit_fields_set: z.array(z.number()).optional(),
+  inherit_fields_remove_all: z.boolean().optional(),
+  child_inherit_fields_add: z.array(z.number()).optional(),
+  child_inherit_fields_remove: z.array(z.number()).optional(),
+  child_inherit_fields_set: z.array(z.number()).optional(),
+  child_inherit_fields_remove_all: z.boolean().optional(),
+  substitute_children: z.boolean().nullable().optional(),
+  substitute_siblings: z.boolean().nullable().optional(),
+  ignore_shopping: z.boolean().nullable().optional(),
+  on_hand: z.boolean().nullable().optional(),
+  parent_remove: z.boolean().nullable().optional(),
+  parent_set: z.number().nullable().optional(),
+} as const;
+
 export type ListFoodsArgs = z.infer<z.ZodObject<typeof listFoodsShape>>;
 export type GetFoodArgs = z.infer<z.ZodObject<typeof getFoodShape>>;
 export type CreateFoodArgs = z.infer<z.ZodObject<typeof createFoodShape>>;
@@ -124,6 +150,7 @@ export type CreateUnitArgs = z.infer<z.ZodObject<typeof createUnitShape>>;
 export type UpdateUnitArgs = z.infer<z.ZodObject<typeof updateUnitShape>>;
 export type DeleteUnitArgs = z.infer<z.ZodObject<typeof deleteUnitShape>>;
 export type MergeUnitArgs = z.infer<z.ZodObject<typeof mergeUnitShape>>;
+export type FoodBatchUpdateArgs = z.infer<z.ZodObject<typeof foodBatchUpdateShape>>;
 
 export function registerFoodUnitTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_foods', {
@@ -200,4 +227,9 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
     description: 'Merge unit `id` into `target` unit (deduplication). Destructive + irreversible. Before calling, recommend: (1) confirm base_unit compatibility via get_unit on each — merging units with different base_unit (e.g., mass into volume) will break existing conversion math; (2) if the intent is a one-way rename, update_unit is safer.',
     inputSchema: mergeUnitShape,
   }, handleMergeUnit);
+
+  registerStringTool(server, client, 'food_batch_update', {
+    description: 'Apply a narrow set of bulk mutations across many foods in one call via Tandoor\'s /api/food/batch_update/ endpoint. Required: foods[]. Optional (all apply to every food in foods[]): category (set supermarket_category, null clears), substitute_add/remove/set/remove_all, inherit_fields_add/remove/set/remove_all, child_inherit_fields_* (same pattern), substitute_children/siblings (boolean), ignore_shopping, on_hand, parent_set/parent_remove. Does NOT support bulk name/plural/description/fdc_id edits — those still need update_food per-item. Use for: pantry on-hand toggle across a set, retagging supermarket category, configuring substitute groups.',
+    inputSchema: foodBatchUpdateShape,
+  }, handleFoodBatchUpdate);
 }

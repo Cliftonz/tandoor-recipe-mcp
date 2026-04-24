@@ -12,6 +12,7 @@ import {
   handleDeleteMealPlan,
   handleAutoMealPlan,
   handleListMealTypes,
+  handleBulkCreateMealPlans,
 } from '../handlers/mealplan.js';
 
 export const listMealPlansShape = {
@@ -47,6 +48,23 @@ export const updateMealPlanShape = {
 
 export const deleteMealPlanShape = { id: z.number() } as const;
 
+// Per-entry shape for bulk_create_meal_plans. Mirrors createMealPlanShape
+// but as a z.object so we can nest it in an array.
+const bulkMealPlanEntry = z.object({
+  recipe_id: z.number().optional(),
+  title: z.string().optional(),
+  servings: z.number(),
+  from_date: z.string(),
+  to_date: z.string().optional(),
+  meal_type_id: z.number(),
+  note: z.string().optional(),
+  addshopping: z.boolean().optional(),
+});
+
+export const bulkCreateMealPlansShape = {
+  entries: z.array(bulkMealPlanEntry),
+} as const;
+
 export const autoMealPlanShape = {
   start_date: z.string(),
   end_date: z.string(),
@@ -62,6 +80,7 @@ export type CreateMealPlanArgs = z.infer<z.ZodObject<typeof createMealPlanShape>
 export type UpdateMealPlanArgs = z.infer<z.ZodObject<typeof updateMealPlanShape>>;
 export type DeleteMealPlanArgs = z.infer<z.ZodObject<typeof deleteMealPlanShape>>;
 export type AutoMealPlanArgs = z.infer<z.ZodObject<typeof autoMealPlanShape>>;
+export type BulkCreateMealPlansArgs = z.infer<z.ZodObject<typeof bulkCreateMealPlansShape>>;
 
 export function registerMealPlanTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_meal_plans', {
@@ -97,4 +116,9 @@ export function registerMealPlanTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'list_meal_types', {
     description: 'List available meal types (breakfast, lunch, dinner, etc.)',
   }, handleListMealTypes);
+
+  registerStringTool(server, client, 'bulk_create_meal_plans', {
+    description: 'Client-side batched create_meal_plan. Tandoor has no server-side bulk endpoint — this handler dedupes meal_type_ids and recipe_ids across entries, hydrates each unique id once, then creates all entries in parallel. Use for "plan the week" (7+ entries) to avoid N×3 round-trips. Each entry takes the same args as create_meal_plan: {recipe_id?, title?, servings, from_date, to_date?, meal_type_id, note?, addshopping?}. Returns {count, created: [{index, id, recipe_id, meal_type_id, ...}], failed: [{index, error}]} — individual failures do NOT abort the batch so you can see partial success and retry the failures.',
+    inputSchema: bulkCreateMealPlansShape,
+  }, handleBulkCreateMealPlans);
 }

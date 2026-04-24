@@ -17,6 +17,7 @@ import type {
   UpdateUnitArgs,
   DeleteUnitArgs,
   MergeUnitArgs,
+  FoodBatchUpdateArgs,
 } from '../tools/foodunit.js';
 
 import { emit, slimPaginated } from '../lib/slim.js';
@@ -211,4 +212,15 @@ export async function handleMergeUnit(
 ): Promise<string> {
   const r = await client.foodUnits.mergeUnit(args.id, args.target);
   return `Unit ${args.id} merged into ${args.target}.\n\n${emit(slimUnit(r))}`;
+}
+
+export async function handleFoodBatchUpdate(
+  client: TandoorClient,
+  args: FoodBatchUpdateArgs
+): Promise<string> {
+  if (!args.foods || args.foods.length === 0) {
+    throw new Error('foods must be a non-empty array of food IDs');
+  }
+  const r = await client.foodUnits.foodBatchUpdate(args);
+  return `Batch-updated ${args.foods.length} food(s).\n\n${emit(r)}`;
 }
