@@ -10,18 +10,6 @@
 export const emit = (o: unknown): string => JSON.stringify(o);
 
 /**
- * Tandoor's MealPlan/Ingredient/ShoppingListEntry serializers all expect FK
- * writes in a nested `{id: n}` envelope rather than a bare integer. Use this
- * helper instead of inlining the object literal to make the intent explicit
- * and keep a single call-site per "nested ref" concept.
- */
-export function refId(id: number): { id: number };
-export function refId(id: number | null | undefined): { id: number } | null;
-export function refId(id: number | null | undefined): { id: number } | null {
-  return id == null ? null : { id };
-}
-
-/**
  * Slim a Tandoor paginated response by mapping each `result` through the
  * supplied slimmer, preserving count/next/previous for pagination.
  * Returns the raw page unchanged if it doesn't look paginated (so callers can

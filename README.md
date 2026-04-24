@@ -212,6 +212,16 @@ npm run test:e2e
 | `TANDOOR_E2E_IMPORT_URL=<url>` | Override the default recipe URL |
 | `TANDOOR_E2E_AI_PROVIDER=<id>` | Run the AI-import step against this provider |
 
+## Security posture
+
+This server treats the configured Tandoor instance as **trusted enough to read+write on your behalf** — you provide the bearer token. It does NOT treat the instance as fully trusted for content:
+
+- **Tool responses from `create_meal_plan` / `update_meal_plan` are slimmed** — only ids and structural fields flow back to the LLM. User-visible names (`recipe.name`, `meal_type.name`, keyword names) are omitted so a hostile or compromised Tandoor instance can't inject model-steering text into Claude's context via these paths. Call `get_recipe` or `list_meal_types` if you need the human-readable form.
+- **Keyword payloads are capped at 50 entries and projected to `{id, name}`** before being forwarded into writes — stops amplification and mass-assignment exposure.
+- **Bearer tokens are redacted** from every error message and log line.
+
+If your Tandoor deployment is single-tenant and you own every recipe, the posture is conservative for your case. If you share a Tandoor instance with untrusted users (or run a Tandoor instance exposed to the public internet with anonymous sharing), the hardening above matters.
+
 ## License
 
 MIT

@@ -1,11 +1,11 @@
 // Meal plan related API client
 
-import { BaseClient } from './base.js';
-import { 
-  MealPlan, 
-  PaginatedMealPlanList, 
+import { BaseClient, TandoorRequestOptions } from './base.js';
+import {
+  MealPlan,
+  PaginatedMealPlanList,
   AutoMealPlan,
-  MealType 
+  MealType
 } from '../types/index.js';
 
 export class MealPlanClient extends BaseClient {
@@ -104,9 +104,11 @@ export class MealPlanClient extends BaseClient {
   }
 
   /**
-   * Get a meal type by ID
+   * Get a meal type by ID. Optional `opts` threads an AbortSignal and lets
+   * callers cap retry amplification when this is a hydration step inside a
+   * larger write.
    */
-  async getMealType(id: number): Promise<MealType> {
-    return this.request<MealType>(`/api/meal-type/${id}/`);
+  async getMealType(id: number, opts?: Pick<TandoorRequestOptions, 'signal' | 'maxRetries'>): Promise<MealType> {
+    return this.request<MealType>(`/api/meal-type/${id}/`, opts);
   }
 }

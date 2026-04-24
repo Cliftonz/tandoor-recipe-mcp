@@ -1,6 +1,6 @@
 // Recipe-related API client
 
-import { BaseClient } from './base.js';
+import { BaseClient, TandoorRequestOptions } from './base.js';
 import { Recipe, PaginatedRecipeList, Keyword, Food, Unit } from '../types/index.js';
 
 export class RecipeClient extends BaseClient {
@@ -73,10 +73,17 @@ export class RecipeClient extends BaseClient {
   }
 
   /**
-   * Get a single recipe by ID
+   * Get a single recipe by ID. Optional `opts` lets callers pass an AbortSignal
+   * and cap retries — useful when this GET is a hydration step whose failure
+   * should not burn the full retry budget of a larger operation.
+   *
+   * Known payload cost: Tandoor's recipe detail endpoint returns the full
+   * recipe (steps, ingredients, nutrition, images). Callers that only need
+   * name/keywords still pay the full response size; Tandoor does not expose a
+   * slim detail variant, and there's no stable `?fields=` filter on DRF.
    */
-  async getRecipe(id: number): Promise<Recipe> {
-    return this.request<Recipe>(`/api/recipe/${id}/`);
+  async getRecipe(id: number, opts?: Pick<TandoorRequestOptions, 'signal' | 'maxRetries'>): Promise<Recipe> {
+    return this.request<Recipe>(`/api/recipe/${id}/`, opts);
   }
 
   /**

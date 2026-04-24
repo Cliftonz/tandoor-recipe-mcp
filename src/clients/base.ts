@@ -48,10 +48,20 @@ export function redactToken(text: string, token: string): string {
 
 /** Statuses worth retrying with backoff. Everything else fails fast. */
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
-const MAX_RETRIES = 3;
+const DEFAULT_MAX_RETRIES = 3;
 
 function shouldRetry(status: number): boolean {
   return RETRYABLE_STATUSES.has(status);
+}
+
+/**
+ * Subclass-visible options that extend RequestInit with Tandoor-specific knobs.
+ * `maxRetries` lets callers cap retry amplification on secondary fan-out calls
+ * (e.g. hydration GETs done before a write) so one flaky backend doesn't burn
+ * the full budget on an auxiliary read.
+ */
+export interface TandoorRequestOptions extends RequestInit {
+  maxRetries?: number;
 }
 
 async function sleep(ms: number): Promise<void> {
@@ -89,10 +99,11 @@ export class BaseClient {
 
   protected async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: TandoorRequestOptions = {}
   ): Promise<T> {
     const method = options.method || 'GET';
     const url = `${this.baseUrl}${endpoint}`;
+    const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
     // Don't set Content-Type for FormData — fetch picks the correct multipart
     // boundary string itself. Forcing application/json breaks multipart uploads.
     const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
@@ -110,7 +121,7 @@ export class BaseClient {
     const signal = options.signal;
 
     let lastError: unknown;
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
       if (signal?.aborted) {
         throw signal.reason instanceof Error ? signal.reason : new Error('Request aborted');
       }
@@ -119,7 +130,7 @@ export class BaseClient {
         const response = await fetch(url, { ...options, headers });
 
         // Retry on transient 5xx / 429 before reading the body.
-        if (shouldRetry(response.status) && attempt < MAX_RETRIES && isIdempotentBody && !signal?.aborted) {
+        if (shouldRetry(response.status) && attempt < maxRetries && isIdempotentBody && !signal?.aborted) {
           const wait = backoffMs(attempt, response.headers.get('retry-after'));
           await sleep(wait);
           continue;
@@ -180,7 +191,7 @@ export class BaseClient {
         }
         // Network errors (DNS failure, socket reset) — worth retrying.
         const isNetwork = error instanceof TypeError || (error as any)?.name === 'FetchError';
-        if (isNetwork && attempt < MAX_RETRIES && isIdempotentBody) {
+        if (isNetwork && attempt < maxRetries && isIdempotentBody) {
           await sleep(backoffMs(attempt, null));
           continue;
         }

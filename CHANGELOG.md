@@ -2,6 +2,33 @@
 
 All notable changes to this project are documented in this file.
 
+## 1.2.6 — 2026-04-23
+
+### Fixed
+- **`create_meal_plan` / `update_meal_plan`** — Tandoor's `MealPlanSerializer` rejects the bare `{id: N}` nested envelope we were sending. Handlers now hydrate `recipe` to `{id, name, keywords}` and `meal_type` to `{id, name}` via a parallel `GET /api/recipe/{id}/` + `GET /api/meal-type/{id}/`, coerce `servings` to a string, and promote bare `YYYY-MM-DD` dates to `YYYY-MM-DDT00:00:00`. Thanks to the `starbuck93/tandoor-mcp-server` README for documenting the contract.
+
+### Security
+- **Prompt-injection posture (hostile-Tandoor threat model)** — `create_meal_plan` / `update_meal_plan` no longer echo `recipe.name`, `meal_type.name`, or any `keywords[].name` back through the tool response. Slimmed output returns ids + structural fields only. A hostile or compromised Tandoor instance can no longer inject model-steering content into the LLM's context via these handlers.
+- **Keyword payload hardening** — hydrated `recipe.keywords` is capped at 50 entries and projected to `{id, name}` before being forwarded into the write body. Stops bandwidth amplification and closes a mass-assignment exposure if a future Tandoor serializer starts honoring extra keyword fields.
+- **Strict hydration shape guard** — `recipe` / `meal_type` GET responses must carry numeric `id` and string `name` or the handler throws a typed error before the write. Previously a misconfigured reverse proxy returning 200+HTML could have cascaded into a `TypeError`.
+
+### Robustness
+- **Typed hydration errors** — hydration failures now surface as `Failed to hydrate recipe N for create_meal_plan: <upstream error>` (and update equivalent), so the LLM can tell which leg failed and which tool call triggered it.
+- **Retry budget capped on hydration** — `getRecipe` / `getMealType` in the hydration path use `maxRetries: 1` so one flaky upstream can't burn the full retry budget on auxiliary reads. The write itself keeps the default retries. New `TandoorRequestOptions.maxRetries` knob on `BaseClient.request`.
+- **AbortSignal threaded through hydration** — `HandlerContext.signal` now propagates into both hydration GETs, matching the pattern used by `import_recipe_from_url` (1.2.0). Caller aborts cancel in-flight hydration instead of leaving orphan requests.
+
+### Tests
+- 81 → 125 tests. New integration-layer suite (`test/integration/mealplan.integration.test.ts`) mocks `fetch` with a fixture that replicates Tandoor's real 400 response on bare-`{id}` writes — gives the handler's wire contract end-to-end coverage for the first time. New unit coverage includes `appendMidnightIfDateOnly` ISO boundary cases (date-only / local / UTC / offset), partial-update matrix, hydration null-return guards, error-prefix format, abort-signal + maxRetries threading, keyword cap + strip, `addshopping` tri-state, and `handleAutoMealPlan` guards.
+
+### Housekeeping
+- Renamed `ensureDatetime` → `appendMidnightIfDateOnly` — the old name implied validation it never did.
+- Removed unused `refId` helper from `src/lib/slim.ts`. Every handler writes `{id: x}` inline; the exported helper had zero call sites and was false signal.
+
+### Shipped
+- **Claude Code plugin** (`.claude-plugin/plugin.json` + `marketplace.json`) — one-shot `/plugin install` flow with prompts for `TANDOOR_URL`/`TANDOOR_TOKEN` stored securely, no manual `mcpServers` JSON editing.
+- **Committed `.claude/settings.json`** with a read-auto-allow / write-ask permission tier for the MCP's own tools.
+- **npm trusted publishing (OIDC)** + `scripts/sync-plugin-version.js` wired to `npm version` so plugin manifests track `package.json` automatically.
+
 ## 1.2.0 — 2026-04-19
 
 Second polish pass after shipping 1.1.0.
