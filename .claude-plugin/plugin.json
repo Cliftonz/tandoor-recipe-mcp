@@ -1,6 +1,6 @@
 {
   "name": "tandoor-recipes-mcp",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "Tandoor Recipes MCP server — recipes, meal plans, shopping lists, ingredients, cook logs, nutrition, AI import.",
   "author": {
     "name": "Zac Clifton",
