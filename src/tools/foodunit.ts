@@ -147,12 +147,12 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleUpdateFood);
 
   registerStringTool(server, client, 'delete_food', {
-    description: 'Delete food by ID.',
+    description: 'Delete food by ID. Destructive + irreversible. Before calling, recommend: (1) check recipe usage via list_recipes({foods: [id]}) — if recipes reference it, they will lose the ingredient link; (2) if the intent is deduplication not removal, use merge_food instead so references follow the merge.',
     inputSchema: deleteFoodShape,
   }, handleDeleteFood);
 
   registerStringTool(server, client, 'merge_food', {
-    description: 'Merge food `id` into `target` food (deduplication). All references to id will point to target.',
+    description: 'Merge food `id` into `target` food (deduplication). All references to id will point to target. Destructive + irreversible. Before calling, recommend: (1) confirm both foods via get_food on each so you are sure which survives (target) and which is absorbed (id); (2) check numrecipe on each via list_foods to understand the migration size; (3) if you actually want the other direction, swap id and target.',
     inputSchema: mergeFoodShape,
   }, handleMergeFood);
 
@@ -162,7 +162,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleMoveFood);
 
   registerStringTool(server, client, 'food_fdc_lookup', {
-    description: 'Enrich a food with USDA FDC nutrition data. Optional: fdc_id to set/override the USDA FDC id before lookup. Tandoor populates fdc-linked properties; manually-entered properties without fdc_id are preserved.',
+    description: 'Enrich a food with USDA FDC nutrition data. Optional: fdc_id to set/override the USDA FDC id before lookup. Tandoor populates fdc-linked properties; manually-entered properties without fdc_id are preserved. Rate limit: Tandoor defaults to USDA DEMO_KEY (30 req/hour/IP) — bulk enrichment will 429. Operator should set FDC_API_KEY on the Tandoor container (free key at api.data.gov/signup) to raise the limit to 1000/hour. Fallback for FDC 404s: food_ai_properties.',
     inputSchema: foodFdcLookupShape,
   }, handleFoodFdcLookup);
 
@@ -192,12 +192,12 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleUpdateUnit);
 
   registerStringTool(server, client, 'delete_unit', {
-    description: 'Delete unit by ID.',
+    description: 'Delete unit by ID. Destructive + irreversible. Before calling, recommend: (1) check ingredient + unit_conversion usage — unit deletions cascade into "None" unit on ingredients; (2) if the intent is deduplication (e.g., "cup" vs "cups"), use merge_unit instead so references follow the merge.',
     inputSchema: deleteUnitShape,
   }, handleDeleteUnit);
 
   registerStringTool(server, client, 'merge_unit', {
-    description: 'Merge unit `id` into `target` unit (deduplication).',
+    description: 'Merge unit `id` into `target` unit (deduplication). Destructive + irreversible. Before calling, recommend: (1) confirm base_unit compatibility via get_unit on each — merging units with different base_unit (e.g., mass into volume) will break existing conversion math; (2) if the intent is a one-way rename, update_unit is safer.',
     inputSchema: mergeUnitShape,
   }, handleMergeUnit);
 }

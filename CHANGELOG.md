@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## 1.2.7 — 2026-04-24
+
+### Added
+- **FDC rate-limit guidance** — README now documents the USDA `DEMO_KEY` 30 req/hour/IP cap and the 2-minute `FDC_API_KEY` fix on the Tandoor container. `food_fdc_lookup`'s MCP description also surfaces the limit so an agent hitting 429s has the operator fix in-context.
+- **In-description fallback/recommendation guidance on 10 tools.** When a tool has a characteristic failure → known alternative, the description tells the agent where to pivot without a human prompt:
+  - `food_ai_properties`, `recipe_ai_properties` — no AI provider? Suggest `food_fdc_lookup` when an fdc_id exists, else operator-setup hint.
+  - `import_recipe_from_image` — no AI provider? Suggest `import_recipe_from_url` (no AI required) or manual `create_recipe`.
+  - `import_recipe_from_url` — all stages failed? Suggest `create_stub_on_failure: true`, `import_recipe_from_image` for image/PDF pages, or manual entry.
+  - `list_recipes` — empty result? Suggest broadening or using `search_recipes` (name-resolution).
+  - `parse_ingredient` — garbage output? Suggest `create_ingredient` with explicit ids via `find_or_create_*`.
+  - `upload_recipe_image` — large-file failure? Suggest `image_url` so Tandoor fetches server-side.
+  - `merge_food` / `merge_unit` / `merge_keyword` — destructive; suggest verifying `numrecipe` counts and base-unit compatibility first.
+  - `delete_food` / `delete_unit` / `delete_keyword` — destructive; suggest `list_recipes({foods|keywords: [id]})` usage check and `merge_*` as the non-destructive alternative.
+
 ## 1.2.6 — 2026-04-23
 
 ### Fixed

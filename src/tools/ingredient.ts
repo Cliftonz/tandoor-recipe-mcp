@@ -94,7 +94,7 @@ export function registerIngredientTools(server: McpServer, client: TandoorClient
   }, handleDeleteIngredient);
 
   registerStringTool(server, client, 'parse_ingredient', {
-    description: 'Parse a free-form ingredient string (e.g. "2 cups flour") into amount, unit, food, note',
+    description: 'Parse a free-form ingredient string (e.g. "2 cups flour") into amount, unit, food, note. Tandoor\'s parser is heuristic and can misfire on compound descriptions, brand names, or non-English units. If the result looks wrong or unit/food come back null, recommend: construct the ingredient directly via create_ingredient with explicit food_id (via find_or_create on the food name) and unit_id. That path is deterministic.',
     inputSchema: parseIngredientShape,
   }, handleParseIngredient);
 }

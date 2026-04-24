@@ -165,6 +165,29 @@ All write-returning tools default to a slim JSON shape. Pass `format: "full"` fo
 ### Automations, user files, prefs, logs *(full profile)*
 `list_automations` · `*_automation` · `list_user_files` · `*_user_file` · `list_user_preferences` · `get_user_preference` · `update_user_preference` · `get_server_settings` · `get_share_link` · `list_view_logs` · `list_import_logs` · `list_ai_logs`
 
+## Gotchas
+
+### FDC lookups rate-limit after 30 requests/hour
+
+`food_fdc_lookup` delegates to Tandoor, which calls the USDA FoodData Central API. Out of the box Tandoor uses USDA's public `DEMO_KEY`, capped at **30 requests/hour per IP**. Bulk-enriching a grocery list hits that ceiling fast and you'll see 429s on Tandoor's side.
+
+**Fix (takes 2 minutes):**
+
+1. Register a free personal key at [api.data.gov/signup](https://api.data.gov/signup/) — no approval needed, instant.
+2. Set it on the Tandoor container, **not** the MCP server:
+
+   ```yaml
+   # docker-compose.yml — under the tandoor service
+   environment:
+     - FDC_API_KEY=<your-key>
+   ```
+
+   Kubernetes / Helm: add `FDC_API_KEY` to the Tandoor deployment's env or a secret. Restart the Tandoor pod.
+
+3. The limit jumps to **1,000 requests/hour** — plenty for bulk enrichment.
+
+If FDC returns 404 for a food, the `fdc_id` you passed doesn't exist in USDA's database — try `food_ai_properties` as a fallback (uses Tandoor's configured AI provider instead of USDA).
+
 ## Resources
 
 | URI | Purpose |

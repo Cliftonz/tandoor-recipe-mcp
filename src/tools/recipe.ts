@@ -190,7 +190,7 @@ export type SearchRecipesArgs = z.infer<z.ZodObject<typeof searchRecipesShape>>;
 export function registerRecipeTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_recipes', {
     description:
-      'List/search recipes with extensive filtering. Default returns slim results (id, name, description, servings, rating, keywords). Pass format="full" for raw API response. sort_order options: score,-score,name,-name,lastcooked,-lastcooked,rating,-rating,times_cooked,-times_cooked,created_at,-created_at,lastviewed,-lastviewed.',
+      'List/search recipes with extensive filtering. Default returns slim results (id, name, description, servings, rating, keywords). Pass format="full" for raw API response. sort_order options: score,-score,name,-name,lastcooked,-lastcooked,rating,-rating,times_cooked,-times_cooked,created_at,-created_at,lastviewed,-lastviewed. If filtering by food/keyword/book NAMES (not ids), prefer search_recipes — it resolves names to ids for you and reports unresolved names in _meta.unresolved so you know what was dropped. If this returns an empty result set, recommend: broaden the query, drop restrictive filters, or try search_recipes if you were passing names.',
     inputSchema: listRecipesShape,
   }, handleListRecipes);
 
@@ -214,13 +214,13 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
 
   registerStringTool(server, client, 'import_recipe_from_url', {
     description:
-      'Import a recipe from a URL. Tries Tandoor\'s built-in scraper first, then fetches the page and extracts schema.org JSON-LD as a real fallback (works when Tandoor can\'t reach the URL or doesn\'t support the site). On total failure, throws with an attempts log — pass create_stub_on_failure=true to write an empty placeholder recipe instead.',
+      'Import a recipe from a URL. Tries Tandoor\'s built-in scraper first, then fetches the page and extracts schema.org JSON-LD as a real fallback (works when Tandoor can\'t reach the URL or doesn\'t support the site). On total failure, throws with an attempts log — pass create_stub_on_failure=true to write an empty placeholder recipe instead. If all stages fail, recommend: (1) retry with create_stub_on_failure=true to capture the URL as a stub you can fill in later; (2) if the page is an image/PDF, use import_recipe_from_image (AI provider required); (3) if the URL is paywalled or JS-rendered, fall back to manual create_recipe with fields you can see.',
     inputSchema: importRecipeFromUrlShape,
   }, handleImportRecipeFromUrl);
 
   registerStringTool(server, client, 'upload_recipe_image', {
     description:
-      'Attach an image to a recipe. Provide exactly one of: file_path (local file on MCP server), file_url (remote URL; we fetch and upload bytes), or image_url (remote URL; Tandoor fetches it server-side).',
+      'Attach an image to a recipe. Provide exactly one of: file_path (local file on MCP server), file_url (remote URL; we fetch and upload bytes), or image_url (remote URL; Tandoor fetches it server-side). If a large local upload fails on size/timeout, recommend image_url instead — Tandoor fetches it server-side so the file never transits through the MCP process.',
     inputSchema: uploadRecipeImageShape,
   }, handleUploadRecipeImage);
 

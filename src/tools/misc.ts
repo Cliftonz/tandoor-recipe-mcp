@@ -234,8 +234,8 @@ export function registerMiscTools(server: McpServer, client: TandoorClient): voi
   registerStringTool(server, client, 'get_keyword', { description: 'Get keyword by ID.', inputSchema: getKeywordShape }, handleGetKeyword);
   registerStringTool(server, client, 'create_keyword', { description: 'Create keyword. Required: name. Optional: description.', inputSchema: createKeywordShape }, handleCreateKeyword);
   registerStringTool(server, client, 'update_keyword', { description: 'Update keyword (PATCH). Required: id.', inputSchema: updateKeywordShape }, handleUpdateKeyword);
-  registerStringTool(server, client, 'delete_keyword', { description: 'Delete keyword by ID.', inputSchema: deleteKeywordShape }, handleDeleteKeyword);
-  registerStringTool(server, client, 'merge_keyword', { description: 'Merge keyword `id` into `target` keyword.', inputSchema: mergeKeywordShape }, handleMergeKeyword);
+  registerStringTool(server, client, 'delete_keyword', { description: 'Delete keyword by ID. Destructive + irreversible. Before calling, recommend: (1) check recipe usage via list_recipes({keywords: [id]}) so you know how many recipes lose the tag; (2) if the intent is merging duplicates (e.g., "weeknight" + "Weeknight"), use merge_keyword instead.', inputSchema: deleteKeywordShape }, handleDeleteKeyword);
+  registerStringTool(server, client, 'merge_keyword', { description: 'Merge keyword `id` into `target` keyword. Destructive + irreversible. All recipes tagged with id will be retagged to target. Before calling, recommend: (1) confirm both via get_keyword so you are sure which survives (target) and which is absorbed (id); (2) check numrecipe on each via list_keywords to understand the migration size.', inputSchema: mergeKeywordShape }, handleMergeKeyword);
   registerStringTool(server, client, 'move_keyword', { description: 'Move keyword `id` under parent (parent=0 for root).', inputSchema: moveKeywordShape }, handleMoveKeyword);
 
   // Supermarket categories
