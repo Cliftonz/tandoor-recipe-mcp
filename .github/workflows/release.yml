@@ -1,0 +1,48 @@
+name: Release
+
+# Tags + creates a GitHub release whenever package.json version changes on main.
+# The tag push then triggers publish.yml (npm OIDC).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+
+permissions:
+  contents: write
+
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect version change
+        id: ver
+        run: |
+          NEW="$(node -p "require('./package.json').version")"
+          OLD="$(git show HEAD~1:package.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version" || echo "")"
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+          echo "old=$OLD" >> "$GITHUB_OUTPUT"
+          if [ -z "$OLD" ] || [ "$NEW" = "$OLD" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Tag and release
+        if: steps.ver.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW: ${{ steps.ver.outputs.new }}
+        run: |
+          if git rev-parse "v$NEW" >/dev/null 2>&1; then
+            echo "Tag v$NEW already exists; skipping."
+            exit 0
+          fi
+          git tag "v$NEW"
+          git push origin "v$NEW"
+          gh release create "v$NEW" --generate-notes --target "$GITHUB_SHA"
