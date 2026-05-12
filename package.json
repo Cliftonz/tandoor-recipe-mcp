@@ -58,7 +58,7 @@
   "devDependencies": {
     "@types/node": "^22.19.18",
     "dotenv": "^16.4.7",
-    "typescript": "^5.7.2",
+    "typescript": "6.0.3",
     "vitest": "^4.1.6"
   }
 }
