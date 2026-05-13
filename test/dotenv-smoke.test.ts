@@ -1,14 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFileSync, unlinkSync } from 'node:fs';
+import { writeFileSync, rmSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { config } from 'dotenv';
 
-const TMP_ENV = join(tmpdir(), `.env-dotenv-smoke-${process.pid}`);
+const TMP_ENV = join(tmpdir(), `.env-dotenv-smoke-${randomUUID()}`);
 
 const VARS = {
   TANDOOR_URL: 'https://tandoor.example.com',
-  TANDOOR_TOKEN: 'test-api-token-abc123',
+  TANDOOR_TOKEN: 'fake-token-for-testing',
   TANDOOR_MCP_PROFILE: 'full',
 };
 
@@ -19,7 +20,7 @@ describe('dotenv v17 smoke — env vars populate process.env', () => {
       Object.entries(VARS)
         .map(([k, v]) => `${k}="${v}"`)
         .join('\n') + '\n',
-      'utf8'
+      { encoding: 'utf8', mode: 0o600 }
     );
     // Remove any pre-existing values so we confirm dotenv actually sets them.
     for (const key of Object.keys(VARS)) {
@@ -28,7 +29,7 @@ describe('dotenv v17 smoke — env vars populate process.env', () => {
   });
 
   afterEach(() => {
-    unlinkSync(TMP_ENV);
+    rmSync(TMP_ENV, { force: true });
     for (const key of Object.keys(VARS)) {
       delete process.env[key];
     }
@@ -42,7 +43,7 @@ describe('dotenv v17 smoke — env vars populate process.env', () => {
     }
   });
 
-  it('TANDOOR_URL and TANDOOR_TOKEN are non-empty strings after load', () => {
+  it('TANDOOR_URL, TANDOOR_TOKEN, and TANDOOR_MCP_PROFILE are non-empty strings after load', () => {
     config({ path: TMP_ENV, quiet: true });
 
     expect(typeof process.env.TANDOOR_URL).toBe('string');
@@ -50,6 +51,9 @@ describe('dotenv v17 smoke — env vars populate process.env', () => {
 
     expect(typeof process.env.TANDOOR_TOKEN).toBe('string');
     expect(process.env.TANDOOR_TOKEN!.length).toBeGreaterThan(0);
+
+    expect(typeof process.env.TANDOOR_MCP_PROFILE).toBe('string');
+    expect(process.env.TANDOOR_MCP_PROFILE!.length).toBeGreaterThan(0);
   });
 
   it('does not overwrite an already-set env var (dotenv default behavior)', () => {
@@ -70,5 +74,12 @@ describe('dotenv v17 smoke — env vars populate process.env', () => {
     expect(result.parsed).toBeDefined();
     expect(result.parsed!['TANDOOR_URL']).toBe(VARS.TANDOOR_URL);
     expect(result.parsed!['TANDOOR_TOKEN']).toBe(VARS.TANDOOR_TOKEN);
+    expect(result.parsed!['TANDOOR_MCP_PROFILE']).toBe(VARS.TANDOOR_MCP_PROFILE);
+  });
+
+  it('sets result.error when the target file does not exist', () => {
+    const result = config({ path: '/nonexistent/.env-does-not-exist', quiet: true });
+
+    expect(result.error).toBeDefined();
   });
 });
