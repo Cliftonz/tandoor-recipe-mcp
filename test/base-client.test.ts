@@ -90,6 +90,24 @@ describe('BaseClient.request', () => {
     expect(fetchSpy.mock.calls[0][0]).toBe('https://example.com/api/ping/');
   });
 
+  it('strips path/query/hash so a pasted page URL still hits the API root', async () => {
+    fetchSpy.mockResolvedValueOnce(fetchOk({}));
+    const c = new TestClient({ url: 'recipes.example.com/settings/api?x=1#z', token: 't' });
+    await c.exec('/api/ping/');
+    expect(fetchSpy.mock.calls[0][0]).toBe('https://recipes.example.com/api/ping/');
+  });
+
+  it('preserves explicit port when normalizing', async () => {
+    fetchSpy.mockResolvedValueOnce(fetchOk({}));
+    const c = new TestClient({ url: 'http://tandoor.local:8080/some/path', token: 't' });
+    await c.exec('/api/ping/');
+    expect(fetchSpy.mock.calls[0][0]).toBe('http://tandoor.local:8080/api/ping/');
+  });
+
+  it('throws a clear error for an unparseable URL', () => {
+    expect(() => new TestClient({ url: 'http://', token: 't' })).toThrow(/Invalid TANDOOR_URL/);
+  });
+
   it('parses JSON success payloads', async () => {
     fetchSpy.mockResolvedValueOnce(fetchOk({ id: 7, name: 'x' }));
     const r = await client.exec<{ id: number; name: string }>('/api/x/');

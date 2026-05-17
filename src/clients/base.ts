@@ -88,12 +88,18 @@ export class BaseClient {
   protected token: string;
 
   constructor(config: TandoorConfig) {
-    // Add https:// if no protocol specified
-    let url = config.url;
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      url = `https://${url}`;
+    // Normalize to origin only — users often paste a full page URL like
+    // `recipes.example.com/settings/api`, but the API lives at the root, so
+    // we strip any path/query/hash and keep just `<scheme>://<host>[:port]`.
+    let raw = config.url.trim();
+    if (!raw.startsWith('http://') && !raw.startsWith('https://')) {
+      raw = `https://${raw}`;
     }
-    this.baseUrl = url.replace(/\/$/, ''); // Remove trailing slash
+    try {
+      this.baseUrl = new URL(raw).origin;
+    } catch {
+      throw new Error(`Invalid TANDOOR_URL: ${config.url}`);
+    }
     this.token = config.token;
   }
 
