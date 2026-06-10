@@ -92,6 +92,11 @@ The repo ships a `.claude/settings.json` that auto-allows read tools and prompts
 | `TANDOOR_MCP_INCLUDE_ONLY` | — | — | Comma-separated allowlist (glob `*` supported). E.g. `list_*,get_*,create_meal_plan` |
 | `TANDOOR_MCP_EXCLUDE` | — | — | Comma-separated denylist. E.g. `merge_*,delete_*` to hide destructive tools |
 | `TANDOOR_MCP_LOG` | — | — | Stderr trace mode. `request`, `response`, `error`, `all`, or comma list. Bearer token redacted. |
+| `TANDOOR_MCP_STASH_ENABLED` | — | `1` | Park large tool results in an in-memory cache and return a `{stashed:true, handle, shape}` summary; the LLM calls `jq_query` to extract subsets. Set `0` to disable. |
+| `TANDOOR_MCP_STASH_THRESHOLD` | — | `25000` | Stash payloads strictly larger than this many bytes. |
+| `TANDOOR_MCP_STASH_MAX_ENTRIES` | — | `32` | LRU cap on stashed handles. Oldest entry evicted when exceeded. |
+| `TANDOOR_MCP_STASH_MAX_BYTES` | — | `32000000` | Total-bytes cap on the stash; LRU eviction kicks in past this budget. |
+| `TANDOOR_MCP_STASH_TTL_MS` | — | `600000` | Per-entry TTL in milliseconds (default 10 minutes). |
 
 The `basic` profile is useful when context size matters — every MCP client loads every tool schema into the model's context on startup. `INCLUDE_ONLY` and `EXCLUDE` compose on top of the profile for finer control (e.g. "give me only read tools" or "hide destructive ops from this agent").
 

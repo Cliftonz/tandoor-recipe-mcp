@@ -19,7 +19,11 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../../src/clients/index.js';
+import { registerRecipeTools } from '../../src/tools/recipe.js';
+import { registerJqTools } from '../../src/tools/jq.js';
+import { _stashClear } from '../../src/lib/stash.js';
 
 const url = process.env.TANDOOR_URL;
 const token = process.env.TANDOOR_TOKEN;
@@ -357,6 +361,69 @@ describeE2E('Tandoor E2E workflow', () => {
       // Don't fail the whole suite if the remote scrape is blocked/offline.
       // eslint-disable-next-line no-console
       console.warn(`    URL import soft-failed: ${(err as Error).message}`);
+    }
+  });
+
+  // ---------------- stash + jq pipeline against a real Tandoor ----------------
+
+  it('list_recipes through MCP returns a stash summary when payload exceeds the threshold', async () => {
+    // Force the threshold low so even a tiny instance triggers stash.
+    const prev = process.env.TANDOOR_MCP_STASH_THRESHOLD;
+    process.env.TANDOOR_MCP_STASH_THRESHOLD = '256';
+    try {
+      _stashClear();
+      const server = new McpServer({ name: 'e2e', version: 'e2e' });
+      registerRecipeTools(server, client);
+      registerJqTools(server, client);
+
+      const registered = (server as any)._registeredTools['list_recipes'];
+      const result: any = await registered.handler(
+        { page_size: 25, format: 'full' },
+        { signal: new AbortController().signal },
+      );
+
+      expect(result.isError).toBeFalsy();
+      const sc = result.structuredContent;
+      expect(sc.stashed).toBe(true);
+      expect(sc.handle).toMatch(/^stash_/);
+      expect(sc.size_bytes).toBeGreaterThan(256);
+      expect(sc.sample_filters).toEqual(expect.arrayContaining(['.results | length', '.count']));
+
+      ctx.stashHandle = sc.handle;
+    } finally {
+      if (prev === undefined) delete process.env.TANDOOR_MCP_STASH_THRESHOLD;
+      else process.env.TANDOOR_MCP_STASH_THRESHOLD = prev;
+    }
+  });
+
+  it('jq_query against the live stash handle returns a focused subset', async (testCtx) => {
+    if (!ctx.stashHandle) {
+      // Surface as a skip — not a silent pass — so a broken prior test or
+      // an empty live instance is visible in the report instead of green.
+      testCtx.skip();
+      return;
+    }
+    const server = new McpServer({ name: 'e2e', version: 'e2e' });
+    registerRecipeTools(server, client);
+    registerJqTools(server, client);
+    const registered = (server as any)._registeredTools['jq_query'];
+
+    const countRes: any = await registered.handler(
+      { handle: ctx.stashHandle, filter: '.results | length' },
+      { signal: new AbortController().signal },
+    );
+    expect(countRes.isError).toBeFalsy();
+    expect(Number.isInteger(JSON.parse(countRes.content[0].text))).toBe(true);
+
+    const projectRes: any = await registered.handler(
+      { handle: ctx.stashHandle, filter: '.results | map({id, name})' },
+      { signal: new AbortController().signal },
+    );
+    expect(projectRes.isError).toBeFalsy();
+    const projected = JSON.parse(projectRes.content[0].text);
+    expect(Array.isArray(projected)).toBe(true);
+    if (projected.length > 0) {
+      expect(Object.keys(projected[0]).sort()).toEqual(['id', 'name']);
     }
   });
 

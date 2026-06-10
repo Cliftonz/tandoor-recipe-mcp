@@ -15,6 +15,7 @@ const pkg = JSON.parse(readFileSync(join(thisDir, '..', 'package.json'), 'utf8')
   name: string;
   version: string;
 };
+import { getStashConfig } from './lib/stash.js';
 import { registerRecipeTools } from './tools/recipe.js';
 import { registerMealPlanTools } from './tools/mealplan.js';
 import { registerIngredientTools } from './tools/ingredient.js';
@@ -26,6 +27,7 @@ import { registerRecipeBookTools } from './tools/recipebook.js';
 import { registerMiscTools } from './tools/misc.js';
 import { registerStepTools } from './tools/step.js';
 import { registerAdminTools } from './tools/admin.js';
+import { registerJqTools } from './tools/jq.js';
 import { registerResources } from './resources/index.js';
 import { registerPrompts } from './prompts/index.js';
 
@@ -52,6 +54,11 @@ const tandoorClient = new TandoorClient({
   token: TANDOOR_TOKEN,
 });
 
+// Resolve once at startup so the instructions string (sent to the client on
+// initialize) and the operator-facing startup log show the same effective
+// numbers — including any overrides from TANDOOR_MCP_STASH_*.
+const stashCfgAtBoot = getStashConfig();
+
 const server = new McpServer(
   {
     name: pkg.name,
@@ -75,6 +82,12 @@ const server = new McpServer(
       '- Write tools return a slim JSON shape by default. Pass `format: "full"` for the raw',
       '  Tandoor API response when you need substitutes, image URLs, nutrition objects, etc.',
       '',
+      `Large results: tool responses bigger than ~${stashCfgAtBoot.thresholdBytes} bytes come back as`,
+      '`{stashed:true, handle, shape, sample_filters}` instead of the full payload. Call',
+      '`jq_query` with that `handle` and a jq filter to extract the parts you need — do',
+      'NOT re-run the original tool. Example: `jq_query({handle, filter: ".results | map({id, name})"})`.',
+      'Operators can set TANDOOR_MCP_STASH_ENABLED=0 to disable this behavior.',
+      '',
       'Require Tandoor serializer etiquette: foreign-key writes use `{id: n}` envelopes,',
       'not bare integers. All tools here already handle that — just pass `food_id`, etc.',
     ].join('\n'),
@@ -95,6 +108,7 @@ registerMealPlanTools(server, tandoorClient);
 registerIngredientTools(server, tandoorClient);
 registerShoppingTools(server, tandoorClient);
 registerFoodUnitTools(server, tandoorClient);
+registerJqTools(server, tandoorClient);
 registerResources(server, tandoorClient);
 registerPrompts(server, tandoorClient);
 
@@ -111,7 +125,18 @@ if (!isBasic) {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('Tandoor MCP server running on stdio');
+  // One-line startup banner on stderr (stdout belongs to the MCP transport).
+  // Includes the resolved Tandoor origin (so operators can confirm the URL
+  // normalization in base.ts produced what they expected — pasting a full
+  // page URL into TANDOOR_URL is the common misconfiguration) and the
+  // effective stash config (so "why isn't this being stashed" is debuggable
+  // without source-diving).
+  const stashLine = stashCfgAtBoot.enabled
+    ? `stash=on(>${stashCfgAtBoot.thresholdBytes}B, ttl=${stashCfgAtBoot.ttlMs}ms, max=${stashCfgAtBoot.maxEntries}, maxBytes=${stashCfgAtBoot.maxBytes})`
+    : 'stash=off';
+  console.error(
+    `[tandoor-mcp] ${pkg.name}@${pkg.version} on stdio | api=${tandoorClient.getBaseUrl()} | profile=${profile} | ${stashLine}`,
+  );
 }
 
 main().catch((error) => {

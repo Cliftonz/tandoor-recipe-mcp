@@ -77,6 +77,11 @@ export class TandoorClient {
     this.serverSettings = new ServerSettingsClient(config);
   }
 
+  /** Resolved Tandoor API origin (no path/query/fragment). For startup logs. */
+  public getBaseUrl(): string {
+    return this.recipes.getBaseUrl();
+  }
+
   // Legacy methods for backward compatibility
   async listRecipes(...args: Parameters<RecipeClient['listRecipes']>) {
     return this.recipes.listRecipes(...args);

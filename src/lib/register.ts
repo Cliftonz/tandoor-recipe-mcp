@@ -8,13 +8,18 @@
 //    (optionally prefixed by a `header\n\n` preamble), the parsed object is
 //    attached as `structuredContent` per the MCP spec. This lets modern MCP
 //    clients consume the typed payload without re-parsing the text field.
-// 3. **Uniform try/catch** — any thrown error becomes `{isError: true}` with
+// 3. **Stash gate** — large JSON payloads are parked in a bounded in-memory
+//    cache and replaced with a schema summary + handle, so the LLM doesn't
+//    blow its context on a 200KB recipe list it only wanted to count.
+// 4. **Uniform try/catch** — any thrown error becomes `{isError: true}` with
 //    a readable message, instead of crashing the transport.
 
 import { McpServer, ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ZodRawShape, z } from 'zod';
 import { TandoorClient } from '../clients/index.js';
+import { getStashConfig, shouldStash, stashPut } from './stash.js';
+import { summarize } from './schema-summary.js';
 
 /** Turn a Zod raw shape into the inferred args object. */
 export type InferShape<S extends ZodRawShape> = z.infer<z.ZodObject<S>>;
@@ -78,11 +83,28 @@ function logSkip(name: string): void {
   console.error(`[tandoor-mcp] skipping tool '${name}' — filtered by TANDOOR_MCP_INCLUDE_ONLY/EXCLUDE`);
 }
 
+// Names that actually passed registration. The stash gate only kicks in
+// when `jq_query` is in here — otherwise a stashed payload becomes
+// unreachable (no tool to resolve the handle), so we'd be silently dropping
+// data on the floor for operators who filtered jq_query out.
+const _registeredNames = new Set<string>();
+
+/** Test-only: reset the recorded registration set between test cases. */
+export function _resetRegisteredNames(): void {
+  _registeredNames.clear();
+}
+
 export type StringHandler<S extends ZodRawShape> = (
   client: TandoorClient,
   args: InferShape<S>,
   ctx?: HandlerContext
 ) => Promise<string>;
+
+interface ExtractedJson {
+  structured: unknown;
+  payloadText: string;
+  header?: string;
+}
 
 /**
  * Try to detect a JSON payload embedded in the handler's string output so it
@@ -90,18 +112,32 @@ export type StringHandler<S extends ZodRawShape> = (
  *   - pure JSON: `{"id":1,...}`
  *   - "Header message.\n\n{JSON}" style confirmations
  *   - plain human text ("Meal plan 5 deleted.") — no structured mirror
+ *
+ * Returns the parsed value, the substring that was the JSON payload (which
+ * the stash gate stores verbatim — jq-wasm takes it as a string and avoids
+ * a round-trip stringify), and any header prefix so the gate can preserve
+ * mutating-tool confirmation text instead of dropping it.
  */
-function tryExtractStructured(text: string): unknown | undefined {
+function tryExtractStructured(text: string): ExtractedJson | undefined {
   const trimmed = text.trim();
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-    try { return JSON.parse(trimmed); } catch { /* fallthrough */ }
+    try {
+      return { structured: JSON.parse(trimmed), payloadText: trimmed };
+    } catch { /* fallthrough */ }
   }
   const splitIdx = text.search(/\n\n[\[{]/);
   if (splitIdx !== -1) {
+    const header = text.slice(0, splitIdx);
     const payload = text.slice(splitIdx + 2);
-    try { return JSON.parse(payload); } catch { /* fallthrough */ }
+    try {
+      return { structured: JSON.parse(payload), payloadText: payload, header };
+    } catch { /* fallthrough */ }
   }
   return undefined;
+}
+
+function isStructuredObject(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === 'object';
 }
 
 export function registerStringTool<S extends ZodRawShape>(
@@ -115,17 +151,56 @@ export function registerStringTool<S extends ZodRawShape>(
     logSkip(name);
     return;
   }
+  _registeredNames.add(name);
   const cb = async (args: InferShape<S>, extra: { signal?: AbortSignal }): Promise<CallToolResult> => {
     const signal = extra?.signal ?? new AbortController().signal;
     try {
       const text = await handler(client, args, { signal });
-      const structured = tryExtractStructured(text);
+      const extracted = tryExtractStructured(text);
+      const stashCfg = getStashConfig();
+
+      // Stash gate: if the payload is structured (parseable JSON) and big,
+      // park the JSON text in the in-memory cache and return only a schema
+      // summary + handle. The LLM then calls `jq_query` to extract what it
+      // needs.
+      //
+      // Bypass when `jq_query` was filtered out at registration time — a
+      // handle is useless without the tool that resolves it (Codex finding).
+      if (
+        extracted &&
+        isStructuredObject(extracted.structured) &&
+        _registeredNames.has('jq_query')
+      ) {
+        const payloadSize = Buffer.byteLength(extracted.payloadText, 'utf8');
+        if (shouldStash(extracted.structured, payloadSize, stashCfg)) {
+          try {
+            const entry = stashPut(extracted.payloadText, stashCfg);
+            const summary = summarize(extracted.structured, entry.id, payloadSize);
+            // Preserve any "Header.\n\n{json}" preamble so mutating-tool
+            // confirmations don't silently drop the created-entity ID.
+            const summaryJson = JSON.stringify(summary);
+            const textOut = extracted.header ? `${extracted.header}\n\n${summaryJson}` : summaryJson;
+            console.error(`[tandoor-mcp] stashed '${name}' result: ${payloadSize}B > ${stashCfg.thresholdBytes}B → ${entry.id}`);
+            return {
+              content: [{ type: 'text', text: textOut }],
+              structuredContent: summary as unknown as Record<string, unknown>,
+            };
+          } catch (stashErr) {
+            // Stash refused (e.g. payload larger than maxBytes). Fall
+            // through to the unstashed return path so the caller still gets
+            // their data; log so the operator can see the cap was hit.
+            const msg = stashErr instanceof Error ? stashErr.message : String(stashErr);
+            console.error(`[tandoor-mcp] stash bypassed for '${name}': ${msg}`);
+          }
+        }
+      }
+
       // Build the result in one shot so `structuredContent` keeps its spec
       // typing (Record<string, unknown>) without an intermediate cast.
-      const result: CallToolResult = structured !== undefined && typeof structured === 'object' && structured !== null
+      const result: CallToolResult = extracted && isStructuredObject(extracted.structured)
         ? {
             content: [{ type: 'text', text }],
-            structuredContent: structured as Record<string, unknown>,
+            structuredContent: extracted.structured as Record<string, unknown>,
           }
         : { content: [{ type: 'text', text }] };
       return result;

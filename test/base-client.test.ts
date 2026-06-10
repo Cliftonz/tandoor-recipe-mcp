@@ -108,6 +108,20 @@ describe('BaseClient.request', () => {
     expect(() => new TestClient({ url: 'http://', token: 't' })).toThrow(/Invalid TANDOOR_URL/);
   });
 
+  it('does NOT echo the raw URL into the error (may carry pasted credentials)', () => {
+    // Spaces make the URL unparseable. If the error interpolated raw
+    // config.url, an operator's `user:pass@host` would land in crash logs.
+    expect(() => new TestClient({ url: 'https://u:p@host with space', token: 't' })).toThrow(
+      /Invalid TANDOOR_URL/,
+    );
+    try {
+      new TestClient({ url: 'https://u:p@host with space', token: 't' });
+    } catch (e) {
+      expect((e as Error).message).not.toContain('u:p@');
+      expect((e as Error).message).not.toContain('host with space');
+    }
+  });
+
   it('parses JSON success payloads', async () => {
     fetchSpy.mockResolvedValueOnce(fetchOk({ id: 7, name: 'x' }));
     const r = await client.exec<{ id: number; name: string }>('/api/x/');

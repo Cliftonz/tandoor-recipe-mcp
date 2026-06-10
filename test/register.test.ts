@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../src/clients/index.js';
@@ -7,17 +7,19 @@ import {
   checkToolAllowed,
   globToRegex,
   parseFilterList,
+  _resetRegisteredNames,
 } from '../src/lib/register.js';
+import { registerJqTools } from '../src/tools/jq.js';
+import { _stashClear, stashStats } from '../src/lib/stash.js';
+import { invokeTool } from './helpers/mcp.js';
+import { useStashEnv } from './helpers/stash-env.js';
 
-// Access the McpServer's internal tool registry to call a handler directly
-// (the public request-based path requires a connected transport; we just want
-// to check that the wrapper produces the right CallToolResult shape).
-function invokeTool(server: McpServer, name: string, args: unknown): Promise<any> {
-  const registered = (server as any)._registeredTools[name];
-  if (!registered) throw new Error(`tool ${name} not registered`);
-  // `handler` is the wrapped callback McpServer dispatches from callTool.
-  return registered.handler(args, { signal: new AbortController().signal });
-}
+useStashEnv();
+
+beforeEach(() => {
+  _stashClear();
+  _resetRegisteredNames();
+});
 
 describe('registerStringTool structuredContent behavior', () => {
   const client = new TandoorClient({ url: 'https://x.test', token: 'x' });
@@ -62,11 +64,7 @@ describe('registerStringTool structuredContent behavior', () => {
     expect(result.structuredContent).toBeUndefined();
   });
 
-  it('respects INCLUDE_ONLY + EXCLUDE filters (skips registration)', async () => {
-    const server = freshServer();
-    // Manually drive checkToolAllowed through registerStringTool by composing
-    // patterns. Since env filters are baked in at module load, we exercise the
-    // pure filter function here and assume the wiring.
+  it('respects INCLUDE_ONLY + EXCLUDE filters (pure function)', async () => {
     const includeOnly = [globToRegex('list_*')];
     const exclude = [globToRegex('list_foods')];
     expect(checkToolAllowed('list_recipes', includeOnly, exclude)).toBe(true);
@@ -85,13 +83,150 @@ describe('registerStringTool structuredContent behavior', () => {
   it('globToRegex handles * wildcard and escapes regex metachars', () => {
     expect(globToRegex('list_*').test('list_foods')).toBe(true);
     expect(globToRegex('list_*').test('create_foods')).toBe(false);
-    // Dots must be literal.
     expect(globToRegex('a.b').test('a.b')).toBe(true);
     expect(globToRegex('a.b').test('axb')).toBe(false);
   });
 
+  describe('stash gate', () => {
+    it('does not stash when explicitly disabled', async () => {
+      process.env.TANDOOR_MCP_STASH_ENABLED = '0';
+      const server = freshServer();
+      registerJqTools(server, client); // jq_query is registered → gate could fire
+      const big = { results: Array.from({ length: 50 }, (_, i) => ({ id: i, name: `r${i}` })) };
+      registerStringTool(server, client, 'big_tool', {
+        description: 'returns big JSON',
+        inputSchema: {},
+      }, async () => JSON.stringify(big));
+
+      const result = await invokeTool(server, 'big_tool', {});
+      expect(result.structuredContent).toEqual(big);
+      expect(JSON.parse(result.content[0].text)).toEqual(big);
+      expect(stashStats().count).toBe(0);
+    });
+
+    it('replaces large results with schema summary + handle (default on)', async () => {
+      delete process.env.TANDOOR_MCP_STASH_ENABLED;
+      process.env.TANDOOR_MCP_STASH_THRESHOLD = '100';
+      const server = freshServer();
+      registerJqTools(server, client);
+      const big = {
+        count: 50,
+        next: null,
+        previous: null,
+        results: Array.from({ length: 50 }, (_, i) => ({ id: i, name: `recipe-${i}` })),
+      };
+      registerStringTool(server, client, 'big_tool', {
+        description: 'returns big JSON',
+        inputSchema: {},
+      }, async () => JSON.stringify(big));
+
+      const result = await invokeTool(server, 'big_tool', {});
+      const sc = result.structuredContent;
+      expect(sc.stashed).toBe(true);
+      expect(sc.handle).toMatch(/^stash_[0-9a-f-]{36}$/);
+      expect(sc.size_bytes).toBeGreaterThan(100);
+      expect(sc.sample_filters).toContain('.results | length');
+      expect(JSON.parse(result.content[0].text)).toEqual(sc);
+    });
+
+    it('leaves small results untouched (under threshold) when on', async () => {
+      delete process.env.TANDOOR_MCP_STASH_ENABLED;
+      process.env.TANDOOR_MCP_STASH_THRESHOLD = '10000';
+      const server = freshServer();
+      registerJqTools(server, client);
+      registerStringTool(server, client, 'small_tool', {
+        description: 'small json',
+        inputSchema: {},
+      }, async () => JSON.stringify({ id: 1, name: 'x' }));
+
+      const result = await invokeTool(server, 'small_tool', {});
+      expect(result.structuredContent).toEqual({ id: 1, name: 'x' });
+    });
+
+    it('bypasses stash when jq_query was not registered (no resolver available)', async () => {
+      delete process.env.TANDOOR_MCP_STASH_ENABLED;
+      process.env.TANDOOR_MCP_STASH_THRESHOLD = '100';
+      const server = freshServer();
+      // Deliberately do NOT register jq tools — simulates an operator who
+      // filtered jq_query out via TANDOOR_MCP_EXCLUDE.
+      const big = { results: Array.from({ length: 50 }, (_, i) => ({ id: i })) };
+      registerStringTool(server, client, 'big_tool', {
+        description: 'returns big JSON',
+        inputSchema: {},
+      }, async () => JSON.stringify(big));
+
+      const result = await invokeTool(server, 'big_tool', {});
+      // Raw payload comes through — no orphaned stash handle.
+      expect(result.structuredContent).toEqual(big);
+      expect(stashStats().count).toBe(0);
+    });
+
+    it('large non-JSON text passes through unstashed (no structured value to summarize)', async () => {
+      delete process.env.TANDOOR_MCP_STASH_ENABLED;
+      process.env.TANDOOR_MCP_STASH_THRESHOLD = '100';
+      const server = freshServer();
+      registerJqTools(server, client);
+      const big = 'x'.repeat(30_000);
+      registerStringTool(server, client, 'plain_big', {
+        description: 'plain text only',
+        inputSchema: {},
+      }, async () => big);
+
+      const result = await invokeTool(server, 'plain_big', {});
+      expect(result.content[0].text).toBe(big);
+      expect(result.structuredContent).toBeUndefined();
+      expect(stashStats().count).toBe(0);
+    });
+
+    it('preserves header text for mutating-tool confirmations when stashing', async () => {
+      delete process.env.TANDOOR_MCP_STASH_ENABLED;
+      process.env.TANDOOR_MCP_STASH_THRESHOLD = '100';
+      const server = freshServer();
+      registerJqTools(server, client);
+      const big = {
+        count: 50,
+        next: null,
+        previous: null,
+        results: Array.from({ length: 50 }, (_, i) => ({ id: i, name: `r${i}` })),
+      };
+      registerStringTool(server, client, 'create_thing', {
+        description: 'creates and returns full payload',
+        inputSchema: {},
+      }, async () => `Created recipe 42.\n\n${JSON.stringify(big)}`);
+
+      const result = await invokeTool(server, 'create_thing', {});
+      // The created-entity ID is still visible to the LLM in the text channel.
+      expect(result.content[0].text).toMatch(/Created recipe 42\./);
+      // The structured channel is the stash summary.
+      const sc = result.structuredContent;
+      expect(sc.stashed).toBe(true);
+      expect(sc.handle).toMatch(/^stash_/);
+    });
+
+    it('writes a stderr log line when stashing', async () => {
+      delete process.env.TANDOOR_MCP_STASH_ENABLED;
+      process.env.TANDOOR_MCP_STASH_THRESHOLD = '100';
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        const server = freshServer();
+        registerJqTools(server, client);
+        const big = { results: Array.from({ length: 50 }, (_, i) => ({ id: i })) };
+        registerStringTool(server, client, 'big_tool', {
+          description: 'big',
+          inputSchema: {},
+        }, async () => JSON.stringify(big));
+
+        await invokeTool(server, 'big_tool', {});
+        const hits = spy.mock.calls.filter((c) => String(c[0]).includes('stashed') && String(c[0]).includes('big_tool'));
+        expect(hits.length).toBe(1);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  });
+
   it('surfaces handler errors as isError:true without throwing', async () => {
-    const server = freshServer();
+    const server = new McpServer({ name: 'test', version: 'test' });
     registerStringTool(server, client, 'broken', {
       description: 'always throws',
       inputSchema: { name: z.string() },
