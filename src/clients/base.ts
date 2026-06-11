@@ -98,9 +98,21 @@ export class BaseClient {
     try {
       this.baseUrl = new URL(raw).origin;
     } catch {
-      throw new Error(`Invalid TANDOOR_URL: ${config.url}`);
+      // Do NOT interpolate config.url — operators sometimes paste URLs
+      // containing basic-auth credentials, and the error gets pasted into
+      // bug reports / crash logs.
+      throw new Error('Invalid TANDOOR_URL: value does not parse as a URL (check scheme and host).');
     }
     this.token = config.token;
+  }
+
+  /**
+   * Resolved API origin (no path / query / fragment). Used by the server
+   * startup log so the operator can see which URL was actually derived from
+   * `TANDOOR_URL` — pasting a full page URL is the common misconfiguration.
+   */
+  public getBaseUrl(): string {
+    return this.baseUrl;
   }
 
   protected async request<T>(
@@ -144,7 +156,7 @@ export class BaseClient {
 
         // Read body exactly once — Response body is a single-use stream.
         const bodyText = await response.text();
-        logResponse(method, url, response.status, bodyText);
+        logResponse(method, url, response.status, redactToken(bodyText, this.token));
 
         if (!response.ok) {
           let errorMessage = `Tandoor API error: ${response.status} ${response.statusText}`;

@@ -19,7 +19,12 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../../src/clients/index.js';
+import { registerRecipeTools } from '../../src/tools/recipe.js';
+import { registerJqTools } from '../../src/tools/jq.js';
+import { _stashClear } from '../../src/lib/stash.js';
+import { checkTandoorVersion } from '../../src/lib/version-check.js';
 
 const url = process.env.TANDOOR_URL;
 const token = process.env.TANDOOR_TOKEN;
@@ -88,10 +93,20 @@ describeE2E('Tandoor E2E workflow', () => {
     expect(s).toBeDefined();
   });
 
+  it('version check returns ok against the live instance', async () => {
+    // Pins the wire contract: the payload field is named `version` and looks
+    // like a semver. If Tandoor renames it, every boot silently degrades to
+    // `unknown` — this is the only test that would catch that.
+    const r = await checkTandoorVersion(client);
+    expect(r.status).toBe('ok');
+    expect(r.version).toMatch(/^\d+\./);
+  });
+
   it('list meal types returns something iterable', async () => {
     const types = await client.mealPlans.listMealTypes();
     expect(Array.isArray(types)).toBe(true);
     ctx.mealTypeId = types[0]?.id;
+    ctx.mealTypeName = types[0]?.name;
     // Create a meal type on the fly if none exist so downstream steps work.
     if (!ctx.mealTypeId) {
       // Use the raw endpoint — create-meal-type isn't exposed via tools, but
@@ -101,6 +116,7 @@ describeE2E('Tandoor E2E workflow', () => {
         body: JSON.stringify({ name: `e2e-meal-type-${Date.now()}` }),
       });
       ctx.mealTypeId = created.id;
+      ctx.mealTypeName = created.name;
       cleanup.push({
         label: `meal-type ${created.id}`,
         fn: () => (client.mealPlans as any).request(`/api/meal-type/${created.id}/`, { method: 'DELETE' }),
@@ -115,6 +131,7 @@ describeE2E('Tandoor E2E workflow', () => {
     const suffix = Date.now();
     const f = await client.foodUnits.createFood({ name: `e2e-food-${suffix}` });
     ctx.foodId = f.id;
+    ctx.foodName = f.name;
     cleanup.push({ label: `food ${f.id}`, fn: () => client.foodUnits.deleteFood(f.id) });
     expect(f.id).toBeGreaterThan(0);
     expect(f.name).toContain('e2e-food-');
@@ -124,6 +141,7 @@ describeE2E('Tandoor E2E workflow', () => {
     const suffix = Date.now();
     const u = await client.foodUnits.createUnit({ name: `e2e-unit-${suffix}` });
     ctx.unitId = u.id;
+    ctx.unitName = u.name;
     cleanup.push({ label: `unit ${u.id}`, fn: () => client.foodUnits.deleteUnit(u.id) });
     expect(u.id).toBeGreaterThan(0);
   });
@@ -153,8 +171,9 @@ describeE2E('Tandoor E2E workflow', () => {
           time: 5,
           ingredients: [
             {
-              food: { id: ctx.foodId } as any,
-              unit: { id: ctx.unitId } as any,
+              // Tandoor 2.x requires `name` on nested food/unit even when `id` is set.
+              food: { id: ctx.foodId, name: ctx.foodName } as any,
+              unit: { id: ctx.unitId, name: ctx.unitName } as any,
               amount: 2,
               note: 'diced',
             },
@@ -163,6 +182,7 @@ describeE2E('Tandoor E2E workflow', () => {
       ],
     });
     ctx.recipeId = recipe.id;
+    ctx.recipeName = recipe.name;
     cleanup.push({ label: `recipe ${recipe.id}`, fn: () => (client.recipes as any).request(`/api/recipe/${recipe.id}/`, { method: 'DELETE' }) });
     expect(recipe.id).toBeGreaterThan(0);
     expect(Array.isArray(recipe.steps)).toBe(true);
@@ -199,14 +219,17 @@ describeE2E('Tandoor E2E workflow', () => {
 
   // ---------------- standalone step CRUD ----------------
 
-  it('adds a step via step CRUD and deletes it', async () => {
-    const s = await client.steps.createStep({
-      instruction: 'Extra step added via /api/step/',
-      ingredients: [],
-      order: 99,
+  it('updates the recipe step via step CRUD', async () => {
+    // Tandoor 2.x scopes /api/step/ to steps reachable through a recipe in the
+    // space, so orphan steps created here would 404 on read/delete. Exercise
+    // step CRUD against the recipe's own step instead.
+    const list = await client.steps.listSteps({ recipe: [ctx.recipeId] });
+    const step = (list.results ?? list)[0];
+    expect(step.id).toBeGreaterThan(0);
+    const patched = await client.steps.patchStep(step.id, {
+      instruction: 'Mix everything thoroughly.',
     });
-    expect(s.id).toBeGreaterThan(0);
-    await client.steps.deleteStep(s.id);
+    expect(patched.instruction).toBe('Mix everything thoroughly.');
   });
 
   // ---------------- recipe actions ----------------
@@ -221,8 +244,8 @@ describeE2E('Tandoor E2E workflow', () => {
   it('creates a meal plan for the recipe', async () => {
     const today = new Date().toISOString().slice(0, 10);
     const mp = await client.mealPlans.createMealPlan({
-      recipe: { id: ctx.recipeId } as any,
-      meal_type: { id: ctx.mealTypeId } as any,
+      recipe: { id: ctx.recipeId, name: ctx.recipeName } as any,
+      meal_type: { id: ctx.mealTypeId, name: ctx.mealTypeName } as any,
       servings: 2,
       from_date: today,
     } as any);
@@ -259,8 +282,8 @@ describeE2E('Tandoor E2E workflow', () => {
   it('creates a standalone shopping entry and bulk-checks it', async () => {
     const entry = await client.shopping.createEntry({
       amount: 1,
-      food: { id: ctx.foodId },
-      unit: { id: ctx.unitId },
+      food: { id: ctx.foodId, name: ctx.foodName },
+      unit: { id: ctx.unitId, name: ctx.unitName },
       checked: false,
     });
     ctx.shoppingEntryId = entry.id;
@@ -321,7 +344,7 @@ describeE2E('Tandoor E2E workflow', () => {
 
     const p = await client.properties.createProperty({
       property_amount: 42,
-      property_type: { id: pt.id },
+      property_type: { id: pt.id, name: pt.name },
     });
     cleanup.push({ label: `property ${p.id}`, fn: () => client.properties.deleteProperty(p.id) });
     expect(p.id).toBeGreaterThan(0);
@@ -357,6 +380,69 @@ describeE2E('Tandoor E2E workflow', () => {
       // Don't fail the whole suite if the remote scrape is blocked/offline.
       // eslint-disable-next-line no-console
       console.warn(`    URL import soft-failed: ${(err as Error).message}`);
+    }
+  });
+
+  // ---------------- stash + jq pipeline against a real Tandoor ----------------
+
+  it('list_recipes through MCP returns a stash summary when payload exceeds the threshold', async () => {
+    // Force the threshold low so even a tiny instance triggers stash.
+    const prev = process.env.TANDOOR_MCP_STASH_THRESHOLD;
+    process.env.TANDOOR_MCP_STASH_THRESHOLD = '256';
+    try {
+      _stashClear();
+      const server = new McpServer({ name: 'e2e', version: 'e2e' });
+      registerRecipeTools(server, client);
+      registerJqTools(server, client);
+
+      const registered = (server as any)._registeredTools['list_recipes'];
+      const result: any = await registered.handler(
+        { page_size: 25, format: 'full' },
+        { signal: new AbortController().signal },
+      );
+
+      expect(result.isError).toBeFalsy();
+      const sc = result.structuredContent;
+      expect(sc.stashed).toBe(true);
+      expect(sc.handle).toMatch(/^stash_/);
+      expect(sc.size_bytes).toBeGreaterThan(256);
+      expect(sc.sample_filters).toEqual(expect.arrayContaining(['.results | length', '.count']));
+
+      ctx.stashHandle = sc.handle;
+    } finally {
+      if (prev === undefined) delete process.env.TANDOOR_MCP_STASH_THRESHOLD;
+      else process.env.TANDOOR_MCP_STASH_THRESHOLD = prev;
+    }
+  });
+
+  it('jq_query against the live stash handle returns a focused subset', async (testCtx) => {
+    if (!ctx.stashHandle) {
+      // Surface as a skip — not a silent pass — so a broken prior test or
+      // an empty live instance is visible in the report instead of green.
+      testCtx.skip();
+      return;
+    }
+    const server = new McpServer({ name: 'e2e', version: 'e2e' });
+    registerRecipeTools(server, client);
+    registerJqTools(server, client);
+    const registered = (server as any)._registeredTools['jq_query'];
+
+    const countRes: any = await registered.handler(
+      { handle: ctx.stashHandle, filter: '.results | length' },
+      { signal: new AbortController().signal },
+    );
+    expect(countRes.isError).toBeFalsy();
+    expect(Number.isInteger(JSON.parse(countRes.content[0].text))).toBe(true);
+
+    const projectRes: any = await registered.handler(
+      { handle: ctx.stashHandle, filter: '.results | map({id, name})' },
+      { signal: new AbortController().signal },
+    );
+    expect(projectRes.isError).toBeFalsy();
+    const projected = JSON.parse(projectRes.content[0].text);
+    expect(Array.isArray(projected)).toBe(true);
+    if (projected.length > 0) {
+      expect(Object.keys(projected[0]).sort()).toEqual(['id', 'name']);
     }
   });
 

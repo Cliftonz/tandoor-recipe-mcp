@@ -15,6 +15,9 @@ const pkg = JSON.parse(readFileSync(join(thisDir, '..', 'package.json'), 'utf8')
   name: string;
   version: string;
 };
+import { getStashConfig } from './lib/stash.js';
+import { checkTandoorVersion } from './lib/version-check.js';
+import { buildInstructions } from './lib/instructions.js';
 import { registerRecipeTools } from './tools/recipe.js';
 import { registerMealPlanTools } from './tools/mealplan.js';
 import { registerIngredientTools } from './tools/ingredient.js';
@@ -26,6 +29,7 @@ import { registerRecipeBookTools } from './tools/recipebook.js';
 import { registerMiscTools } from './tools/misc.js';
 import { registerStepTools } from './tools/step.js';
 import { registerAdminTools } from './tools/admin.js';
+import { registerJqTools } from './tools/jq.js';
 import { registerResources } from './resources/index.js';
 import { registerPrompts } from './prompts/index.js';
 
@@ -52,32 +56,26 @@ const tandoorClient = new TandoorClient({
   token: TANDOOR_TOKEN,
 });
 
+// Resolve once at startup so the instructions string (sent to the client on
+// initialize) and the operator-facing startup log show the same effective
+// numbers — including any overrides from TANDOOR_MCP_STASH_*.
+const stashCfgAtBoot = getStashConfig();
+
+// Probe the Tandoor version before building the server so an incompatibility
+// warning can ride along in the instructions string (the LLM sees it) as well
+// as stderr (the operator sees it). Inconclusive results never block startup.
+const versionCheck = await checkTandoorVersion(tandoorClient);
+if (versionCheck.status !== 'ok') {
+  console.error(`[tandoor-mcp] ${versionCheck.level === 'warning' ? 'WARNING' : 'NOTE'}: ${versionCheck.detail}`);
+}
+
 const server = new McpServer(
   {
     name: pkg.name,
     version: pkg.version,
   },
   {
-    // Sent to the client on initialize — seen by the model before tool schemas.
-    // Steers toward the right entry points so complex queries don't start with
-    // a 100-tool scan.
-    instructions: [
-      'Tandoor Recipes MCP server — full access to recipes, meal plans, shopping lists,',
-      'ingredients, cook logs, nutrition, and AI-assisted imports.',
-      '',
-      'Where to start:',
-      '- Current state (read-only): `tandoor://meal-plan/this-week`, `tandoor://pantry/on-hand`,',
-      '  `tandoor://shopping-list/active`, `tandoor://meal-types`.',
-      '- Common workflows: use the `plan_week`, `grocery_list_for_plan`,',
-      '  `what_can_i_make_tonight`, or `import_and_plan` prompts.',
-      '- Recipe search: use `search_recipes` with food/keyword *names* (it resolves IDs',
-      '  for you). Fall back to `list_recipes` for the full filter surface.',
-      '- Write tools return a slim JSON shape by default. Pass `format: "full"` for the raw',
-      '  Tandoor API response when you need substitutes, image URLs, nutrition objects, etc.',
-      '',
-      'Require Tandoor serializer etiquette: foreign-key writes use `{id: n}` envelopes,',
-      'not bare integers. All tools here already handle that — just pass `food_id`, etc.',
-    ].join('\n'),
+    instructions: buildInstructions(versionCheck, stashCfgAtBoot),
   }
 );
 
@@ -95,6 +93,7 @@ registerMealPlanTools(server, tandoorClient);
 registerIngredientTools(server, tandoorClient);
 registerShoppingTools(server, tandoorClient);
 registerFoodUnitTools(server, tandoorClient);
+registerJqTools(server, tandoorClient);
 registerResources(server, tandoorClient);
 registerPrompts(server, tandoorClient);
 
@@ -111,7 +110,18 @@ if (!isBasic) {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('Tandoor MCP server running on stdio');
+  // One-line startup banner on stderr (stdout belongs to the MCP transport).
+  // Includes the resolved Tandoor origin (so operators can confirm the URL
+  // normalization in base.ts produced what they expected — pasting a full
+  // page URL into TANDOOR_URL is the common misconfiguration) and the
+  // effective stash config (so "why isn't this being stashed" is debuggable
+  // without source-diving).
+  const stashLine = stashCfgAtBoot.enabled
+    ? `stash=on(>${stashCfgAtBoot.thresholdBytes}B, ttl=${stashCfgAtBoot.ttlMs}ms, max=${stashCfgAtBoot.maxEntries}, maxBytes=${stashCfgAtBoot.maxBytes})`
+    : 'stash=off';
+  console.error(
+    `[tandoor-mcp] ${pkg.name}@${pkg.version} on stdio | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | profile=${profile} | ${stashLine}`,
+  );
 }
 
 main().catch((error) => {

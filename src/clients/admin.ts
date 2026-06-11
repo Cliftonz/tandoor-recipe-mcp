@@ -82,8 +82,8 @@ export class UserFileClient extends BaseClient {
 }
 
 export class ServerSettingsClient extends BaseClient {
-  async getCurrent(): Promise<any> {
-    return this.request('/api/server-settings/current/');
+  async getCurrent(options?: { signal?: AbortSignal; maxRetries?: number }): Promise<any> {
+    return this.request('/api/server-settings/current/', options);
   }
 }
 

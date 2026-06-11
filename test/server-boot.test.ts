@@ -12,6 +12,7 @@ import { registerRecipeBookTools } from '../src/tools/recipebook.js';
 import { registerMiscTools } from '../src/tools/misc.js';
 import { registerStepTools } from '../src/tools/step.js';
 import { registerAdminTools } from '../src/tools/admin.js';
+import { registerJqTools } from '../src/tools/jq.js';
 import { registerResources } from '../src/resources/index.js';
 import { registerPrompts } from '../src/prompts/index.js';
 
@@ -32,9 +33,20 @@ describe('server registration', () => {
       registerMiscTools(server, client);
       registerStepTools(server, client);
       registerAdminTools(server, client);
+      registerJqTools(server, client);
       registerResources(server, client);
       registerPrompts(server, client);
     }).not.toThrow();
+
+    // Tripwire: jq_query / jq_stash_stats are load-bearing — the stash gate
+    // in registerStringTool only fires when jq_query is registered. If a
+    // future refactor drops the registration, every >25KB response becomes
+    // an unstashed full payload (or, if the gate didn't have the guard,
+    // an unreachable handle). This assertion catches both.
+    const registered = (server as any)._registeredTools;
+    expect(Object.keys(registered)).toEqual(
+      expect.arrayContaining(['jq_query', 'jq_stash_stats']),
+    );
   });
 
   it('registers expected resources', () => {
