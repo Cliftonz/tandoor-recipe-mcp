@@ -49,5 +49,12 @@ jobs:
             exit 1
           fi
 
+      # Prerelease tags (v1.4.0-rc.1 etc.) publish under the `next` dist-tag so
+      # they never displace `latest` for plain `npm install` users.
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: |
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            npm publish --provenance --access public --tag next
+          else
+            npm publish --provenance --access public
+          fi
