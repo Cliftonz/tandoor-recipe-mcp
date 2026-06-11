@@ -156,7 +156,7 @@ export class BaseClient {
 
         // Read body exactly once — Response body is a single-use stream.
         const bodyText = await response.text();
-        logResponse(method, url, response.status, bodyText);
+        logResponse(method, url, response.status, redactToken(bodyText, this.token));
 
         if (!response.ok) {
           let errorMessage = `Tandoor API error: ${response.status} ${response.statusText}`;

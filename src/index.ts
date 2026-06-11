@@ -16,6 +16,8 @@ const pkg = JSON.parse(readFileSync(join(thisDir, '..', 'package.json'), 'utf8')
   version: string;
 };
 import { getStashConfig } from './lib/stash.js';
+import { checkTandoorVersion } from './lib/version-check.js';
+import { buildInstructions } from './lib/instructions.js';
 import { registerRecipeTools } from './tools/recipe.js';
 import { registerMealPlanTools } from './tools/mealplan.js';
 import { registerIngredientTools } from './tools/ingredient.js';
@@ -59,38 +61,21 @@ const tandoorClient = new TandoorClient({
 // numbers — including any overrides from TANDOOR_MCP_STASH_*.
 const stashCfgAtBoot = getStashConfig();
 
+// Probe the Tandoor version before building the server so an incompatibility
+// warning can ride along in the instructions string (the LLM sees it) as well
+// as stderr (the operator sees it). Inconclusive results never block startup.
+const versionCheck = await checkTandoorVersion(tandoorClient);
+if (versionCheck.status !== 'ok') {
+  console.error(`[tandoor-mcp] ${versionCheck.level === 'warning' ? 'WARNING' : 'NOTE'}: ${versionCheck.detail}`);
+}
+
 const server = new McpServer(
   {
     name: pkg.name,
     version: pkg.version,
   },
   {
-    // Sent to the client on initialize — seen by the model before tool schemas.
-    // Steers toward the right entry points so complex queries don't start with
-    // a 100-tool scan.
-    instructions: [
-      'Tandoor Recipes MCP server — full access to recipes, meal plans, shopping lists,',
-      'ingredients, cook logs, nutrition, and AI-assisted imports.',
-      '',
-      'Where to start:',
-      '- Current state (read-only): `tandoor://meal-plan/this-week`, `tandoor://pantry/on-hand`,',
-      '  `tandoor://shopping-list/active`, `tandoor://meal-types`.',
-      '- Common workflows: use the `plan_week`, `grocery_list_for_plan`,',
-      '  `what_can_i_make_tonight`, or `import_and_plan` prompts.',
-      '- Recipe search: use `search_recipes` with food/keyword *names* (it resolves IDs',
-      '  for you). Fall back to `list_recipes` for the full filter surface.',
-      '- Write tools return a slim JSON shape by default. Pass `format: "full"` for the raw',
-      '  Tandoor API response when you need substitutes, image URLs, nutrition objects, etc.',
-      '',
-      `Large results: tool responses bigger than ~${stashCfgAtBoot.thresholdBytes} bytes come back as`,
-      '`{stashed:true, handle, shape, sample_filters}` instead of the full payload. Call',
-      '`jq_query` with that `handle` and a jq filter to extract the parts you need — do',
-      'NOT re-run the original tool. Example: `jq_query({handle, filter: ".results | map({id, name})"})`.',
-      'Operators can set TANDOOR_MCP_STASH_ENABLED=0 to disable this behavior.',
-      '',
-      'Require Tandoor serializer etiquette: foreign-key writes use `{id: n}` envelopes,',
-      'not bare integers. All tools here already handle that — just pass `food_id`, etc.',
-    ].join('\n'),
+    instructions: buildInstructions(versionCheck, stashCfgAtBoot),
   }
 );
 
@@ -135,7 +120,7 @@ async function main() {
     ? `stash=on(>${stashCfgAtBoot.thresholdBytes}B, ttl=${stashCfgAtBoot.ttlMs}ms, max=${stashCfgAtBoot.maxEntries}, maxBytes=${stashCfgAtBoot.maxBytes})`
     : 'stash=off';
   console.error(
-    `[tandoor-mcp] ${pkg.name}@${pkg.version} on stdio | api=${tandoorClient.getBaseUrl()} | profile=${profile} | ${stashLine}`,
+    `[tandoor-mcp] ${pkg.name}@${pkg.version} on stdio | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | profile=${profile} | ${stashLine}`,
   );
 }
 

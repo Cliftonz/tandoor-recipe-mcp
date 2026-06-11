@@ -19,6 +19,8 @@ A Model Context Protocol (MCP) server that gives LLM agents full read/write acce
 
 ## Install
 
+> **Compatibility:** this server targets the **Tandoor 2.x** API. Tandoor 1.x instances are not supported — nested write payloads (recipes, meal plans, shopping entries) use 2.x serializer shapes. The server probes your instance's version at startup and warns on stderr and in the MCP instructions if it detects a pre-2.x Tandoor.
+
 ```bash
 npm install -g @cliftonz/tandoor-recipes-mcp
 ```

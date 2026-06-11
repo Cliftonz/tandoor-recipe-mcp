@@ -24,6 +24,7 @@ import { TandoorClient } from '../../src/clients/index.js';
 import { registerRecipeTools } from '../../src/tools/recipe.js';
 import { registerJqTools } from '../../src/tools/jq.js';
 import { _stashClear } from '../../src/lib/stash.js';
+import { checkTandoorVersion } from '../../src/lib/version-check.js';
 
 const url = process.env.TANDOOR_URL;
 const token = process.env.TANDOOR_TOKEN;
@@ -90,6 +91,15 @@ describeE2E('Tandoor E2E workflow', () => {
   it('server-settings endpoint responds', async () => {
     const s = await client.serverSettings.getCurrent();
     expect(s).toBeDefined();
+  });
+
+  it('version check returns ok against the live instance', async () => {
+    // Pins the wire contract: the payload field is named `version` and looks
+    // like a semver. If Tandoor renames it, every boot silently degrades to
+    // `unknown` — this is the only test that would catch that.
+    const r = await checkTandoorVersion(client);
+    expect(r.status).toBe('ok');
+    expect(r.version).toMatch(/^\d+\./);
   });
 
   it('list meal types returns something iterable', async () => {

@@ -41,7 +41,7 @@ const _warnedEnv = new Set<string>();
 function warnEnvOnce(name: string, value: string, fallback: string | number): void {
   if (_warnedEnv.has(name)) return;
   _warnedEnv.add(name);
-  console.error(`[tandoor-mcp] ignoring invalid ${name}=${JSON.stringify(value)}, using ${fallback}`);
+  console.error(`[tandoor-mcp] WARNING: ignoring invalid ${name}=${JSON.stringify(value)}, using ${fallback}`);
 }
 
 // Test-only: reset the warned-env set so each test starts clean.
