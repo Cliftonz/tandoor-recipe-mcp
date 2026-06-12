@@ -116,6 +116,15 @@ export class RecipeClient extends BaseClient {
     });
   }
 
+  /**
+   * Delete a recipe
+   */
+  async deleteRecipe(id: number): Promise<void> {
+    return this.request<void>(`/api/recipe/${id}/`, {
+      method: 'DELETE',
+    });
+  }
+
   /** Get recipes related to this one (Tandoor's similarity logic). */
   async relatedRecipes(id: number): Promise<any> {
     return this.request(`/api/recipe/${id}/related/`);

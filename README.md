@@ -133,8 +133,10 @@ The `basic` profile is useful when context size matters — every MCP client loa
 
 All write-returning tools default to a slim JSON shape. Pass `format: "full"` for the raw Tandoor response.
 
+**Destructive tools** (`delete_*`, `merge_*`) are irreversible. Their descriptions instruct the model to check usage first (e.g. `list_recipes({keywords: [id]})` before `delete_keyword`) and to prefer the non-destructive alternative where one exists (`merge_*` for deduplication, `update_recipe` with `private: true` instead of `delete_recipe`). Operators who want them gone entirely can set `TANDOOR_MCP_EXCLUDE="delete_*,merge_*"`; the permission config above makes Claude Code ask before any destructive call.
+
 ### Recipes
-`search_recipes` · `list_recipes` · `get_recipe` · `create_recipe` · `update_recipe` · `import_recipe_from_url` · `upload_recipe_image` · `related_recipes` · `add_recipe_to_shopping_list` · `recipe_ai_properties` · `recipe_batch_update`
+`search_recipes` · `list_recipes` · `get_recipe` · `create_recipe` · `update_recipe` · `delete_recipe` · `import_recipe_from_url` · `upload_recipe_image` · `related_recipes` · `add_recipe_to_shopping_list` · `recipe_ai_properties` · `recipe_batch_update`
 
 `search_recipes` is the preferred high-level entry point: it accepts food/keyword/book *names* (not IDs) and resolves them internally. Use `list_recipes` only for the raw ID-based filter surface.
 
@@ -171,6 +173,11 @@ All write-returning tools default to a slim JSON shape. Pass `format: "full"` fo
 
 ### Automations, user files, prefs, logs *(full profile)*
 `list_automations` · `*_automation` · `list_user_files` · `*_user_file` · `list_user_preferences` · `get_user_preference` · `update_user_preference` · `get_server_settings` · `get_share_link` · `list_view_logs` · `list_import_logs` · `list_ai_logs`
+
+### Utility *(both profiles)*
+`get_version` · `jq_query` · `jq_stash_stats`
+
+`get_version` reports the MCP server version plus the Tandoor version and compatibility status detected at startup. `jq_query` extracts subsets from stashed large results (see `TANDOOR_MCP_STASH_*` above).
 
 ## Gotchas
 

@@ -30,6 +30,7 @@ import { registerMiscTools } from './tools/misc.js';
 import { registerStepTools } from './tools/step.js';
 import { registerAdminTools } from './tools/admin.js';
 import { registerJqTools } from './tools/jq.js';
+import { registerVersionTools } from './tools/version.js';
 import { registerResources } from './resources/index.js';
 import { registerPrompts } from './prompts/index.js';
 
@@ -94,6 +95,7 @@ registerIngredientTools(server, tandoorClient);
 registerShoppingTools(server, tandoorClient);
 registerFoodUnitTools(server, tandoorClient);
 registerJqTools(server, tandoorClient);
+registerVersionTools(server, tandoorClient, pkg, versionCheck);
 registerResources(server, tandoorClient);
 registerPrompts(server, tandoorClient);
 

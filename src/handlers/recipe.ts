@@ -7,6 +7,7 @@ import type {
   GetRecipeArgs,
   CreateRecipeArgs,
   UpdateRecipeArgs,
+  DeleteRecipeArgs,
   ImportRecipeFromUrlArgs,
   UploadRecipeImageArgs,
   RelatedRecipesArgs,
@@ -590,6 +591,14 @@ async function resolveNames(
     else unresolved.push(name);
   }
   return { ids, unresolved };
+}
+
+export async function handleDeleteRecipe(
+  client: TandoorClient,
+  args: DeleteRecipeArgs
+): Promise<string> {
+  await client.recipes.deleteRecipe(args.id);
+  return `Recipe ${args.id} deleted successfully!`;
 }
 
 export async function handleSearchRecipes(

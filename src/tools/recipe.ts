@@ -9,6 +9,7 @@ import {
   handleGetRecipe,
   handleCreateRecipe,
   handleUpdateRecipe,
+  handleDeleteRecipe,
   handleImportRecipeFromUrl,
   handleUploadRecipeImage,
   handleRelatedRecipes,
@@ -136,6 +137,8 @@ export const updateRecipeShape = {
   format: formatEnum,
 } as const;
 
+export const deleteRecipeShape = { id: z.number().describe('Recipe ID') } as const;
+
 export const importRecipeFromUrlShape = {
   url: z.string().describe('Recipe URL to import'),
   name: z.string().optional().describe('Optional name for the stub recipe (only used if create_stub_on_failure=true and both scrapers fail)'),
@@ -182,6 +185,7 @@ export type ListRecipesArgs = z.infer<z.ZodObject<typeof listRecipesShape>>;
 export type GetRecipeArgs = z.infer<z.ZodObject<typeof getRecipeShape>>;
 export type CreateRecipeArgs = z.infer<z.ZodObject<typeof createRecipeShape>>;
 export type UpdateRecipeArgs = z.infer<z.ZodObject<typeof updateRecipeShape>>;
+export type DeleteRecipeArgs = z.infer<z.ZodObject<typeof deleteRecipeShape>>;
 export type ImportRecipeFromUrlArgs = z.infer<z.ZodObject<typeof importRecipeFromUrlShape>>;
 export type UploadRecipeImageArgs = z.infer<z.ZodObject<typeof uploadRecipeImageShape>>;
 export type RelatedRecipesArgs = z.infer<z.ZodObject<typeof relatedRecipesShape>>;
@@ -235,6 +239,12 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
       'Update recipe metadata and content. Only provide fields you want to update. All fields optional except id.',
     inputSchema: updateRecipeShape,
   }, handleUpdateRecipe);
+
+  registerStringTool(server, client, 'delete_recipe', {
+    description:
+      'Delete recipe by ID. Destructive + irreversible — removes the recipe, its steps, and its ingredients. Before calling, recommend: (1) confirm the target via get_recipe (name + id) so the wrong recipe is not deleted; (2) check meal-plan and recipe-book usage via list_meal_plans / recipe books, since references to the recipe are removed with it; (3) if the intent is to hide rather than remove, update_recipe with private=true is reversible.',
+    inputSchema: deleteRecipeShape,
+  }, handleDeleteRecipe);
 
   registerStringTool(server, client, 'import_recipe_from_url', {
     description:

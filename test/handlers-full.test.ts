@@ -18,7 +18,7 @@ import { handleCreateCookLog, handleListCookLogs } from '../src/handlers/cooklog
 import { handleCreateShoppingEntry, handleBulkCheckShoppingEntries } from '../src/handlers/shopping.js';
 import { handleCreateStep } from '../src/handlers/step.js';
 import { handleCreateBook, handleCreateBookEntry } from '../src/handlers/recipebook.js';
-import { handleSearchRecipes, handleRecipeBatchUpdate } from '../src/handlers/recipe.js';
+import { handleSearchRecipes, handleRecipeBatchUpdate, handleDeleteRecipe } from '../src/handlers/recipe.js';
 import { slimPaginated, emit } from '../src/lib/slim.js';
 
 // ---------- Shared helpers from src/lib/slim.ts ----------
@@ -415,6 +415,14 @@ describe('meal plan handlers — misc', () => {
     const client = { mealPlans: { deleteMealPlan: vi.fn(async () => undefined) } } as any;
     const out = await handleDeleteMealPlan(client, { id: 99 });
     expect(out).toMatch(/99 deleted/);
+  });
+
+  it('handleDeleteRecipe deletes by id and confirms in the success message', async () => {
+    const deleteRecipe = vi.fn(async () => undefined);
+    const client = { recipes: { deleteRecipe } } as any;
+    const out = await handleDeleteRecipe(client, { id: 42 });
+    expect(deleteRecipe).toHaveBeenCalledWith(42);
+    expect(out).toMatch(/42 deleted/);
   });
 
   it('handleListMealPlans forwards filters unchanged', async () => {
