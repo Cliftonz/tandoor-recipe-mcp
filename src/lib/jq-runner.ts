@@ -24,6 +24,14 @@ export interface JqResult {
 export const JQ_TIMEOUT_MS = 5_000;
 export const JQ_MAX_OUTPUT_BYTES = 5_000_000;
 
+// Resolve jq-wasm from THIS module's location, not the worker's. Eval
+// workers resolve bare specifiers against the process cwd, so an installed
+// copy of this server (npx/global) would fail with "Cannot find package
+// 'jq-wasm' imported from /[worker eval]" whenever the MCP client launches
+// it from a directory without jq-wasm in scope. import.meta.resolve walks
+// up from this file, which always sits next to its own node_modules.
+const JQ_WASM_URL = import.meta.resolve('jq-wasm');
+
 // CJS-style eval worker. `require` works in eval workers; dynamic `import()`
 // of an ESM-only package (jq-wasm) is supported in Node ≥18.
 const WORKER_SOURCE = `
@@ -33,7 +41,7 @@ let jqRaw = null;
 
 async function loadJq() {
   if (jqRaw) return jqRaw;
-  const mod = await import('jq-wasm');
+  const mod = await import(${JSON.stringify(JQ_WASM_URL)});
   const src = (mod && (mod.raw || mod.json)) ? mod : (mod && mod.default ? mod.default : null);
   if (!src || typeof src.raw !== 'function') {
     throw new Error('jq-wasm module is missing expected raw export');
