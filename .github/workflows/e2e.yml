@@ -37,9 +37,9 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        # See ci.yml for rationale: skip vitest's optional @rolldown WASM
-        # bindings so linux runners don't choke on the macOS-generated lock.
-        run: npm ci --omit=optional
+        # See ci.yml: `npm install --no-save` tolerates platform-specific
+        # optional-dep lock drift while keeping the committed lock pristine.
+        run: npm install --no-save --no-audit --no-fund
 
       - name: Build
         run: npm run build

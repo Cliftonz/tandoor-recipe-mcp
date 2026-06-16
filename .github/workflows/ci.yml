@@ -30,12 +30,13 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        # --omit=optional skips vitest's platform-specific @rolldown WASM
-        # bindings (linux-x64-gnu, etc). Lock file is generated on macOS
-        # where those optional deps aren't installed; CI runners on linux
-        # would otherwise see EUSAGE on missing transitive @emnapi entries.
-        # Vitest works fine without rolldown — falls back to esbuild.
-        run: npm ci --omit=optional
+        # `npm install --no-save` tolerates the platform-specific lock
+        # drift introduced by vitest's optional @rolldown WASM bindings
+        # (the macOS-generated lock can't carry every Linux variant of
+        # the transitive @emnapi entries that `npm ci` validates strictly).
+        # --no-save keeps the committed lock pristine; --no-audit + --no-fund
+        # match what `npm ci` would do for noise.
+        run: npm install --no-save --no-audit --no-fund
 
       - name: Audit dependencies
         run: npm audit --audit-level=high

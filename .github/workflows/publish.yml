@@ -37,9 +37,10 @@ jobs:
           cache: 'npm'
 
       - name: Install
-        # See ci.yml: --omit=optional dodges the macOS-generated-lock vs
-        # linux-runner-resolution mismatch for vitest's optional WASM deps.
-        run: npm ci --omit=optional
+        # See ci.yml: `npm install --no-save` tolerates platform-specific
+        # optional-dep lock drift; --no-save keeps the lock pristine for
+        # provenance attestation in the publish step below.
+        run: npm install --no-save --no-audit --no-fund
 
       - name: Build
         run: npm run build
