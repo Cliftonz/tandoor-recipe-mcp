@@ -1,8 +1,20 @@
 name: Release
 
-# Tags + creates a GitHub release whenever package.json version changes on main.
-# Uses a GitHub App token (not GITHUB_TOKEN) so the tag push triggers
-# publish.yml downstream — events from GITHUB_TOKEN are gated and would not.
+# Single-workflow release pipeline. Triggered on `package.json` changes on
+# main; if the version field actually changed, runs e2e → build → test →
+# tag → npm publish → gh release create — all in one job.
+#
+# Why one workflow: GitHub deliberately blocks workflow→workflow chains
+# authenticated via the default GITHUB_TOKEN (anti-loop protection). The
+# previous two-workflow split (release.yml tags, publish.yml publishes on
+# the tag event) needed a GitHub App token to bridge them, which is fragile
+# (App can be uninstalled, rotated, etc.). Collapsing into one workflow
+# removes the chain entirely — default GITHUB_TOKEN handles the tag push
+# because no downstream workflow needs to fire on it.
+#
+# Trade-off: you lose the ability to publish from an out-of-band tag push
+# (e.g. tagging an older commit manually). For this repo's pattern
+# (bump package.json → push main → ship) that's fine.
 
 on:
   push:
@@ -11,22 +23,23 @@ on:
       - 'package.json'
 
 permissions:
-  contents: read
+  contents: write   # push tag + create release
+  id-token: write   # npm Trusted Publishing OIDC
 
 jobs:
-  tag-and-release:
+  # Quick check: did the version field actually change vs HEAD~1? Avoids
+  # spending 10+ minutes on e2e when a package.json edit only touched
+  # scripts/dependencies.
+  detect:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.ver.outputs.changed }}
+      version: ${{ steps.ver.outputs.new }}
+      prerelease: ${{ steps.ver.outputs.prerelease }}
     steps:
-      - uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ secrets.RELEASE_APP_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-          token: ${{ steps.app-token.outputs.token }}
 
       - name: Detect version change
         id: ver
@@ -34,23 +47,104 @@ jobs:
           NEW="$(node -p "require('./package.json').version")"
           OLD="$(git show HEAD~1:package.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version" || echo "")"
           echo "new=$NEW" >> "$GITHUB_OUTPUT"
-          echo "old=$OLD" >> "$GITHUB_OUTPUT"
           if [ -z "$OLD" ] || [ "$NEW" = "$OLD" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+          # Prerelease detection: any tag like 1.4.0-rc.1 / -beta.2 / -alpha.0
+          # routes to the `next` npm dist-tag and is marked as prerelease on
+          # the GitHub release object so it doesn't displace `latest`.
+          if [[ "$NEW" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Tag and release
-        if: steps.ver.outputs.changed == 'true'
+  # Live-API gate — same as the standalone e2e workflow. Releases block
+  # on this: a red e2e suite means no tag, no publish.
+  e2e:
+    needs: detect
+    if: needs.detect.outputs.changed == 'true'
+    uses: ./.github/workflows/e2e.yml
+
+  publish:
+    needs: [detect, e2e]
+    if: needs.detect.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install
+        # See ci.yml for why --no-save (optional-dep lockfile drift on
+        # platform-specific @rolldown WASM bindings). --no-save keeps the
+        # committed lock pristine for npm provenance attestation below.
+        run: npm install --no-save --no-audit --no-fund
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        # CI=1 → vitest strict snapshot mode. Missing/stale snapshots fail.
+        run: npm run test:ci
+
+      # Defensive: detect.changed already implies a fresh version, but a
+      # racing pre-existing tag (e.g. a prior failed run that pushed the
+      # tag but not the release) would silently re-publish. Skip if already
+      # tagged.
+      - name: Check tag does not already exist
+        id: tagcheck
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          NEW: ${{ steps.ver.outputs.new }}
+          NEW: ${{ needs.detect.outputs.version }}
         run: |
           if git rev-parse "v$NEW" >/dev/null 2>&1; then
-            echo "Tag v$NEW already exists; skipping."
-            exit 0
+            echo "Tag v$NEW already exists locally — skipping publish."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          elif git ls-remote --tags origin "refs/tags/v$NEW" | grep -q .; then
+            echo "Tag v$NEW already exists on origin — skipping publish."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
-          git tag "v$NEW"
+
+      - name: Tag commit and push tag
+        if: steps.tagcheck.outputs.skip != 'true'
+        env:
+          NEW: ${{ needs.detect.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$NEW" -m "v$NEW"
           git push origin "v$NEW"
-          gh release create "v$NEW" --generate-notes --target "$GITHUB_SHA"
+
+      # npm Trusted Publishing — no NPM_TOKEN secret. Requires:
+      #   - id-token: write (above)
+      #   - Trusted Publisher configured on npmjs.com for this package
+      #   - npm CLI ≥ 11.5.1 (Node 24 ships 11; explicit `npm i -g npm@latest`
+      #     below pins forward in case of regressions).
+      - name: Publish to npm
+        if: steps.tagcheck.outputs.skip != 'true'
+        run: |
+          if [ "${{ needs.detect.outputs.prerelease }}" = "true" ]; then
+            npm publish --provenance --access public --tag next
+          else
+            npm publish --provenance --access public
+          fi
+
+      - name: Create GitHub release
+        if: steps.tagcheck.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW: ${{ needs.detect.outputs.version }}
+        run: |
+          if [ "${{ needs.detect.outputs.prerelease }}" = "true" ]; then
+            gh release create "v$NEW" --prerelease --generate-notes --target "$GITHUB_SHA" --title "v$NEW"
+          else
+            gh release create "v$NEW" --generate-notes --target "$GITHUB_SHA" --title "v$NEW"
+          fi
