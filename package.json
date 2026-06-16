@@ -1,6 +1,6 @@
 {
   "name": "@cliftonz/tandoor-recipes-mcp",
-  "version": "1.4.0-rc.4",
+  "version": "1.4.0-rc.5",
   "description": "Model Context Protocol server for Tandoor — recipes, meal plans, shopping lists, ingredients, cook logs, nutrition, AI import, and more.",
   "type": "module",
   "main": "./build/index.js",
