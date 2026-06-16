@@ -24,25 +24,29 @@ function needsIncludes(needs: unknown, target: string): boolean {
 }
 
 describe('release-gating workflow shape', () => {
-  let publish: any;
+  let release: any;
   let e2e: any;
 
   beforeAll(() => {
-    publish = readWorkflow('publish.yml');
+    // Merged workflow: release.yml owns detect → e2e → build → test → tag →
+    // npm publish → gh release. The contract this file pins is "publish job
+    // must depend on e2e" — same shape as the old two-workflow split, just
+    // collapsed into one file (commit f8355a3).
+    release = readWorkflow('release.yml');
     e2e = readWorkflow('e2e.yml');
   });
 
   it('publish job has an e2e job in its needs (bareword or array)', () => {
-    expect(publish.jobs.publish).toBeDefined();
-    expect(needsIncludes(publish.jobs.publish.needs, 'e2e')).toBe(true);
+    expect(release.jobs.publish).toBeDefined();
+    expect(needsIncludes(release.jobs.publish.needs, 'e2e')).toBe(true);
   });
 
-  it('publish defines an e2e reusable-workflow job pointing at e2e.yml', () => {
-    expect(publish.jobs.e2e).toBeDefined();
-    expect(publish.jobs.e2e.uses).toBe('./.github/workflows/e2e.yml');
+  it('release workflow defines an e2e reusable-workflow job pointing at e2e.yml', () => {
+    expect(release.jobs.e2e).toBeDefined();
+    expect(release.jobs.e2e.uses).toBe('./.github/workflows/e2e.yml');
   });
 
-  it('e2e workflow exposes workflow_call so publish can invoke it', () => {
+  it('e2e workflow exposes workflow_call so release can invoke it', () => {
     // YAML parses `on:` as a key; reusable-workflow trigger is `workflow_call`.
     // The key can be top-level `on: { workflow_call: ... }` or a list — both
     // shapes resolve to a key on `on`.
@@ -51,8 +55,8 @@ describe('release-gating workflow shape', () => {
     expect(triggers.workflow_call !== undefined || Array.isArray(triggers) && triggers.includes('workflow_call')).toBe(true);
   });
 
-  it('publish workflow runs strict CI snapshot mode via test:ci', () => {
-    const steps = publish.jobs.publish.steps as any[];
+  it('publish job runs strict CI snapshot mode via test:ci', () => {
+    const steps = release.jobs.publish.steps as any[];
     const hasTestCi = steps.some((s) => typeof s.run === 'string' && /\btest:ci\b/.test(s.run));
     expect(hasTestCi).toBe(true);
   });
@@ -65,5 +69,24 @@ describe('release-gating workflow shape', () => {
     const bootstrapIdx = steps.indexOf(bootstrapStep);
     expect(bootstrapIdx).toBeGreaterThanOrEqual(0);
     expect(testStep).toBeGreaterThan(bootstrapIdx);
+  });
+
+  it('publish job tags the commit and pushes the tag before npm publish', () => {
+    // The merged workflow is the only thing that creates the tag, so the
+    // ordering matters: tag → push tag → npm publish ensures provenance and
+    // GH release reference the same SHA, and a failure between npm publish
+    // and gh release create leaves a recoverable npm-only state.
+    const steps = release.jobs.publish.steps as any[];
+    const tagIdx = steps.findIndex((s) => typeof s.run === 'string' && /git tag .* "v\$NEW"/.test(s.run));
+    const publishIdx = steps.findIndex((s) => typeof s.run === 'string' && /npm publish/.test(s.run));
+    expect(tagIdx).toBeGreaterThanOrEqual(0);
+    expect(publishIdx).toBeGreaterThan(tagIdx);
+  });
+
+  it('publish job routes prereleases to the next dist-tag', () => {
+    const steps = release.jobs.publish.steps as any[];
+    const publishStep = steps.find((s) => typeof s.run === 'string' && /npm publish/.test(s.run));
+    expect(publishStep).toBeDefined();
+    expect(publishStep.run).toMatch(/--tag next/);
   });
 });
