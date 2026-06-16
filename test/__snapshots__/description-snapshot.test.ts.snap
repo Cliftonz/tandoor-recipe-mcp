@@ -1,0 +1,5260 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`tool description snapshot (full profile) > descriptions match the recorded snapshot 1`] = `
+[
+  {
+    "description": "Add a recipe to a recipe book. Required: book (id), recipe (id).",
+    "name": "add_recipe_to_book",
+  },
+  {
+    "description": "Add a recipe's ingredients to the shopping list at N servings. Omit ingredients[] to add all. Set servings=0 with list_recipe (id) to delete that shopping-list-recipe.",
+    "name": "add_recipe_to_shopping_list",
+  },
+  {
+    "description": "Auto-generate meal plans. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, keyword_ids[], servings, addshopping",
+    "name": "auto_meal_plan",
+  },
+  {
+    "description": "Bulk check or uncheck many shopping entries by ID list.",
+    "name": "bulk_check_shopping_entries",
+  },
+  {
+    "description": "Client-side batched create_meal_plan. Tandoor has no server-side bulk endpoint — this handler dedupes meal_type_ids and recipe_ids across entries, hydrates each unique id once, then creates all entries in parallel. Use for "plan the week" (7+ entries) to avoid N×3 round-trips. Each entry takes the same args as create_meal_plan: {recipe_id?, title?, servings, from_date, to_date?, meal_type_id, note?, addshopping?}. Returns {count, created: [{index, id, recipe_id, meal_type_id, ...}], failed: [{index, error}]} — individual failures do NOT abort the batch so you can see partial success and retry the failures.",
+    "name": "bulk_create_meal_plans",
+  },
+  {
+    "description": "Append many shopping entries to an existing shopping-list-recipe in one call.",
+    "name": "bulk_create_shopping_list_recipe_entries",
+  },
+  {
+    "description": "Create an automation rule. Required: type (FOOD_ALIAS/UNIT_ALIAS/KEYWORD_ALIAS/DESCRIPTION_REPLACE/INSTRUCTION_REPLACE/NEVER_UNIT/TRANSPOSE_WORDS/FOOD_REPLACE/UNIT_REPLACE/NAME_REPLACE). params: param_1/2/3 carry rule-specific args (e.g. alias → canonical).",
+    "name": "create_automation",
+  },
+  {
+    "description": "Log that a recipe was cooked. Required: recipe (id). Optional: servings, rating, comment, created_at.",
+    "name": "create_cook_log",
+  },
+  {
+    "description": "Create a custom filter. Required: name, search (filter DSL string). Optional: shared_user_ids[].",
+    "name": "create_custom_filter",
+  },
+  {
+    "description": "Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id.",
+    "name": "create_food",
+  },
+  {
+    "description": "Create ingredient. Required: food_id. Optional: unit_id, amount, note, order, is_header, no_amount, original_text, always_use_plural_unit, always_use_plural_food",
+    "name": "create_ingredient",
+  },
+  {
+    "description": "Create keyword. Required: name. Optional: description.",
+    "name": "create_keyword",
+  },
+  {
+    "description": "Create meal plan. Required: from_date (ISO), meal_type_id, servings. Optional: recipe_id, title, note, addshopping",
+    "name": "create_meal_plan",
+  },
+  {
+    "description": "Create property value. Required: property_type_id, property_amount.",
+    "name": "create_property",
+  },
+  {
+    "description": "Create property type. Required: name. Optional: unit, description, order, open_data_slug, fdc_id.",
+    "name": "create_property_type",
+  },
+  {
+    "description": "Create recipe. Required: name, steps[{instruction, ingredients[{food, amount, unit?}]}]. Optional: description, servings, working_time, waiting_time, keywords[]",
+    "name": "create_recipe",
+  },
+  {
+    "description": "Create a recipe book. Required: name. Optional: description, order, filter_id (CustomFilter id), shared_user_ids[].",
+    "name": "create_recipe_book",
+  },
+  {
+    "description": "Create a shopping list entry. Required: amount, food_id. Optional: unit_id, checked, list_recipe, ingredient, order, delay_until, mealplan_id (links to existing/new ShoppingListRecipe for that mealplan).",
+    "name": "create_shopping_entry",
+  },
+  {
+    "description": "Create a shopping-list-recipe. Required: servings. Optional: name, recipe (id), mealplan (id).",
+    "name": "create_shopping_list_recipe",
+  },
+  {
+    "description": "Create a step (standalone). Required: instruction. Optional: name, time, order, show_as_header, show_ingredients_table, step_recipe (nested recipe id), ingredients[]. Ingredients take food/food_id and unit/unit_id.",
+    "name": "create_step",
+  },
+  {
+    "description": "Create supermarket category. Required: name.",
+    "name": "create_supermarket_category",
+  },
+  {
+    "description": "Create relation. Required: category_id, supermarket (id). Optional: order.",
+    "name": "create_supermarket_category_relation",
+  },
+  {
+    "description": "Create unit. Required: name. Optional: plural_name, description, base_unit.",
+    "name": "create_unit",
+  },
+  {
+    "description": "Create unit conversion. Required: base_amount, converted_amount, base_unit_id, converted_unit_id. Optional: food_id (for food-specific conversion).",
+    "name": "create_unit_conversion",
+  },
+  {
+    "description": "Delete automation by ID.",
+    "name": "delete_automation",
+  },
+  {
+    "description": "Delete a cook log entry by ID.",
+    "name": "delete_cook_log",
+  },
+  {
+    "description": "Delete custom filter by ID.",
+    "name": "delete_custom_filter",
+  },
+  {
+    "description": "Delete food by ID. Destructive + irreversible. Before calling, recommend: (1) check recipe usage via list_recipes({foods: [id]}) — if recipes reference it, they will lose the ingredient link; (2) if the intent is deduplication not removal, use merge_food instead so references follow the merge.",
+    "name": "delete_food",
+  },
+  {
+    "description": "Delete ingredient by ID",
+    "name": "delete_ingredient",
+  },
+  {
+    "description": "Delete keyword by ID. Destructive + irreversible. Before calling, recommend: (1) check recipe usage via list_recipes({keywords: [id]}) so you know how many recipes lose the tag; (2) if the intent is merging duplicates (e.g., "weeknight" + "Weeknight"), use merge_keyword instead.",
+    "name": "delete_keyword",
+  },
+  {
+    "description": "Delete meal plan by ID",
+    "name": "delete_meal_plan",
+  },
+  {
+    "description": "Delete property by ID.",
+    "name": "delete_property",
+  },
+  {
+    "description": "Delete property type by ID.",
+    "name": "delete_property_type",
+  },
+  {
+    "description": "Delete recipe by ID. Destructive + irreversible — removes the recipe, its steps, and its ingredients. Before calling, recommend: (1) confirm the target via get_recipe (name + id) so the wrong recipe is not deleted; (2) check meal-plan and recipe-book usage via list_meal_plans / recipe books, since references to the recipe are removed with it; (3) if the intent is to hide rather than remove, update_recipe with private=true is reversible.",
+    "name": "delete_recipe",
+  },
+  {
+    "description": "Delete a recipe book by ID.",
+    "name": "delete_recipe_book",
+  },
+  {
+    "description": "Delete a shopping entry by ID.",
+    "name": "delete_shopping_entry",
+  },
+  {
+    "description": "Delete a shopping-list-recipe by ID.",
+    "name": "delete_shopping_list_recipe",
+  },
+  {
+    "description": "Delete a step by ID.",
+    "name": "delete_step",
+  },
+  {
+    "description": "Delete supermarket category by ID.",
+    "name": "delete_supermarket_category",
+  },
+  {
+    "description": "Delete relation by ID.",
+    "name": "delete_supermarket_category_relation",
+  },
+  {
+    "description": "Delete unit by ID. Destructive + irreversible. Before calling, recommend: (1) check ingredient + unit_conversion usage — unit deletions cascade into "None" unit on ingredients; (2) if the intent is deduplication (e.g., "cup" vs "cups"), use merge_unit instead so references follow the merge.",
+    "name": "delete_unit",
+  },
+  {
+    "description": "Delete unit conversion by ID.",
+    "name": "delete_unit_conversion",
+  },
+  {
+    "description": "Delete a user file by ID.",
+    "name": "delete_user_file",
+  },
+  {
+    "description": "Enrich a food with AI-generated properties (fallback path when USDA FDC is incomplete). Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend: (1) prefer food_fdc_lookup when the food has an fdc_id — it is deterministic, free, and does not need AI setup; (2) otherwise ask the operator to add an AI provider in Tandoor Settings → AI (OpenAI/Anthropic/Ollama/etc.).",
+    "name": "food_ai_properties",
+  },
+  {
+    "description": "Apply a narrow set of bulk mutations across many foods in one call via Tandoor's /api/food/batch_update/ endpoint. Required: foods[]. Optional (all apply to every food in foods[]): category (set supermarket_category, null clears), substitute_add/remove/set/remove_all, inherit_fields_add/remove/set/remove_all, child_inherit_fields_* (same pattern), substitute_children/siblings (boolean), ignore_shopping, on_hand, parent_set/parent_remove. Does NOT support bulk name/plural/description/fdc_id edits — those still need update_food per-item. Use for: pantry on-hand toggle across a set, retagging supermarket category, configuring substitute groups.",
+    "name": "food_batch_update",
+  },
+  {
+    "description": "Enrich a food with USDA FDC nutrition data. Optional: fdc_id to set/override the USDA FDC id before lookup. Tandoor populates fdc-linked properties; manually-entered properties without fdc_id are preserved. Rate limit: Tandoor defaults to USDA DEMO_KEY (30 req/hour/IP) — bulk enrichment will 429. Operator should set FDC_API_KEY on the Tandoor container (free key at api.data.gov/signup) to raise the limit to 1000/hour. Fallback for FDC 404s: food_ai_properties.",
+    "name": "food_fdc_lookup",
+  },
+  {
+    "description": "Add a food to active shopping lists with optional amount/unit. Pass delete=true to remove this food from all active lists.",
+    "name": "food_shopping_update",
+  },
+  {
+    "description": "Get automation rule by ID.",
+    "name": "get_automation",
+  },
+  {
+    "description": "Get a cook log entry by ID.",
+    "name": "get_cook_log",
+  },
+  {
+    "description": "Get custom filter by ID.",
+    "name": "get_custom_filter",
+  },
+  {
+    "description": "Get food by ID.",
+    "name": "get_food",
+  },
+  {
+    "description": "Inspect security-guard rejection counters (PathGuardError, SsrfBlockedError) since process start. Useful for dashboards and "is anything probing me?" checks.",
+    "name": "get_guard_stats",
+  },
+  {
+    "description": "Get ingredient by ID",
+    "name": "get_ingredient",
+  },
+  {
+    "description": "Get keyword by ID.",
+    "name": "get_keyword",
+  },
+  {
+    "description": "Get meal plan by ID",
+    "name": "get_meal_plan",
+  },
+  {
+    "description": "Get property by ID.",
+    "name": "get_property",
+  },
+  {
+    "description": "Get property type by ID.",
+    "name": "get_property_type",
+  },
+  {
+    "description": "Get recipe by ID. Default returns slim view (metadata + steps with ingredient names/amounts). Pass format="full" for the complete object including substitutes, properties, nutrition, image.",
+    "name": "get_recipe",
+  },
+  {
+    "description": "Get recipe book by ID.",
+    "name": "get_recipe_book",
+  },
+  {
+    "description": "Get a recipe-book-entry by ID.",
+    "name": "get_recipe_book_entry",
+  },
+  {
+    "description": "Fetch current Tandoor server settings (feature flags, limits). Useful to check whether AI, sharing, or open-data import are enabled before calling those tools.",
+    "name": "get_server_settings",
+  },
+  {
+    "description": "Retrieve an existing share link by ID. Note: Tandoor's REST API does not expose create/list/delete for share links — create them via the web UI.",
+    "name": "get_share_link",
+  },
+  {
+    "description": "Get a shopping list entry by ID.",
+    "name": "get_shopping_entry",
+  },
+  {
+    "description": "Get a shopping-list-recipe by ID.",
+    "name": "get_shopping_list_recipe",
+  },
+  {
+    "description": "Get a step by ID.",
+    "name": "get_step",
+  },
+  {
+    "description": "Get supermarket category by ID.",
+    "name": "get_supermarket_category",
+  },
+  {
+    "description": "Get relation by ID.",
+    "name": "get_supermarket_category_relation",
+  },
+  {
+    "description": "Get unit by ID.",
+    "name": "get_unit",
+  },
+  {
+    "description": "Get unit conversion by ID.",
+    "name": "get_unit_conversion",
+  },
+  {
+    "description": "Get user file metadata by ID.",
+    "name": "get_user_file",
+  },
+  {
+    "description": "Get preferences for a user by their user ID.",
+    "name": "get_user_preference",
+  },
+  {
+    "description": "Report this MCP server's name/version and the Tandoor server version + compatibility status detected at startup (ok | unsupported | unknown). No arguments; answers from cached startup state without a network call.",
+    "name": "get_version",
+  },
+  {
+    "description": "Import a recipe from an image, PDF, or text via Tandoor AI provider. Provide one of: file_path (local file readable by the MCP server), file_url (remote URL we fetch then upload), or text. By default the parsed recipe is saved to Tandoor; pass save=false to only return the parse result. ai_provider_id is auto-picked if omitted. If no AI provider is configured, this tool cannot work — recommend: (1) ask the operator to add one in Tandoor Settings → AI; (2) for web recipes, fall back to import_recipe_from_url (uses Tandoor scraper + JSON-LD, no AI required); (3) for text-only input, type up the structure manually via create_recipe.",
+    "name": "import_recipe_from_image",
+  },
+  {
+    "description": "Import a recipe from a URL. Tries Tandoor's built-in scraper first, then fetches the page and extracts schema.org JSON-LD as a real fallback (works when Tandoor can't reach the URL or doesn't support the site). On total failure, throws with an attempts log — pass create_stub_on_failure=true to write an empty placeholder recipe instead. If all stages fail, recommend: (1) retry with create_stub_on_failure=true to capture the URL as a stub you can fill in later; (2) if the page is an image/PDF, use import_recipe_from_image (AI provider required); (3) if the URL is paywalled or JS-rendered, fall back to manual create_recipe with fields you can see.",
+    "name": "import_recipe_from_url",
+  },
+  {
+    "description": "Run a jq filter against a previously stashed tool result and return the focused subset. Use this when a prior tool returned \`{stashed:true, handle, shape, sample_filters}\` instead of the full payload. Treat the stash like a JSON document the user already paid for — extract only what you need. Common filters: ".results | length", ".results[] | select(.id == 42)", ".results | map({id, name})", "keys", ".count".",
+    "name": "jq_query",
+  },
+  {
+    "description": "Inspect the in-memory stash (count + total bytes). Diagnostic; not normally needed.",
+    "name": "jq_stash_stats",
+  },
+  {
+    "description": "List AI-log entries (AI usage history + credit cost).",
+    "name": "list_ai_logs",
+  },
+  {
+    "description": "List configured AI providers (used by ai-import). Slim default.",
+    "name": "list_ai_providers",
+  },
+  {
+    "description": "List automation rules (auto-apply keyword aliases, food aliases, replace rules, etc.).",
+    "name": "list_automations",
+  },
+  {
+    "description": "List cook log entries (recipe cooking history). Optional: recipe (id filter), page, page_size.",
+    "name": "list_cook_logs",
+  },
+  {
+    "description": "List saved custom filters. search field uses Tandoor filter DSL.",
+    "name": "list_custom_filters",
+  },
+  {
+    "description": "List foods. Optional: query (case-insensitive name match), root (parent id, 0 for top-level), tree (id), random, limit, page, page_size.",
+    "name": "list_foods",
+  },
+  {
+    "description": "List import-log entries (URL/AI/bookmarklet import history).",
+    "name": "list_import_logs",
+  },
+  {
+    "description": "List ingredients. Optional filters: food (food id), unit (unit id), page, page_size",
+    "name": "list_ingredients",
+  },
+  {
+    "description": "List keywords (recipe tags). Optional: query, root, tree, random, limit, page, page_size.",
+    "name": "list_keywords",
+  },
+  {
+    "description": "List meal plans. Optional: from_date, to_date (YYYY-MM-DD), page, page_size",
+    "name": "list_meal_plans",
+  },
+  {
+    "description": "List available meal types (breakfast, lunch, dinner, etc.)",
+    "name": "list_meal_types",
+  },
+  {
+    "description": "List properties.",
+    "name": "list_properties",
+  },
+  {
+    "description": "List property types. Optional: category[] (ALLERGEN/GOAL/NUTRITION/OTHER/PRICE).",
+    "name": "list_property_types",
+  },
+  {
+    "description": "List recipe-book-entry rows (recipe ↔ book links). Optional: book (id), page, page_size.",
+    "name": "list_recipe_book_entries",
+  },
+  {
+    "description": "List recipe books (collections). Optional: order_field (id/name/order), order_direction (asc/desc), limit, page, page_size.",
+    "name": "list_recipe_books",
+  },
+  {
+    "description": "List/search recipes with extensive filtering. Default returns slim results (id, name, description, servings, rating, keywords). Pass format="full" for raw API response. sort_order options: score,-score,name,-name,lastcooked,-lastcooked,rating,-rating,times_cooked,-times_cooked,created_at,-created_at,lastviewed,-lastviewed. If filtering by food/keyword/book NAMES (not ids), prefer search_recipes — it resolves names to ids for you and reports unresolved names in _meta.unresolved so you know what was dropped. If this returns an empty result set, recommend: broaden the query, drop restrictive filters, or try search_recipes if you were passing names.",
+    "name": "list_recipes",
+  },
+  {
+    "description": "List shopping list entries (auto-filtered to unchecked + recent by Tandoor). Optional: mealplan, updated_after (ISO), page, page_size, format.",
+    "name": "list_shopping_entries",
+  },
+  {
+    "description": "List shopping-list-recipe groupings (a recipe added to the shopping list).",
+    "name": "list_shopping_list_recipes",
+  },
+  {
+    "description": "List recipe steps (standalone). Optional: recipe (array of recipe ids), query, page, page_size.",
+    "name": "list_steps",
+  },
+  {
+    "description": "List supermarket categories (used to organize shopping list by aisle).",
+    "name": "list_supermarket_categories",
+  },
+  {
+    "description": "List supermarket↔category orderings.",
+    "name": "list_supermarket_category_relations",
+  },
+  {
+    "description": "List unit conversions. Optional: food_id (filter), query, page, page_size.",
+    "name": "list_unit_conversions",
+  },
+  {
+    "description": "List units. Optional: query, limit, page, page_size, random.",
+    "name": "list_units",
+  },
+  {
+    "description": "List user-uploaded files (step attachments, etc.).",
+    "name": "list_user_files",
+  },
+  {
+    "description": "List user preferences (typically just the current user).",
+    "name": "list_user_preferences",
+  },
+  {
+    "description": "List recipe view-log entries (which recipes have been viewed and when).",
+    "name": "list_view_logs",
+  },
+  {
+    "description": "Merge food \`id\` into \`target\` food (deduplication). All references to id will point to target. Destructive + irreversible. Before calling, recommend: (1) confirm both foods via get_food on each so you are sure which survives (target) and which is absorbed (id); (2) check numrecipe on each via list_foods to understand the migration size; (3) if you actually want the other direction, swap id and target.",
+    "name": "merge_food",
+  },
+  {
+    "description": "Merge keyword \`id\` into \`target\` keyword. Destructive + irreversible. All recipes tagged with id will be retagged to target. Before calling, recommend: (1) confirm both via get_keyword so you are sure which survives (target) and which is absorbed (id); (2) check numrecipe on each via list_keywords to understand the migration size.",
+    "name": "merge_keyword",
+  },
+  {
+    "description": "Merge supermarket category \`id\` into \`target\`.",
+    "name": "merge_supermarket_category",
+  },
+  {
+    "description": "Merge unit \`id\` into \`target\` unit (deduplication). Destructive + irreversible. Before calling, recommend: (1) confirm base_unit compatibility via get_unit on each — merging units with different base_unit (e.g., mass into volume) will break existing conversion math; (2) if the intent is a one-way rename, update_unit is safer.",
+    "name": "merge_unit",
+  },
+  {
+    "description": "Move food \`id\` under a new parent (tree reparent). Use parent=0 for root.",
+    "name": "move_food",
+  },
+  {
+    "description": "Move keyword \`id\` under parent (parent=0 for root).",
+    "name": "move_keyword",
+  },
+  {
+    "description": "Parse a free-form ingredient string (e.g. "2 cups flour") into amount, unit, food, note. Tandoor's parser is heuristic and can misfire on compound descriptions, brand names, or non-English units. If the result looks wrong or unit/food come back null, recommend: construct the ingredient directly via create_ingredient with explicit food_id (via find_or_create on the food name) and unit_id. That path is deterministic.",
+    "name": "parse_ingredient",
+  },
+  {
+    "description": "Have AI compute nutrition/properties for a full recipe. Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend the operator add one in Tandoor Settings → AI. For single-ingredient nutrition use food_fdc_lookup instead — deterministic and no AI setup required.",
+    "name": "recipe_ai_properties",
+  },
+  {
+    "description": "Apply a narrow set of bulk mutations across many recipes in one call via Tandoor's /api/recipe/batch_update/ endpoint. Required: recipes[]. Optional (all apply to every recipe in recipes[]): keywords_add/remove/set/remove_all, shared_add/remove/set/remove_all, working_time, waiting_time, servings, servings_text, private, show_ingredient_overview, clear_description. Does NOT support bulk step/ingredient edits — those still need update_recipe per-item. Use for: bulk keyword retagging, sharing recipes with a user across a set, flipping privacy on many recipes at once.",
+    "name": "recipe_batch_update",
+  },
+  {
+    "description": "List recipes related to this one (Tandoor similarity). Slim by default (id + name); pass format="full" for raw API response.",
+    "name": "related_recipes",
+  },
+  {
+    "description": "Remove a recipe from a book by entry ID.",
+    "name": "remove_recipe_from_book",
+  },
+  {
+    "description": "High-level recipe search. Accepts food/keyword/book *names* (not IDs) and resolves them internally — typically collapses 3-4 round-trips into 1. Example: {foods: ["chicken", "broccoli"], exclude_foods: ["peanuts"], keywords: ["weeknight"]}. For complex ID-based filtering, fall back to list_recipes.",
+    "name": "search_recipes",
+  },
+  {
+    "description": "Update automation (PATCH). Required: id.",
+    "name": "update_automation",
+  },
+  {
+    "description": "Update a cook log entry (PATCH). Required: id.",
+    "name": "update_cook_log",
+  },
+  {
+    "description": "Update custom filter (PATCH). Required: id.",
+    "name": "update_custom_filter",
+  },
+  {
+    "description": "Update food (PATCH). Required: id.",
+    "name": "update_food",
+  },
+  {
+    "description": "Partially update ingredient (PATCH). Required: id. All other fields optional. Pass unit_id: null to clear unit",
+    "name": "update_ingredient",
+  },
+  {
+    "description": "Update keyword (PATCH). Required: id.",
+    "name": "update_keyword",
+  },
+  {
+    "description": "Update meal plan. Required: id. All other fields optional",
+    "name": "update_meal_plan",
+  },
+  {
+    "description": "Update property (PATCH). Required: id.",
+    "name": "update_property",
+  },
+  {
+    "description": "Update property type (PATCH). Required: id.",
+    "name": "update_property_type",
+  },
+  {
+    "description": "Update recipe metadata and content. Only provide fields you want to update. All fields optional except id.",
+    "name": "update_recipe",
+  },
+  {
+    "description": "Update a recipe book (PATCH). Required: id.",
+    "name": "update_recipe_book",
+  },
+  {
+    "description": "Update a shopping entry (PATCH). Required: id. Other fields optional.",
+    "name": "update_shopping_entry",
+  },
+  {
+    "description": "Update a shopping-list-recipe (PATCH). Required: id.",
+    "name": "update_shopping_list_recipe",
+  },
+  {
+    "description": "Update a step (PATCH). Required: id. Any field provided replaces. ingredients[] is a full replacement of the step's ingredients.",
+    "name": "update_step",
+  },
+  {
+    "description": "Update supermarket category (PATCH). Required: id.",
+    "name": "update_supermarket_category",
+  },
+  {
+    "description": "Update relation (PATCH). Required: id.",
+    "name": "update_supermarket_category_relation",
+  },
+  {
+    "description": "Update unit (PATCH). Required: id.",
+    "name": "update_unit",
+  },
+  {
+    "description": "Update unit conversion (PATCH). Required: id.",
+    "name": "update_unit_conversion",
+  },
+  {
+    "description": "Rename a user file (PATCH). Required: id, name.",
+    "name": "update_user_file",
+  },
+  {
+    "description": "Update user preferences (PATCH). Required: user_id. Common fields: theme, default_page (SEARCH/PLAN/BOOKS/SHOPPING), default_unit, use_fractions, use_kj, comments, ingredient_decimals, shopping_auto_sync, shopping_recent_days, mealplan_autoadd_shopping, mealplan_autoinclude_related, mealplan_autoexclude_onhand, filter_to_supermarket, left_handed, plan_share_user_ids[], shopping_share_user_ids[].",
+    "name": "update_user_preference",
+  },
+  {
+    "description": "Attach an image to a recipe. Provide exactly one of: file_path (local file on MCP server), file_url (remote URL; we fetch and upload bytes), or image_url (remote URL; Tandoor fetches it server-side). If a large local upload fails on size/timeout, recommend image_url instead — Tandoor fetches it server-side so the file never transits through the MCP process.",
+    "name": "upload_recipe_image",
+  },
+  {
+    "description": "Upload a user file. Required: name. Provide exactly one of file_path (local) or file_url (we fetch and upload bytes).",
+    "name": "upload_user_file",
+  },
+]
+`;
+
+exports[`tool description snapshot (full profile) > input schemas match the recorded snapshot 1`] = `
+[
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "book": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "recipe": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "book",
+        "recipe",
+      ],
+      "type": "object",
+    },
+    "name": "add_recipe_to_book",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Recipe ID",
+          "type": "number",
+        },
+        "ingredients": {
+          "description": "Ingredient IDs to include. Omit for all.",
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "list_recipe": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+          "description": "Existing shopping-list-recipe id to update",
+        },
+        "servings": {
+          "description": "Default 1. Use 0 with list_recipe to delete.",
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "add_recipe_to_shopping_list",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "addshopping": {
+          "type": "boolean",
+        },
+        "end_date": {
+          "type": "string",
+        },
+        "keyword_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "meal_type_id": {
+          "type": "number",
+        },
+        "servings": {
+          "type": "number",
+        },
+        "start_date": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "start_date",
+        "end_date",
+        "meal_type_id",
+        "keyword_ids",
+        "servings",
+        "addshopping",
+      ],
+      "type": "object",
+    },
+    "name": "auto_meal_plan",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "checked": {
+          "type": "boolean",
+        },
+        "ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "ids",
+        "checked",
+      ],
+      "type": "object",
+    },
+    "name": "bulk_check_shopping_entries",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "entries": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "addshopping": {
+                "type": "boolean",
+              },
+              "from_date": {
+                "type": "string",
+              },
+              "meal_type_id": {
+                "type": "number",
+              },
+              "note": {
+                "type": "string",
+              },
+              "recipe_id": {
+                "type": "number",
+              },
+              "servings": {
+                "type": "number",
+              },
+              "title": {
+                "type": "string",
+              },
+              "to_date": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "servings",
+              "from_date",
+              "meal_type_id",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "entries",
+      ],
+      "type": "object",
+    },
+    "name": "bulk_create_meal_plans",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "entries": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "type": "number",
+              },
+              "food_id": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "ingredient_id": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "unit_id": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+            },
+            "required": [
+              "amount",
+              "food_id",
+              "unit_id",
+              "ingredient_id",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+        "entries",
+      ],
+      "type": "object",
+    },
+    "name": "bulk_create_shopping_list_recipe_entries",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+        },
+        "disabled": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "order": {
+          "type": "number",
+        },
+        "param_1": {
+          "type": "string",
+        },
+        "param_2": {
+          "type": "string",
+        },
+        "param_3": {
+          "type": "string",
+        },
+        "type": {
+          "enum": [
+            "FOOD_ALIAS",
+            "UNIT_ALIAS",
+            "KEYWORD_ALIAS",
+            "DESCRIPTION_REPLACE",
+            "INSTRUCTION_REPLACE",
+            "NEVER_UNIT",
+            "TRANSPOSE_WORDS",
+            "FOOD_REPLACE",
+            "UNIT_REPLACE",
+            "NAME_REPLACE",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "type",
+      ],
+      "type": "object",
+    },
+    "name": "create_automation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "comment": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "created_at": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "rating": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "recipe": {
+          "type": "number",
+        },
+        "servings": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "recipe",
+      ],
+      "type": "object",
+    },
+    "name": "create_cook_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "search": {
+          "type": "string",
+        },
+        "shared_user_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "name",
+        "search",
+      ],
+      "type": "object",
+    },
+    "name": "create_custom_filter",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+        },
+        "fdc_id": {
+          "type": "number",
+        },
+        "food_onhand": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "plural_name": {
+          "type": "string",
+        },
+        "supermarket_category_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_food",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "always_use_plural_food": {
+          "type": "boolean",
+        },
+        "always_use_plural_unit": {
+          "type": "boolean",
+        },
+        "amount": {
+          "type": "number",
+        },
+        "food_id": {
+          "type": "number",
+        },
+        "is_header": {
+          "type": "boolean",
+        },
+        "no_amount": {
+          "type": "boolean",
+        },
+        "note": {
+          "type": "string",
+        },
+        "order": {
+          "type": "number",
+        },
+        "original_text": {
+          "type": "string",
+        },
+        "unit_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "food_id",
+      ],
+      "type": "object",
+    },
+    "name": "create_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_keyword",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "addshopping": {
+          "type": "boolean",
+        },
+        "from_date": {
+          "type": "string",
+        },
+        "meal_type_id": {
+          "type": "number",
+        },
+        "note": {
+          "type": "string",
+        },
+        "recipe_id": {
+          "type": "number",
+        },
+        "servings": {
+          "type": "number",
+        },
+        "title": {
+          "type": "string",
+        },
+        "to_date": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "servings",
+        "from_date",
+        "meal_type_id",
+      ],
+      "type": "object",
+    },
+    "name": "create_meal_plan",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "property_amount": {
+          "type": "number",
+        },
+        "property_type_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "property_type_id",
+        "property_amount",
+      ],
+      "type": "object",
+    },
+    "name": "create_property",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "fdc_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "open_data_slug": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "order": {
+          "type": "number",
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_property_type",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+        },
+        "format": {
+          "description": "Response detail level. Default "slim".",
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "internal": {
+          "type": "boolean",
+        },
+        "keywords": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "name": {
+          "type": "string",
+        },
+        "nutrition": {
+          "additionalProperties": false,
+          "properties": {
+            "calories": {
+              "type": "number",
+            },
+            "carbohydrates": {
+              "type": "number",
+            },
+            "fats": {
+              "type": "number",
+            },
+            "proteins": {
+              "type": "number",
+            },
+            "source": {
+              "type": "string",
+            },
+          },
+          "type": "object",
+        },
+        "private": {
+          "type": "boolean",
+        },
+        "properties": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "number",
+              },
+              "property_amount": {
+                "type": "number",
+              },
+              "property_type_id": {
+                "type": "number",
+              },
+            },
+            "required": [
+              "property_type_id",
+              "property_amount",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "servings": {
+          "type": "number",
+        },
+        "servings_text": {
+          "type": "string",
+        },
+        "show_ingredient_overview": {
+          "type": "boolean",
+        },
+        "source_url": {
+          "type": "string",
+        },
+        "steps": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "ingredients": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "type": "number",
+                    },
+                    "food": {
+                      "type": "string",
+                    },
+                    "note": {
+                      "type": "string",
+                    },
+                    "unit": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "food",
+                    "amount",
+                  ],
+                  "type": "object",
+                },
+                "type": "array",
+              },
+              "instruction": {
+                "type": "string",
+              },
+              "time": {
+                "type": "number",
+              },
+            },
+            "required": [
+              "instruction",
+              "ingredients",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "waiting_time": {
+          "type": "number",
+        },
+        "working_time": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "name",
+        "steps",
+      ],
+      "type": "object",
+    },
+    "name": "create_recipe",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+        },
+        "filter_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "order": {
+          "type": "number",
+        },
+        "shared_user_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_recipe_book",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "type": "number",
+        },
+        "checked": {
+          "type": "boolean",
+        },
+        "delay_until": {
+          "type": "string",
+        },
+        "food_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "ingredient": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "list_recipe": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "mealplan_id": {
+          "type": "number",
+        },
+        "order": {
+          "type": "number",
+        },
+        "unit_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "amount",
+        "food_id",
+      ],
+      "type": "object",
+    },
+    "name": "create_shopping_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "mealplan": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+        "recipe": {
+          "type": "number",
+        },
+        "servings": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "servings",
+      ],
+      "type": "object",
+    },
+    "name": "create_shopping_list_recipe",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "ingredients": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "type": "number",
+              },
+              "food": {
+                "description": "Food name (find-or-create)",
+                "type": "string",
+              },
+              "food_id": {
+                "type": "number",
+              },
+              "is_header": {
+                "type": "boolean",
+              },
+              "no_amount": {
+                "type": "boolean",
+              },
+              "note": {
+                "type": "string",
+              },
+              "order": {
+                "type": "number",
+              },
+              "unit": {
+                "description": "Unit name (find-or-create)",
+                "type": "string",
+              },
+              "unit_id": {
+                "type": "number",
+              },
+            },
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "instruction": {
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "order": {
+          "type": "number",
+        },
+        "show_as_header": {
+          "type": "boolean",
+        },
+        "show_ingredients_table": {
+          "type": "boolean",
+        },
+        "step_recipe": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "time": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "instruction",
+      ],
+      "type": "object",
+    },
+    "name": "create_step",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_supermarket_category",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "category_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "order": {
+          "type": "number",
+        },
+        "supermarket": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "category_id",
+        "supermarket",
+      ],
+      "type": "object",
+    },
+    "name": "create_supermarket_category_relation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "base_unit": {
+          "type": "string",
+        },
+        "description": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "plural_name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_unit",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "base_amount": {
+          "type": "number",
+        },
+        "base_unit_id": {
+          "type": "number",
+        },
+        "converted_amount": {
+          "type": "number",
+        },
+        "converted_unit_id": {
+          "type": "number",
+        },
+        "food_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "base_amount",
+        "base_unit_id",
+        "converted_amount",
+        "converted_unit_id",
+      ],
+      "type": "object",
+    },
+    "name": "create_unit_conversion",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_automation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_cook_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_custom_filter",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_food",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_keyword",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_meal_plan",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_property",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_property_type",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Recipe ID",
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_recipe",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_recipe_book",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_shopping_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_shopping_list_recipe",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_step",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_supermarket_category",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_supermarket_category_relation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_unit",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_unit_conversion",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_user_file",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "provider": {
+          "description": "AI provider ID (defaults to workspace default)",
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "food_ai_properties",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "child_inherit_fields_add": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "child_inherit_fields_remove": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "child_inherit_fields_remove_all": {
+          "type": "boolean",
+        },
+        "child_inherit_fields_set": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "foods": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "ignore_shopping": {
+          "anyOf": [
+            {
+              "type": "boolean",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "inherit_fields_add": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "inherit_fields_remove": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "inherit_fields_remove_all": {
+          "type": "boolean",
+        },
+        "inherit_fields_set": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "on_hand": {
+          "anyOf": [
+            {
+              "type": "boolean",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "parent_remove": {
+          "anyOf": [
+            {
+              "type": "boolean",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "parent_set": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "substitute_add": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "substitute_children": {
+          "anyOf": [
+            {
+              "type": "boolean",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "substitute_remove": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "substitute_remove_all": {
+          "type": "boolean",
+        },
+        "substitute_set": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "substitute_siblings": {
+          "anyOf": [
+            {
+              "type": "boolean",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "foods",
+      ],
+      "type": "object",
+    },
+    "name": "food_batch_update",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "fdc_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "food_fdc_lookup",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "delete": {
+          "type": "boolean",
+        },
+        "id": {
+          "type": "number",
+        },
+        "unit_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "food_shopping_update",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_automation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_cook_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_custom_filter",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_food",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object",
+    },
+    "name": "get_guard_stats",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_keyword",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_meal_plan",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_property",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_property_type",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "description": "Response detail level. Default "slim".",
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "description": "Recipe ID",
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_recipe",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_recipe_book",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_recipe_book_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object",
+    },
+    "name": "get_server_settings",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_share_link",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_shopping_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_shopping_list_recipe",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_step",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_supermarket_category",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_supermarket_category_relation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_unit",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_unit_conversion",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_user_file",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "user_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "user_id",
+      ],
+      "type": "object",
+    },
+    "name": "get_user_preference",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object",
+    },
+    "name": "get_version",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "ai_provider_id": {
+          "type": "number",
+        },
+        "file_path": {
+          "description": "Absolute path to an image or PDF on the MCP server filesystem",
+          "type": "string",
+        },
+        "file_url": {
+          "description": "Remote URL of an image/PDF; the server fetches it and uploads bytes",
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "description": "Override name if AI did not extract one",
+          "type": "string",
+        },
+        "save": {
+          "description": "Save parsed recipe to Tandoor (default true)",
+          "type": "boolean",
+        },
+        "text": {
+          "description": "Optional raw recipe text to feed the AI provider",
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "import_recipe_from_image",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "create_stub_on_failure": {
+          "description": "Default false. When true AND both scraper attempts fail, create a minimal empty recipe pointing at the URL instead of throwing.",
+          "type": "boolean",
+        },
+        "format": {
+          "description": "Response detail level. Default "slim".",
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "description": "Optional name for the stub recipe (only used if create_stub_on_failure=true and both scrapers fail)",
+          "type": "string",
+        },
+        "url": {
+          "description": "Recipe URL to import",
+          "type": "string",
+        },
+      },
+      "required": [
+        "url",
+      ],
+      "type": "object",
+    },
+    "name": "import_recipe_from_url",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "filter": {
+          "description": "jq filter to apply to the stashed value. Examples: ".results | length", ".results[0]", ".results | map({id, name})", "keys", ".count".",
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string",
+        },
+        "handle": {
+          "description": "Stash handle from a prior tool result, e.g. "stash_<uuid>".",
+          "pattern": "^stash_[0-9a-f-]{36}$",
+          "type": "string",
+        },
+      },
+      "required": [
+        "handle",
+        "filter",
+      ],
+      "type": "object",
+    },
+    "name": "jq_query",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object",
+    },
+    "name": "jq_stash_stats",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_ai_logs",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_ai_providers",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_automations",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "recipe": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_cook_logs",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_custom_filters",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "limit": {
+          "type": "number",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "query": {
+          "type": "string",
+        },
+        "random": {
+          "type": "string",
+        },
+        "root": {
+          "type": "number",
+        },
+        "root_tree": {
+          "type": "number",
+        },
+        "tree": {
+          "type": "number",
+        },
+        "updated_at": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_foods",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_import_logs",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "food": {
+          "description": "Filter by food ID",
+          "type": "number",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "unit": {
+          "description": "Filter by unit ID",
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_ingredients",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "limit": {
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "query": {
+          "type": "string",
+        },
+        "random": {
+          "type": "string",
+        },
+        "root": {
+          "type": "number",
+        },
+        "root_tree": {
+          "type": "number",
+        },
+        "tree": {
+          "type": "number",
+        },
+        "updated_at": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_keywords",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "from_date": {
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "to_date": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_meal_plans",
+  },
+  {
+    "inputSchema": null,
+    "name": "list_meal_types",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_properties",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "items": {
+            "enum": [
+              "ALLERGEN",
+              "GOAL",
+              "NUTRITION",
+              "OTHER",
+              "PRICE",
+            ],
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_property_types",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "book": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_recipe_book_entries",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "limit": {
+          "type": "string",
+        },
+        "order_direction": {
+          "enum": [
+            "asc",
+            "desc",
+          ],
+          "type": "string",
+        },
+        "order_field": {
+          "enum": [
+            "id",
+            "name",
+            "order",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_recipe_books",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "books": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "books_and": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "books_and_not": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "books_or": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "books_or_not": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "cookedon_gte": {
+          "type": "string",
+        },
+        "cookedon_lte": {
+          "type": "string",
+        },
+        "createdby": {
+          "type": "number",
+        },
+        "createdon": {
+          "type": "string",
+        },
+        "createdon_gte": {
+          "type": "string",
+        },
+        "createdon_lte": {
+          "type": "string",
+        },
+        "filter": {
+          "description": "ID of a saved CustomFilter",
+          "type": "number",
+        },
+        "foods": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "foods_and": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "foods_and_not": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "foods_or": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "foods_or_not": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "format": {
+          "description": "Response detail level. Default "slim".",
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "internal": {
+          "type": "boolean",
+        },
+        "keywords": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "keywords_and": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "keywords_and_not": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "keywords_or": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "keywords_or_not": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "makenow": {
+          "description": "Only recipes makeable with on-hand foods",
+          "type": "boolean",
+        },
+        "new": {
+          "type": "boolean",
+        },
+        "num_recent": {
+          "type": "number",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "query": {
+          "type": "string",
+        },
+        "random": {
+          "type": "boolean",
+        },
+        "rating": {
+          "type": "number",
+        },
+        "rating_gte": {
+          "type": "number",
+        },
+        "rating_lte": {
+          "type": "number",
+        },
+        "sort_order": {
+          "type": "string",
+        },
+        "timescooked": {
+          "type": "number",
+        },
+        "timescooked_gte": {
+          "type": "number",
+        },
+        "timescooked_lte": {
+          "type": "number",
+        },
+        "units": {
+          "type": "number",
+        },
+        "updatedon": {
+          "type": "string",
+        },
+        "updatedon_gte": {
+          "type": "string",
+        },
+        "updatedon_lte": {
+          "type": "string",
+        },
+        "viewedon_gte": {
+          "type": "string",
+        },
+        "viewedon_lte": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_recipes",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "mealplan": {
+          "type": "number",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "updated_after": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_shopping_entries",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "mealplan": {
+          "type": "number",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_shopping_list_recipes",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "query": {
+          "type": "string",
+        },
+        "recipe": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_steps",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_supermarket_categories",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_supermarket_category_relations",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "food_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "query": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_unit_conversions",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "limit": {
+          "type": "number",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "query": {
+          "type": "string",
+        },
+        "random": {
+          "type": "string",
+        },
+        "updated_at": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_units",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "query": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_user_files",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_user_preferences",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_view_logs",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+        "target": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+        "target",
+      ],
+      "type": "object",
+    },
+    "name": "merge_food",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+        "target": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+        "target",
+      ],
+      "type": "object",
+    },
+    "name": "merge_keyword",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+        "target": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+        "target",
+      ],
+      "type": "object",
+    },
+    "name": "merge_supermarket_category",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+        "target": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+        "target",
+      ],
+      "type": "object",
+    },
+    "name": "merge_unit",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+        "parent": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+        "parent",
+      ],
+      "type": "object",
+    },
+    "name": "move_food",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+        "parent": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+        "parent",
+      ],
+      "type": "object",
+    },
+    "name": "move_keyword",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "text",
+      ],
+      "type": "object",
+    },
+    "name": "parse_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "provider": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "recipe_ai_properties",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "clear_description": {
+          "anyOf": [
+            {
+              "type": "boolean",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "keywords_add": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "keywords_remove": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "keywords_remove_all": {
+          "type": "boolean",
+        },
+        "keywords_set": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "private": {
+          "anyOf": [
+            {
+              "type": "boolean",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "recipes": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "servings": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "servings_text": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "shared_add": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "shared_remove": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "shared_remove_all": {
+          "type": "boolean",
+        },
+        "shared_set": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "show_ingredient_overview": {
+          "anyOf": [
+            {
+              "type": "boolean",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "waiting_time": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "working_time": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "recipes",
+      ],
+      "type": "object",
+    },
+    "name": "recipe_batch_update",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "description": "Response detail level. Default "slim".",
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "related_recipes",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "remove_recipe_from_book",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "books": {
+          "description": "Recipe book names — recipe must be in ANY of these",
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "exclude_foods": {
+          "description": "Food names the recipe must NOT contain any of",
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "exclude_keywords": {
+          "description": "Keyword names to exclude",
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "foods": {
+          "description": "Food names the recipe must contain ALL of",
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "format": {
+          "description": "Response detail level. Default "slim".",
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "keywords": {
+          "description": "Keyword names — recipe must have ANY of these",
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "makenow": {
+          "description": "Only recipes makeable with currently on-hand foods",
+          "type": "boolean",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "query": {
+          "description": "Fuzzy match against recipe names",
+          "type": "string",
+        },
+        "random": {
+          "type": "boolean",
+        },
+        "rating_gte": {
+          "type": "number",
+        },
+        "rating_lte": {
+          "type": "number",
+        },
+        "sort_order": {
+          "description": "score | -score | name | -name | lastcooked | -lastcooked | rating | -rating | times_cooked | -times_cooked",
+          "type": "string",
+        },
+        "timescooked_gte": {
+          "type": "number",
+        },
+        "timescooked_lte": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "search_recipes",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+        },
+        "disabled": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+        "order": {
+          "type": "number",
+        },
+        "param_1": {
+          "type": "string",
+        },
+        "param_2": {
+          "type": "string",
+        },
+        "param_3": {
+          "type": "string",
+        },
+        "type": {
+          "enum": [
+            "FOOD_ALIAS",
+            "UNIT_ALIAS",
+            "KEYWORD_ALIAS",
+            "DESCRIPTION_REPLACE",
+            "INSTRUCTION_REPLACE",
+            "NEVER_UNIT",
+            "TRANSPOSE_WORDS",
+            "FOOD_REPLACE",
+            "UNIT_REPLACE",
+            "NAME_REPLACE",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_automation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "comment": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "created_at": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "rating": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "recipe": {
+          "type": "number",
+        },
+        "servings": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_cook_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+        "search": {
+          "type": "string",
+        },
+        "shared_user_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_custom_filter",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+        },
+        "fdc_id": {
+          "type": "number",
+        },
+        "food_onhand": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+        "plural_name": {
+          "type": "string",
+        },
+        "supermarket_category_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_food",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "always_use_plural_food": {
+          "type": "boolean",
+        },
+        "always_use_plural_unit": {
+          "type": "boolean",
+        },
+        "amount": {
+          "type": "number",
+        },
+        "food_id": {
+          "type": "number",
+        },
+        "id": {
+          "type": "number",
+        },
+        "is_header": {
+          "type": "boolean",
+        },
+        "no_amount": {
+          "type": "boolean",
+        },
+        "note": {
+          "type": "string",
+        },
+        "order": {
+          "type": "number",
+        },
+        "original_text": {
+          "type": "string",
+        },
+        "unit_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_keyword",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "from_date": {
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "meal_type_id": {
+          "type": "number",
+        },
+        "note": {
+          "type": "string",
+        },
+        "recipe_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "servings": {
+          "type": "number",
+        },
+        "title": {
+          "type": "string",
+        },
+        "to_date": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_meal_plan",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "property_amount": {
+          "type": "number",
+        },
+        "property_type_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_property",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "fdc_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+        "open_data_slug": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "order": {
+          "type": "number",
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_property_type",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+        },
+        "format": {
+          "description": "Response detail level. Default "slim".",
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "description": "Recipe ID",
+          "type": "number",
+        },
+        "internal": {
+          "type": "boolean",
+        },
+        "keywords": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "name": {
+          "type": "string",
+        },
+        "nutrition": {
+          "additionalProperties": false,
+          "properties": {
+            "calories": {
+              "type": "number",
+            },
+            "carbohydrates": {
+              "type": "number",
+            },
+            "fats": {
+              "type": "number",
+            },
+            "proteins": {
+              "type": "number",
+            },
+            "source": {
+              "type": "string",
+            },
+          },
+          "type": "object",
+        },
+        "private": {
+          "type": "boolean",
+        },
+        "properties": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "number",
+              },
+              "property_amount": {
+                "type": "number",
+              },
+              "property_type_id": {
+                "type": "number",
+              },
+            },
+            "required": [
+              "property_type_id",
+              "property_amount",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "servings": {
+          "type": "number",
+        },
+        "servings_text": {
+          "type": "string",
+        },
+        "show_ingredient_overview": {
+          "type": "boolean",
+        },
+        "source_url": {
+          "type": "string",
+        },
+        "steps": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "ingredients": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "type": "number",
+                    },
+                    "food": {
+                      "type": "string",
+                    },
+                    "note": {
+                      "type": "string",
+                    },
+                    "unit": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "food",
+                    "amount",
+                  ],
+                  "type": "object",
+                },
+                "type": "array",
+              },
+              "instruction": {
+                "type": "string",
+              },
+              "time": {
+                "type": "number",
+              },
+            },
+            "required": [
+              "instruction",
+              "ingredients",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "waiting_time": {
+          "type": "number",
+        },
+        "working_time": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_recipe",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+        },
+        "filter_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+        "order": {
+          "type": "number",
+        },
+        "shared_user_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_recipe_book",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "type": "number",
+        },
+        "checked": {
+          "type": "boolean",
+        },
+        "delay_until": {
+          "type": "string",
+        },
+        "food_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "order": {
+          "type": "number",
+        },
+        "unit_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_shopping_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "mealplan": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+        "recipe": {
+          "type": "number",
+        },
+        "servings": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_shopping_list_recipe",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "ingredients": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "type": "number",
+              },
+              "food": {
+                "description": "Food name (find-or-create)",
+                "type": "string",
+              },
+              "food_id": {
+                "type": "number",
+              },
+              "is_header": {
+                "type": "boolean",
+              },
+              "no_amount": {
+                "type": "boolean",
+              },
+              "note": {
+                "type": "string",
+              },
+              "order": {
+                "type": "number",
+              },
+              "unit": {
+                "description": "Unit name (find-or-create)",
+                "type": "string",
+              },
+              "unit_id": {
+                "type": "number",
+              },
+            },
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "instruction": {
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "order": {
+          "type": "number",
+        },
+        "show_as_header": {
+          "type": "boolean",
+        },
+        "show_ingredients_table": {
+          "type": "boolean",
+        },
+        "step_recipe": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "time": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_step",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_supermarket_category",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "category_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "order": {
+          "type": "number",
+        },
+        "supermarket": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_supermarket_category_relation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "base_unit": {
+          "type": "string",
+        },
+        "description": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+        "plural_name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_unit",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "base_amount": {
+          "type": "number",
+        },
+        "base_unit_id": {
+          "type": "number",
+        },
+        "converted_amount": {
+          "type": "number",
+        },
+        "converted_unit_id": {
+          "type": "number",
+        },
+        "food_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_unit_conversion",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "update_user_file",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "comments": {
+          "type": "boolean",
+        },
+        "default_page": {
+          "enum": [
+            "SEARCH",
+            "PLAN",
+            "BOOKS",
+            "SHOPPING",
+          ],
+          "type": "string",
+        },
+        "default_unit": {
+          "type": "string",
+        },
+        "filter_to_supermarket": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "ingredient_decimals": {
+          "type": "number",
+        },
+        "left_handed": {
+          "type": "boolean",
+        },
+        "mealplan_autoadd_shopping": {
+          "type": "boolean",
+        },
+        "mealplan_autoexclude_onhand": {
+          "type": "boolean",
+        },
+        "mealplan_autoinclude_related": {
+          "type": "boolean",
+        },
+        "plan_share_user_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "shopping_add_onhand": {
+          "type": "boolean",
+        },
+        "shopping_auto_sync": {
+          "type": "number",
+        },
+        "shopping_recent_days": {
+          "type": "number",
+        },
+        "shopping_share_user_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "theme": {
+          "type": "string",
+        },
+        "use_fractions": {
+          "type": "boolean",
+        },
+        "use_kj": {
+          "type": "boolean",
+        },
+        "user_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "user_id",
+      ],
+      "type": "object",
+    },
+    "name": "update_user_preference",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "file_path": {
+          "type": "string",
+        },
+        "file_url": {
+          "type": "string",
+        },
+        "id": {
+          "description": "Recipe ID",
+          "type": "number",
+        },
+        "image_url": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "upload_recipe_image",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "file_path": {
+          "type": "string",
+        },
+        "file_url": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "upload_user_file",
+  },
+]
+`;

@@ -33,4 +33,8 @@ jobs:
         run: npm run build
 
       - name: Test
-        run: npm test
+        # CI=1 makes vitest enforce snapshot strictness (no auto-create) so
+        # missing or stale snapshots fail the build instead of silently
+        # regenerating. GitHub Actions sets CI=true automatically, but the
+        # explicit script makes the contract visible.
+        run: npm run test:ci

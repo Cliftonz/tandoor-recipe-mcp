@@ -25,6 +25,7 @@ import { registerRecipeTools } from '../../src/tools/recipe.js';
 import { registerJqTools } from '../../src/tools/jq.js';
 import { _stashClear } from '../../src/lib/stash.js';
 import { checkTandoorVersion } from '../../src/lib/version-check.js';
+import { getRegisteredTool } from '../helpers/mcp.js';
 
 const url = process.env.TANDOOR_URL;
 const token = process.env.TANDOOR_TOKEN;
@@ -395,7 +396,7 @@ describeE2E('Tandoor E2E workflow', () => {
       registerRecipeTools(server, client);
       registerJqTools(server, client);
 
-      const registered = (server as any)._registeredTools['list_recipes'];
+      const registered = getRegisteredTool(server, 'list_recipes');
       const result: any = await registered.handler(
         { page_size: 25, format: 'full' },
         { signal: new AbortController().signal },
@@ -425,7 +426,7 @@ describeE2E('Tandoor E2E workflow', () => {
     const server = new McpServer({ name: 'e2e', version: 'e2e' });
     registerRecipeTools(server, client);
     registerJqTools(server, client);
-    const registered = (server as any)._registeredTools['jq_query'];
+    const registered = getRegisteredTool(server, 'jq_query');
 
     const countRes: any = await registered.handler(
       { handle: ctx.stashHandle, filter: '.results | length' },

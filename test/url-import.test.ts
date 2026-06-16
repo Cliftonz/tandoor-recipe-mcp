@@ -111,10 +111,18 @@ describe('handleImportRecipeFromUrl fallback chain', () => {
 
   beforeEach(() => {
     fetchSpy = vi.spyOn(globalThis, 'fetch');
+    // url-import wraps fetch with the SSRF guard, which does real DNS
+    // before calling fetch. example.test (RFC 6761) does not resolve, so
+    // the lookup fails before the mock can intercept. Set the documented
+    // test-only env which skips the DNS check ONLY for reserved TLDs.
+    process.env.TANDOOR_MCP_TEST_SKIP_URL_CHECK = '1';
+    process.env.TANDOOR_MCP_ALLOW_PRIVATE_FETCH = '1';
   });
 
   afterEach(() => {
     fetchSpy.mockRestore();
+    delete process.env.TANDOOR_MCP_TEST_SKIP_URL_CHECK;
+    delete process.env.TANDOOR_MCP_ALLOW_PRIVATE_FETCH;
   });
 
   function fakeClient(overrides: Record<string, any> = {}) {
@@ -222,5 +230,77 @@ describe('handleImportRecipeFromUrl fallback chain', () => {
     const body = createRecipe.mock.calls[0][0];
     expect(body.name).toBe('My Manual Lasagna');
     expect(body.source_url).toBe('https://cool-food.example/lasagna');
+  });
+});
+
+// Handler-boundary SSRF tests (Codex medium). The fallback-chain tests
+// above set ALLOW_PRIVATE_FETCH=1 globally so the mocked fetch can run —
+// which means those tests cannot detect a regression where
+// handleImportRecipeFromUrl stops propagating SsrfBlockedError, silently
+// falls through to stub creation, or fetches a loopback/IMDS URL during
+// JSON-LD fallback. These tests keep the opt-out UNSET so the real guard
+// fires at the handler boundary.
+describe('handleImportRecipeFromUrl: SSRF rejections propagate from the handler', () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    // Explicitly DO NOT set TANDOOR_MCP_ALLOW_PRIVATE_FETCH — the whole
+    // point is to assert the guard fires at handler-boundary.
+    delete process.env.TANDOOR_MCP_ALLOW_PRIVATE_FETCH;
+    fetchSpy = vi.spyOn(globalThis, 'fetch');
+  });
+  afterEach(() => {
+    fetchSpy.mockRestore();
+  });
+
+  function clientWhereTandoorScrapeFails(overrides: Record<string, any> = {}) {
+    return {
+      recipes: {
+        // Tandoor scraper fails, forcing the JSON-LD fallback chain to run
+        // — that's where the SSRF guard fires.
+        recipeFromSource: vi.fn(async () => ({ error: true, msg: 'not supported' })),
+        createRecipe: vi.fn(async (r: any) => ({ ...r, id: 999 })),
+        ...overrides.recipes,
+      },
+      ingredients: {
+        parseIngredientString: vi.fn(async (text: string) => ({
+          amount: 1, unit: '', food: text, note: '', original_text: text,
+        })),
+      },
+      ...overrides,
+    } as any;
+  }
+
+  it('loopback URL → handler throws SsrfBlockedError; fetch NOT called; recipe NOT created', async () => {
+    const client = clientWhereTandoorScrapeFails();
+    await expect(handleImportRecipeFromUrl(client, {
+      url: 'http://127.0.0.1/recipe',
+      name: 'Should Not Save',
+      create_stub_on_failure: true, // even with this on, must not create
+    } as any)).rejects.toThrow(/SSRF guard blocked/);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(client.recipes.createRecipe).not.toHaveBeenCalled();
+  });
+
+  it('IMDS URL → handler throws SsrfBlockedError; fetch NOT called; recipe NOT created', async () => {
+    const client = clientWhereTandoorScrapeFails();
+    await expect(handleImportRecipeFromUrl(client, {
+      url: 'http://169.254.169.254/latest/meta-data/iam/security-credentials/',
+      name: 'Should Not Save',
+      create_stub_on_failure: true,
+    } as any)).rejects.toThrow(/SSRF guard blocked/);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(client.recipes.createRecipe).not.toHaveBeenCalled();
+  });
+
+  it('file:// URL → rejected at scheme check; no fallback attempted', async () => {
+    const client = clientWhereTandoorScrapeFails();
+    await expect(handleImportRecipeFromUrl(client, {
+      url: 'file:///etc/passwd',
+      name: 'Should Not Save',
+      create_stub_on_failure: true,
+    } as any)).rejects.toThrow(/unsupported scheme|SSRF guard blocked/);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(client.recipes.createRecipe).not.toHaveBeenCalled();
   });
 });

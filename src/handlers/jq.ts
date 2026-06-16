@@ -14,12 +14,22 @@ import { runJq } from '../lib/jq-runner.js';
 import { emit } from '../lib/slim.js';
 import type { JqQueryArgs } from '../tools/jq.js';
 
-const LOG_MODES = (() => {
+// Lazy: re-read TANDOOR_MCP_LOG on each call so a long-running stdio server
+// honors verbosity changes without restart. Cheap — one env read + one tiny
+// Set per call (Observability F14).
+let _lastObservedLogRaw: string | undefined;
+function getLogModes(): Set<string> {
   const raw = (process.env.TANDOOR_MCP_LOG || '').toLowerCase();
+  // Emit a one-line confirmation on transition so an operator who flipped
+  // the env can see their change took effect (Observability F5).
+  if (_lastObservedLogRaw !== undefined && _lastObservedLogRaw !== raw) {
+    console.error(`[tandoor-mcp] log modes changed: '${_lastObservedLogRaw}' → '${raw}'`);
+  }
+  _lastObservedLogRaw = raw;
   if (!raw) return new Set<string>();
   if (raw === 'all') return new Set(['request', 'response', 'error']);
   return new Set(raw.split(',').map((s) => s.trim()).filter(Boolean));
-})();
+}
 
 export async function handleJqQuery(
   _client: TandoorClient,
@@ -37,16 +47,25 @@ export async function handleJqQuery(
       `stash handle not found or expired (stash holds ${count} entries, ttl=${cfg.ttlMs}ms). Re-run the original tool to get a fresh handle.`,
     );
   }
-  if (LOG_MODES.has('request')) {
-    console.error(`[tandoor-mcp] jq ${args.handle} ${args.filter.slice(0, 120)}`);
+  // Correlation token from the register middleware. Pairs with the
+  // `stashed '...' → <handle> (req=...)` line so on-call can walk back from
+  // a jq failure to the original list call.
+  const reqTag = ctx?.reqId ? ` (req=${ctx.reqId})` : '';
+  // Unconditional one-line entry log so a hang inside runJq is visible
+  // even without TANDOOR_MCP_LOG=request set. Logs filter length (not
+  // content) to keep PII out of stderr.
+  console.error(`[tandoor-mcp] jq_query handle=${args.handle} filter_len=${args.filter.length}${reqTag}`);
+  const logModes = getLogModes();
+  if (logModes.has('request')) {
+    console.error(`[tandoor-mcp] jq ${args.handle} ${args.filter.slice(0, 120)}${reqTag}`);
   }
   let result;
   try {
     result = await runJq(entry.text, args.filter, ctx?.signal);
   } catch (err) {
-    if (LOG_MODES.has('error')) {
+    if (logModes.has('error')) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[tandoor-mcp] jq ✗ ${msg}`);
+      console.error(`[tandoor-mcp] jq ✗ ${msg}${reqTag}`);
     }
     throw err;
   }
@@ -55,13 +74,13 @@ export async function handleJqQuery(
   // stderr separately via the trace log instead of failing the call.
   if (result.exitCode !== 0) {
     const msg = result.stderr.trim() || `exit ${result.exitCode}`;
-    if (LOG_MODES.has('error')) {
-      console.error(`[tandoor-mcp] jq ✗ exit=${result.exitCode} ${msg.slice(0, 200)}`);
+    if (logModes.has('error')) {
+      console.error(`[tandoor-mcp] jq ✗ exit=${result.exitCode} ${msg.slice(0, 200)}${reqTag}`);
     }
     throw new Error(`jq: ${msg}`);
   }
-  if (result.stderr.trim().length > 0 && LOG_MODES.has('error')) {
-    console.error(`[tandoor-mcp] jq ⚠ ${result.stderr.trim().slice(0, 200)}`);
+  if (result.stderr.trim().length > 0 && logModes.has('error')) {
+    console.error(`[tandoor-mcp] jq ⚠ ${result.stderr.trim().slice(0, 200)}${reqTag}`);
   }
   const out = result.stdout.trim();
   if (out.length === 0) return emit(null);
@@ -79,4 +98,14 @@ export async function handleJqStashStats(
   _ctx?: HandlerContext,
 ): Promise<string> {
   return emit(stashStats());
+}
+
+import { getGuardRejectionStats } from '../lib/register.js';
+
+export async function handleGuardStats(
+  _client: TandoorClient,
+  _args: Record<string, never>,
+  _ctx?: HandlerContext,
+): Promise<string> {
+  return emit(getGuardRejectionStats());
 }

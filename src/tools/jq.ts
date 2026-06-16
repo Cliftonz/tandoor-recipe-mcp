@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
-import { handleJqQuery, handleJqStashStats } from '../handlers/jq.js';
+import { handleJqQuery, handleJqStashStats, handleGuardStats } from '../handlers/jq.js';
 
 // Handles are `stash_${randomUUID()}`. Pinning the regex stops the LLM
 // from accidentally sending free-form text (which we'd then echo back),
@@ -50,4 +50,9 @@ export function registerJqTools(server: McpServer, client: TandoorClient): void 
     description: 'Inspect the in-memory stash (count + total bytes). Diagnostic; not normally needed.',
     inputSchema: jqStashStatsShape,
   }, handleJqStashStats);
+
+  registerStringTool(server, client, 'get_guard_stats', {
+    description: 'Inspect security-guard rejection counters (PathGuardError, SsrfBlockedError) since process start. Useful for dashboards and "is anything probing me?" checks.',
+    inputSchema: jqStashStatsShape,
+  }, handleGuardStats);
 }

@@ -1,0 +1,91 @@
+name: Bootstrap Smoke
+
+# Smoke-tests `scripts/tandoor-bootstrap.sh` outside the release pipeline.
+# The full e2e workflow gates publishes; this surfaces bash typos, Tandoor
+# image schema changes, or `docker compose` flag drift on the PR or as a
+# weekly heartbeat — well before tag push (QA F4).
+on:
+  pull_request:
+    paths:
+      - 'scripts/tandoor-bootstrap.sh'
+      - '.github/workflows/bootstrap-smoke.yml'
+  schedule:
+    # Mondays 11:23 UTC — weekly drift check against vabene1111/recipes:latest.
+    - cron: '23 11 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bootstrap-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run shellcheck on bootstrap script
+        run: shellcheck scripts/tandoor-bootstrap.sh
+
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bootstrap Tandoor
+        run: ./scripts/tandoor-bootstrap.sh
+
+      - name: Verify TANDOOR_URL + TANDOOR_TOKEN are exported
+        run: |
+          test -n "${TANDOOR_URL:-}" || (echo "TANDOOR_URL missing" >&2; exit 1)
+          test -n "${TANDOOR_TOKEN:-}" || (echo "TANDOOR_TOKEN missing" >&2; exit 1)
+          test -n "${TANDOOR_COMPOSE_FILE:-}" || (echo "TANDOOR_COMPOSE_FILE missing" >&2; exit 1)
+
+      - name: Token actually authenticates against /api/recipe/
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $TANDOOR_TOKEN" \
+            "$TANDOOR_URL/api/recipe/")
+          if [ "$code" != "200" ]; then
+            echo "expected 200 on /api/recipe/, got $code" >&2
+            exit 1
+          fi
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          docker compose -f "${{ env.TANDOOR_COMPOSE_FILE }}" ps || true
+          # Token scrub mirrors e2e.yml so weekly cron / fork PR logs never
+          # leak the bearer (Observability F9).
+          echo "::group::db_recipes (last 500 lines)"
+          docker compose -f "${{ env.TANDOOR_COMPOSE_FILE }}" logs --tail 500 db_recipes \
+            | sed "s/${{ env.TANDOOR_TOKEN }}/<TOKEN>/g" || true
+          echo "::endgroup::"
+          echo "::group::web_recipes (last 500 lines)"
+          docker compose -f "${{ env.TANDOOR_COMPOSE_FILE }}" logs --tail 500 web_recipes \
+            | sed "s/${{ env.TANDOOR_TOKEN }}/<TOKEN>/g" || true
+          echo "::endgroup::"
+
+      # Upload diagnostic artifacts so the weekly cron's image-drift signal
+      # survives the runner being reaped (Observability F2). Bootstrap-django
+      # log path is sourced from $GITHUB_ENV so a TANDOOR_TEST_DIR override
+      # cannot silently null-route the upload.
+      - name: Upload diagnostic artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-smoke-diag-${{ github.run_id }}
+          path: |
+            ${{ env.TANDOOR_BOOTSTRAP_LOG }}
+            ${{ env.TANDOOR_COMPOSE_FILE }}
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f "${{ env.TANDOOR_COMPOSE_FILE }}" down -v
+        continue-on-error: true

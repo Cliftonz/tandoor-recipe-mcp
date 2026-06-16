@@ -15,6 +15,7 @@ import { registerAdminTools } from '../src/tools/admin.js';
 import { registerJqTools } from '../src/tools/jq.js';
 import { registerResources } from '../src/resources/index.js';
 import { registerPrompts } from '../src/prompts/index.js';
+import { registeredToolNames } from './helpers/mcp.js';
 
 describe('server registration', () => {
   it('registers every tool group without duplicate names or bad schemas', () => {
@@ -43,8 +44,7 @@ describe('server registration', () => {
     // future refactor drops the registration, every >25KB response becomes
     // an unstashed full payload (or, if the gate didn't have the guard,
     // an unreachable handle). This assertion catches both.
-    const registered = (server as any)._registeredTools;
-    expect(Object.keys(registered)).toEqual(
+    expect(registeredToolNames(server)).toEqual(
       expect.arrayContaining(['jq_query', 'jq_stash_stats']),
     );
   });

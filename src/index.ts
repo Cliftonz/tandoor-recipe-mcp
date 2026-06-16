@@ -18,21 +18,7 @@ const pkg = JSON.parse(readFileSync(join(thisDir, '..', 'package.json'), 'utf8')
 import { getStashConfig } from './lib/stash.js';
 import { checkTandoorVersion } from './lib/version-check.js';
 import { buildInstructions } from './lib/instructions.js';
-import { registerRecipeTools } from './tools/recipe.js';
-import { registerMealPlanTools } from './tools/mealplan.js';
-import { registerIngredientTools } from './tools/ingredient.js';
-import { registerShoppingTools } from './tools/shopping.js';
-import { registerAiTools } from './tools/ai.js';
-import { registerFoodUnitTools } from './tools/foodunit.js';
-import { registerCookLogTools } from './tools/cooklog.js';
-import { registerRecipeBookTools } from './tools/recipebook.js';
-import { registerMiscTools } from './tools/misc.js';
-import { registerStepTools } from './tools/step.js';
-import { registerAdminTools } from './tools/admin.js';
-import { registerJqTools } from './tools/jq.js';
-import { registerVersionTools } from './tools/version.js';
-import { registerResources } from './resources/index.js';
-import { registerPrompts } from './prompts/index.js';
+import { registerAllTools } from './lib/register-all.js';
 
 // dotenv is a dev convenience — only load it if it's available (it's a
 // devDependency, not a production dep). Real deployments inject env via the
@@ -85,29 +71,9 @@ const server = new McpServer(
 // workflows. TANDOOR_MCP_PROFILE controls which groups are registered.
 //   - "basic": recipe/meal-plan/shopping/ingredient/food+unit read + resources + prompts (~40 tools)
 //   - "full"  (default): everything, including CRUD for admin resources, steps, books, etc.
-const profile = (process.env.TANDOOR_MCP_PROFILE || 'full').toLowerCase();
-const isBasic = profile === 'basic';
+const profile: 'basic' | 'full' = (process.env.TANDOOR_MCP_PROFILE || 'full').toLowerCase() === 'basic' ? 'basic' : 'full';
 
-// Always-on groups — the core "use the app" surface.
-registerRecipeTools(server, tandoorClient);
-registerMealPlanTools(server, tandoorClient);
-registerIngredientTools(server, tandoorClient);
-registerShoppingTools(server, tandoorClient);
-registerFoodUnitTools(server, tandoorClient);
-registerJqTools(server, tandoorClient);
-registerVersionTools(server, tandoorClient, pkg, versionCheck);
-registerResources(server, tandoorClient);
-registerPrompts(server, tandoorClient);
-
-if (!isBasic) {
-  // Full surface: advanced CRUD and admin.
-  registerAiTools(server, tandoorClient);
-  registerCookLogTools(server, tandoorClient);
-  registerRecipeBookTools(server, tandoorClient);
-  registerMiscTools(server, tandoorClient);
-  registerStepTools(server, tandoorClient);
-  registerAdminTools(server, tandoorClient);
-}
+registerAllTools(server, tandoorClient, { profile, pkg, versionCheck });
 
 async function main() {
   const transport = new StdioServerTransport();

@@ -18,6 +18,12 @@ import type {
 import type { HandlerContext } from '../lib/register.js';
 
 import { emit } from '../lib/slim.js';
+import path from 'node:path';
+import { readSafeUpload } from '../lib/path-guard.js';
+import { safeFetch, safeFetchBytes, assertPublicUrl } from '../lib/safe-fetch.js';
+import { guessMimeFromExt, IMAGE_EXTS } from '../lib/mime.js';
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB cap on URL-fetched recipe images.
 
 // Strip the noisy fields off a Recipe so a single get fits in a normal context.
 // Drops: substitute trees, properties, nutrition, image, shared, created_by,
@@ -339,22 +345,26 @@ export async function saveScrapedRecipe(
 }
 
 async function fetchUrlHtml(url: string, signal?: AbortSignal): Promise<string | null> {
+  // SSRF guard pins the resolved address into undici's dispatcher so the
+  // actual fetch connects to the validated IP — closes the DNS-rebinding
+  // window that the prior split-resolver design left open. Returns null on
+  // non-2xx so the caller's fallback chain can move on; re-throws guard
+  // errors so an injected loopback URL surfaces loudly.
   try {
-    const res = await fetch(url, {
+    const res = await safeFetch(url, {
       headers: {
         // Many recipe sites gate bots — present as a regular browser.
         'User-Agent':
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
         Accept: 'text/html,application/xhtml+xml',
       },
-      redirect: 'follow',
       signal,
     });
     if (!res.ok) return null;
     return await res.text();
   } catch (err) {
-    // Propagate aborts so the caller sees cancellation instead of a silent null.
     if ((err as any)?.name === 'AbortError') throw err;
+    if ((err as any)?.name === 'SsrfBlockedError') throw err;
     return null;
   }
 }
@@ -691,29 +701,38 @@ export async function handleUploadRecipeImage(
   }
 
   if (args.image_url) {
-    // Let Tandoor fetch the URL server-side — no local fetch needed.
+    // Tandoor fetches the URL server-side. Pre-check WITHOUT the dev opt-out
+    // (Tandoor is usually deployed in a cloud VPC where IMDS is reachable —
+    // a server-side fetch of 169.254.169.254 would exfil instance creds
+    // even if our local stack is configured for dev). assertPublicUrl
+    // throws SsrfBlockedError on loopback/IMDS regardless of env.
+    await assertPublicUrl(args.image_url);
     const r = await client.recipes.uploadRecipeImage(args.id, { image_url: args.image_url });
     return `Image set from URL.\n\n${JSON.stringify(r)}`;
   }
 
-  // Load file locally and stream bytes.
-  const { readFile } = await import('node:fs/promises');
-  const path = await import('node:path');
   let data: Buffer;
   let filename: string;
   let mimeType: string;
   if (args.file_path) {
-    data = await readFile(args.file_path);
-    filename = path.basename(args.file_path);
-    mimeType = guessImageMime(filename);
+    // assertSafeUploadPath validates + readSafeUpload opens with O_NOFOLLOW
+    // and re-checks ino/dev. Defends against (a) prompt-injected access to
+    // out-of-root files, (b) symlink shimmies, (c) TOCTOU file swaps
+    // between validate and read.
+    const { data: bytes, safePath } = await readSafeUpload(args.file_path);
+    data = bytes;
+    filename = path.basename(safePath);
+    mimeType = guessMimeFromExt(filename, IMAGE_EXTS);
   } else {
-    const res = await fetch(args.file_url!);
+    // SSRF guard + 10MB byte cap — refuses RFC1918/loopback/IMDS, blocks
+    // hostile content-length DoS, re-checks per redirect hop.
+    const { res, bytes } = await safeFetchBytes(args.file_url!, {}, { maxBytes: MAX_UPLOAD_BYTES });
     if (!res.ok) throw new Error(`Failed to fetch file_url: ${res.status}`);
-    data = Buffer.from(await res.arrayBuffer());
+    data = Buffer.from(bytes);
     filename = (() => {
       try { return path.basename(new URL(args.file_url!).pathname) || 'image'; } catch { return 'image'; }
     })();
-    mimeType = res.headers.get('content-type') || guessImageMime(filename);
+    mimeType = res.headers.get('content-type') || guessMimeFromExt(filename, IMAGE_EXTS);
   }
   const r = await client.recipes.uploadRecipeImage(args.id, {
     file: { data, filename, mimeType },
@@ -721,18 +740,7 @@ export async function handleUploadRecipeImage(
   return `Image uploaded.\n\n${JSON.stringify(r)}`;
 }
 
-function guessImageMime(filename: string): string {
-  const ext = filename.slice(filename.lastIndexOf('.')).toLowerCase();
-  switch (ext) {
-    case '.png': return 'image/png';
-    case '.jpg':
-    case '.jpeg': return 'image/jpeg';
-    case '.gif': return 'image/gif';
-    case '.webp': return 'image/webp';
-    case '.heic': return 'image/heic';
-    default: return 'application/octet-stream';
-  }
-}
+// guessImageMime moved to ../lib/mime.ts (guessMimeFromExt + IMAGE_EXTS).
 
 export async function handleImportRecipeFromUrl(
   client: TandoorClient,
@@ -747,6 +755,12 @@ export async function handleImportRecipeFromUrl(
   };
 
   checkAbort();
+  // Pre-flight SSRF check BEFORE handing the URL to Tandoor. Tandoor's
+  // server-side scraper would otherwise happily fetch IMDS / internal
+  // services on its own host — same exfil surface as our local fetch.
+  // Strict mode (assertPublicUrl) ignores TANDOOR_MCP_ALLOW_PRIVATE_FETCH
+  // because the production Tandoor host is not the dev host.
+  await assertPublicUrl(url);
   // Attempt 1: let Tandoor scrape the URL directly.
   try {
     const resp = await client.recipes.recipeFromSource({ url });

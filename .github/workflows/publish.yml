@@ -19,7 +19,13 @@ permissions:
   id-token: write
 
 jobs:
+  # Live-API gate: spin up Tandoor in Docker, run the e2e suite. Releases
+  # block on this — a tag push doesn't publish if the suite is red.
+  e2e:
+    uses: ./.github/workflows/e2e.yml
+
   publish:
+    needs: e2e
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +43,8 @@ jobs:
         run: npm run build
 
       - name: Test
-        run: npm test
+        # CI=1 → vitest strict snapshot mode. Missing/stale snapshots fail.
+        run: npm run test:ci
 
       # Guard: fail loudly if the tag doesn't match package.json.
       - name: Verify tag matches package.json

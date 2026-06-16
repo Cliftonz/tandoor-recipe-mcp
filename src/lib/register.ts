@@ -14,6 +14,7 @@
 // 4. **Uniform try/catch** — any thrown error becomes `{isError: true}` with
 //    a readable message, instead of crashing the transport.
 
+import { randomUUID } from 'node:crypto';
 import { McpServer, ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ZodRawShape, z } from 'zod';
@@ -28,9 +29,21 @@ export type InferShape<S extends ZodRawShape> = z.infer<z.ZodObject<S>>;
  * Context passed to every handler. Carries the MCP request's AbortSignal so
  * long-running handlers (URL import, AI import, file upload) can cooperate
  * with client-side cancellation. Short handlers can ignore it.
+ *
+ * `reqId` is a short correlation token generated at the register-middleware
+ * boundary. Stash/jq logs include it so an operator can pair
+ * "list_recipes minted handle X" with "jq_query on handle X failed" in the
+ * same log scrape — under concurrent traffic the handle id alone is not
+ * enough to walk back to the originating call.
+ *
+ * Both fields are optional because direct-handler-invocation tests (and any
+ * non-MCP callers) construct `ctx` without going through the wrapper. The
+ * wrapper at registerStringTool always populates them; handlers should read
+ * via `ctx?.signal` / `ctx?.reqId` to stay tolerant.
  */
 export interface HandlerContext {
-  signal: AbortSignal;
+  signal?: AbortSignal;
+  reqId?: string;
 }
 
 // ---------- Per-tool allow/deny filters ----------
@@ -140,6 +153,49 @@ function isStructuredObject(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === 'object';
 }
 
+// MCP requires `structuredContent` to be a JSON object — strict clients (e.g.
+// the SDK Client) reject arrays here with `expected: "record"`. The stash
+// gate's predicate is intentionally broader (top-level arrays are still
+// worth stashing); this one guards only the pass-through mirror.
+function isJsonObject(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === 'object' && !Array.isArray(v);
+}
+
+// One-shot dedup so the array-skip log fires exactly once per tool name per
+// process. Mirrors the `_loggedSkips` pattern at the top of this file — the
+// operator wants to know a downgrade is happening, not to be flooded.
+const _loggedArraySkips = new Set<string>();
+
+// Per-process counters for security-guard rejections. Exposed via the
+// `get_guard_stats` tool so an operator can dashboard "guard rejections per
+// hour" without grep'ing server stderr. Bounded cardinality (two counters).
+const _guardRejections: Record<string, number> = {
+  PathGuardError: 0,
+  SsrfBlockedError: 0,
+};
+export function recordGuardRejection(name: string): void {
+  _guardRejections[name] = (_guardRejections[name] ?? 0) + 1;
+}
+export function getGuardRejectionStats(): Record<string, number> {
+  return { ..._guardRejections };
+}
+/** Test-only: reset counters so each test starts clean. */
+export function _resetGuardRejectionStats(): void {
+  for (const k of Object.keys(_guardRejections)) _guardRejections[k] = 0;
+}
+
+/** Test-only: reset so each test starts clean. */
+export function _resetArraySkipLog(): void {
+  _loggedArraySkips.clear();
+}
+
+function shortReqId(): string {
+  // 8 chars of base16 from randomUUID — enough cardinality for grep
+  // correlation under any realistic concurrent-call volume; short enough
+  // that the log line stays readable.
+  return randomUUID().replace(/-/g, '').slice(0, 8);
+}
+
 export function registerStringTool<S extends ZodRawShape>(
   server: McpServer,
   client: TandoorClient,
@@ -152,10 +208,14 @@ export function registerStringTool<S extends ZodRawShape>(
     return;
   }
   _registeredNames.add(name);
-  const cb = async (args: InferShape<S>, extra: { signal?: AbortSignal }): Promise<CallToolResult> => {
+  const cb = async (args: InferShape<S>, extra: { signal?: AbortSignal; requestId?: string | number }): Promise<CallToolResult> => {
     const signal = extra?.signal ?? new AbortController().signal;
+    // Prefer the SDK's request id (varies by transport — usually a number)
+    // and fall back to a server-side short uuid so the field is always
+    // present in logs even for harnesses that don't set one.
+    const reqId = extra?.requestId !== undefined ? String(extra.requestId) : shortReqId();
     try {
-      const text = await handler(client, args, { signal });
+      const text = await handler(client, args, { signal, reqId });
       const extracted = tryExtractStructured(text);
       const stashCfg = getStashConfig();
 
@@ -180,7 +240,7 @@ export function registerStringTool<S extends ZodRawShape>(
             // confirmations don't silently drop the created-entity ID.
             const summaryJson = JSON.stringify(summary);
             const textOut = extracted.header ? `${extracted.header}\n\n${summaryJson}` : summaryJson;
-            console.error(`[tandoor-mcp] stashed '${name}' result: ${payloadSize}B > ${stashCfg.thresholdBytes}B → ${entry.id}`);
+            console.error(`[tandoor-mcp] stashed '${name}' result: ${payloadSize}B > threshold=${stashCfg.thresholdBytes}B (TANDOOR_MCP_STASH_THRESHOLD) → ${entry.id} (req=${reqId})`);
             return {
               content: [{ type: 'text', text: textOut }],
               structuredContent: summary as unknown as Record<string, unknown>,
@@ -190,22 +250,46 @@ export function registerStringTool<S extends ZodRawShape>(
             // through to the unstashed return path so the caller still gets
             // their data; log so the operator can see the cap was hit.
             const msg = stashErr instanceof Error ? stashErr.message : String(stashErr);
-            console.error(`[tandoor-mcp] stash bypassed for '${name}': ${msg}`);
+            // The thrown error already names which cap fired (stash.ts:127
+            // says "exceeds maxBytes N"); echo it verbatim instead of
+            // hard-coding the env var here so a future cap that throws
+            // through this catch doesn't misdirect the operator.
+            console.error(`[tandoor-mcp] stash bypassed for '${name}': ${msg} (req=${reqId})`);
           }
         }
       }
 
       // Build the result in one shot so `structuredContent` keeps its spec
-      // typing (Record<string, unknown>) without an intermediate cast.
-      const result: CallToolResult = extracted && isStructuredObject(extracted.structured)
+      // typing (Record<string, unknown>) without an intermediate cast. Arrays
+      // (e.g. from a jq filter like `.results | map(.id)`) get the text
+      // channel only — see isJsonObject for why. Log once per tool so an
+      // operator can see post-deploy which endpoints exercise the downgrade
+      // path (Observability F2).
+      if (extracted && Array.isArray(extracted.structured) && !_loggedArraySkips.has(name)) {
+        _loggedArraySkips.add(name);
+        console.error(`[tandoor-mcp] structuredContent downgraded for '${name}': top-level array (req=${reqId})`);
+      }
+      const result: CallToolResult = extracted && isJsonObject(extracted.structured)
         ? {
             content: [{ type: 'text', text }],
-            structuredContent: extracted.structured as Record<string, unknown>,
+            structuredContent: extracted.structured,
           }
         : { content: [{ type: 'text', text }] };
       return result;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      // Distinguish security-guard rejections so an operator can grep
+      // server stderr for `guard rejection` to see probing / misconfig
+      // signals — previously these were silent server-side and only
+      // visible to the LLM client. Counters expose for dashboarding via
+      // the `get_guard_stats` tool registered alongside jq_stash_stats.
+      const guardName = (err as any)?.name;
+      if (guardName === 'PathGuardError' || guardName === 'SsrfBlockedError') {
+        recordGuardRejection(guardName);
+        console.error(
+          `[tandoor-mcp] guard rejection ${guardName} tool=${name} req=${reqId} msg=${message}`,
+        );
+      }
       return {
         content: [{ type: 'text', text: `Error: ${message}` }],
         isError: true,

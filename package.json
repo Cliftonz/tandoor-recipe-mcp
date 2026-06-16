@@ -17,10 +17,11 @@
     "build": "tsc",
     "watch": "tsc --watch",
     "test": "vitest run",
+    "test:ci": "cross-env CI=1 vitest run",
     "test:watch": "vitest",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run build && npm test",
+    "prepublishOnly": "npm run build && npm run test:ci",
     "version": "node scripts/sync-plugin-version.js && git add .claude-plugin/plugin.json .claude-plugin/marketplace.json"
   },
   "keywords": [
@@ -54,12 +55,15 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
     "jq-wasm": "1.1.0-jq-1.8.1",
+    "undici": "^8.5.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^22.19.18",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "typescript": "6.0.3",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.6",
+    "yaml": "^2.9.0"
   }
 }

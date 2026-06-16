@@ -13,6 +13,7 @@ import { registerJqTools } from '../src/tools/jq.js';
 import { _stashClear, stashStats } from '../src/lib/stash.js';
 import { invokeTool } from './helpers/mcp.js';
 import { useStashEnv } from './helpers/stash-env.js';
+import { paginated } from './helpers/factories.js';
 
 useStashEnv();
 
@@ -50,6 +51,53 @@ describe('registerStringTool structuredContent behavior', () => {
     const result = await invokeTool(server, 'with_header', {});
     expect(result.content[0].text).toContain('Recipe created successfully!');
     expect(result.structuredContent).toEqual({ id: 1 });
+  });
+
+  it('omits structuredContent when handler returns a top-level JSON array', async () => {
+    // MCP spec: structuredContent must be a JSON object. Strict SDK clients
+    // reject arrays with `expected: "record"`. jq_query routinely returns
+    // arrays (e.g. `.results | map(.id)`), so this path must not mirror.
+    const server = freshServer();
+    registerStringTool(server, client, 'array_tool', {
+      description: 'returns top-level array',
+      inputSchema: {},
+    }, async () => '[1,2,3]');
+
+    const result = await invokeTool(server, 'array_tool', {});
+    expect(result.content[0]).toEqual({ type: 'text', text: '[1,2,3]' });
+    expect(result.structuredContent).toBeUndefined();
+  });
+
+  // Lock the JSON-detection + structuredContent-mirror contract across every
+  // top-level shape JSON can produce. tryExtractStructured currently only
+  // fires for `{` and `[` prefixes — but if that's ever widened, this matrix
+  // catches a regression where primitives or null end up attached to
+  // structuredContent (a strict SDK rejection mode).
+  describe('structuredContent matrix across JSON top-level shapes', () => {
+    const cases: { name: string; payload: string; expectMirror: boolean }[] = [
+      { name: 'object',  payload: '{"id":1}',  expectMirror: true },
+      { name: 'array',   payload: '[1,2,3]',   expectMirror: false },
+      { name: 'null',    payload: 'null',      expectMirror: false },
+      { name: 'number',  payload: '42',        expectMirror: false },
+      { name: 'string',  payload: '"x"',       expectMirror: false },
+      { name: 'boolean', payload: 'true',      expectMirror: false },
+    ];
+    for (const tc of cases) {
+      it(`top-level ${tc.name} → structuredContent ${tc.expectMirror ? 'mirrored' : 'omitted'}`, async () => {
+        const server = freshServer();
+        registerStringTool(server, client, `shape_${tc.name}`, {
+          description: `returns top-level ${tc.name}`,
+          inputSchema: {},
+        }, async () => tc.payload);
+        const result = await invokeTool(server, `shape_${tc.name}`, {});
+        expect(result.content[0].text).toBe(tc.payload);
+        if (tc.expectMirror) {
+          expect(result.structuredContent).toEqual(JSON.parse(tc.payload));
+        } else {
+          expect(result.structuredContent).toBeUndefined();
+        }
+      });
+    }
   });
 
   it('omits structuredContent for plain-text confirmations', async () => {
@@ -109,12 +157,7 @@ describe('registerStringTool structuredContent behavior', () => {
       process.env.TANDOOR_MCP_STASH_THRESHOLD = '100';
       const server = freshServer();
       registerJqTools(server, client);
-      const big = {
-        count: 50,
-        next: null,
-        previous: null,
-        results: Array.from({ length: 50 }, (_, i) => ({ id: i, name: `recipe-${i}` })),
-      };
+      const big = paginated(Array.from({ length: 50 }, (_, i) => ({ id: i, name: `recipe-${i}` })));
       registerStringTool(server, client, 'big_tool', {
         description: 'returns big JSON',
         inputSchema: {},
@@ -183,12 +226,7 @@ describe('registerStringTool structuredContent behavior', () => {
       process.env.TANDOOR_MCP_STASH_THRESHOLD = '100';
       const server = freshServer();
       registerJqTools(server, client);
-      const big = {
-        count: 50,
-        next: null,
-        previous: null,
-        results: Array.from({ length: 50 }, (_, i) => ({ id: i, name: `r${i}` })),
-      };
+      const big = paginated(Array.from({ length: 50 }, (_, i) => ({ id: i, name: `r${i}` })));
       registerStringTool(server, client, 'create_thing', {
         description: 'creates and returns full payload',
         inputSchema: {},

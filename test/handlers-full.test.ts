@@ -20,6 +20,7 @@ import { handleCreateStep } from '../src/handlers/step.js';
 import { handleCreateBook, handleCreateBookEntry } from '../src/handlers/recipebook.js';
 import { handleSearchRecipes, handleRecipeBatchUpdate, handleDeleteRecipe } from '../src/handlers/recipe.js';
 import { slimPaginated, emit } from '../src/lib/slim.js';
+import { paginated } from './helpers/factories.js';
 
 // ---------- Shared helpers from src/lib/slim.ts ----------
 
@@ -478,29 +479,24 @@ describe('meal plan handlers — misc', () => {
 
 describe('food handlers', () => {
   it('slimFood strips nested substitute/parent/etc from the list response', async () => {
-    const listFoods = vi.fn(async () => ({
-      count: 1,
-      next: null,
-      previous: null,
-      results: [
-        {
-          id: 3,
-          name: 'onion',
-          plural_name: 'onions',
-          full_name: 'onion',
-          description: 'a bulb',
-          food_onhand: true,
-          supermarket_category: { id: 9, name: 'produce' },
-          parent: null,
-          numchild: 0,
-          fdc_id: 111,
-          // noise fields we expect to drop
-          substitute: [{ id: 77 }],
-          recipe: { steps: [/* enormous */] },
-          created_by: { id: 1 },
-        },
-      ],
-    }));
+    const listFoods = vi.fn(async () => paginated([
+      {
+        id: 3,
+        name: 'onion',
+        plural_name: 'onions',
+        full_name: 'onion',
+        description: 'a bulb',
+        food_onhand: true,
+        supermarket_category: { id: 9, name: 'produce' },
+        parent: null,
+        numchild: 0,
+        fdc_id: 111,
+        // noise fields we expect to drop
+        substitute: [{ id: 77 }],
+        recipe: { steps: [/* enormous */] },
+        created_by: { id: 1 },
+      },
+    ]));
     const client = { foodUnits: { listFoods } } as any;
     const out = await handleListFoods(client, {});
     const parsed = JSON.parse(out);
@@ -709,12 +705,7 @@ describe('search_recipes handler', () => {
         })),
       },
       recipes: {
-        listRecipes: vi.fn(async () => ({
-          count: 0,
-          next: null,
-          previous: null,
-          results: [],
-        })),
+        listRecipes: vi.fn(async () => paginated([])),
       },
       ...overrides,
     } as any;

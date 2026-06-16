@@ -1,8 +1,12 @@
 // Share links, user prefs, automations, user-files, activity logs.
 
-import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { TandoorClient } from '../clients/index.js';
+import { readSafeUpload } from '../lib/path-guard.js';
+import { safeFetchBytes } from '../lib/safe-fetch.js';
+import { guessMimeFromExt } from '../lib/mime.js';
+
+const MAX_USERFILE_BYTES = 50 * 1024 * 1024; // 50MB cap on URL-fetched user files.
 import type {
   GetShareLinkArgs,
   ListUserPreferencesArgs,
@@ -165,19 +169,8 @@ const slimUserFile = (f: any) => f && {
   created_at: f.created_at,
 };
 
-function guessMime(filename: string): string {
-  const ext = path.extname(filename).toLowerCase();
-  switch (ext) {
-    case '.png': return 'image/png';
-    case '.jpg': case '.jpeg': return 'image/jpeg';
-    case '.gif': return 'image/gif';
-    case '.webp': return 'image/webp';
-    case '.pdf': return 'application/pdf';
-    case '.mp4': return 'video/mp4';
-    case '.mov': return 'video/quicktime';
-    default: return 'application/octet-stream';
-  }
-}
+// guessMime moved to ../lib/mime.ts — shared with recipe + ai handlers.
+// Admin accepts the full table (images, PDFs, video) so we pass no allow set.
 
 export async function handleListUserFiles(
   client: TandoorClient,
@@ -206,17 +199,20 @@ export async function handleUploadUserFile(
   let filename: string;
   let mimeType: string;
   if (args.file_path) {
-    data = await readFile(args.file_path);
-    filename = path.basename(args.file_path);
-    mimeType = guessMime(filename);
+    // Allow-list + symlink check + O_NOFOLLOW + ino/dev TOCTOU check.
+    const { data: bytes, safePath } = await readSafeUpload(args.file_path);
+    data = bytes;
+    filename = path.basename(safePath);
+    mimeType = guessMimeFromExt(filename);
   } else {
-    const res = await fetch(args.file_url!);
+    // SSRF guard + 50MB byte cap.
+    const { res, bytes } = await safeFetchBytes(args.file_url!, {}, { maxBytes: MAX_USERFILE_BYTES });
     if (!res.ok) throw new Error(`Failed to fetch file_url: ${res.status}`);
-    data = Buffer.from(await res.arrayBuffer());
+    data = Buffer.from(bytes);
     filename = (() => {
       try { return path.basename(new URL(args.file_url!).pathname) || 'upload'; } catch { return 'upload'; }
     })();
-    mimeType = res.headers.get('content-type') || guessMime(filename);
+    mimeType = res.headers.get('content-type') || guessMimeFromExt(filename);
   }
 
   const r = await client.userFiles.createUserFile({

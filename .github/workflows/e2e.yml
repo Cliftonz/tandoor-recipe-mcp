@@ -1,11 +1,29 @@
 name: E2E
 
+# Dispatch-triggered: spins up a disposable Tandoor instance via Docker,
+# provisions an admin user + OAuth2 token, and runs the live-Tandoor suite
+# against it. No long-lived secrets needed — every run gets a fresh stack.
+#
+# Also `workflow_call`-callable so publish.yml gates a release on this job.
 on:
   workflow_dispatch:
+  workflow_call:
+
+# Prevent two simultaneous tag pushes (rc + stable) from clobbering the same
+# /tmp/tandoor-test on a self-hosted runner pool (Security F15).
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    # Hard timeout so a stuck Tandoor / Postgres cannot wedge the runner for
+    # the workflow default of 6 hours (Perf F8).
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -22,8 +40,48 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Boots Tandoor in Docker, creates admin user + OAuth2 token, writes
+      # TANDOOR_URL + TANDOOR_TOKEN + TANDOOR_COMPOSE_FILE into $GITHUB_ENV.
+      - name: Bootstrap Tandoor
+        run: ./scripts/tandoor-bootstrap.sh
+
       - name: Run E2E tests
+        timeout-minutes: 10
         run: npm run test:e2e
-        env:
-          TANDOOR_URL: ${{ secrets.TANDOOR_URL }}
-          TANDOOR_TOKEN: ${{ secrets.TANDOOR_TOKEN }}
+
+      # Dump per-service logs with adequate budget; previously a shared
+      # 200-line budget across two services hid the actual failure cause
+      # (Observability F9, F10). Token scrubbed in case Tandoor or its
+      # middleware ever logs an Authorization header.
+      - name: Dump Tandoor logs on failure
+        if: failure()
+        run: |
+          docker compose -f "${{ env.TANDOOR_COMPOSE_FILE }}" ps || true
+          echo "::group::db_recipes (last 500 lines)"
+          docker compose -f "${{ env.TANDOOR_COMPOSE_FILE }}" logs --tail 500 db_recipes \
+            | sed "s/${{ env.TANDOOR_TOKEN }}/<TOKEN>/g" || true
+          echo "::endgroup::"
+          echo "::group::web_recipes (last 500 lines)"
+          docker compose -f "${{ env.TANDOOR_COMPOSE_FILE }}" logs --tail 500 web_recipes \
+            | sed "s/${{ env.TANDOOR_TOKEN }}/<TOKEN>/g" || true
+          echo "::endgroup::"
+
+      # Persist the bootstrap Django log + the compose state as artifacts so
+      # operators can dig deeper than the truncated step output (Observability F12).
+      - name: Upload diagnostic artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tandoor-bootstrap-diag-${{ github.run_id }}
+          # Paths sourced from bootstrap script's $GITHUB_ENV writes — keeps
+          # them in sync with TANDOOR_TEST_DIR overrides (Observability F13).
+          path: |
+            ${{ env.TANDOOR_BOOTSTRAP_LOG }}
+            ${{ env.TANDOOR_COMPOSE_FILE }}
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f "${{ env.TANDOOR_COMPOSE_FILE }}" down -v
+        continue-on-error: true

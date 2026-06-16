@@ -1,12 +1,16 @@
 // AI provider + AI import handlers.
 
-import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { TandoorClient } from '../clients/index.js';
 import { saveScrapedRecipe, slimRecipe, isUsableScrape, ScrapedRecipe } from './recipe.js';
 import type { ListAiProvidersArgs, AiImportRecipeArgs } from '../tools/ai.js';
 
 import { emit } from '../lib/slim.js';
+import { readSafeUpload } from '../lib/path-guard.js';
+import { safeFetchBytes } from '../lib/safe-fetch.js';
+import { guessMimeFromExt } from '../lib/mime.js';
+
+const MAX_AI_INGEST_BYTES = 25 * 1024 * 1024; // 25MB cap on URL-fetched AI ingest files.
 
 function slimProvider(p: any) {
   if (!p) return p;
@@ -28,35 +32,24 @@ export async function handleListAiProviders(
   });
 }
 
-function guessMimeType(filename: string): string {
-  const ext = path.extname(filename).toLowerCase();
-  switch (ext) {
-    case '.png': return 'image/png';
-    case '.jpg':
-    case '.jpeg': return 'image/jpeg';
-    case '.gif': return 'image/gif';
-    case '.webp': return 'image/webp';
-    case '.pdf': return 'application/pdf';
-    case '.heic': return 'image/heic';
-    default: return 'application/octet-stream';
-  }
-}
+// guessMimeType moved to ../lib/mime.ts (guessMimeFromExt). AI ingest
+// accepts the full set so no allow filter.
 
 async function loadFile(args: { file_path?: string; file_url?: string }): Promise<{ data: Buffer; filename: string; mimeType: string } | null> {
   if (args.file_path) {
-    const data = await readFile(args.file_path);
-    const filename = path.basename(args.file_path);
-    return { data, filename, mimeType: guessMimeType(filename) };
+    // Validate + open with O_NOFOLLOW + ino/dev re-check.
+    const { data, safePath } = await readSafeUpload(args.file_path);
+    return { data, filename: path.basename(safePath), mimeType: guessMimeFromExt(path.basename(safePath)) };
   }
   if (args.file_url) {
-    const res = await fetch(args.file_url);
+    // SSRF guard + 25MB cap.
+    const { res, bytes } = await safeFetchBytes(args.file_url, {}, { maxBytes: MAX_AI_INGEST_BYTES });
     if (!res.ok) throw new Error(`Failed to fetch file_url: ${res.status} ${res.statusText}`);
-    const ab = await res.arrayBuffer();
     const filename = (() => {
       try { return path.basename(new URL(args.file_url!).pathname) || 'upload'; } catch { return 'upload'; }
     })();
-    const mimeType = res.headers.get('content-type') || guessMimeType(filename);
-    return { data: Buffer.from(ab), filename, mimeType };
+    const mimeType = res.headers.get('content-type') || guessMimeFromExt(filename);
+    return { data: Buffer.from(bytes), filename, mimeType };
   }
   return null;
 }

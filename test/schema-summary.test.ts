@@ -135,4 +135,57 @@ describe('summarize', () => {
     // And the real upstream key shows up among the sketched keys.
     expect(shape.keys._truncated).toBeDefined();
   });
+
+  // Defense-in-depth check: schema-summary uses Object.create(null) for any
+  // record whose keys come from untrusted upstream JSON, so a payload with
+  // `__proto__` (the classic prototype-pollution vector) cannot rewrite the
+  // prototype chain of the keys map. Stdio e2e's "proto" mode only proves
+  // the server doesn't crash; these tests pin the actual defense — they
+  // FAIL if `emptyKeyMap()` is replaced with `() => ({})`.
+  describe('prototype-pollution payloads stay confined to own properties', () => {
+    // Construct the malicious key via Object.defineProperty so `__proto__`
+    // is a real own enumerable data property and survives iteration —
+    // JSON.parse silently strips it in modern V8, which would make the
+    // earlier-style test useless. This shape models the actual attack
+    // vector (a Tandoor-side serializer or middleware that builds the
+    // response object programmatically with an attacker-controlled key).
+    function withProto<T extends object>(obj: T, value: any): T {
+      Object.defineProperty(obj, '__proto__', {
+        value,
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
+      return obj;
+    }
+
+    it('top-level __proto__ own key does not corrupt Object.prototype', () => {
+      const malicious = withProto({ a: 1 }, { polluted: 'yes' });
+      // Sanity: defineProperty actually attached __proto__ as own key.
+      expect(Object.prototype.hasOwnProperty.call(malicious, '__proto__')).toBe(true);
+      summarize(malicious, 'h', 1);
+      expect(({} as any).polluted).toBeUndefined();
+    });
+
+    it('array of objects with __proto__ own keys does not pollute', () => {
+      const payload = {
+        count: 1,
+        next: null,
+        previous: null,
+        results: [withProto({ id: 1 }, { polluted: true })],
+      };
+      summarize(payload, 'h', 1);
+      expect(({} as any).polluted).toBeUndefined();
+    });
+
+    it('summary keys map has null prototype (the Object.create(null) defense)', () => {
+      const malicious = withProto({ a: 1 }, { polluted: true });
+      const s = summarize(malicious, 'h', 1);
+      const shape = s.shape as Record<string, unknown>;
+      const keys = (shape as any).keys as Record<string, unknown>;
+      // If emptyKeyMap() is changed from Object.create(null) to {}, this
+      // assertion fails. That's the regression guard.
+      expect(Object.getPrototypeOf(keys)).toBeNull();
+    });
+  });
 });
