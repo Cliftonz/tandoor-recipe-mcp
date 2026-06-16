@@ -1,0 +1,219 @@
+// Tool gating — keep the LLM's tool-list context small by default.
+//
+// At boot, every tool is registered with the SDK. Tools NOT in CORE_TOOLS
+// are then immediately `.disable()`d via the SDK's RegisteredTool API.
+// Disabled tools are excluded from `tools/list` responses, so the LLM only
+// sees the small core surface (~25 tools instead of ~135).
+//
+// When the LLM needs something out of core, it calls `enable_tool_group`
+// which walks the named group's tool list and calls `.enable()` on each.
+// The SDK emits `tools/list_changed` automatically — Claude refreshes its
+// tool list mid-conversation. `disable_tool_group` is the reverse.
+//
+// CORE_TOOLS is itself exposed to the LLM via `list_tool_groups` (as the
+// "core" group, marked permanent: true) so it can see what it already has.
+
+/** Tools always enabled. The LLM should never need to enable these. */
+export const CORE_TOOLS: ReadonlySet<string> = new Set([
+  // Meta — discovery + gating.
+  'list_tool_groups',
+  'enable_tool_group',
+  'disable_tool_group',
+
+  // Diagnostic / context-management.
+  'get_version',
+  'get_guard_stats',
+  'jq_query',
+  'jq_stash_stats',
+
+  // Recipe browse (reads).
+  'list_recipes',
+  'get_recipe',
+  'search_recipes',
+  'related_recipes',
+
+  // Meal plan reads.
+  'list_meal_plans',
+  'get_meal_plan',
+  'list_meal_types',
+
+  // Shopping reads.
+  'list_shopping_entries',
+
+  // Food + ingredient reads.
+  'list_foods',
+  'get_food',
+  'list_ingredients',
+  'parse_ingredient',
+
+  // Keyword reads.
+  'list_keywords',
+  'get_keyword',
+]);
+
+export interface ToolGroup {
+  name: string;
+  description: string;
+  tools: readonly string[];
+}
+
+/**
+ * Non-core tool groups. The LLM enables one of these when it needs the
+ * tools inside. Naming convention: `<domain>-<verb>` (`recipe-write`,
+ * `shopping-write`) reads better in the LLM's reasoning than the original
+ * Tandoor module names.
+ */
+export const TOOL_GROUPS: ReadonlyArray<ToolGroup> = [
+  {
+    name: 'recipe-write',
+    description: 'Create / update / delete recipes, import from URL, upload images, batch updates.',
+    tools: [
+      'create_recipe', 'update_recipe', 'delete_recipe',
+      'import_recipe_from_url', 'upload_recipe_image',
+      'add_recipe_to_shopping_list', 'recipe_batch_update',
+    ],
+  },
+  {
+    name: 'mealplan-write',
+    description: 'Create / update / delete meal plans, auto-plan, bulk-create week plans.',
+    tools: [
+      'create_meal_plan', 'update_meal_plan', 'delete_meal_plan',
+      'auto_meal_plan', 'bulk_create_meal_plans',
+    ],
+  },
+  {
+    name: 'shopping-write',
+    description: 'Create / update / delete shopping list entries; bulk-check; shopping-list-recipe CRUD.',
+    tools: [
+      'get_shopping_entry', 'create_shopping_entry', 'update_shopping_entry', 'delete_shopping_entry',
+      'bulk_check_shopping_entries',
+      'list_shopping_list_recipes', 'get_shopping_list_recipe', 'create_shopping_list_recipe',
+      'update_shopping_list_recipe', 'delete_shopping_list_recipe',
+      'bulk_create_shopping_list_recipe_entries',
+    ],
+  },
+  {
+    name: 'foods-write',
+    description: 'Create / update / delete foods; merge/move; FDC nutrition lookup; batch update.',
+    tools: [
+      'create_food', 'update_food', 'delete_food', 'merge_food', 'move_food',
+      'food_shopping_update', 'food_fdc_lookup', 'food_batch_update',
+    ],
+  },
+  {
+    name: 'ingredients-write',
+    description: 'Ingredient CRUD (usually managed implicitly via recipes).',
+    tools: ['get_ingredient', 'create_ingredient', 'update_ingredient', 'delete_ingredient'],
+  },
+  {
+    name: 'keywords',
+    description: 'Keyword CRUD + merge / move (rare; usually managed via recipe edits).',
+    tools: ['create_keyword', 'update_keyword', 'delete_keyword', 'merge_keyword', 'move_keyword'],
+  },
+  {
+    name: 'cooklog',
+    description: 'Cook-log entries — when / how often you made a recipe.',
+    tools: ['list_cook_logs', 'get_cook_log', 'create_cook_log', 'update_cook_log', 'delete_cook_log'],
+  },
+  {
+    name: 'recipebook',
+    description: 'Recipe books (collections / cookbooks).',
+    tools: [
+      'list_recipe_books', 'get_recipe_book', 'create_recipe_book', 'update_recipe_book', 'delete_recipe_book',
+      'list_recipe_book_entries', 'get_recipe_book_entry', 'add_recipe_to_book', 'remove_recipe_from_book',
+    ],
+  },
+  {
+    name: 'ai',
+    description: 'AI-powered recipe import from images / PDFs / text (requires a Tandoor AI provider configured).',
+    tools: ['list_ai_providers', 'import_recipe_from_image'],
+  },
+  {
+    name: 'steps',
+    description: 'Step-level CRUD inside a recipe (usually managed via create_recipe / update_recipe).',
+    tools: ['list_steps', 'get_step', 'create_step', 'update_step', 'delete_step'],
+  },
+  {
+    name: 'units',
+    description: 'Unit CRUD (cup, gram, …) + supermarket entities.',
+    tools: [
+      'list_units', 'get_unit', 'create_unit', 'update_unit', 'delete_unit', 'merge_unit',
+      'list_supermarket_categories', 'get_supermarket_category', 'create_supermarket_category',
+      'update_supermarket_category', 'delete_supermarket_category', 'merge_supermarket_category',
+      'list_supermarket_category_relations', 'get_supermarket_category_relation',
+      'create_supermarket_category_relation', 'update_supermarket_category_relation',
+      'delete_supermarket_category_relation',
+    ],
+  },
+  {
+    name: 'unit-conversions',
+    description: 'Unit conversion rules (cup → ml, etc).',
+    tools: [
+      'list_unit_conversions', 'get_unit_conversion', 'create_unit_conversion',
+      'update_unit_conversion', 'delete_unit_conversion',
+    ],
+  },
+  {
+    name: 'properties',
+    description: 'Property types + values (nutrition labels, allergens).',
+    tools: [
+      'list_property_types', 'get_property_type', 'create_property_type',
+      'update_property_type', 'delete_property_type',
+      'list_properties', 'get_property', 'create_property', 'update_property', 'delete_property',
+    ],
+  },
+  {
+    name: 'custom-filters',
+    description: 'Saved custom recipe filters (Tandoor filter DSL).',
+    tools: [
+      'list_custom_filters', 'get_custom_filter', 'create_custom_filter',
+      'update_custom_filter', 'delete_custom_filter',
+    ],
+  },
+  {
+    name: 'admin',
+    description: 'Server settings, user preferences, automations, user files, view/import/AI logs, share links.',
+    tools: [
+      'get_server_settings',
+      'list_user_preferences', 'get_user_preference', 'update_user_preference',
+      'list_automations', 'get_automation', 'create_automation', 'update_automation', 'delete_automation',
+      'list_user_files', 'get_user_file', 'upload_user_file', 'update_user_file', 'delete_user_file',
+      'list_view_logs', 'list_import_logs', 'list_ai_logs',
+      'food_ai_properties', 'recipe_ai_properties', 'get_share_link',
+    ],
+  },
+];
+
+/**
+ * Build a name → group-name map for fast reverse lookup.
+ * Tools in CORE_TOOLS map to 'core' (the synthetic always-on group).
+ */
+export function buildToolToGroupIndex(): Map<string, string> {
+  const idx = new Map<string, string>();
+  for (const name of CORE_TOOLS) idx.set(name, 'core');
+  for (const g of TOOL_GROUPS) {
+    for (const t of g.tools) {
+      if (!idx.has(t)) idx.set(t, g.name);
+    }
+  }
+  return idx;
+}
+
+/** O(1) lookup: is `name` a tool registered to the named group? */
+export function groupContainsTool(group: string, name: string): boolean {
+  if (group === 'core') return CORE_TOOLS.has(name);
+  const g = TOOL_GROUPS.find((x) => x.name === group);
+  return !!g?.tools.includes(name);
+}
+
+/** Find a tool's group, or 'ungrouped' if it's neither in core nor any named group. */
+export function findToolGroup(name: string): string {
+  if (CORE_TOOLS.has(name)) return 'core';
+  for (const g of TOOL_GROUPS) if (g.tools.includes(name)) return g.name;
+  return 'ungrouped';
+}
+
+/** All group names including the synthetic 'core'. */
+export function allGroupNames(): string[] {
+  return ['core', ...TOOL_GROUPS.map((g) => g.name)];
+}

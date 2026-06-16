@@ -175,6 +175,14 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "delete_user_file",
   },
   {
+    "description": "Disable every tool in the named group so they disappear from tools/list. The SDK emits tools/list_changed automatically. Idempotent: disabling an already-disabled group is a no-op. The synthetic "core" group cannot be disabled. Use this to free context budget once a workflow no longer needs a group of tools.",
+    "name": "disable_tool_group",
+  },
+  {
+    "description": "Enable every tool in the named group so they become visible in tools/list. The SDK emits tools/list_changed automatically; the client refreshes its tool list mid-conversation. Idempotent: enabling an already-enabled group is a no-op. Passing "core" is also a no-op (core is always on). Be sparing — every enabled group adds tool schemas to your context budget. Run list_tool_groups first to see what is available.",
+    "name": "enable_tool_group",
+  },
+  {
     "description": "Enrich a food with AI-generated properties (fallback path when USDA FDC is incomplete). Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend: (1) prefer food_fdc_lookup when the food has an fdc_id — it is deterministic, free, and does not need AI setup; (2) otherwise ask the operator to add an AI provider in Tandoor Settings → AI (OpenAI/Anthropic/Ollama/etc.).",
     "name": "food_ai_properties",
   },
@@ -389,6 +397,10 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "List supermarket↔category orderings.",
     "name": "list_supermarket_category_relations",
+  },
+  {
+    "description": "List every tool group exposed by this MCP server and whether each is currently enabled. The "core" group is permanent and always enabled; non-core groups start disabled (with profile=core) and can be turned on by calling enable_tool_group with the group name. When a group is enabled, its tools become visible via tools/list and the SDK emits tools/list_changed so the client refreshes mid-conversation. Use this first to discover what is available before reaching for enable_tool_group.",
+    "name": "list_tool_groups",
   },
   {
     "description": "List unit conversions. Optional: food_id (filter), query, page, page_size.",
@@ -2006,6 +2018,42 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "group": {
+          "description": "Name of the group to disable. The synthetic "core" group cannot be disabled.",
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "group",
+      ],
+      "type": "object",
+    },
+    "name": "disable_tool_group",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "group": {
+          "description": "Name of the group to enable. Run list_tool_groups to see available group names. The synthetic "core" group is permanent — calling enable on it is a no-op.",
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "group",
+      ],
+      "type": "object",
+    },
+    "name": "enable_tool_group",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "format": {
           "enum": [
             "slim",
@@ -3597,6 +3645,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "list_supermarket_category_relations",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object",
+    },
+    "name": "list_tool_groups",
   },
   {
     "inputSchema": {

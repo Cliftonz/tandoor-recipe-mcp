@@ -141,9 +141,15 @@ describe('packed tarball smoke', () => {
     await client.connect(transport);
     try {
       const tools = await client.listTools();
-      expect(tools.tools.length).toBeGreaterThan(50);
+      // Under the default profile=core only the always-on tools are visible
+      // (~25). list_recipes and jq_query both live in CORE_TOOLS, so they
+      // must be exposed even without a prior enable_tool_group call.
+      expect(tools.tools.length).toBeGreaterThan(15);
+      expect(tools.tools.length).toBeLessThan(40);
       expect(tools.tools.some((t) => t.name === 'list_recipes')).toBe(true);
       expect(tools.tools.some((t) => t.name === 'jq_query')).toBe(true);
+      // Meta gating tool is reachable so the LLM can discover the rest.
+      expect(tools.tools.some((t) => t.name === 'list_tool_groups')).toBe(true);
 
       const listed = await client.callTool({ name: 'list_recipes', arguments: { page_size: 80 } }) as any;
       expect(listed.isError).not.toBe(true);

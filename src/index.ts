@@ -67,11 +67,19 @@ const server = new McpServer(
 );
 
 // Tool-group profile. Every MCP client loads every tool schema into context
-// on `list_tools`, so ~100 tools × ~400 tokens each is a real cost for small
-// workflows. TANDOOR_MCP_PROFILE controls which groups are registered.
-//   - "basic": recipe/meal-plan/shopping/ingredient/food+unit read + resources + prompts (~40 tools)
-//   - "full"  (default): everything, including CRUD for admin resources, steps, books, etc.
-const profile: 'basic' | 'full' = (process.env.TANDOOR_MCP_PROFILE || 'full').toLowerCase() === 'basic' ? 'basic' : 'full';
+// on `list_tools`, so ~135 tools × ~400 tokens each is a real cost for small
+// workflows. TANDOOR_MCP_PROFILE controls visibility.
+//   - "core"  (default): only ~25 always-on tools are visible; the rest are
+//     registered-but-disabled and revealed on demand via enable_tool_group.
+//   - "basic": skip admin/misc tool families entirely (legacy lever).
+//   - "full":  every tool visible at boot. Highest context cost.
+function resolveProfile(raw: string | undefined): 'core' | 'basic' | 'full' {
+  const v = (raw || '').toLowerCase();
+  if (v === 'basic') return 'basic';
+  if (v === 'full') return 'full';
+  return 'core';
+}
+const profile = resolveProfile(process.env.TANDOOR_MCP_PROFILE);
 
 registerAllTools(server, tandoorClient, { profile, pkg, versionCheck });
 
