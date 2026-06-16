@@ -8,6 +8,7 @@ import {
   mkdtempSync,
   rmSync,
   symlinkSync,
+  renameSync,
 } from 'node:fs';
 import { realpath } from 'node:fs/promises';
 import { tmpdir, homedir } from 'node:os';
@@ -224,9 +225,14 @@ describe('openSafeUpload — TOCTOU defense', () => {
     const target = path.join(allowed, 'recipe.png');
     writeFileSync(target, 'original');
     const v = await assertSafeUploadPath(target);
-    // Replace the file with a new one (same path, different inode).
-    rmSync(target);
-    writeFileSync(target, 'replaced');
+    // Swap via separate-file + rename, NOT unlink + recreate — Linux ext4
+    // reuses inode numbers immediately after unlink, so the recreated file
+    // would have the same ino and the test would silently pass on macOS
+    // but fail on Linux runners. A staged file + rename guarantees a
+    // distinct inode across platforms.
+    const replacement = path.join(allowed, 'recipe.png.replacement');
+    writeFileSync(replacement, 'replaced');
+    renameSync(replacement, target);
     await expect(openSafeUpload(v))
       .rejects.toThrow(/identity changed between validation and open/);
   });
