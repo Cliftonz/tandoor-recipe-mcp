@@ -37,7 +37,9 @@ jobs:
           cache: 'npm'
 
       - name: Install
-        run: npm ci
+        # See ci.yml: --omit=optional dodges the macOS-generated-lock vs
+        # linux-runner-resolution mismatch for vitest's optional WASM deps.
+        run: npm ci --omit=optional
 
       - name: Build
         run: npm run build

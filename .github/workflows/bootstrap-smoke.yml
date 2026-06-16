@@ -36,6 +36,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No npm install needed here — the script only spins Docker + curl.
+
       - name: Bootstrap Tandoor
         run: ./scripts/tandoor-bootstrap.sh
 
