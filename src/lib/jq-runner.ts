@@ -119,7 +119,7 @@ function getWorker(): WorkerRef {
     }
   });
   worker.on('error', (err) => {
-    rejectAllPending(ref, err);
+    rejectAllPending(ref, err instanceof Error ? err : new Error(String(err)));
     if (workerRef === ref) workerRef = null;
   });
   worker.on('exit', (code) => {
