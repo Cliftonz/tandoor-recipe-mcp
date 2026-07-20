@@ -90,6 +90,7 @@ interface PendingReq {
 interface WorkerRef {
   worker: Worker;
   pending: Map<string, PendingReq>;
+  stderrTail: string;
 }
 
 let workerRef: WorkerRef | null = null;
@@ -105,8 +106,15 @@ function rejectAllPending(ref: WorkerRef, err: Error): void {
 
 function getWorker(): WorkerRef {
   if (workerRef) return workerRef;
-  const worker = new Worker(WORKER_SOURCE, { eval: true });
-  const ref: WorkerRef = { worker, pending: new Map() };
+  // Capture worker stderr instead of inheriting it — Emscripten prints
+  // "Aborted()" noise there when a pathological filter kills the WASM.
+  // Keep a small tail so worker-exit errors can carry the real cause.
+  const worker = new Worker(WORKER_SOURCE, { eval: true, stderr: true });
+  const ref: WorkerRef = { worker, pending: new Map(), stderrTail: '' };
+  worker.stderr.setEncoding('utf8');
+  worker.stderr.on('data', (chunk: string) => {
+    ref.stderrTail = (ref.stderrTail + chunk).slice(-500);
+  });
   worker.on('message', (m: { id: string; ok: boolean; stdout?: string; stderr?: string; exitCode?: number; error?: string }) => {
     const p = ref.pending.get(m.id);
     if (!p) return;
@@ -123,7 +131,8 @@ function getWorker(): WorkerRef {
     if (workerRef === ref) workerRef = null;
   });
   worker.on('exit', (code) => {
-    rejectAllPending(ref, new Error(`jq worker exited (code ${code})`));
+    const detail = ref.stderrTail.trim();
+    rejectAllPending(ref, new Error(`jq worker exited (code ${code})${detail ? `: ${detail}` : ''}`));
     if (workerRef === ref) workerRef = null;
   });
   // Don't block process exit on the worker — stdio servers should be
