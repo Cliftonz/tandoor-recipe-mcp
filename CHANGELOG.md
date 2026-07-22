@@ -2,6 +2,47 @@
 
 All notable changes to this project are documented in this file.
 
+## 1.4.0 — 2026-07-21
+
+Dynamic tool gating flips the default surface from "every tool visible" to a ~25-tool core, cutting boot-time context cost for small workflows. Also: worker-isolated jq stash for large payloads, live Tandoor version probe, Node floor bump to 24, single-workflow release pipeline, and a full dependency refresh.
+
+### Breaking
+- **Node ≥24 required.** `engines.node` was `>=18`; now `>=24`. npm will refuse installs on older runtimes with `EBADENGINE`. CI runners, Dockerfiles, and Claude Desktop launcher scripts pinned to Node 18/20/22 must upgrade.
+- **Default tool visibility narrows from ~131 to ~21.** New `TANDOOR_MCP_PROFILE` env controls the surface: `core` (default) exposes always-on tools plus `enable_tool_group` / `disable_tool_group` / `list_tool_groups` meta tools; `basic` skips admin/misc families; `full` restores prior behavior. Existing workflows that reference gated tools directly must either switch to `full` or call `enable_tool_group` first. Rationale: every MCP client loads every tool schema on `list_tools`; ~135 tools × ~400 tokens each was a real cost for callers only using a handful.
+
+### Added
+- **`jq_query` stash** — large tool responses (default >5000 bytes) return a `stash_<uuid>` handle plus a `SchemaSummary` instead of the raw payload. Follow-up `jq_query` calls resolve the handle through worker-isolated `jq-wasm`, letting the LLM narrow the result without re-fetching. Worker enforces a hard 5s timeout + 5MB output cap; pathological filters terminate the worker without freezing the parent. TTL, LRU eviction, and stats surfaced via `jq_stash_stats`.
+- **Startup version probe** — server calls `/api/version/` at boot and warns on stderr when the connected Tandoor is pre-2.x, so operators know why some tools may 404 before they hit them.
+- **`get_version`** tool — reports MCP server version, protocol version, and connected Tandoor version in one call.
+- **`delete_recipe`** tool — round-trip parity with `create_recipe` for cleanup workflows.
+- **TANDOOR_URL path stripping** — pasted browser URLs (`https://tandoor.example.com/recipes/`) no longer fail against the API root; the client strips path segments from `TANDOOR_URL` before building endpoint URLs.
+
+### Changed
+- **Release pipeline collapsed to a single workflow.** `release.yml` now runs detect → e2e gate → build → test → tag → npm publish → GH release atomically on `package.json` version changes. Removes the GitHub-App-token bridge that the previous two-workflow split required (App install could rotate, uninstall, or fail; default `GITHUB_TOKEN` handles the single workflow cleanly).
+- **Prereleases route to npm `next` dist-tag** and are marked as GitHub prereleases, so `npm install -g @cliftonz/tandoor-recipes-mcp` still resolves to the last stable.
+- **CI matrix expanded** to Ubuntu + macOS + Windows on Node 24 with an `npm audit` gate.
+
+### Fixed
+- **`jq-wasm` module resolution** — resolve from the package's own location instead of `process.cwd()`, so globally-installed / npx-launched servers don't fail with `Cannot find package 'jq-wasm'` when the client launches from a directory without `jq-wasm` in scope.
+- **jq worker `Aborted()` noise** — worker stderr is now captured and folded into the exit error message instead of inheriting the parent's stderr, so an Emscripten WASM abort from a pathological filter no longer prints raw `Aborted()` into MCP server logs.
+
+### Security
+- **Prompt-injection guards** for the new jq stash surface: handles are opaque UUIDs, unknown/expired handles surface a generic recoverable message without echoing the handle back, and jq results that are themselves oversized get re-stashed instead of returned inline.
+
+### Dependencies
+- Added `jq-wasm` @ 3.0.0-jq-1.8.2 (powers the new stash / `jq_query` surface)
+- Added `undici` @ 8.8.0 (replaces ad-hoc fetch wrapping; used for streaming uploads)
+- `@modelcontextprotocol/sdk` ^1.24.3 → 1.29.0 (pinned)
+- `zod` (^3||^4) → ^4.4.3 (drops v3 range)
+- `typescript` 5 → 7 (via 6.0.3 stepping stone; NodeNext module resolution)
+- `dotenv` 16 → 17
+- `@types/node` 22 → ^24 (aligned to `engines` floor)
+- `vitest` 2 → 4
+- Full `package-lock.json` regeneration to resolve optional-dep platform mismatches
+
+### Tests
+- 138 → 483 tests. New coverage: worker-isolated jq (timeout, output cap, worker recycle after abort, module resolution from install location), stash lifecycle (TTL, LRU, re-stash recursion, prompt-injection surface), version probe, path-stripping URL normalization, tool-registration completeness, tool-group gating, workflow shape, and a live end-to-end suite (`test/e2e/tandoor.e2e.test.ts`) that hits a real Tandoor instance and cleans up after itself.
+
 ## 1.3.0 — 2026-04-24
 
 Three new batch tools for fewer round-trips on "operate on a set" workflows.
