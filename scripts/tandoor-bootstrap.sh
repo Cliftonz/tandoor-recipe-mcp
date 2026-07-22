@@ -109,7 +109,7 @@ while true; do
     docker compose -f "$COMPOSE_FILE" logs --tail 200 web_recipes >&2 || true
     exit 1
   fi
-  if [ $(( now - last_log_t )) -ge $LOG_INTERVAL ]; then
+  if [ $(( now - last_log_t )) -ge "$LOG_INTERVAL" ]; then
     echo "[tandoor-bootstrap] t=${elapsed}s http=${code} attempt=${attempt}" >&2
     last_log_t=$now
   fi
@@ -140,7 +140,7 @@ while [ "$(date +%s)" -lt "$MIG_DEADLINE" ]; do
   fi
   # Wall-clock cadence (matches the HTTP poll above). Operator can
   # distinguish "slow but progressing" from "stuck" before the deadline.
-  if [ $(( mig_now - mig_last_log_t )) -ge $LOG_INTERVAL ]; then
+  if [ $(( mig_now - mig_last_log_t )) -ge "$LOG_INTERVAL" ]; then
     echo "[tandoor-bootstrap][INFO] migrations pending=${pending} t=$(( mig_now - MIG_START ))s attempt=${mig_attempt}" >&2
     mig_last_log_t=$mig_now
   fi
