@@ -116,7 +116,7 @@ interface Bucket {
   updatedAt: number;
 }
 
-class FailedAuthLimiter {
+export class FailedAuthLimiter {
   private buckets = new Map<string, Bucket>();
 
   consume(key: string): boolean {

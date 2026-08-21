@@ -13,6 +13,7 @@ import {
 } from '../src/handlers/ai.js';
 import { mockClient } from './helpers/mock-client.js';
 import type { TandoorClient } from '../src/clients/index.js';
+import { createAiProviderShape, updateAiProviderShape } from '../src/tools/ai.js';
 
 const mock = (impl: Parameters<typeof mockClient<TandoorClient>>[0]) =>
   mockClient<TandoorClient>(impl);
@@ -22,10 +23,21 @@ const fullProvider = {
   name: 'openai-main',
   api_key: 'sk-SECRET',
   endpoint: 'https://api.openai.com',
-  model: 'gpt-4',
+  model_name: 'gpt-4',
   provider: 'openai',
   created_by: 1,
 };
+
+describe('AiProvider shape uses model_name (matches Tandoor OpenAPI 2.3.6)', () => {
+  it('createAiProviderShape has model_name, not model', () => {
+    expect(createAiProviderShape).toHaveProperty('model_name');
+    expect(createAiProviderShape).not.toHaveProperty('model');
+  });
+  it('updateAiProviderShape has model_name, not model', () => {
+    expect(updateAiProviderShape).toHaveProperty('model_name');
+    expect(updateAiProviderShape).not.toHaveProperty('model');
+  });
+});
 
 describe('slimAiProvider', () => {
   it('strips api_key', () => {
@@ -35,7 +47,7 @@ describe('slimAiProvider', () => {
       id: 5,
       name: 'openai-main',
       endpoint: 'https://api.openai.com',
-      model: 'gpt-4',
+      model_name: 'gpt-4',
       provider: 'openai',
     });
   });
@@ -67,20 +79,20 @@ describe('get_ai_provider', () => {
 });
 
 describe('create_ai_provider', () => {
-  it('POSTs name/api_key/model and returns slim by default', async () => {
+  it('POSTs name/api_key/model_name and returns slim by default', async () => {
     const create = vi.fn().mockResolvedValue(fullProvider);
     const client = mock({ ai: { createAiProvider: create } });
     const res = await handleCreateAiProvider(client, {
       name: 'openai-main',
       api_key: 'sk-SECRET',
-      model: 'gpt-4',
+      model_name: 'gpt-4',
       provider: 'openai',
       endpoint: 'https://api.openai.com',
     } as any);
     expect(create).toHaveBeenCalledWith({
       name: 'openai-main',
       api_key: 'sk-SECRET',
-      model: 'gpt-4',
+      model_name: 'gpt-4',
       provider: 'openai',
       endpoint: 'https://api.openai.com',
     }, { signal: undefined });
@@ -104,7 +116,7 @@ describe('update_ai_provider', () => {
       id: 5,
       name: 'openai-main',
       endpoint: 'https://api.openai.com',
-      model: 'gpt-4',
+      model_name: 'gpt-4',
       provider: 'openai',
       api_key: body.api_key ?? 'sk-SECRET',
     }));
@@ -126,7 +138,7 @@ describe('handleListAiProviders', () => {
     ai_model_type: 'text',
     api_key: 'sk-SECRET',
     endpoint: 'https://api.openai.com',
-    model: 'gpt-4',
+    model_name: 'gpt-4',
     provider: 'openai',
   };
 

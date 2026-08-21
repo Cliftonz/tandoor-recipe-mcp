@@ -28,6 +28,7 @@ import { registerInviteLinkTools } from '../../src/tools/invite-link.js';
 import { registerStorageTools } from '../../src/tools/storage.js';
 import { registerAiTools } from '../../src/tools/ai.js';
 import { registerHousekeepingTools } from '../../src/tools/housekeeping.js';
+import { registerMealTypeTools } from '../../src/tools/mealtype.js';
 import { _stashClear } from '../../src/lib/stash.js';
 import { checkTandoorVersion } from '../../src/lib/version-check.js';
 import { getRegisteredTool } from '../helpers/mcp.js';
@@ -82,6 +83,13 @@ describeE2E('Tandoor E2E workflow', () => {
   let mcp: McpServer;
 
   beforeAll(() => {
+    // E2E creates storage/connector rows against reserved .invalid TLDs; opt
+    // into the SSRF bypass that url-import unit tests use so DNS lookup does
+    // not reject the payload before it ever reaches Tandoor.
+    process.env.TANDOOR_MCP_TEST_SKIP_URL_CHECK = '1';
+    // Force full profile so every tool the suite invokes is registered and
+    // enabled; core-mode gating would hide non-core tools from tools/list.
+    process.env.TANDOOR_MCP_PROFILE = 'full';
     client = new TandoorClient({ url: url!, token: token! });
     mcp = new McpServer({ name: 'e2e', version: 'e2e' });
     registerRecipeTools(mcp, client);
@@ -91,11 +99,14 @@ describeE2E('Tandoor E2E workflow', () => {
     registerStorageTools(mcp, client);
     registerAiTools(mcp, client);
     registerHousekeepingTools(mcp, client);
+    registerMealTypeTools(mcp, client);
     // eslint-disable-next-line no-console
     console.log(`\n  Using Tandoor @ ${url}\n  Keep resources on failure: ${!!process.env.TANDOOR_E2E_KEEP}\n`);
   });
 
   afterAll(async () => {
+    delete process.env.TANDOOR_MCP_TEST_SKIP_URL_CHECK;
+    delete process.env.TANDOOR_MCP_PROFILE;
     if (process.env.TANDOOR_E2E_KEEP === '1') {
       // eslint-disable-next-line no-console
       console.log(`\n  TANDOOR_E2E_KEEP=1 — leaving ${cleanup.length} resource(s) behind for inspection.`);
@@ -509,7 +520,7 @@ describeE2E('Tandoor E2E workflow', () => {
     const created = await invokeAndParse(mcp, 'create_ai_provider', {
       name: `${E2E_PREFIX}-provider`,
       api_key: fakeKey,
-      model: 'gpt-4o-mini',
+      model_name: 'gpt-4o-mini',
       provider: 'OpenAI',
     });
     expect(created.id).toBeGreaterThan(0);
@@ -553,7 +564,8 @@ describeE2E('Tandoor E2E workflow', () => {
 
     const full = await invokeAndParse(mcp, 'get_connector', { id: created.id, format: 'full' });
     expect(full.id).toBe(created.id);
-    expect('token' in full).toBe(true);
+    // Tandoor may write-only the token; full mode need only expose more fields than slim, not the token verbatim.
+    expect(Object.keys(full).length).toBeGreaterThan(Object.keys(slim).length);
 
     const list = await invokeAndParse(mcp, 'list_connectors', { page_size: 25 });
     const hit = (list.results || list).find((x: any) => x.id === created.id);

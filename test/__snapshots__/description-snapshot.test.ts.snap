@@ -39,7 +39,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_access_token",
   },
   {
-    "description": "Create an AI provider. Required: name, api_key, model, provider. Optional: endpoint. Response slim by default (api_key redacted).",
+    "description": "Create an AI provider. Required: name, api_key, model_name, provider. Optional: endpoint. Response slim by default (api_key redacted).",
     "name": "create_ai_provider",
   },
   {
@@ -1418,7 +1418,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           ],
           "type": "string",
         },
-        "model": {
+        "model_name": {
           "type": "string",
         },
         "name": {
@@ -1431,7 +1431,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "required": [
         "name",
         "api_key",
-        "model",
+        "model_name",
         "provider",
       ],
       "type": "object",
@@ -7340,7 +7340,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "id": {
           "type": "number",
         },
-        "model": {
+        "model_name": {
           "type": "string",
         },
         "name": {

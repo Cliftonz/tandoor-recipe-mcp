@@ -35,7 +35,7 @@ function slimAiProvider(p: any) {
     id: p.id,
     name: p.name,
     endpoint: p.endpoint,
-    model: p.model,
+    model_name: p.model_name,
     provider: p.provider,
   };
 }
@@ -162,7 +162,7 @@ export async function handleUpdateAiProvider(
   if (args.name !== undefined) body.name = args.name;
   if (args.api_key !== undefined) body.api_key = args.api_key;
   if (args.endpoint !== undefined) body.endpoint = args.endpoint;
-  if (args.model !== undefined) body.model = args.model;
+  if (args.model_name !== undefined) body.model_name = args.model_name;
   if (args.provider !== undefined) body.provider = args.provider;
   assertNonEmptyBody(body);
   const r = await client.ai.patchAiProvider(args.id, body, { signal: ctx?.signal });
