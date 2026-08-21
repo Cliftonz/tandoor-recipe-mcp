@@ -22,33 +22,53 @@ const fullProvider = {
   id: 5,
   name: 'openai-main',
   api_key: 'sk-SECRET',
-  endpoint: 'https://api.openai.com',
+  url: 'https://api.openai.com',
   model_name: 'gpt-4',
-  provider: 'openai',
-  created_by: 1,
+  description: 'openai',
+  log_credit_cost: true,
+  space: 1,
+  created_at: '2026-06-01T00:00:00Z',
+  updated_at: '2026-06-01T00:00:00Z',
 };
 
-describe('AiProvider shape uses model_name (matches Tandoor OpenAPI 2.3.6)', () => {
-  it('createAiProviderShape has model_name, not model', () => {
+describe('AiProvider shape uses spec field names (Tandoor OpenAPI 2.3.6)', () => {
+  it('createAiProviderShape has spec-aligned names, no legacy names', () => {
     expect(createAiProviderShape).toHaveProperty('model_name');
+    expect(createAiProviderShape).toHaveProperty('description');
+    expect(createAiProviderShape).toHaveProperty('url');
+    expect(createAiProviderShape).toHaveProperty('log_credit_cost');
+    expect(createAiProviderShape).toHaveProperty('space');
     expect(createAiProviderShape).not.toHaveProperty('model');
+    expect(createAiProviderShape).not.toHaveProperty('provider');
+    expect(createAiProviderShape).not.toHaveProperty('endpoint');
+    expect(createAiProviderShape).not.toHaveProperty('ai_model_type');
   });
-  it('updateAiProviderShape has model_name, not model', () => {
+  it('updateAiProviderShape has spec-aligned names, no legacy names', () => {
     expect(updateAiProviderShape).toHaveProperty('model_name');
+    expect(updateAiProviderShape).toHaveProperty('description');
+    expect(updateAiProviderShape).toHaveProperty('url');
+    expect(updateAiProviderShape).toHaveProperty('log_credit_cost');
+    expect(updateAiProviderShape).toHaveProperty('space');
     expect(updateAiProviderShape).not.toHaveProperty('model');
+    expect(updateAiProviderShape).not.toHaveProperty('provider');
+    expect(updateAiProviderShape).not.toHaveProperty('endpoint');
   });
 });
 
 describe('slimAiProvider', () => {
-  it('strips api_key', () => {
+  it('strips api_key, keeps spec-aligned fields', () => {
     const out = aiInternals.slimAiProvider(fullProvider);
     expect(out).not.toHaveProperty('api_key');
     expect(out).toEqual({
       id: 5,
       name: 'openai-main',
-      endpoint: 'https://api.openai.com',
+      description: 'openai',
       model_name: 'gpt-4',
-      provider: 'openai',
+      url: 'https://api.openai.com',
+      log_credit_cost: true,
+      space: 1,
+      created_at: '2026-06-01T00:00:00Z',
+      updated_at: '2026-06-01T00:00:00Z',
     });
   });
 
@@ -79,22 +99,22 @@ describe('get_ai_provider', () => {
 });
 
 describe('create_ai_provider', () => {
-  it('POSTs name/api_key/model_name and returns slim by default', async () => {
+  it('POSTs spec-aligned fields and returns slim by default', async () => {
     const create = vi.fn().mockResolvedValue(fullProvider);
     const client = mock({ ai: { createAiProvider: create } });
     const res = await handleCreateAiProvider(client, {
       name: 'openai-main',
       api_key: 'sk-SECRET',
       model_name: 'gpt-4',
-      provider: 'openai',
-      endpoint: 'https://api.openai.com',
+      description: 'openai',
+      url: 'https://api.openai.com',
     } as any);
     expect(create).toHaveBeenCalledWith({
       name: 'openai-main',
       api_key: 'sk-SECRET',
       model_name: 'gpt-4',
-      provider: 'openai',
-      endpoint: 'https://api.openai.com',
+      description: 'openai',
+      url: 'https://api.openai.com',
     }, { signal: undefined });
     expect(res).toMatch(/created/i);
     expect(res).not.toMatch(/sk-SECRET/);
@@ -115,9 +135,9 @@ describe('update_ai_provider', () => {
     const patch = vi.fn(async (_id: number, body: any) => ({
       id: 5,
       name: 'openai-main',
-      endpoint: 'https://api.openai.com',
+      url: 'https://api.openai.com',
       model_name: 'gpt-4',
-      provider: 'openai',
+      description: 'openai',
       api_key: body.api_key ?? 'sk-SECRET',
     }));
     const client = mock({ ai: { patchAiProvider: patch } });
@@ -135,19 +155,18 @@ describe('handleListAiProviders', () => {
   const raw = {
     id: 7,
     name: 'openai-main',
-    ai_model_type: 'text',
     api_key: 'sk-SECRET',
-    endpoint: 'https://api.openai.com',
+    url: 'https://api.openai.com',
     model_name: 'gpt-4',
-    provider: 'openai',
+    description: 'openai',
   };
 
-  it('slim strips api_key and surfaces only id/name/ai_model_type', async () => {
+  it('slim strips api_key and surfaces id/name/model_name', async () => {
     const list = vi.fn(async () => ({ count: 1, next: null, previous: null, results: [raw] }));
     const client = mock({ ai: { listAiProviders: list } });
     const res = await handleListAiProviders(client, {} as any);
     const parsed = JSON.parse(res);
-    expect(parsed.results[0]).toEqual({ id: 7, name: 'openai-main', ai_model_type: 'text' });
+    expect(parsed.results[0]).toEqual({ id: 7, name: 'openai-main', model_name: 'gpt-4' });
     expect(res).not.toMatch(/sk-SECRET/);
   });
 

@@ -39,7 +39,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_access_token",
   },
   {
-    "description": "Create an AI provider. Required: name, api_key, model_name, provider. Optional: endpoint. Response slim by default (api_key redacted).",
+    "description": "Create an AI provider. Required: name, model_name. Optional: api_key, description, url, log_credit_cost, space. Response slim by default (api_key redacted).",
     "name": "create_ai_provider",
   },
   {
@@ -1408,7 +1408,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "api_key": {
           "type": "string",
         },
-        "endpoint": {
+        "description": {
           "type": "string",
         },
         "format": {
@@ -1418,21 +1418,25 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           ],
           "type": "string",
         },
+        "log_credit_cost": {
+          "type": "boolean",
+        },
         "model_name": {
           "type": "string",
         },
         "name": {
           "type": "string",
         },
-        "provider": {
+        "space": {
+          "type": "number",
+        },
+        "url": {
           "type": "string",
         },
       },
       "required": [
         "name",
-        "api_key",
         "model_name",
-        "provider",
       ],
       "type": "object",
     },
@@ -7327,7 +7331,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "api_key": {
           "type": "string",
         },
-        "endpoint": {
+        "description": {
           "type": "string",
         },
         "format": {
@@ -7340,13 +7344,19 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "id": {
           "type": "number",
         },
+        "log_credit_cost": {
+          "type": "boolean",
+        },
         "model_name": {
           "type": "string",
         },
         "name": {
           "type": "string",
         },
-        "provider": {
+        "space": {
+          "type": "number",
+        },
+        "url": {
           "type": "string",
         },
       },

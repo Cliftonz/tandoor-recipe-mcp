@@ -22,17 +22,17 @@ describe('handlers/ai.ts', () => {
       const client = mock({
         ai: {
           listAiProviders: async () => paginated([{
-            id: 1, name: 'openai', ai_model_type: 'openai',
-            api_key: 'sk-SECRET', endpoint: 'https://secret.test',
+            id: 1, name: 'openai', model_name: 'gpt-4',
+            api_key: 'sk-SECRET', url: 'https://secret.test',
           }]),
         },
       });
       const res = await handleListAiProviders(client, {} as any);
       const parsed = JSON.parse(res);
       const provider = parsed.results[0];
-      expect(provider).toEqual({ id: 1, name: 'openai', ai_model_type: 'openai' });
+      expect(provider).toEqual({ id: 1, name: 'openai', model_name: 'gpt-4' });
       expect(provider).not.toHaveProperty('api_key');
-      expect(provider).not.toHaveProperty('endpoint');
+      expect(provider).not.toHaveProperty('url');
     });
 
     it('format=full keeps raw response (including api_key)', async () => {
