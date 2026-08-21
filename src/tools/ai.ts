@@ -36,10 +36,12 @@ export const getAiProviderShape = { id: z.number(), format: formatEnum } as cons
 
 export const createAiProviderShape = {
   name: z.string(),
-  api_key: z.string(),
   model_name: z.string(),
-  provider: z.string(),
-  endpoint: z.string().optional(),
+  api_key: z.string().optional(),
+  description: z.string().optional(),
+  url: z.string().optional(),
+  log_credit_cost: z.boolean().optional(),
+  space: z.number().optional(),
   format: formatEnum,
 } as const;
 
@@ -48,8 +50,10 @@ export const updateAiProviderShape = {
   name: z.string().optional(),
   api_key: z.string().optional(),
   model_name: z.string().optional(),
-  provider: z.string().optional(),
-  endpoint: z.string().optional(),
+  description: z.string().optional(),
+  url: z.string().optional(),
+  log_credit_cost: z.boolean().optional(),
+  space: z.number().optional(),
   format: formatEnum,
 } as const;
 
@@ -83,7 +87,7 @@ export function registerAiTools(server: McpServer, client: TandoorClient): void 
   }, handleGetAiProvider);
 
   registerStringTool(server, client, 'create_ai_provider', {
-    description: 'Create an AI provider. Required: name, api_key, model_name, provider. Optional: endpoint. Response slim by default (api_key redacted).',
+    description: 'Create an AI provider. Required: name, model_name. Optional: api_key, description, url, log_credit_cost, space. Response slim by default (api_key redacted).',
     inputSchema: createAiProviderShape,
   }, handleCreateAiProvider);
 

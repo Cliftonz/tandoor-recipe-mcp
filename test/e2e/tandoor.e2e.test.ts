@@ -521,7 +521,7 @@ describeE2E('Tandoor E2E workflow', () => {
       name: `${E2E_PREFIX}-provider`,
       api_key: fakeKey,
       model_name: 'gpt-4o-mini',
-      provider: 'OpenAI',
+      description: 'OpenAI',
     });
     expect(created.id).toBeGreaterThan(0);
     cleanup.push({ label: `ai-provider ${created.id}`, fn: () => client.ai.deleteAiProvider(created.id) });

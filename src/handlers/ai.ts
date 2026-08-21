@@ -24,7 +24,7 @@ const MAX_AI_INGEST_BYTES = 25 * 1024 * 1024; // 25MB cap on URL-fetched AI inge
 // list_ai_providers returns a lighter shape than get/create/update per Tandoor's API; two projectors keep each caller minimal.
 function slimAiProviderList(p: any) {
   if (!p) return p;
-  return { id: p.id, name: p.name, ai_model_type: p.ai_model_type };
+  return { id: p.id, name: p.name, model_name: p.model_name };
 }
 
 // api_key is a real provider credential; slim mode omits it so a routine
@@ -34,9 +34,13 @@ function slimAiProvider(p: any) {
   return {
     id: p.id,
     name: p.name,
-    endpoint: p.endpoint,
+    description: p.description,
     model_name: p.model_name,
-    provider: p.provider,
+    url: p.url,
+    log_credit_cost: p.log_credit_cost,
+    space: p.space,
+    created_at: p.created_at,
+    updated_at: p.updated_at,
   };
 }
 
@@ -161,9 +165,11 @@ export async function handleUpdateAiProvider(
   const body: any = {};
   if (args.name !== undefined) body.name = args.name;
   if (args.api_key !== undefined) body.api_key = args.api_key;
-  if (args.endpoint !== undefined) body.endpoint = args.endpoint;
+  if (args.url !== undefined) body.url = args.url;
   if (args.model_name !== undefined) body.model_name = args.model_name;
-  if (args.provider !== undefined) body.provider = args.provider;
+  if (args.description !== undefined) body.description = args.description;
+  if (args.log_credit_cost !== undefined) body.log_credit_cost = args.log_credit_cost;
+  if (args.space !== undefined) body.space = args.space;
   assertNonEmptyBody(body);
   const r = await client.ai.patchAiProvider(args.id, body, { signal: ctx?.signal });
   return `AI provider updated.\n\n${emit(args.format === 'full' ? r : slimAiProvider(r))}`;
