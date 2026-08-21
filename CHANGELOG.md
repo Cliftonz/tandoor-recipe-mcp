@@ -2,6 +2,30 @@
 
 All notable changes to this project are documented in this file.
 
+## 2.0.0 / 2026-08-21
+
+Consolidates the 1.5.x line into a major release. Same shipping code as 1.5.2 plus the AiProvider spec-drift fixes from PR #11. Version bumped to 2.0.0 to reflect the size of the surface expansion introduced across the 1.5.x cycle (transport model change, 136 new tools, new env-var surface) rather than a new breaking change on top of 1.5.2.
+
+### Notes
+- **Not breaking vs 1.5.2.** Upgraders from 1.5.2 see no argument shape changes; the AiProvider `create` / `update` shape now uses `description` / `url` (Tandoor 2.3.6 spec) instead of the 1.5.x legacy `provider` / `endpoint`, with a new regression test locking the shape so future drift trips at unit-test time rather than release-time e2e.
+- **Breaking vs 1.4.0.** For anyone upgrading past the 1.5.x line without stopping, review the full 1.5.0 section below: profile default narrowed non-core tools at boot, jq stash added, HTTP transport shipped, Node ≥24 enforced.
+- **1.5.2 remains installable** but is `npm deprecate`d in favor of 2.0.0. Nothing in 1.5.2 was broken; the deprecation is a soft signal to consolidate on the major.
+
+### Included (from the 1.5.x cycle)
+- 136 new tools for full Tandoor 2.3.6 OpenAPI parity.
+- Stateless HTTP transport (`TANDOOR_MCP_TRANSPORT=http`) alongside stdio.
+- Credential-redaction posture on storage / AI-provider / access-token / connector-config with bilateral test coverage.
+- SSRF guard on bookmarklet + storage URL fields.
+- Sensitive-endpoint log gate: `authenticate` + `create_access_token` no longer leak credentials into `TANDOOR_MCP_LOG` output.
+- HTTP transport hardening: timing-safe bearer, connection + timeout caps, `/healthz` auth-exempt, graceful SIGTERM drain, reqId correlation, JSON-RPC 413 envelope, per-remote failed-auth rate limit.
+- `qs()` consolidated to `BaseClient`, `assertNonEmptyBody` + `formatEnum` to `src/lib/slim.ts`, lazy sub-client getters, `NEVER_ABORTED` module constant.
+- iCal endpoint routed through `BaseClient.requestText` for retry + redaction + signal parity.
+- AiProvider create/update shape aligned to spec (`model_name`, `description`, `url`, plus `log_credit_cost` + `space`; `provider`/`endpoint`/`ai_model_type` removed).
+
+### Requires
+- Node 24+
+- Tandoor server 2.3.6+
+
 ## 1.5.2 / 2026-08-21
 
 Second attempt at shipping the 1.5.x changeset. 1.5.1's release-time e2e still tripped on one assertion.
