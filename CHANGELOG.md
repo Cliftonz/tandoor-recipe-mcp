@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 2.0.1 / 2026-08-21
+
+### Fixed
+- **E2E ai-provider full-mode assertion.** After PR #11 aligned the `slimAiProvider` projection with the Tandoor 2.3.6 spec, slim now surfaces every response field except the write-only `api_key`. The previous `full.keys > slim.keys` invariant fired because Tandoor never returns `api_key` in either mode, leaving both projections at equal key counts. Softened to `>=` (full does not lose fields relative to slim) plus an explicit `full.api_key === undefined` assertion so the redaction contract stays covered.
+
 ## 2.0.0 / 2026-08-21
 
 Consolidates the 1.5.x line into a major release. Same shipping code as 1.5.2 plus the AiProvider spec-drift fixes from PR #11. Version bumped to 2.0.0 to reflect the size of the surface expansion introduced across the 1.5.x cycle (transport model change, 136 new tools, new env-var surface) rather than a new breaking change on top of 1.5.2.

@@ -532,8 +532,11 @@ describeE2E('Tandoor E2E workflow', () => {
 
     const full = await invokeAndParse(mcp, 'get_ai_provider', { id: created.id, format: 'full' });
     expect(full.id).toBe(created.id);
-    // Tandoor may write-only the api_key; full mode need only expose more fields than slim.
-    expect(Object.keys(full).length).toBeGreaterThan(Object.keys(slim).length);
+    // Tandoor treats api_key as write-only, so full mode never re-exposes the secret.
+    // The redaction invariant is "full does not lose fields relative to slim" (>=, not >),
+    // because the spec-aligned slim projection already surfaces every response field.
+    expect(Object.keys(full).length).toBeGreaterThanOrEqual(Object.keys(slim).length);
+    expect(full.api_key).toBeUndefined();
 
     const list = await invokeAndParse(mcp, 'list_ai_providers', { page_size: 25 });
     const hit = (list.results || []).find((x: any) => x.id === created.id);
