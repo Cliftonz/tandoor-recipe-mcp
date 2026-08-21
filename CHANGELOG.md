@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## 1.5.1 / 2026-08-21
+
+Ships the 1.5.0 changeset. The 1.5.0 tag was cut internally but never reached npm or GitHub Releases: the release workflow's e2e job caught real bugs and setup gaps that only surfaced against a live Tandoor stack, so publish was blocked.
+
+### Fixed
+- **AiProvider `create` / `update` field name.** Tool shape sent `model` but Tandoor 2.3.6 rejects with `{"model_name": ["This field is required."]}`. Renamed to `model_name` in the shape, slim projector, handler body, and e2e fixture; snapshot regenerated. Real spec drift, caught by the release-time e2e.
+- **HTTP transport rate-limit test on Windows.** `test/http-transport.test.ts` tripped `EACCES` on rapid loopback port rebinds under windows-latest / Node 24. The test now skips on `win32`; the underlying `FailedAuthLimiter` is exported and covered by a direct unit test so the logic still ships behind a green matrix.
+- **E2E setup gaps.** Real-Tandoor e2e run needed `TANDOOR_MCP_PROFILE=full` (non-core tools were disabled at boot), an explicit `registerMealTypeTools` call, and `TANDOOR_MCP_TEST_SKIP_URL_CHECK=1` so the new SSRF guard would let `.invalid` test URLs through. Connector-config full-mode assertion softened to "more keys than slim" since Tandoor treats the token as write-only.
+
+### Known drift
+- **AiProvider `provider` / `endpoint` fields** in the tool shape do not match Tandoor 2.3.6's spec (`description` / `url`). Not blocking; scheduled for a follow-up PR.
+
 ## 1.5.0 / 2026-08-20
 
 Coverage push against the Tandoor 2.3.6 OpenAPI. 136 new tools land the pieces the fork was missing: delete previews, invite-link + access-token surfaces, storage / sync / import queue, multi-space, housekeeping reads, meal-type + supermarket CRUD. Also introduces a stateless HTTP transport for out-of-Claude callers, plus a destructive-action safety layer covering per-resource delete previews, escalation-surface warnings on token-mint tools, and credential redaction on storage / AI-provider reads.
