@@ -19,6 +19,7 @@ import { getStashConfig } from './lib/stash.js';
 import { checkTandoorVersion } from './lib/version-check.js';
 import { buildInstructions } from './lib/instructions.js';
 import { registerAllTools } from './lib/register-all.js';
+import { createHttpTransport, resolveHttpConfig } from './lib/http-transport.js';
 
 // dotenv is a dev convenience — only load it if it's available (it's a
 // devDependency, not a production dep). Real deployments inject env via the
@@ -43,6 +44,12 @@ const tandoorClient = new TandoorClient({
   token: TANDOOR_TOKEN,
 });
 
+function resolveTransportMode(raw: string | undefined): 'stdio' | 'http' {
+  return (raw || '').toLowerCase() === 'http' ? 'http' : 'stdio';
+}
+const transportMode = resolveTransportMode(process.env.TANDOOR_MCP_TRANSPORT);
+const httpCfg = transportMode === 'http' ? resolveHttpConfig() : undefined;
+
 // Resolve once at startup so the instructions string (sent to the client on
 // initialize) and the operator-facing startup log show the same effective
 // numbers — including any overrides from TANDOOR_MCP_STASH_*.
@@ -62,7 +69,11 @@ const server = new McpServer(
     version: pkg.version,
   },
   {
-    instructions: buildInstructions(versionCheck, stashCfgAtBoot),
+    instructions: buildInstructions(versionCheck, stashCfgAtBoot, {
+      mode: transportMode,
+      bind: httpCfg ? `${httpCfg.host}:${httpCfg.port}` : undefined,
+      requireAuth: httpCfg?.requireAuth ?? false,
+    }),
   }
 );
 
@@ -84,17 +95,27 @@ const profile = resolveProfile(process.env.TANDOOR_MCP_PROFILE);
 registerAllTools(server, tandoorClient, { profile, pkg, versionCheck });
 
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  // One-line startup banner on stderr (stdout belongs to the MCP transport).
-  // Includes the resolved Tandoor origin (so operators can confirm the URL
-  // normalization in base.ts produced what they expected — pasting a full
-  // page URL into TANDOOR_URL is the common misconfiguration) and the
-  // effective stash config (so "why isn't this being stashed" is debuggable
-  // without source-diving).
   const stashLine = stashCfgAtBoot.enabled
     ? `stash=on(>${stashCfgAtBoot.thresholdBytes}B, ttl=${stashCfgAtBoot.ttlMs}ms, max=${stashCfgAtBoot.maxEntries}, maxBytes=${stashCfgAtBoot.maxBytes})`
     : 'stash=off';
+
+  if (transportMode === 'http' && httpCfg) {
+    const handle = createHttpTransport(server);
+    await handle.start();
+    console.error(
+      `[tandoor-mcp] ${pkg.name}@${pkg.version} on http://${httpCfg.host}:${httpCfg.port}${httpCfg.path} | auth=${httpCfg.requireAuth ? 'required' : 'disabled'} | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | profile=${profile} | ${stashLine} | max_body=${httpCfg.maxBodyBytes}B | max_conns=${httpCfg.maxConnections} | drain=${httpCfg.drainMs}ms | dynamic-gating=disabled`,
+    );
+    const shutdown = (signal: string) => {
+      console.error(`[tandoor-mcp] ${signal} received, draining`);
+      handle.stop().then(() => process.exit(0));
+    };
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    return;
+  }
+
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
   console.error(
     `[tandoor-mcp] ${pkg.name}@${pkg.version} on stdio | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | profile=${profile} | ${stashLine}`,
   );

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
+import { formatEnum } from '../lib/slim.js';
 import {
   handleListFoods,
   handleGetFood,
@@ -23,7 +24,6 @@ import {
   handleFoodBatchUpdate,
 } from '../handlers/foodunit.js';
 
-const formatEnum = z.enum(['slim', 'full']).optional();
 
 export const listFoodsShape = {
   query: z.string().optional(),

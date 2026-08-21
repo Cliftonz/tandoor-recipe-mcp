@@ -9,7 +9,7 @@ import type {
   DeleteCookLogArgs,
 } from '../tools/cooklog.js';
 
-import { emit } from '../lib/slim.js';
+import { emit, assertNonEmptyBody } from '../lib/slim.js';
 
 function slimCookLog(c: any) {
   if (!c) return c;
@@ -69,7 +69,7 @@ export async function handleUpdateCookLog(
   if (args.rating !== undefined) body.rating = args.rating;
   if (args.comment !== undefined) body.comment = args.comment;
   if (args.created_at !== undefined) body.created_at = args.created_at;
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const r = await client.cookLogs.patchCookLog(args.id, body);
   return `Cook log updated.\n\n${emit(args.format === 'full' ? r : slimCookLog(r))}`;
 }

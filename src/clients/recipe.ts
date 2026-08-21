@@ -73,6 +73,29 @@ export class RecipeClient extends BaseClient {
   }
 
   /**
+   * List recipes in the "flat" projection — just id/name/image per row, no
+   * keywords/foods/steps. Cheaper than listRecipes for large browse-style
+   * queries. Tandoor's flat endpoint returns a bare array, not a paginated
+   * envelope, and declares no query parameters in the OpenAPI spec.
+   */
+  async listRecipesFlat(): Promise<Array<{ id: number; name: string; image: string | null }>> {
+    return this.request('/api/recipe/flat/');
+  }
+
+  /**
+   * Remove only the external-source link on a recipe (source_url + external
+   * flags). The recipe itself is preserved; this is not a delete. Tandoor
+   * models the endpoint as a PATCH accepting a PatchedRecipe body — empty
+   * object is enough because the server-side action ignores it.
+   */
+  async deleteRecipeExternal(id: number): Promise<Recipe> {
+    return this.request<Recipe>(`/api/recipe/${id}/delete_external/`, {
+      method: 'PATCH',
+      body: JSON.stringify({}),
+    });
+  }
+
+  /**
    * Get a single recipe by ID. Optional `opts` lets callers pass an AbortSignal
    * and cap retries — useful when this GET is a hydration step whose failure
    * should not burn the full retry budget of a larger operation.

@@ -62,7 +62,7 @@ describe('handlers/ai.ts', () => {
         save: false,
       } as any);
       expect(list).not.toHaveBeenCalled();
-      expect(aiImport).toHaveBeenCalledWith(expect.objectContaining({ ai_provider_id: 7 }));
+      expect(aiImport).toHaveBeenCalledWith(expect.objectContaining({ ai_provider_id: 7 }), { signal: undefined });
     });
 
     it('lists and picks the first provider when ai_provider_id omitted', async () => {
@@ -73,7 +73,7 @@ describe('handlers/ai.ts', () => {
       const client = mock({ ai: { listAiProviders: list, aiImport } });
       await handleAiImportRecipe(client, { text: 't', save: false } as any);
       expect(list).toHaveBeenCalledWith({ page_size: 1 });
-      expect(aiImport).toHaveBeenCalledWith(expect.objectContaining({ ai_provider_id: 9 }));
+      expect(aiImport).toHaveBeenCalledWith(expect.objectContaining({ ai_provider_id: 9 }), { signal: undefined });
     });
 
     it('zero providers → actionable error mentioning list_ai_providers', async () => {
@@ -98,7 +98,7 @@ describe('handlers/ai.ts', () => {
       } as any);
       expect(aiImport).toHaveBeenCalledWith(expect.objectContaining({
         text: 'recipe: 1 egg, 1 toast',
-      }));
+      }), { signal: undefined });
     });
 
     it('file_path is read as bytes with MIME guessed from extension', async () => {

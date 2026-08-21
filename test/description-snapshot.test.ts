@@ -35,11 +35,8 @@ beforeAll(() => {
 
 describe('tool description snapshot (full profile)', () => {
   it('tool count is stable', () => {
-    // Snapshot is the contract; this is a narrow tripwire that fires if
-    // an entire tool family disappears in a refactor. ±6 slack lets us add
-    // one small family without re-tuning the bound (Maintainability F14).
-    expect(tools.length).toBeGreaterThan(129);
-    expect(tools.length).toBeLessThan(141);
+    // Update deliberately on tool additions or removals. Range guards mask silent tool loss.
+    expect(tools.length).toBe(271);
   });
 
   it('every tool has at least one character of description', () => {

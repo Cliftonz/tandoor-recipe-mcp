@@ -28,6 +28,7 @@ export const CORE_TOOLS: ReadonlySet<string> = new Set([
 
   // Recipe browse (reads).
   'list_recipes',
+  'list_recipes_flat',
   'get_recipe',
   'search_recipes',
   'related_recipes',
@@ -49,6 +50,9 @@ export const CORE_TOOLS: ReadonlySet<string> = new Set([
   // Keyword reads.
   'list_keywords',
   'get_keyword',
+
+  // Space read.
+  'get_current_space',
 ]);
 
 export interface ToolGroup {
@@ -68,17 +72,18 @@ export const TOOL_GROUPS: ReadonlyArray<ToolGroup> = [
     name: 'recipe-write',
     description: 'Create / update / delete recipes, import from URL, upload images, batch updates.',
     tools: [
-      'create_recipe', 'update_recipe', 'delete_recipe',
+      'create_recipe', 'update_recipe', 'delete_recipe', 'delete_recipe_external',
       'import_recipe_from_url', 'upload_recipe_image',
       'add_recipe_to_shopping_list', 'recipe_batch_update',
     ],
   },
   {
     name: 'mealplan-write',
-    description: 'Create / update / delete meal plans, auto-plan, bulk-create week plans.',
+    description: 'Create / update / delete meal plans, meal types, auto-plan, bulk-create week plans.',
     tools: [
       'create_meal_plan', 'update_meal_plan', 'delete_meal_plan',
       'auto_meal_plan', 'bulk_create_meal_plans',
+      'create_meal_type', 'get_meal_type', 'update_meal_type', 'delete_meal_type',
     ],
   },
   {
@@ -125,8 +130,12 @@ export const TOOL_GROUPS: ReadonlyArray<ToolGroup> = [
   },
   {
     name: 'ai',
-    description: 'AI-powered recipe import from images / PDFs / text (requires a Tandoor AI provider configured).',
-    tools: ['list_ai_providers', 'import_recipe_from_image'],
+    description: 'AI-powered recipe import from images / PDFs / text; AI provider CRUD; AI step sort (requires a Tandoor AI provider configured).',
+    tools: [
+      'list_ai_providers', 'import_recipe_from_image',
+      'get_ai_provider', 'create_ai_provider', 'update_ai_provider', 'delete_ai_provider',
+      'ai_step_sort',
+    ],
   },
   {
     name: 'steps',
@@ -172,7 +181,7 @@ export const TOOL_GROUPS: ReadonlyArray<ToolGroup> = [
   },
   {
     name: 'admin',
-    description: 'Server settings, user preferences, automations, user files, view/import/AI logs, share links.',
+    description: 'Server settings, user preferences, automations, user files, view/import/AI logs, share links, invite links, access tokens, storages, connectors, groups, users, syncs.',
     tools: [
       'get_server_settings',
       'list_user_preferences', 'get_user_preference', 'update_user_preference',
@@ -180,6 +189,72 @@ export const TOOL_GROUPS: ReadonlyArray<ToolGroup> = [
       'list_user_files', 'get_user_file', 'upload_user_file', 'update_user_file', 'delete_user_file',
       'list_view_logs', 'list_import_logs', 'list_ai_logs',
       'food_ai_properties', 'recipe_ai_properties', 'get_share_link',
+      'list_invite_links', 'get_invite_link', 'create_invite_link', 'update_invite_link', 'delete_invite_link',
+      'list_access_tokens', 'get_access_token', 'create_access_token', 'update_access_token', 'delete_access_token', 'authenticate',
+      'list_storages', 'get_storage', 'create_storage', 'update_storage', 'delete_storage',
+      'list_connectors', 'get_connector', 'create_connector', 'update_connector', 'delete_connector',
+      'get_group', 'update_user',
+      'list_syncs', 'get_sync', 'create_sync', 'update_sync', 'delete_sync', 'query_synced_folder', 'list_sync_logs', 'get_sync_log',
+    ],
+  },
+  {
+    name: 'supermarket-write',
+    description: 'Supermarket CRUD (aisle-level shopping-list ordering).',
+    tools: [
+      'list_supermarkets', 'get_supermarket', 'create_supermarket', 'update_supermarket', 'delete_supermarket',
+    ],
+  },
+  {
+    name: 'import-export',
+    description: 'Import / export recipes, import queues (recipe-import, bookmarklet, open-data, FDC search, food-inherit fields), export logs.',
+    tools: [
+      'export_recipes', 'list_export_logs', 'get_export_log', 'create_export_log', 'update_export_log', 'delete_export_log',
+      'import_recipes',
+      'create_import_log', 'get_import_log', 'update_import_log', 'delete_import_log',
+      'list_open_data_imports', 'run_open_data_import',
+      'list_recipe_imports', 'create_recipe_import', 'get_recipe_import', 'update_recipe_import', 'delete_recipe_import',
+      'import_all_pending', 'import_pending_recipe',
+      'list_bookmarklet_imports', 'create_bookmarklet_import', 'get_bookmarklet_import', 'update_bookmarklet_import', 'delete_bookmarklet_import',
+      'fdc_search',
+      'list_food_inherit_fields', 'get_food_inherit_field',
+    ],
+  },
+  {
+    name: 'multi-space',
+    description: 'Space CRUD, user-space memberships, personal-user-space listing, switch active space.',
+    tools: [
+      'list_spaces', 'get_space', 'create_space', 'update_space',
+      'list_user_spaces', 'get_user_space', 'update_user_space', 'delete_user_space',
+      'list_all_personal_user_spaces', 'switch_active_space',
+    ],
+  },
+  {
+    name: 'tree-safety',
+    description: 'Delete-preview tools (cascading / nulling / protecting) for tree-shaped resources — always call before delete_* to see impact.',
+    tools: [
+      'preview_food_delete_cascading', 'preview_food_delete_nulling', 'preview_food_delete_protecting',
+      'preview_keyword_delete_cascading', 'preview_keyword_delete_nulling', 'preview_keyword_delete_protecting',
+      'preview_recipe_delete_cascading', 'preview_recipe_delete_nulling', 'preview_recipe_delete_protecting',
+      'preview_unit_delete_cascading', 'preview_unit_delete_nulling', 'preview_unit_delete_protecting',
+      'preview_storage_delete_cascading', 'preview_storage_delete_nulling', 'preview_storage_delete_protecting',
+      'preview_meal_type_delete_cascading', 'preview_meal_type_delete_nulling', 'preview_meal_type_delete_protecting',
+      'preview_property_type_delete_cascading', 'preview_property_type_delete_nulling', 'preview_property_type_delete_protecting',
+      'preview_recipe_book_delete_cascading', 'preview_recipe_book_delete_nulling', 'preview_recipe_book_delete_protecting',
+      'preview_supermarket_delete_cascading', 'preview_supermarket_delete_nulling', 'preview_supermarket_delete_protecting',
+      'preview_supermarket_category_delete_cascading', 'preview_supermarket_category_delete_nulling', 'preview_supermarket_category_delete_protecting',
+      'preview_user_file_delete_cascading', 'preview_user_file_delete_nulling', 'preview_user_file_delete_protecting',
+    ],
+  },
+  {
+    name: 'housekeeping-read',
+    description: 'Read-only housekeeping: localization, groups, users, view-log CRUD, search prefs / fields, recipe file metadata + external link, meal-plan iCal.',
+    tools: [
+      'get_localization',
+      'list_groups', 'list_users', 'get_user',
+      'get_view_log', 'update_view_log', 'delete_view_log',
+      'list_search_fields', 'list_search_preferences', 'update_search_preference',
+      'get_recipe_file_metadata', 'get_external_recipe_file_link',
+      'export_meal_plan_ical',
     ],
   },
 ];

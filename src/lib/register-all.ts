@@ -18,6 +18,17 @@ import { registerRecipeBookTools } from '../tools/recipebook.js';
 import { registerMiscTools } from '../tools/misc.js';
 import { registerStepTools } from '../tools/step.js';
 import { registerAdminTools } from '../tools/admin.js';
+import { registerTreeSafetyTools } from '../tools/tree-safety.js';
+import { registerMealTypeTools } from '../tools/mealtype.js';
+import { registerSupermarketTools } from '../tools/supermarket.js';
+import { registerInviteLinkTools } from '../tools/invite-link.js';
+import { registerAccessTokenTools } from '../tools/access-token.js';
+import { registerExportTools } from '../tools/export.js';
+import { registerImportTools } from '../tools/import.js';
+import { registerStorageTools } from '../tools/storage.js';
+import { registerSyncTools } from '../tools/sync.js';
+import { registerSpaceTools } from '../tools/space.js';
+import { registerHousekeepingTools } from '../tools/housekeeping.js';
 import { registerToolGroupTools } from '../tools/tool-groups.js';
 import { registerResources } from '../resources/index.js';
 import { registerPrompts } from '../prompts/index.js';
@@ -79,6 +90,7 @@ export function registerAllTools(
   registerFoodUnitTools(server, client);
   registerJqTools(server, client);
   registerVersionTools(server, client, pkg, versionCheck);
+  registerTreeSafetyTools(server, client);
   registerResources(server, client);
   registerPrompts(server, client);
 
@@ -92,6 +104,16 @@ export function registerAllTools(
     registerMiscTools(server, client);
     registerStepTools(server, client);
     registerAdminTools(server, client);
+    registerMealTypeTools(server, client);
+    registerSupermarketTools(server, client);
+    registerInviteLinkTools(server, client);
+    registerAccessTokenTools(server, client);
+    registerExportTools(server, client);
+    registerImportTools(server, client);
+    registerStorageTools(server, client);
+    registerSyncTools(server, client);
+    registerSpaceTools(server, client);
+    registerHousekeepingTools(server, client);
   }
 
   // Apply the core gate: disable every registered tool that isn't in

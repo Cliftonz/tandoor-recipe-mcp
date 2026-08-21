@@ -42,7 +42,14 @@ function getRegistry(server: McpServer): Record<string, RegisteredToolEntry> {
 
 const SYNTHETIC_CORE_GROUP = 'core';
 
-export const listToolGroupsShape = {} as const;
+const HTTP_GATING_DISABLED_MSG =
+  'Dynamic tool gating is disabled in HTTP transport mode. Set TANDOOR_MCP_PROFILE=core|basic|full to lock the surface at boot.';
+
+function isHttpMode(): boolean {
+  return (process.env.TANDOOR_MCP_TRANSPORT || '').toLowerCase() === 'http';
+}
+
+const listToolGroupsShape = {} as const;
 
 export const enableToolGroupShape = {
   group: z
@@ -135,6 +142,7 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient)
       inputSchema: enableToolGroupShape,
     },
     async (_client, args) => {
+      if (isHttpMode()) throw new Error(HTTP_GATING_DISABLED_MSG);
       const group = args.group;
       if (group === SYNTHETIC_CORE_GROUP) {
         return JSON.stringify({
@@ -198,6 +206,7 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient)
       inputSchema: disableToolGroupShape,
     },
     async (_client, args) => {
+      if (isHttpMode()) throw new Error(HTTP_GATING_DISABLED_MSG);
       const group = args.group;
       if (group === SYNTHETIC_CORE_GROUP) {
         throw new Error("cannot disable 'core' — it is the permanent always-on group.");

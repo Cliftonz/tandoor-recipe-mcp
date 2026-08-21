@@ -2,6 +2,59 @@
 
 All notable changes to this project are documented in this file.
 
+## 1.5.0 / 2026-08-20
+
+Coverage push against the Tandoor 2.3.6 OpenAPI. 136 new tools land the pieces the fork was missing: delete previews, invite-link + access-token surfaces, storage / sync / import queue, multi-space, housekeeping reads, meal-type + supermarket CRUD. Also introduces a stateless HTTP transport for out-of-Claude callers, plus a destructive-action safety layer covering per-resource delete previews, escalation-surface warnings on token-mint tools, and credential redaction on storage / AI-provider reads.
+
+### Breaking
+- **None.** 1.5.0 is purely additive over 1.4.0. No tools were removed, no argument shapes changed, no default behaviors shifted. Existing `1.4.0` MCP clients pointed at this server keep working without config changes.
+
+### Added
+- **HTTP transport (stateless).** New `TANDOOR_MCP_TRANSPORT=http` env flips the server from stdio to a `StreamableHTTPServerTransport` bound to `127.0.0.1:${TANDOOR_MCP_HTTP_PORT:-3737}`. Optional `TANDOOR_MCP_HTTP_TOKEN` requires `Authorization: Bearer <token>` on every request. Loopback-only bind and stateless session handling (no cross-request memory) mean the surface is safe to expose to a same-host caller without a fronting reverse proxy. Default remains `stdio`; nothing changes for existing Claude Desktop / Claude Code users.
+- **Tree-safety delete previews (33 tools).** One preview per resource per cascade mode: `preview_{food,keyword,recipe,unit,storage,meal_type,property_type,recipe_book,supermarket,supermarket_category,user_file}_delete_{cascading,nulling,protecting}`. Callers get a projected impact report before the destructive call; the corresponding `delete_*` tool descriptions now steer the LLM to preview first.
+- **Meal-type CRUD (4 tools).** `create_meal_type` / `get_meal_type` / `update_meal_type` / `delete_meal_type`. Closes the gap where `list_meal_types` existed but the write half was implicit-via-Tandoor-UI-only.
+- **Supermarket CRUD (5 tools).** `list_supermarkets` / `get_supermarket` / `create_supermarket` / `update_supermarket` / `delete_supermarket`. Physical-store entity for aisle-ordering shopping lists.
+- **Invite-link CRUD (5 tools).** `list_invite_links` / `get_invite_link` / `create_invite_link` / `update_invite_link` / `delete_invite_link`. Grants space membership; description surfaces the escalation impact so the LLM does not mint invites without an operator prompt.
+- **Access-token surface (6 tools).** `list_access_tokens` / `get_access_token` / `create_access_token` / `update_access_token` / `delete_access_token` / `authenticate`. Mints and rotates Tandoor API tokens; every description leads with an ESCALATION SURFACE warning because a minted token bypasses this MCP's own bearer redaction.
+- **Export / export-log (6 tools).** `export_recipes` plus `list_export_logs` / `get_export_log` / `create_export_log` / `update_export_log` / `delete_export_log`.
+- **Import queue (22 tools).** `import_recipes`, recipe-import CRUD, bookmarklet-import CRUD, import-log CRUD, open-data import listing + run, FDC search, food-inherit-field reads, plus `import_all_pending` / `import_pending_recipe` to drive the queue.
+- **Storage CRUD (5 tools).** `list_storages` / `get_storage` / `create_storage` / `update_storage` / `delete_storage`. Backing for Tandoor's file-sync sources (Dropbox / Nextcloud / WebDAV / local).
+- **Sync CRUD + folder query (8 tools).** `list_syncs` / `get_sync` / `create_sync` / `update_sync` / `delete_sync` / `query_synced_folder` plus `list_sync_logs` / `get_sync_log`. Pairs with storages to walk external folders into Tandoor's recipe-import queue.
+- **Multi-space (11 tools).** Space CRUD (`list_spaces` / `get_space` / `create_space` / `update_space`), user-space membership (`list_user_spaces` / `get_user_space` / `update_user_space` / `delete_user_space`), personal-space listing (`list_all_personal_user_spaces`), and `switch_active_space`. Space-switch and space-delete descriptions carry DESTRUCTIVE warnings since the switch reshapes every subsequent read.
+- **AI-provider CRUD + step sort (6 tools).** Extends the existing `list_ai_providers` with `get_ai_provider` / `create_ai_provider` / `update_ai_provider` / `delete_ai_provider` plus `ai_step_sort`, which re-orders steps in an imported recipe via the configured AI provider.
+- **Housekeeping reads (20 tools).** Connector-config CRUD (5), view-log read-side CRUD skipping write (3), search-preferences (3), localization (1), groups + users reads (3), user update (1), meal-plan iCal export (1), recipe-file metadata + external-link reads (2). Read-only surface for operators inspecting server state without opening the Tandoor UI.
+- **Recipe extras (2 tools).** `list_recipes_flat` returns a lightweight `{id, name}` projection for cheap "give me everything so I can filter locally" queries; `delete_recipe_external` targets the external-recipe path separately from the primary `delete_recipe` for storage-linked cleanups.
+
+### Changed
+- **Instructions string surfaces the effective transport.** `initialize` responses now include the transport mode, bind address (in http), and auth-required flag so the client can render "this server is running on http://127.0.0.1:3737, bearer required" without guessing.
+- **Startup log includes the transport line.** stderr on boot now prints `http://host:port | auth=required|disabled | dynamic-gating=disabled` when in http mode, matching the stdio boot log's shape.
+
+### Fixed
+- **`sync.test.ts` was misfiled under `src/handlers/`.** The file lived next to the source module with a `./sync.js` relative import instead of in `test/` with a package-rooted import. Moved to `test/handlers-sync.test.ts` so the test tree stays flat and the source tree stays test-free.
+
+### Security
+- **Credential redaction on storage reads.** `list_storages` / `get_storage` slim output strips `token` and `password` fields; `format: "full"` still surfaces them for legitimate operator inspection but the default (LLM-facing) shape never leaks credentials into the model's context.
+- **AI-provider `api_key` redacted in slim.** Same posture as storage. Full mode surfaces the key; slim projects it out so a hostile Tandoor response cannot echo an operator's provider key back through the tool result.
+- **Escalation-surface warnings on every mint-a-token / grant-access tool.** `create_access_token` / `update_access_token` / `create_invite_link` / `update_invite_link` / `authenticate` descriptions lead with an explicit warning that the returned token bypasses this MCP's own bearer redaction and permanent auth boundary. The LLM sees the risk in-context before generating the call.
+- **HTTP transport hardening.** Loopback-only bind (`127.0.0.1`), no external interface exposure without an operator-fronted reverse proxy; optional bearer via `TANDOOR_MCP_HTTP_TOKEN` with `WWW-Authenticate: Bearer` on 401; stateless session handling so no per-connection state accumulates across requests.
+- **jq stash + dynamic tool gating auto-disable in HTTP mode.** Both features assume a single long-lived stdio session; running them across independent HTTP requests would leak stash handles between callers and desync enable/disable state. `enable_tool_group` / `disable_tool_group` throw when called under HTTP; the boot log surfaces `dynamic-gating=disabled` so operators see the constraint.
+
+### Dependencies
+- `@modelcontextprotocol/sdk` 1.29.0 to 1.30.0
+- `@types/node` ^24 to ^26.2.0 (aligned to the Node 24 floor introduced in 1.4.0; picks up newer node stream / crypto typings)
+- `undici` ^8.8.0 to ^8.10.0 (transitive stream fixes)
+- `vitest` ^4.0.0 to ^4.1.11 (test-runner fixes; no user-visible change)
+
+### Tests
+- 483 to 645 tests. New coverage: HTTP transport (bind, auth, stateless request handling, `enable/disable_tool_group` refusal), tree-safety previews (all 33 endpoints), each new CRUD family (write shape + slim projection + credential redaction where applicable), import-queue lifecycle (create, pending, import_all_pending), multi-space switching + DESTRUCTIVE-warning presence, housekeeping reads.
+
+### Deferred
+- **Binary file-download tools.** `/api/download-file/{fileId}/`, plus streaming variants of `get_recipe_file` and `get_external_file_link`. These need a base64 / stash design decision (return inline vs park in the jq stash vs return a follow-up handle); GH issue is being filed in parallel with this release.
+- **`POST /api/view-log/`.** An LLM logging a "view" event on behalf of a human user is a nonsensical semantic; the read + update + delete halves are exposed via `housekeeping-read`, the create half stays intentionally unbound.
+
+### Compatibility
+- **Requires Tandoor server 2.3.6 or later.** All new tools target endpoints in the 2.3.6 OpenAPI spec (see `tandoor api specification.yaml`, `info.version` header). Older 2.x instances will 404 on the new tools but the pre-1.5.0 surface keeps working. The startup version probe (1.4.0) already warns on stderr if the connected instance predates 2.x.
+
 ## 1.4.0 — 2026-07-21
 
 Dynamic tool gating flips the default surface from "every tool visible" to a ~25-tool core, cutting boot-time context cost for small workflows. Also: worker-isolated jq stash for large payloads, live Tandoor version probe, Node floor bump to 24, single-workflow release pipeline, and a full dependency refresh.

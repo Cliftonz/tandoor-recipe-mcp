@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
+import { formatEnum } from '../lib/slim.js';
 import {
   handleGetShareLink,
   handleListUserPreferences,
@@ -27,7 +28,6 @@ import {
   handleGetServerSettings,
 } from '../handlers/admin.js';
 
-const formatEnum = z.enum(['slim', 'full']).optional();
 
 const automationTypeEnum = z.enum([
   'FOOD_ALIAS', 'UNIT_ALIAS', 'KEYWORD_ALIAS',

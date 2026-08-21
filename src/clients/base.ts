@@ -14,14 +14,44 @@ const LOG_MODES = (() => {
   return new Set(raw.split(',').map((s) => s.trim()).filter(Boolean));
 })();
 
+// WHY: any endpoint that mints, trades, or accepts a raw credential must never
+// have its request or response body echoed to stderr, even when the operator
+// opted into full trace logging. Bearer-token redaction alone is not enough
+// because the payload here IS the secret (freshly minted token, or plaintext
+// password). Path-based match keeps the gate independent of body inspection.
+const SENSITIVE_ENDPOINTS: RegExp[] = [
+  /\/api-token-auth\//,
+  /\/api\/access-token\/(\?|$)/,
+];
+
+function isSensitiveEndpoint(url: string, method: string): boolean {
+  if (SENSITIVE_ENDPOINTS.some((re) => re.test(url))) {
+    if (/\/api\/access-token\//.test(url)) return method === 'POST';
+    return true;
+  }
+  return false;
+}
+
+function isSensitiveBody(bodyPreview?: string): boolean {
+  return !!bodyPreview && /"password"/.test(bodyPreview);
+}
+
 function logRequest(method: string, url: string, bodyPreview?: string): void {
   if (!LOG_MODES.has('request')) return;
+  if (isSensitiveEndpoint(url, method) || isSensitiveBody(bodyPreview)) {
+    console.error(`[tandoor-mcp] → ${method} ${url} <redacted-credentials>`);
+    return;
+  }
   const body = bodyPreview ? ` ${bodyPreview.slice(0, 200)}` : '';
   console.error(`[tandoor-mcp] → ${method} ${url}${body}`);
 }
 
-function logResponse(method: string, url: string, status: number, bodyPreview: string): void {
+function logResponse(method: string, url: string, status: number, bodyPreview: string, requestBodyPreview?: string): void {
   if (!LOG_MODES.has('response')) return;
+  if (isSensitiveEndpoint(url, method) || isSensitiveBody(requestBodyPreview)) {
+    console.error(`[tandoor-mcp] ← ${method} ${url} ${status} <redacted-credentials>`);
+    return;
+  }
   const snippet = bodyPreview.slice(0, 200).replace(/\n/g, ' ');
   console.error(`[tandoor-mcp] ← ${method} ${url} ${status}${snippet ? ' ' + snippet : ''}`);
 }
@@ -30,6 +60,24 @@ function logError(method: string, url: string, err: unknown): void {
   if (!LOG_MODES.has('error')) return;
   const msg = err instanceof Error ? err.message : String(err);
   console.error(`[tandoor-mcp] ✗ ${method} ${url} ${msg}`);
+}
+
+/**
+ * Shared query-string encoder used by every sub-client. Undefined and null
+ * values drop out; arrays produce repeated params (`k=a&k=b`). Prefixes `?`
+ * only when at least one value survived.
+ */
+export function qs(params?: Record<string, unknown>): string {
+  const sp = new URLSearchParams();
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      if (v === undefined || v === null) return;
+      if (Array.isArray(v)) v.forEach((item) => sp.append(k, String(item)));
+      else sp.append(k, String(v));
+    });
+  }
+  const s = sp.toString();
+  return s ? `?${s}` : '';
 }
 
 /**
@@ -156,7 +204,7 @@ export class BaseClient {
 
         // Read body exactly once — Response body is a single-use stream.
         const bodyText = await response.text();
-        logResponse(method, url, response.status, redactToken(bodyText, this.token));
+        logResponse(method, url, response.status, redactToken(bodyText, this.token), bodyPreview);
 
         if (!response.ok) {
           let errorMessage = `Tandoor API error: ${response.status} ${response.statusText}`;
@@ -230,6 +278,73 @@ export class BaseClient {
       }
     }
     // Unreachable under normal flow — the for-loop either returns or throws.
+    throw lastError instanceof Error ? lastError : new Error('Unknown request failure');
+  }
+
+  /**
+   * Text variant of request() for endpoints whose response is not JSON
+   * (e.g. iCal, CSV exports). Same retry/redaction/logging/signal pipeline as
+   * request(); the only differences are the Accept header default and the
+   * lack of JSON.parse on the response body.
+   */
+  protected async requestText(
+    endpoint: string,
+    options: TandoorRequestOptions & { accept?: string } = {}
+  ): Promise<string> {
+    const method = options.method || 'GET';
+    const url = `${this.baseUrl}${endpoint}`;
+    const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${this.token}`,
+      'Accept': options.accept || '*/*',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      ...((options.headers as Record<string, string>) || {}),
+    };
+    const isIdempotentBody = isFormData ? false : true;
+    const bodyPreview = typeof options.body === 'string'
+      ? redactToken(options.body, this.token)
+      : undefined;
+
+    const signal = options.signal;
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (signal?.aborted) {
+        throw signal.reason instanceof Error ? signal.reason : new Error('Request aborted');
+      }
+      try {
+        logRequest(method, url, bodyPreview);
+        const response = await fetch(url, { ...options, headers });
+
+        if (shouldRetry(response.status) && attempt < maxRetries && isIdempotentBody && !signal?.aborted) {
+          const wait = backoffMs(attempt, response.headers.get('retry-after'));
+          await sleep(wait);
+          continue;
+        }
+
+        const bodyText = await response.text();
+        logResponse(method, url, response.status, redactToken(bodyText, this.token), bodyPreview);
+
+        if (!response.ok) {
+          throw new Error(
+            redactToken(`Tandoor API error: ${response.status} ${response.statusText}`, this.token)
+          );
+        }
+        return bodyText;
+      } catch (error) {
+        lastError = error;
+        logError(method, url, error);
+        if (signal?.aborted || (error as { name?: string })?.name === 'AbortError') {
+          throw error;
+        }
+        const isNetwork = error instanceof TypeError || (error as { name?: string })?.name === 'FetchError';
+        if (isNetwork && attempt < maxRetries && isIdempotentBody) {
+          await sleep(backoffMs(attempt, null));
+          continue;
+        }
+        throw error;
+      }
+    }
     throw lastError instanceof Error ? lastError : new Error('Unknown request failure');
   }
 }

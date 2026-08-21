@@ -23,9 +23,34 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../../src/clients/index.js';
 import { registerRecipeTools } from '../../src/tools/recipe.js';
 import { registerJqTools } from '../../src/tools/jq.js';
+import { registerAccessTokenTools } from '../../src/tools/access-token.js';
+import { registerInviteLinkTools } from '../../src/tools/invite-link.js';
+import { registerStorageTools } from '../../src/tools/storage.js';
+import { registerAiTools } from '../../src/tools/ai.js';
+import { registerHousekeepingTools } from '../../src/tools/housekeeping.js';
 import { _stashClear } from '../../src/lib/stash.js';
 import { checkTandoorVersion } from '../../src/lib/version-check.js';
 import { getRegisteredTool } from '../helpers/mcp.js';
+
+// One-line prefix so every resource this suite creates is greppable in the
+// live space if cleanup ever fails midway.
+const E2E_PREFIX = `mcp-e2e-${Date.now()}`;
+
+// Invoke a registered MCP tool by name and return the JSON-parsed text body.
+// Handlers that emit plain prose (e.g. "Access token 5 deleted.") return the
+// raw string. Redaction assertions parse the JSON block after the first blank
+// line since create/update responses prepend a status line.
+async function invokeAndParse(server: McpServer, name: string, args: unknown): Promise<any> {
+  const tool = getRegisteredTool(server, name);
+  const res: any = await tool.handler(args, { signal: new AbortController().signal });
+  if (res.isError) throw new Error(`tool ${name} errored: ${res.content?.[0]?.text}`);
+  const text: string = res.content?.[0]?.text ?? '';
+  const jsonStart = text.indexOf('{');
+  const arrayStart = text.indexOf('[');
+  const start = jsonStart === -1 ? arrayStart : arrayStart === -1 ? jsonStart : Math.min(jsonStart, arrayStart);
+  if (start === -1) return text;
+  try { return JSON.parse(text.slice(start)); } catch { return text; }
+}
 
 const url = process.env.TANDOOR_URL;
 const token = process.env.TANDOOR_TOKEN;
@@ -50,9 +75,22 @@ function describeE2E(name: string, fn: () => void) {
 
 describeE2E('Tandoor E2E workflow', () => {
   let client: TandoorClient;
+  // Shared MCP server used by the redaction-critical suite below. Handlers
+  // run through the same registration pipeline production uses, so a broken
+  // slim projector, a mis-templated URL, or a missing "full" branch surface
+  // as a test failure rather than a silent leak.
+  let mcp: McpServer;
 
   beforeAll(() => {
     client = new TandoorClient({ url: url!, token: token! });
+    mcp = new McpServer({ name: 'e2e', version: 'e2e' });
+    registerRecipeTools(mcp, client);
+    registerJqTools(mcp, client);
+    registerAccessTokenTools(mcp, client);
+    registerInviteLinkTools(mcp, client);
+    registerStorageTools(mcp, client);
+    registerAiTools(mcp, client);
+    registerHousekeepingTools(mcp, client);
     // eslint-disable-next-line no-console
     console.log(`\n  Using Tandoor @ ${url}\n  Keep resources on failure: ${!!process.env.TANDOOR_E2E_KEEP}\n`);
   });
@@ -358,6 +396,278 @@ describeE2E('Tandoor E2E workflow', () => {
     ctx.supermarketCategoryId = sc.id;
     cleanup.push({ label: `supermarket-category ${sc.id}`, fn: () => client.supermarketCategories.deleteCategory(sc.id) });
     expect(sc.id).toBeGreaterThan(0);
+  });
+
+  // ---------------- 1.5.0 access-token (redaction) ----------------
+  // Redaction-critical family: slim MUST omit the raw token; format='full'
+  // MUST reveal it. Create response always reveals (mint semantics).
+
+  it('access-token: create → get(slim) hides token, get(full) reveals, list, delete', async () => {
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const scope = `${E2E_PREFIX}-scope`;
+    const created = await invokeAndParse(mcp, 'create_access_token', { scope, expires });
+    expect(created.id).toBeGreaterThan(0);
+    // Create response is a mint; the token string must be present.
+    expect(typeof created.token).toBe('string');
+    expect(created.token.length).toBeGreaterThan(0);
+    ctx.accessTokenId = created.id;
+    cleanup.push({ label: `access-token ${created.id}`, fn: () => client.accessTokens.deleteToken(created.id) });
+
+    const slim = await invokeAndParse(mcp, 'get_access_token', { id: created.id });
+    expect(slim.id).toBe(created.id);
+    expect(slim.token).toBeUndefined();
+
+    const full = await invokeAndParse(mcp, 'get_access_token', { id: created.id, format: 'full' });
+    expect(full.id).toBe(created.id);
+    expect(typeof full.token).toBe('string');
+
+    const list = await invokeAndParse(mcp, 'list_access_tokens', { page_size: 25 });
+    const hit = (list.results || list).find((t: any) => t.id === created.id);
+    expect(hit).toBeDefined();
+    expect(hit.token).toBeUndefined();
+  });
+
+  it('authenticate: rejects bogus credentials with a non-2xx error', async () => {
+    // Verifies the /api-token-auth/ path template. Do NOT pass real creds.
+    await expect(
+      client.accessTokens.authenticate({ username: `${E2E_PREFIX}-nope`, password: 'wrong-pw-should-fail' }),
+    ).rejects.toThrow();
+  });
+
+  // ---------------- 1.5.0 invite-link (URL: /api/invite-link/) ----------------
+  // Guards the exact template: a typo like /api/invitelink/ would 404 here.
+
+  it('invite-link: create → get(slim) → list → delete', async () => {
+    const groups = await client.housekeeping.listGroups();
+    const groupId = Array.isArray(groups) ? groups[0]?.id : groups?.results?.[0]?.id;
+    if (!groupId) {
+      // eslint-disable-next-line no-console
+      console.log('    (skipped: no groups in target space)');
+      return;
+    }
+    const valid_until = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const created = await invokeAndParse(mcp, 'create_invite_link', {
+      email: `${E2E_PREFIX}@example.invalid`,
+      group: groupId,
+      valid_until,
+      internal_note: E2E_PREFIX,
+    });
+    expect(created.id).toBeGreaterThan(0);
+    // uuid is the shareable token; slim keeps it because that IS the payload.
+    expect(typeof created.uuid).toBe('string');
+    cleanup.push({ label: `invite-link ${created.id}`, fn: () => client.inviteLinks.deleteInviteLink(created.id) });
+
+    const got = await invokeAndParse(mcp, 'get_invite_link', { id: created.id });
+    expect(got.id).toBe(created.id);
+    expect(got.uuid).toBe(created.uuid);
+
+    const list = await invokeAndParse(mcp, 'list_invite_links', { internal_note: E2E_PREFIX });
+    const hit = (list.results || list).find((x: any) => x.id === created.id);
+    expect(hit).toBeDefined();
+  });
+
+  // ---------------- 1.5.0 storage (redaction) ----------------
+  // Redaction-critical: slim must strip token/password/username/url.
+
+  it('storage: create with fake creds → get(slim) hides secrets, get(full) reveals, delete', async () => {
+    const created = await invokeAndParse(mcp, 'create_storage', {
+      name: `${E2E_PREFIX}-storage`,
+      method: 'NEXTCLOUD',
+      path: '/e2e',
+      url: 'https://nextcloud.example.invalid',
+      username: 'e2e-user',
+      password: 'sk-e2e-fake-pw',
+      token: 'sk-e2e-fake-storage-token',
+    });
+    expect(created.id).toBeGreaterThan(0);
+    cleanup.push({ label: `storage ${created.id}`, fn: () => client.storages.deleteStorage(created.id) });
+
+    const slim = await invokeAndParse(mcp, 'get_storage', { id: created.id });
+    expect(slim.id).toBe(created.id);
+    expect(slim.name).toContain(E2E_PREFIX);
+    expect(slim.token).toBeUndefined();
+    expect(slim.password).toBeUndefined();
+    expect(slim.username).toBeUndefined();
+
+    const full = await invokeAndParse(mcp, 'get_storage', { id: created.id, format: 'full' });
+    expect(full.id).toBe(created.id);
+    // Tandoor may echo the token/password verbatim or return a masked form —
+    // either way, full mode must NOT be identical to slim (i.e. more keys).
+    expect(Object.keys(full).length).toBeGreaterThan(Object.keys(slim).length);
+
+    const list = await invokeAndParse(mcp, 'list_storages', { page_size: 25 });
+    const hit = (list.results || list).find((x: any) => x.id === created.id);
+    expect(hit).toBeDefined();
+    expect(hit.token).toBeUndefined();
+    expect(hit.password).toBeUndefined();
+  });
+
+  // ---------------- 1.5.0 ai-provider (redaction) ----------------
+
+  it('ai-provider: create with fake api_key → get(slim) hides key, get(full) reveals, delete', async () => {
+    const fakeKey = `sk-e2e-fake-key-${E2E_PREFIX}`;
+    const created = await invokeAndParse(mcp, 'create_ai_provider', {
+      name: `${E2E_PREFIX}-provider`,
+      api_key: fakeKey,
+      model: 'gpt-4o-mini',
+      provider: 'OpenAI',
+    });
+    expect(created.id).toBeGreaterThan(0);
+    cleanup.push({ label: `ai-provider ${created.id}`, fn: () => client.ai.deleteAiProvider(created.id) });
+
+    const slim = await invokeAndParse(mcp, 'get_ai_provider', { id: created.id });
+    expect(slim.id).toBe(created.id);
+    expect(slim.api_key).toBeUndefined();
+
+    const full = await invokeAndParse(mcp, 'get_ai_provider', { id: created.id, format: 'full' });
+    expect(full.id).toBe(created.id);
+    // Full response must contain the api_key field even if Tandoor masks it.
+    expect('api_key' in full).toBe(true);
+
+    const list = await invokeAndParse(mcp, 'list_ai_providers', { page_size: 25 });
+    const hit = (list.results || []).find((x: any) => x.id === created.id);
+    expect(hit).toBeDefined();
+    expect(hit.api_key).toBeUndefined();
+    // Record the id so downstream AI-import optional test can reuse it later
+    // if the operator sets TANDOOR_E2E_AI_PROVIDER to this exact id.
+    ctx.aiProviderId = created.id;
+  });
+
+  // ---------------- 1.5.0 connector-config (redaction) ----------------
+
+  it('connector-config: create Home Assistant → get(slim) hides token, get(full) reveals, delete', async () => {
+    const created = await invokeAndParse(mcp, 'create_connector', {
+      name: `${E2E_PREFIX}-connector`,
+      type: 'HomeAssistant',
+      url: 'https://homeassistant.example.invalid',
+      token: `sk-e2e-fake-ha-${E2E_PREFIX}`,
+      todo_entity: 'todo.groceries',
+      enabled: false,
+    });
+    expect(created.id).toBeGreaterThan(0);
+    cleanup.push({ label: `connector ${created.id}`, fn: () => client.housekeeping.deleteConnector(created.id) });
+
+    const slim = await invokeAndParse(mcp, 'get_connector', { id: created.id });
+    expect(slim.id).toBe(created.id);
+    expect(slim.token).toBeUndefined();
+
+    const full = await invokeAndParse(mcp, 'get_connector', { id: created.id, format: 'full' });
+    expect(full.id).toBe(created.id);
+    expect('token' in full).toBe(true);
+
+    const list = await invokeAndParse(mcp, 'list_connectors', { page_size: 25 });
+    const hit = (list.results || list).find((x: any) => x.id === created.id);
+    expect(hit).toBeDefined();
+    expect(hit.token).toBeUndefined();
+  });
+
+  // ---------------- 1.5.0 meal-type CRUD (URL: /api/meal-type/) ----------------
+
+  it('meal-type: create → get → update → delete', async () => {
+    const created = await invokeAndParse(mcp, 'create_meal_type', {
+      name: `${E2E_PREFIX}-meal-type`,
+      order: 99,
+    });
+    expect(created.id).toBeGreaterThan(0);
+    cleanup.push({ label: `meal-type ${created.id}`, fn: () => client.mealTypes.deleteMealType(created.id) });
+
+    const got = await invokeAndParse(mcp, 'get_meal_type', { id: created.id });
+    expect(got.id).toBe(created.id);
+
+    const patched = await invokeAndParse(mcp, 'update_meal_type', { id: created.id, order: 42 });
+    expect(patched.order).toBe(42);
+  });
+
+  // ---------------- 1.5.0 supermarket CRUD (URL: /api/supermarket/) ----------------
+
+  it('supermarket: create → list → get → delete', async () => {
+    const created = await client.supermarkets.createSupermarket({ name: `${E2E_PREFIX}-supermarket` });
+    expect(created.id).toBeGreaterThan(0);
+    cleanup.push({ label: `supermarket ${created.id}`, fn: () => client.supermarkets.deleteSupermarket(created.id) });
+
+    const list = await client.supermarkets.listSupermarkets({ page_size: 25, query: E2E_PREFIX });
+    const hit = (list.results || list).find((x: any) => x.id === created.id);
+    expect(hit).toBeDefined();
+
+    const got = await client.supermarkets.getSupermarket(created.id);
+    expect(got.id).toBe(created.id);
+  });
+
+  // ---------------- 1.5.0 sync + sync-log (URLs: /api/sync/, /api/sync-log/) ----------------
+
+  it('sync: create → query_synced_folder → list_sync_logs → delete', async () => {
+    // sync requires a storage to point at; the storage from the redaction
+    // test above is already scheduled for cleanup, so create a dedicated one.
+    const storage = await client.storages.createStorage({
+      name: `${E2E_PREFIX}-sync-storage`,
+      method: 'LOCAL',
+      path: '/tmp/e2e-sync',
+    });
+    cleanup.push({ label: `sync-storage ${storage.id}`, fn: () => client.storages.deleteStorage(storage.id) });
+
+    let created: any;
+    try {
+      // Tandoor expects a nested storage envelope: { storage: { id }, path }.
+      created = await client.syncs.createSync({ storage: { id: storage.id }, path: '/tmp/e2e-sync', active: false });
+    } catch (err) {
+      // Some Tandoor deployments reject sync creation without a real backend.
+      // The point of this test is URL-template validation, so a well-formed
+      // 400 from Tandoor still proves the path template is right.
+      const msg = (err as Error).message;
+      expect(msg).toMatch(/Tandoor API error: 4\d\d/);
+      return;
+    }
+    cleanup.push({ label: `sync ${created.id}`, fn: () => client.syncs.deleteSync(created.id) });
+    expect(created.id).toBeGreaterThan(0);
+
+    // query_synced_folder may fail against a fake LOCAL path; we only care
+    // that the URL template is correct (not a 404).
+    try {
+      await client.syncs.querySyncedFolder(created.id);
+    } catch (err) {
+      expect((err as Error).message).not.toMatch(/404/);
+    }
+
+    const logs = await client.syncs.listSyncLogs({ page_size: 5 });
+    expect(logs).toBeDefined();
+    expect(Array.isArray(logs.results ?? logs)).toBe(true);
+  });
+
+  // ---------------- 1.5.0 space (read-only; never create/delete spaces) ----------------
+
+  it('space: list_spaces + get_current_space are read-only round-trips', async () => {
+    const list = await client.spaces.listSpaces({ page_size: 5 });
+    expect(list).toBeDefined();
+    expect(Array.isArray(list.results ?? list)).toBe(true);
+
+    const current = await client.spaces.getCurrentSpace();
+    expect(current).toBeDefined();
+    expect(current.id ?? current.name).toBeDefined();
+  });
+
+  // ---------------- 1.5.0 import queue + export log (read-only) ----------------
+
+  it('list_recipe_imports responds (read-only URL guard)', async () => {
+    const r = await client.imports.listRecipeImports({ page_size: 5 });
+    expect(r).toBeDefined();
+    expect(Array.isArray(r.results ?? r)).toBe(true);
+  });
+
+  it('list_export_logs responds (read-only URL guard)', async () => {
+    const r = await client.exports.listExportLogs({ page_size: 5 });
+    expect(r).toBeDefined();
+    expect(Array.isArray(r.results ?? r)).toBe(true);
+  });
+
+  // ---------------- 1.5.0 tree-safety: create → preview_food_delete_cascading → delete ----------------
+
+  it('preview_food_delete_cascading: create food → preview cascading → delete', async () => {
+    const food = await client.foodUnits.createFood({ name: `${E2E_PREFIX}-tree-food` });
+    cleanup.push({ label: `tree-food ${food.id}`, fn: () => client.foodUnits.deleteFood(food.id) });
+
+    // The tool wraps GET /api/food/{id}/cascading/ — a URL typo would 404.
+    const preview: any = await client.treeSafety.preview('food', food.id, 'cascading');
+    expect(preview).toBeDefined();
   });
 
   // ---------------- optional: URL import ----------------

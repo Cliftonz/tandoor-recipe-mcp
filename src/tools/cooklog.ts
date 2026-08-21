@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
+import { formatEnum } from '../lib/slim.js';
 import {
   handleListCookLogs,
   handleGetCookLog,
@@ -12,7 +13,6 @@ import {
   handleDeleteCookLog,
 } from '../handlers/cooklog.js';
 
-const formatEnum = z.enum(['slim', 'full']).optional();
 
 export const listCookLogsShape = {
   recipe: z.number().optional(),

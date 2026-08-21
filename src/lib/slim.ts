@@ -3,6 +3,23 @@
 // inline — 150+ lines of subtly-different copies. Centralising them keeps
 // response shapes consistent and makes format tweaks one-file changes.
 
+import { z } from 'zod';
+
+/**
+ * Guard for PATCH handlers: refuses to send an empty body, which Tandoor
+ * accepts as a no-op that still burns a round trip. Message wording is
+ * asserted by tests — do not change it.
+ */
+export function assertNonEmptyBody(body: Record<string, unknown>): void {
+  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+}
+
+/**
+ * Shared `format` input shape used by every list/get tool: `slim` (default,
+ * projected shape) or `full` (raw API response).
+ */
+export const formatEnum = z.enum(['slim', 'full']).optional();
+
 /**
  * JSON-serialize compactly. Pretty-printing costs ~40% more tokens on the
  * MCP wire and MCP clients re-format for display anyway.

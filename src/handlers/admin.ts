@@ -30,7 +30,7 @@ import type {
   GetServerSettingsArgs,
 } from '../tools/admin.js';
 
-import { emit, slimPaginated } from '../lib/slim.js';
+import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
 
 // ---------- Share links ----------
 
@@ -95,7 +95,7 @@ export async function handleUpdateUserPreference(
   const body: any = { ...rest };
   if (Array.isArray(plan_share_user_ids)) body.plan_share = plan_share_user_ids.map((id) => ({ id }));
   if (Array.isArray(shopping_share_user_ids)) body.shopping_share = shopping_share_user_ids.map((id) => ({ id }));
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const r = await client.userPreferences.patchPreference(user_id, body);
   return `User preferences updated.\n\n${emit(format === 'full' ? r : slimUserPrefs(r))}`;
 }
@@ -108,15 +108,13 @@ const slimAutomation = (a: any) => a && {
   order: a.order, disabled: a.disabled,
 };
 
-const slimPage = slimPaginated;
-
 export async function handleListAutomations(
   client: TandoorClient,
   args: ListAutomationsArgs
 ): Promise<string> {
   const { format, ...params } = args;
   const r = await client.automations.listAutomations(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimAutomation));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimAutomation));
 }
 
 export async function handleGetAutomation(
@@ -148,7 +146,7 @@ export async function handleUpdateAutomation(
   for (const k of ['type', 'name', 'description', 'param_1', 'param_2', 'param_3', 'order', 'disabled'] as const) {
     if ((args as any)[k] !== undefined) body[k] = (args as any)[k];
   }
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const r = await client.automations.patchAutomation(args.id, body);
   return `Automation updated.\n\n${emit(args.format === 'full' ? r : slimAutomation(r))}`;
 }
@@ -178,7 +176,7 @@ export async function handleListUserFiles(
 ): Promise<string> {
   const { format, ...params } = args;
   const r = await client.userFiles.listUserFiles(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimUserFile));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimUserFile));
 }
 
 export async function handleGetUserFile(
@@ -257,7 +255,7 @@ export async function handleListViewLogs(
 ): Promise<string> {
   const { format, ...params } = args;
   const r = await client.logs.listViewLogs(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimViewLog));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimViewLog));
 }
 
 export async function handleListImportLogs(
@@ -266,7 +264,7 @@ export async function handleListImportLogs(
 ): Promise<string> {
   const { format, ...params } = args;
   const r = await client.logs.listImportLogs(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimImportLog));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimImportLog));
 }
 
 export async function handleListAiLogs(
@@ -275,7 +273,7 @@ export async function handleListAiLogs(
 ): Promise<string> {
   const { format, ...params } = args;
   const r = await client.logs.listAiLogs(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimAiLog));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimAiLog));
 }
 
 // ---------- Food/recipe aiproperties (nutrition via AI) ----------

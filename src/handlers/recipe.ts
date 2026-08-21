@@ -4,10 +4,12 @@ import { TandoorClient } from '../clients/index.js';
 import { Recipe, Ingredient, Step, Keyword } from '../types/index.js';
 import type {
   ListRecipesArgs,
+  ListRecipesFlatArgs,
   GetRecipeArgs,
   CreateRecipeArgs,
   UpdateRecipeArgs,
   DeleteRecipeArgs,
+  DeleteRecipeExternalArgs,
   ImportRecipeFromUrlArgs,
   UploadRecipeImageArgs,
   RelatedRecipesArgs,
@@ -609,6 +611,25 @@ export async function handleDeleteRecipe(
 ): Promise<string> {
   await client.recipes.deleteRecipe(args.id);
   return `Recipe ${args.id} deleted successfully!`;
+}
+
+// Flat list is a distinct endpoint from list_recipes: bare array of
+// {id, name, image}, no keywords/foods/steps, no pagination envelope.
+export async function handleListRecipesFlat(
+  client: TandoorClient,
+  args: ListRecipesFlatArgs
+): Promise<string> {
+  const rows = await client.recipes.listRecipesFlat();
+  if (args.format === 'full') return emit(rows);
+  return emit((rows || []).map((r: any) => ({ id: r.id, name: r.name })));
+}
+
+export async function handleDeleteRecipeExternal(
+  client: TandoorClient,
+  args: DeleteRecipeExternalArgs
+): Promise<string> {
+  await client.recipes.deleteRecipeExternal(args.id);
+  return `Recipe ${args.id} external source link removed.`;
 }
 
 export async function handleSearchRecipes(

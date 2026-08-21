@@ -19,8 +19,21 @@ import { McpServer, ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ZodRawShape, z } from 'zod';
 import { TandoorClient } from '../clients/index.js';
-import { getStashConfig, shouldStash, stashPut } from './stash.js';
+import { getStashConfig, shouldStash as baseShouldStash, stashPut, type StashConfig } from './stash.js';
 import { summarize } from './schema-summary.js';
+
+// HTTP transport shares process state across concurrent MCP clients; the
+// stash handle namespace would leak between them. When TANDOOR_MCP_TRANSPORT
+// is `http`, bypass stashing unconditionally so each response is delivered
+// inline to its originating request.
+function transportBypassesStash(): boolean {
+  return (process.env.TANDOOR_MCP_TRANSPORT || '').toLowerCase() === 'http';
+}
+
+export function shouldStash(structured: unknown, sizeBytes: number, cfg: StashConfig): boolean {
+  if (transportBypassesStash()) return false;
+  return baseShouldStash(structured, sizeBytes, cfg);
+}
 
 /** Turn a Zod raw shape into the inferred args object. */
 export type InferShape<S extends ZodRawShape> = z.infer<z.ZodObject<S>>;
@@ -189,6 +202,9 @@ export function _resetArraySkipLog(): void {
   _loggedArraySkips.clear();
 }
 
+// Module-level: reused instead of allocating an AbortController per no-signal call.
+const NEVER_ABORTED: AbortSignal = new AbortController().signal;
+
 function shortReqId(): string {
   // 8 chars of base16 from randomUUID — enough cardinality for grep
   // correlation under any realistic concurrent-call volume; short enough
@@ -209,7 +225,7 @@ export function registerStringTool<S extends ZodRawShape>(
   }
   _registeredNames.add(name);
   const cb = async (args: InferShape<S>, extra: { signal?: AbortSignal; requestId?: string | number }): Promise<CallToolResult> => {
-    const signal = extra?.signal ?? new AbortController().signal;
+    const signal = extra?.signal ?? NEVER_ABORTED;
     // Prefer the SDK's request id (varies by transport — usually a number)
     // and fall back to a server-side short uuid so the field is always
     // present in logs even for harnesses that don't set one.

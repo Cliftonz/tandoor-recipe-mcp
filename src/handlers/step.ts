@@ -11,7 +11,7 @@ import type {
 
 type IngredientInput = NonNullable<CreateStepArgs['ingredients']>[number];
 
-import { emit, slimPaginated } from '../lib/slim.js';
+import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
 
 function slimStep(s: any) {
   if (!s) return s;
@@ -133,7 +133,7 @@ export async function handleUpdateStep(
   if (args.ingredients !== undefined) {
     body.ingredients = await buildIngredients(client, args.ingredients);
   }
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
 
   const r = await client.steps.patchStep(args.id, body);
   return `Step updated.\n\n${emit(args.format === 'full' ? r : slimStep(r))}`;

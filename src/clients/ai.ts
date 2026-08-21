@@ -1,21 +1,32 @@
 // AI provider + AI import API client.
 
-import { BaseClient } from './base.js';
+import { BaseClient, qs } from './base.js';
+
+type Opts = { signal?: AbortSignal };
 
 export class AiClient extends BaseClient {
-  async listAiProviders(params?: { page?: number; page_size?: number }): Promise<any> {
-    const sp = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([k, v]) => {
-        if (v !== undefined) sp.append(k, String(v));
-      });
-    }
-    const qs = sp.toString();
-    return this.request(`/api/ai-provider/${qs ? `?${qs}` : ''}`);
+  async listAiProviders(params?: { page?: number; page_size?: number }, opts?: Opts): Promise<any> {
+    return this.request(`/api/ai-provider/${qs(params)}`, { signal: opts?.signal });
   }
 
-  async getAiProvider(id: number): Promise<any> {
-    return this.request(`/api/ai-provider/${id}/`);
+  async getAiProvider(id: number, opts?: Opts): Promise<any> {
+    return this.request(`/api/ai-provider/${id}/`, { signal: opts?.signal });
+  }
+
+  async createAiProvider(body: any, opts?: Opts): Promise<any> {
+    return this.request('/api/ai-provider/', { method: 'POST', body: JSON.stringify(body), signal: opts?.signal });
+  }
+
+  async patchAiProvider(id: number, body: any, opts?: Opts): Promise<any> {
+    return this.request(`/api/ai-provider/${id}/`, { method: 'PATCH', body: JSON.stringify(body), signal: opts?.signal });
+  }
+
+  async deleteAiProvider(id: number, opts?: Opts): Promise<void> {
+    return this.request(`/api/ai-provider/${id}/`, { method: 'DELETE', signal: opts?.signal });
+  }
+
+  async aiStepSort(body: { recipe: number }, opts?: Opts): Promise<any> {
+    return this.request('/api/ai-step-sort/', { method: 'POST', body: JSON.stringify(body), signal: opts?.signal });
   }
 
   /**
@@ -27,7 +38,7 @@ export class AiClient extends BaseClient {
     file?: { data: Uint8Array | Buffer; filename: string; mimeType?: string };
     text?: string;
     recipe_id?: string | number;
-  }): Promise<any> {
+  }, opts?: Opts): Promise<any> {
     const fd = new FormData();
     fd.append('ai_provider_id', String(args.ai_provider_id));
     fd.append('text', args.text ?? '');
@@ -41,6 +52,7 @@ export class AiClient extends BaseClient {
     return this.request('/api/ai-import/', {
       method: 'POST',
       body: fd,
+      signal: opts?.signal,
     });
   }
 }

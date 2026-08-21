@@ -27,54 +27,159 @@ import {
   LogClient,
   ServerSettingsClient,
 } from './admin.js';
+import { TreeSafetyClient } from './tree-safety.js';
+import { MealTypeClient } from './mealtype.js';
+import { SupermarketClient } from './supermarket.js';
+import { InviteLinkClient } from './invite-link.js';
+import { AccessTokenClient } from './access-token.js';
+import { ExportClient } from './export.js';
+import { ImportClient } from './import.js';
+import { StorageClient } from './storage.js';
+import { SyncClient } from './sync.js';
+import { SpaceClient } from './space.js';
+import { HousekeepingClient } from './housekeeping.js';
 
 export class TandoorClient {
-  public recipes: RecipeClient;
-  public mealPlans: MealPlanClient;
-  public ingredients: IngredientClient;
-  public shopping: ShoppingClient;
-  public ai: AiClient;
-  public foodUnits: FoodUnitClient;
-  public cookLogs: CookLogClient;
-  public recipeBooks: RecipeBookClient;
-  public keywords: KeywordClient;
-  public supermarketCategories: SupermarketCategoryClient;
-  public unitConversions: UnitConversionClient;
-  public properties: PropertyClient;
-  public propertyTypes: PropertyTypeClient;
-  public customFilters: CustomFilterClient;
-  public supermarketCategoryRelations: SupermarketCategoryRelationClient;
-  public steps: StepClient;
-  public shareLinks: ShareLinkClient;
-  public userPreferences: UserPreferenceClient;
-  public automations: AutomationClient;
-  public userFiles: UserFileClient;
-  public logs: LogClient;
-  public serverSettings: ServerSettingsClient;
+  private _config: TandoorConfig;
+  private _recipes?: RecipeClient;
+  private _mealPlans?: MealPlanClient;
+  private _ingredients?: IngredientClient;
+  private _shopping?: ShoppingClient;
+  private _ai?: AiClient;
+  private _foodUnits?: FoodUnitClient;
+  private _cookLogs?: CookLogClient;
+  private _recipeBooks?: RecipeBookClient;
+  private _keywords?: KeywordClient;
+  private _supermarketCategories?: SupermarketCategoryClient;
+  private _unitConversions?: UnitConversionClient;
+  private _properties?: PropertyClient;
+  private _propertyTypes?: PropertyTypeClient;
+  private _customFilters?: CustomFilterClient;
+  private _supermarketCategoryRelations?: SupermarketCategoryRelationClient;
+  private _steps?: StepClient;
+  private _shareLinks?: ShareLinkClient;
+  private _userPreferences?: UserPreferenceClient;
+  private _automations?: AutomationClient;
+  private _userFiles?: UserFileClient;
+  private _logs?: LogClient;
+  private _serverSettings?: ServerSettingsClient;
+  private _treeSafety?: TreeSafetyClient;
+  private _mealTypes?: MealTypeClient;
+  private _supermarkets?: SupermarketClient;
+  private _inviteLinks?: InviteLinkClient;
+  private _accessTokens?: AccessTokenClient;
+  private _exports?: ExportClient;
+  private _imports?: ImportClient;
+  private _storages?: StorageClient;
+  private _syncs?: SyncClient;
+  private _spaces?: SpaceClient;
+  private _housekeeping?: HousekeepingClient;
 
   constructor(config: TandoorConfig) {
-    this.recipes = new RecipeClient(config);
-    this.mealPlans = new MealPlanClient(config);
-    this.ingredients = new IngredientClient(config);
-    this.shopping = new ShoppingClient(config);
-    this.ai = new AiClient(config);
-    this.foodUnits = new FoodUnitClient(config);
-    this.cookLogs = new CookLogClient(config);
-    this.recipeBooks = new RecipeBookClient(config);
-    this.keywords = new KeywordClient(config);
-    this.supermarketCategories = new SupermarketCategoryClient(config);
-    this.unitConversions = new UnitConversionClient(config);
-    this.properties = new PropertyClient(config);
-    this.propertyTypes = new PropertyTypeClient(config);
-    this.customFilters = new CustomFilterClient(config);
-    this.supermarketCategoryRelations = new SupermarketCategoryRelationClient(config);
-    this.steps = new StepClient(config);
-    this.shareLinks = new ShareLinkClient(config);
-    this.userPreferences = new UserPreferenceClient(config);
-    this.automations = new AutomationClient(config);
-    this.userFiles = new UserFileClient(config);
-    this.logs = new LogClient(config);
-    this.serverSettings = new ServerSettingsClient(config);
+    this._config = config;
+  }
+
+  get recipes(): RecipeClient {
+    return (this._recipes ??= new RecipeClient(this._config));
+  }
+  get mealPlans(): MealPlanClient {
+    return (this._mealPlans ??= new MealPlanClient(this._config));
+  }
+  get ingredients(): IngredientClient {
+    return (this._ingredients ??= new IngredientClient(this._config));
+  }
+  get shopping(): ShoppingClient {
+    return (this._shopping ??= new ShoppingClient(this._config));
+  }
+  get ai(): AiClient {
+    return (this._ai ??= new AiClient(this._config));
+  }
+  get foodUnits(): FoodUnitClient {
+    return (this._foodUnits ??= new FoodUnitClient(this._config));
+  }
+  get cookLogs(): CookLogClient {
+    return (this._cookLogs ??= new CookLogClient(this._config));
+  }
+  get recipeBooks(): RecipeBookClient {
+    return (this._recipeBooks ??= new RecipeBookClient(this._config));
+  }
+  get keywords(): KeywordClient {
+    return (this._keywords ??= new KeywordClient(this._config));
+  }
+  get supermarketCategories(): SupermarketCategoryClient {
+    return (this._supermarketCategories ??= new SupermarketCategoryClient(this._config));
+  }
+  get unitConversions(): UnitConversionClient {
+    return (this._unitConversions ??= new UnitConversionClient(this._config));
+  }
+  get properties(): PropertyClient {
+    return (this._properties ??= new PropertyClient(this._config));
+  }
+  get propertyTypes(): PropertyTypeClient {
+    return (this._propertyTypes ??= new PropertyTypeClient(this._config));
+  }
+  get customFilters(): CustomFilterClient {
+    return (this._customFilters ??= new CustomFilterClient(this._config));
+  }
+  get supermarketCategoryRelations(): SupermarketCategoryRelationClient {
+    return (this._supermarketCategoryRelations ??= new SupermarketCategoryRelationClient(this._config));
+  }
+  get steps(): StepClient {
+    return (this._steps ??= new StepClient(this._config));
+  }
+  get shareLinks(): ShareLinkClient {
+    return (this._shareLinks ??= new ShareLinkClient(this._config));
+  }
+  get userPreferences(): UserPreferenceClient {
+    return (this._userPreferences ??= new UserPreferenceClient(this._config));
+  }
+  get automations(): AutomationClient {
+    return (this._automations ??= new AutomationClient(this._config));
+  }
+  get userFiles(): UserFileClient {
+    return (this._userFiles ??= new UserFileClient(this._config));
+  }
+  get logs(): LogClient {
+    return (this._logs ??= new LogClient(this._config));
+  }
+  get serverSettings(): ServerSettingsClient {
+    return (this._serverSettings ??= new ServerSettingsClient(this._config));
+  }
+  get treeSafety(): TreeSafetyClient {
+    return (this._treeSafety ??= new TreeSafetyClient(this._config));
+  }
+  set treeSafety(v: TreeSafetyClient) {
+    this._treeSafety = v;
+  }
+  get mealTypes(): MealTypeClient {
+    return (this._mealTypes ??= new MealTypeClient(this._config));
+  }
+  get supermarkets(): SupermarketClient {
+    return (this._supermarkets ??= new SupermarketClient(this._config));
+  }
+  get inviteLinks(): InviteLinkClient {
+    return (this._inviteLinks ??= new InviteLinkClient(this._config));
+  }
+  get accessTokens(): AccessTokenClient {
+    return (this._accessTokens ??= new AccessTokenClient(this._config));
+  }
+  get exports(): ExportClient {
+    return (this._exports ??= new ExportClient(this._config));
+  }
+  get imports(): ImportClient {
+    return (this._imports ??= new ImportClient(this._config));
+  }
+  get storages(): StorageClient {
+    return (this._storages ??= new StorageClient(this._config));
+  }
+  get syncs(): SyncClient {
+    return (this._syncs ??= new SyncClient(this._config));
+  }
+  get spaces(): SpaceClient {
+    return (this._spaces ??= new SpaceClient(this._config));
+  }
+  get housekeeping(): HousekeepingClient {
+    return (this._housekeeping ??= new HousekeepingClient(this._config));
   }
 
   /** Resolved Tandoor API origin (no path/query/fragment). For startup logs. */
@@ -129,3 +234,14 @@ export * from './recipebook.js';
 export * from './misc.js';
 export * from './step.js';
 export * from './admin.js';
+export * from './tree-safety.js';
+export * from './mealtype.js';
+export * from './supermarket.js';
+export * from './invite-link.js';
+export * from './access-token.js';
+export * from './export.js';
+export * from './import.js';
+export * from './storage.js';
+export * from './sync.js';
+export * from './space.js';
+export * from './housekeeping.js';

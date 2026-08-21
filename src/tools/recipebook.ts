@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
+import { formatEnum } from '../lib/slim.js';
 import {
   handleListBooks,
   handleGetBook,
@@ -16,7 +17,6 @@ import {
   handleDeleteBookEntry,
 } from '../handlers/recipebook.js';
 
-const formatEnum = z.enum(['slim', 'full']).optional();
 
 export const listBooksShape = {
   page: z.number().optional(),

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
+import { formatEnum } from '../lib/slim.js';
 import {
   handleListSteps,
   handleGetStep,
@@ -12,7 +13,6 @@ import {
   handleDeleteStep,
 } from '../handlers/step.js';
 
-const formatEnum = z.enum(['slim', 'full']).optional();
 
 const ingredientInput = z.object({
   food: z.string().optional().describe('Food name (find-or-create)'),

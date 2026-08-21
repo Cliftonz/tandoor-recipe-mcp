@@ -13,7 +13,7 @@ import type {
   DeleteBookEntryArgs,
 } from '../tools/recipebook.js';
 
-import { emit, slimPaginated } from '../lib/slim.js';
+import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
 
 function slimBook(b: any) {
   if (!b) return b;
@@ -37,15 +37,13 @@ function slimBookEntry(e: any) {
   };
 }
 
-const slimPage = slimPaginated;
-
 export async function handleListBooks(
   client: TandoorClient,
   args: ListBooksArgs
 ): Promise<string> {
   const { format, ...params } = args;
   const r = await client.recipeBooks.listBooks(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimBook));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimBook));
 }
 
 export async function handleGetBook(
@@ -79,7 +77,7 @@ export async function handleUpdateBook(
   if (args.order !== undefined) body.order = args.order;
   if (args.filter_id !== undefined) body.filter = args.filter_id == null ? null : { id: args.filter_id };
   if (Array.isArray(args.shared_user_ids)) body.shared = args.shared_user_ids.map((id: number) => ({ id }));
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const r = await client.recipeBooks.patchBook(args.id, body);
   return `Recipe book updated.\n\n${emit(args.format === 'full' ? r : slimBook(r))}`;
 }
@@ -98,7 +96,7 @@ export async function handleListBookEntries(
 ): Promise<string> {
   const { format, ...params } = args;
   const r = await client.recipeBooks.listBookEntries(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimBookEntry));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimBookEntry));
 }
 
 export async function handleGetBookEntry(

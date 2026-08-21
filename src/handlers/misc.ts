@@ -43,7 +43,7 @@ import type {
   DeleteSupermarketCategoryRelationArgs,
 } from '../tools/misc.js';
 
-import { emit, slimPaginated } from '../lib/slim.js';
+import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
 
 const slimKeyword = (k: any) => k && {
   id: k.id, name: k.name, label: k.label, description: k.description,
@@ -57,14 +57,12 @@ const slimConversion = (u: any) => u && {
   food: u.food?.name, food_id: u.food?.id,
 };
 
-const slimPage = slimPaginated;
-
 // ---------- Keywords ----------
 
 export async function handleListKeywords(client: TandoorClient, args: ListKeywordsArgs): Promise<string> {
   const { format, ...params } = args;
   const r = await client.keywords.listKeywords(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimKeyword));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimKeyword));
 }
 
 export async function handleGetKeyword(client: TandoorClient, args: GetKeywordArgs): Promise<string> {
@@ -83,7 +81,7 @@ export async function handleUpdateKeyword(client: TandoorClient, args: UpdateKey
   const body: any = {};
   if (args.name !== undefined) body.name = args.name;
   if (args.description !== undefined) body.description = args.description;
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const r = await client.keywords.patchKeyword(args.id, body);
   return `Keyword updated.\n\n${emit(args.format === 'full' ? r : slimKeyword(r))}`;
 }
@@ -108,7 +106,7 @@ export async function handleMoveKeyword(client: TandoorClient, args: MoveKeyword
 export async function handleListSupermarketCategories(client: TandoorClient, args: ListSupermarketCategoriesArgs): Promise<string> {
   const { format, ...params } = args;
   const r = await client.supermarketCategories.listCategories(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimCategory));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimCategory));
 }
 
 export async function handleGetSupermarketCategory(client: TandoorClient, args: GetSupermarketCategoryArgs): Promise<string> {
@@ -127,7 +125,7 @@ export async function handleUpdateSupermarketCategory(client: TandoorClient, arg
   const body: any = {};
   if (args.name !== undefined) body.name = args.name;
   if (args.description !== undefined) body.description = args.description;
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const r = await client.supermarketCategories.patchCategory(args.id, body);
   return `Supermarket category updated.\n\n${emit(args.format === 'full' ? r : slimCategory(r))}`;
 }
@@ -160,7 +158,7 @@ const slimProperty = (p: any) => p && {
 export async function handleListPropertyTypes(client: TandoorClient, args: ListPropertyTypesArgs): Promise<string> {
   const { format, ...params } = args;
   const r = await client.propertyTypes.listPropertyTypes(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimPropertyType));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimPropertyType));
 }
 
 export async function handleGetPropertyType(client: TandoorClient, args: GetPropertyTypeArgs): Promise<string> {
@@ -184,7 +182,7 @@ export async function handleUpdatePropertyType(client: TandoorClient, args: Upda
   for (const k of ['name', 'unit', 'description', 'order', 'open_data_slug', 'fdc_id'] as const) {
     if ((args as any)[k] !== undefined) body[k] = (args as any)[k];
   }
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const r = await client.propertyTypes.patchPropertyType(args.id, body);
   return `Property type updated.\n\n${emit(args.format === 'full' ? r : slimPropertyType(r))}`;
 }
@@ -199,7 +197,7 @@ export async function handleDeletePropertyType(client: TandoorClient, args: Dele
 export async function handleListProperties(client: TandoorClient, args: ListPropertiesArgs): Promise<string> {
   const { format, ...params } = args;
   const r = await client.properties.listProperties(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimProperty));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimProperty));
 }
 
 export async function handleGetProperty(client: TandoorClient, args: GetPropertyArgs): Promise<string> {
@@ -220,7 +218,7 @@ export async function handleUpdateProperty(client: TandoorClient, args: UpdatePr
   const body: any = {};
   if (args.property_amount !== undefined) body.property_amount = args.property_amount;
   if (args.property_type_id !== undefined) body.property_type = { id: args.property_type_id };
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const r = await client.properties.patchProperty(args.id, body);
   return `Property updated.\n\n${emit(args.format === 'full' ? r : slimProperty(r))}`;
 }
@@ -240,7 +238,7 @@ const slimFilter = (f: any) => f && {
 export async function handleListCustomFilters(client: TandoorClient, args: ListCustomFiltersArgs): Promise<string> {
   const { format, ...params } = args;
   const r = await client.customFilters.listFilters(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimFilter));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimFilter));
 }
 
 export async function handleGetCustomFilter(client: TandoorClient, args: GetCustomFilterArgs): Promise<string> {
@@ -260,7 +258,7 @@ export async function handleUpdateCustomFilter(client: TandoorClient, args: Upda
   if (args.name !== undefined) body.name = args.name;
   if (args.search !== undefined) body.search = args.search;
   if (Array.isArray(args.shared_user_ids)) body.shared = args.shared_user_ids.map((id) => ({ id }));
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const r = await client.customFilters.patchFilter(args.id, body);
   return `Custom filter updated.\n\n${emit(args.format === 'full' ? r : slimFilter(r))}`;
 }
@@ -280,7 +278,7 @@ const slimRelation = (r: any) => r && {
 export async function handleListSupermarketCategoryRelations(client: TandoorClient, args: ListSupermarketCategoryRelationsArgs): Promise<string> {
   const { format, ...params } = args;
   const r = await client.supermarketCategoryRelations.listRelations(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimRelation));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimRelation));
 }
 
 export async function handleGetSupermarketCategoryRelation(client: TandoorClient, args: GetSupermarketCategoryRelationArgs): Promise<string> {
@@ -303,7 +301,7 @@ export async function handleUpdateSupermarketCategoryRelation(client: TandoorCli
   if (args.category_id !== undefined) body.category = { id: args.category_id };
   if (args.supermarket !== undefined) body.supermarket = args.supermarket;
   if (args.order !== undefined) body.order = args.order;
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const r = await client.supermarketCategoryRelations.patchRelation(args.id, body);
   return `Supermarket category relation updated.\n\n${emit(args.format === 'full' ? r : slimRelation(r))}`;
 }
@@ -318,7 +316,7 @@ export async function handleDeleteSupermarketCategoryRelation(client: TandoorCli
 export async function handleListUnitConversions(client: TandoorClient, args: ListUnitConversionsArgs): Promise<string> {
   const { format, ...params } = args;
   const r = await client.unitConversions.listConversions(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimConversion));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimConversion));
 }
 
 export async function handleGetUnitConversion(client: TandoorClient, args: GetUnitConversionArgs): Promise<string> {
@@ -345,7 +343,7 @@ export async function handleUpdateUnitConversion(client: TandoorClient, args: Up
   if (args.base_unit_id !== undefined) body.base_unit = { id: args.base_unit_id };
   if (args.converted_unit_id !== undefined) body.converted_unit = { id: args.converted_unit_id };
   if (args.food_id !== undefined) body.food = args.food_id == null ? null : { id: args.food_id };
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const r = await client.unitConversions.patchConversion(args.id, body);
   return `Unit conversion updated.\n\n${emit(args.format === 'full' ? r : slimConversion(r))}`;
 }

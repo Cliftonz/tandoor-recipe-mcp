@@ -1,17 +1,6 @@
 // Keyword + supermarket category + unit conversion clients.
 
-import { BaseClient } from './base.js';
-
-function qs(params?: Record<string, any>): string {
-  const sp = new URLSearchParams();
-  if (params) {
-    Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined) sp.append(k, String(v));
-    });
-  }
-  const s = sp.toString();
-  return s ? `?${s}` : '';
-}
+import { BaseClient, qs } from './base.js';
 
 export class KeywordClient extends BaseClient {
   async listKeywords(params?: {
@@ -97,17 +86,7 @@ export class PropertyTypeClient extends BaseClient {
     page_size?: number;
     category?: Array<'ALLERGEN' | 'GOAL' | 'NUTRITION' | 'OTHER' | 'PRICE'>;
   }): Promise<any> {
-    const sp = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([k, v]) => {
-        if (v !== undefined) {
-          if (Array.isArray(v)) v.forEach((x) => sp.append(k, String(x)));
-          else sp.append(k, String(v));
-        }
-      });
-    }
-    const s = sp.toString();
-    return this.request(`/api/property-type/${s ? `?${s}` : ''}`);
+    return this.request(`/api/property-type/${qs(params)}`);
   }
   async getPropertyType(id: number): Promise<any> { return this.request(`/api/property-type/${id}/`); }
   async createPropertyType(body: any): Promise<any> {

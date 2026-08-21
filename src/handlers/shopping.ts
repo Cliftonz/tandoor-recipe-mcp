@@ -16,7 +16,7 @@ import type {
   BulkCreateShoppingListRecipeEntriesArgs,
 } from '../tools/shopping.js';
 
-import { emit } from '../lib/slim.js';
+import { emit, assertNonEmptyBody } from '../lib/slim.js';
 
 function slimEntry(e: any) {
   if (!e) return e;
@@ -106,7 +106,7 @@ export async function handleUpdateShoppingEntry(
   if (args.checked !== undefined) body.checked = args.checked;
   if (args.order !== undefined) body.order = args.order;
   if (args.delay_until !== undefined) body.delay_until = args.delay_until;
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
 
   const updated = await client.shopping.patchEntry(args.id, body);
   return `Shopping entry updated.\n\n${emit(args.format === 'full' ? updated : slimEntry(updated))}`;
@@ -173,7 +173,7 @@ export async function handleUpdateShoppingListRecipe(
   if (args.servings !== undefined) body.servings = args.servings;
   if (args.recipe !== undefined) body.recipe = args.recipe;
   if (args.mealplan !== undefined) body.mealplan = args.mealplan;
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const updated = await client.shopping.patchShoppingListRecipe(args.id, body);
   return `Shopping list recipe updated.\n\n${emit(args.format === 'full' ? updated : slimShoppingListRecipe(updated))}`;
 }

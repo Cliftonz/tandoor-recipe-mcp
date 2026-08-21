@@ -3,32 +3,58 @@
 import path from 'node:path';
 import { TandoorClient } from '../clients/index.js';
 import { saveScrapedRecipe, slimRecipe, isUsableScrape, ScrapedRecipe } from './recipe.js';
-import type { ListAiProvidersArgs, AiImportRecipeArgs } from '../tools/ai.js';
+import type {
+  ListAiProvidersArgs,
+  AiImportRecipeArgs,
+  GetAiProviderArgs,
+  CreateAiProviderArgs,
+  UpdateAiProviderArgs,
+  DeleteAiProviderArgs,
+  AiStepSortArgs,
+} from '../tools/ai.js';
 
-import { emit } from '../lib/slim.js';
+import { emit, assertNonEmptyBody } from '../lib/slim.js';
 import { readSafeUpload } from '../lib/path-guard.js';
 import { safeFetchBytes } from '../lib/safe-fetch.js';
 import { guessMimeFromExt } from '../lib/mime.js';
+import type { HandlerContext } from '../lib/register.js';
 
 const MAX_AI_INGEST_BYTES = 25 * 1024 * 1024; // 25MB cap on URL-fetched AI ingest files.
 
-function slimProvider(p: any) {
+// list_ai_providers returns a lighter shape than get/create/update per Tandoor's API; two projectors keep each caller minimal.
+function slimAiProviderList(p: any) {
   if (!p) return p;
   return { id: p.id, name: p.name, ai_model_type: p.ai_model_type };
 }
 
+// api_key is a real provider credential; slim mode omits it so a routine
+// list/get never surfaces the secret to callers that did not ask for it.
+function slimAiProvider(p: any) {
+  if (p == null) return p;
+  return {
+    id: p.id,
+    name: p.name,
+    endpoint: p.endpoint,
+    model: p.model,
+    provider: p.provider,
+  };
+}
+
+export const __test__ = { slimAiProvider };
+
 export async function handleListAiProviders(
   client: TandoorClient,
-  args: ListAiProvidersArgs
+  args: ListAiProvidersArgs,
+  ctx?: HandlerContext,
 ): Promise<string> {
   const { format, ...params } = args;
-  const r = await client.ai.listAiProviders(params);
+  const r = await client.ai.listAiProviders(params, { signal: ctx?.signal });
   if (format === 'full') return emit(r);
   return emit({
     count: r.count,
     next: r.next,
     previous: r.previous,
-    results: (r.results || []).map(slimProvider),
+    results: (r.results || []).map(slimAiProviderList),
   });
 }
 
@@ -66,7 +92,8 @@ async function pickProviderId(client: TandoorClient, explicit?: number): Promise
 
 export async function handleAiImportRecipe(
   client: TandoorClient,
-  args: AiImportRecipeArgs
+  args: AiImportRecipeArgs,
+  ctx?: HandlerContext,
 ): Promise<string> {
   if (!args.file_path && !args.file_url && !args.text) {
     throw new Error('Provide at least one of: file_path, file_url, text');
@@ -79,7 +106,7 @@ export async function handleAiImportRecipe(
     ai_provider_id,
     file: file ?? undefined,
     text: args.text,
-  });
+  }, { signal: ctx?.signal });
 
   // If we shouldn't save, just return the parsed result.
   if (args.save === false) {
@@ -105,4 +132,57 @@ export async function handleAiImportRecipe(
   const saved = await saveScrapedRecipe(client, recipeForSave, args.file_url || '');
   const out = args.format === 'full' ? saved : slimRecipe(saved);
   return `AI-imported recipe saved.\n\n${emit(out)}`;
+}
+
+export async function handleGetAiProvider(
+  client: TandoorClient,
+  args: GetAiProviderArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const r = await client.ai.getAiProvider(args.id, { signal: ctx?.signal });
+  return args.format === 'full' ? emit(r) : emit(slimAiProvider(r));
+}
+
+export async function handleCreateAiProvider(
+  client: TandoorClient,
+  args: CreateAiProviderArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const { format, ...body } = args;
+  const r = await client.ai.createAiProvider(body, { signal: ctx?.signal });
+  return `AI provider created.\n\n${emit(format === 'full' ? r : slimAiProvider(r))}`;
+}
+
+export async function handleUpdateAiProvider(
+  client: TandoorClient,
+  args: UpdateAiProviderArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const body: any = {};
+  if (args.name !== undefined) body.name = args.name;
+  if (args.api_key !== undefined) body.api_key = args.api_key;
+  if (args.endpoint !== undefined) body.endpoint = args.endpoint;
+  if (args.model !== undefined) body.model = args.model;
+  if (args.provider !== undefined) body.provider = args.provider;
+  assertNonEmptyBody(body);
+  const r = await client.ai.patchAiProvider(args.id, body, { signal: ctx?.signal });
+  return `AI provider updated.\n\n${emit(args.format === 'full' ? r : slimAiProvider(r))}`;
+}
+
+export async function handleDeleteAiProvider(
+  client: TandoorClient,
+  args: DeleteAiProviderArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  await client.ai.deleteAiProvider(args.id, { signal: ctx?.signal });
+  return `AI provider ${args.id} deleted.`;
+}
+
+export async function handleAiStepSort(
+  client: TandoorClient,
+  args: AiStepSortArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const r = await client.ai.aiStepSort({ recipe: args.recipe_id }, { signal: ctx?.signal });
+  return emit(r);
 }

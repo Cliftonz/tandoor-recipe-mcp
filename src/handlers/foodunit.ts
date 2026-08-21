@@ -20,7 +20,7 @@ import type {
   FoodBatchUpdateArgs,
 } from '../tools/foodunit.js';
 
-import { emit, slimPaginated } from '../lib/slim.js';
+import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
 
 function slimFood(f: any) {
   if (!f) return f;
@@ -50,8 +50,6 @@ function slimUnit(u: any) {
   };
 }
 
-const slimPage = slimPaginated;
-
 // ---------- Food handlers ----------
 
 export async function handleListFoods(
@@ -60,7 +58,7 @@ export async function handleListFoods(
 ): Promise<string> {
   const { format, ...params } = args;
   const r = await client.foodUnits.listFoods(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimFood));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimFood));
 }
 
 export async function handleGetFood(
@@ -100,7 +98,7 @@ export async function handleUpdateFood(
   if (args.supermarket_category_id !== undefined) {
     body.supermarket_category = args.supermarket_category_id == null ? null : { id: args.supermarket_category_id };
   }
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const updated = await client.foodUnits.patchFood(args.id, body);
   return `Food updated.\n\n${emit(args.format === 'full' ? updated : slimFood(updated))}`;
 }
@@ -161,7 +159,7 @@ export async function handleListUnits(
 ): Promise<string> {
   const { format, ...params } = args;
   const r = await client.foodUnits.listUnits(params);
-  return format === 'full' ? emit(r) : emit(slimPage(r, slimUnit));
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimUnit));
 }
 
 export async function handleGetUnit(
@@ -193,7 +191,7 @@ export async function handleUpdateUnit(
   if (args.plural_name !== undefined) body.plural_name = args.plural_name;
   if (args.description !== undefined) body.description = args.description;
   if (args.base_unit !== undefined) body.base_unit = args.base_unit;
-  if (Object.keys(body).length === 0) throw new Error('At least one field required');
+  assertNonEmptyBody(body);
   const updated = await client.foodUnits.patchUnit(args.id, body);
   return `Unit updated.\n\n${emit(args.format === 'full' ? updated : slimUnit(updated))}`;
 }

@@ -11,6 +11,14 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "add_recipe_to_shopping_list",
   },
   {
+    "description": "Bulk-sort a recipe steps via AI. Required: recipe_id.",
+    "name": "ai_step_sort",
+  },
+  {
+    "description": "Trade username + password for a Tandoor bearer token via POST /api-token-auth/. ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user.",
+    "name": "authenticate",
+  },
+  {
     "description": "Auto-generate meal plans. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, keyword_ids[], servings, addshopping",
     "name": "auto_meal_plan",
   },
@@ -27,8 +35,24 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "bulk_create_shopping_list_recipe_entries",
   },
   {
+    "description": "Mint a new Tandoor access token. Required: scope, expires (ISO datetime). ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user.",
+    "name": "create_access_token",
+  },
+  {
+    "description": "Create an AI provider. Required: name, api_key, model, provider. Optional: endpoint. Response slim by default (api_key redacted).",
+    "name": "create_ai_provider",
+  },
+  {
     "description": "Create an automation rule. Required: type (FOOD_ALIAS/UNIT_ALIAS/KEYWORD_ALIAS/DESCRIPTION_REPLACE/INSTRUCTION_REPLACE/NEVER_UNIT/TRANSPOSE_WORDS/FOOD_REPLACE/UNIT_REPLACE/NAME_REPLACE). params: param_1/2/3 carry rule-specific args (e.g. alias → canonical).",
     "name": "create_automation",
+  },
+  {
+    "description": "Save a bookmarklet-import entry (raw HTML from a recipe page). Required: html. Optional: url.",
+    "name": "create_bookmarklet_import",
+  },
+  {
+    "description": "Create a connector configuration. Required: name, type (currently only HomeAssistant). Optional: url, token, todo_entity, enabled, per-event toggles.",
+    "name": "create_connector",
   },
   {
     "description": "Log that a recipe was cooked. Required: recipe (id). Optional: servings, rating, comment, created_at.",
@@ -39,12 +63,24 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_custom_filter",
   },
   {
+    "description": "Create an export log row directly. Rare; the export job normally creates one. Required: type.",
+    "name": "create_export_log",
+  },
+  {
     "description": "Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id.",
     "name": "create_food",
   },
   {
+    "description": "Create an import-log entry. Required: type. Optional: msg, running, total_recipes, imported_recipes. Tandoor also writes these automatically during URL/AI/bookmarklet imports.",
+    "name": "create_import_log",
+  },
+  {
     "description": "Create ingredient. Required: food_id. Optional: unit_id, amount, note, order, is_header, no_amount, original_text, always_use_plural_unit, always_use_plural_food",
     "name": "create_ingredient",
+  },
+  {
+    "description": "DESTRUCTIVE: Creating an invite link allows a new user to join your space. Required: email, group (Group id), valid_until (YYYY-MM-DD). Optional: reusable, internal_note. Response uuid is the shareable token; treat it as sensitive.",
+    "name": "create_invite_link",
   },
   {
     "description": "Create keyword. Required: name. Optional: description.",
@@ -53,6 +89,10 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "Create meal plan. Required: from_date (ISO), meal_type_id, servings. Optional: recipe_id, title, note, addshopping",
     "name": "create_meal_plan",
+  },
+  {
+    "description": "Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), default.",
+    "name": "create_meal_type",
   },
   {
     "description": "Create property value. Required: property_type_id, property_amount.",
@@ -71,6 +111,10 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_recipe_book",
   },
   {
+    "description": "Add an entry to the recipe-import staging queue. Required: name, storage, space. Optional: file_uid, file_path. Does not import; call import_pending_recipe or import_all_pending afterwards.",
+    "name": "create_recipe_import",
+  },
+  {
     "description": "Create a shopping list entry. Required: amount, food_id. Optional: unit_id, checked, list_recipe, ingredient, order, delay_until, mealplan_id (links to existing/new ShoppingListRecipe for that mealplan).",
     "name": "create_shopping_entry",
   },
@@ -79,8 +123,20 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_shopping_list_recipe",
   },
   {
+    "description": "Create a new space (tenant workspace). Required: name. Optional: message, max_recipes, max_file_storage_mb, max_users, allow_sharing.",
+    "name": "create_space",
+  },
+  {
     "description": "Create a step (standalone). Required: instruction. Optional: name, time, order, show_as_header, show_ingredients_table, step_recipe (nested recipe id), ingredients[]. Ingredients take food/food_id and unit/unit_id.",
     "name": "create_step",
+  },
+  {
+    "description": "Create a storage backend. Required: name, method (DB/NEXTCLOUD/LOCAL), path. Optional: username, password, token, url. Storage records contain credentials for external file backends. Slim mode redacts token/password; use format='full' only if needed.",
+    "name": "create_storage",
+  },
+  {
+    "description": "Create a supermarket. Required: name. Optional: description, open_data_slug.",
+    "name": "create_supermarket",
   },
   {
     "description": "Create supermarket category. Required: name.",
@@ -91,6 +147,10 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_supermarket_category_relation",
   },
   {
+    "description": "Create a sync linking a storage backend to a folder path. Required: storage_id, path. Optional: active, last_checked.",
+    "name": "create_sync",
+  },
+  {
     "description": "Create unit. Required: name. Optional: plural_name, description, base_unit.",
     "name": "create_unit",
   },
@@ -99,8 +159,24 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_unit_conversion",
   },
   {
+    "description": "Revoke an access token by ID.",
+    "name": "delete_access_token",
+  },
+  {
+    "description": "Delete an AI provider by ID.",
+    "name": "delete_ai_provider",
+  },
+  {
     "description": "Delete automation by ID.",
     "name": "delete_automation",
+  },
+  {
+    "description": "Delete a bookmarklet-import entry by ID.",
+    "name": "delete_bookmarklet_import",
+  },
+  {
+    "description": "Delete a connector configuration by ID.",
+    "name": "delete_connector",
   },
   {
     "description": "Delete a cook log entry by ID.",
@@ -111,12 +187,24 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "delete_custom_filter",
   },
   {
+    "description": "Delete an export log by ID.",
+    "name": "delete_export_log",
+  },
+  {
     "description": "Delete food by ID. Destructive + irreversible. Before calling, recommend: (1) check recipe usage via list_recipes({foods: [id]}) — if recipes reference it, they will lose the ingredient link; (2) if the intent is deduplication not removal, use merge_food instead so references follow the merge.",
     "name": "delete_food",
   },
   {
+    "description": "Delete an import-log entry by ID.",
+    "name": "delete_import_log",
+  },
+  {
     "description": "Delete ingredient by ID",
     "name": "delete_ingredient",
+  },
+  {
+    "description": "Delete a space invite link by ID. Revokes the invite so the uuid can no longer be redeemed.",
+    "name": "delete_invite_link",
   },
   {
     "description": "Delete keyword by ID. Destructive + irreversible. Before calling, recommend: (1) check recipe usage via list_recipes({keywords: [id]}) so you know how many recipes lose the tag; (2) if the intent is merging duplicates (e.g., "weeknight" + "Weeknight"), use merge_keyword instead.",
@@ -125,6 +213,10 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "Delete meal plan by ID",
     "name": "delete_meal_plan",
+  },
+  {
+    "description": "Delete a meal type by ID.",
+    "name": "delete_meal_type",
   },
   {
     "description": "Delete property by ID.",
@@ -143,6 +235,14 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "delete_recipe_book",
   },
   {
+    "description": "Remove only the external-source link on a recipe (source_url and related external flags). The recipe itself is preserved. Use when a recipe was imported from a URL that is no longer valid and you want to detach the source without deleting the recipe.",
+    "name": "delete_recipe_external",
+  },
+  {
+    "description": "Delete a pending recipe-import queue entry by ID.",
+    "name": "delete_recipe_import",
+  },
+  {
     "description": "Delete a shopping entry by ID.",
     "name": "delete_shopping_entry",
   },
@@ -155,12 +255,24 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "delete_step",
   },
   {
+    "description": "Delete a storage backend by ID.",
+    "name": "delete_storage",
+  },
+  {
+    "description": "Delete a supermarket by ID.",
+    "name": "delete_supermarket",
+  },
+  {
     "description": "Delete supermarket category by ID.",
     "name": "delete_supermarket_category",
   },
   {
     "description": "Delete relation by ID.",
     "name": "delete_supermarket_category_relation",
+  },
+  {
+    "description": "Delete a sync by ID.",
+    "name": "delete_sync",
   },
   {
     "description": "Delete unit by ID. Destructive + irreversible. Before calling, recommend: (1) check ingredient + unit_conversion usage — unit deletions cascade into "None" unit on ingredients; (2) if the intent is deduplication (e.g., "cup" vs "cups"), use merge_unit instead so references follow the merge.",
@@ -175,12 +287,32 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "delete_user_file",
   },
   {
+    "description": "DESTRUCTIVE. Remove a user-space membership by ID; the user loses access to that space. Not reversible.",
+    "name": "delete_user_space",
+  },
+  {
+    "description": "Delete a view-log entry by ID.",
+    "name": "delete_view_log",
+  },
+  {
     "description": "Disable every tool in the named group so they disappear from tools/list. The SDK emits tools/list_changed automatically. Idempotent: disabling an already-disabled group is a no-op. The synthetic "core" group cannot be disabled. Use this to free context budget once a workflow no longer needs a group of tools.",
     "name": "disable_tool_group",
   },
   {
     "description": "Enable every tool in the named group so they become visible in tools/list. The SDK emits tools/list_changed automatically; the client refreshes its tool list mid-conversation. Idempotent: enabling an already-enabled group is a no-op. Passing "core" is also a no-op (core is always on). Be sparing — every enabled group adds tool schemas to your context budget. Run list_tool_groups first to see what is available.",
     "name": "enable_tool_group",
+  },
+  {
+    "description": "Export meal plans as an iCalendar (.ics) feed. Returns raw text/calendar body. Optional: from_date, to_date (YYYY-MM-DD, inclusive), meal_type (IDs).",
+    "name": "export_meal_plan_ical",
+  },
+  {
+    "description": "Trigger a recipe export job. Required: type (e.g. json, zip, pdf; depends on Tandoor build). Provide recipes[] (ids) or all=true. Returns the ExportLog for the queued job.",
+    "name": "export_recipes",
+  },
+  {
+    "description": "Search the USDA FoodData Central catalog for candidate foods. Required: query. Optional: dataType[] (Branded, Foundation, Survey (FNDDS), SR Legacy). Returns fdcId + description + dataType; pair the chosen fdcId with food_fdc_lookup to fetch nutrients.",
+    "name": "fdc_search",
   },
   {
     "description": "Enrich a food with AI-generated properties (fallback path when USDA FDC is incomplete). Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend: (1) prefer food_fdc_lookup when the food has an fdc_id — it is deterministic, free, and does not need AI setup; (2) otherwise ask the operator to add an AI provider in Tandoor Settings → AI (OpenAI/Anthropic/Ollama/etc.).",
@@ -199,36 +331,88 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "food_shopping_update",
   },
   {
+    "description": "Get an access token by ID. ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user. Token strings redacted in slim; use format='full' to reveal.",
+    "name": "get_access_token",
+  },
+  {
+    "description": "Get AI provider by ID. Contains provider API key. Slim mode redacts api_key; use format='full' only when necessary.",
+    "name": "get_ai_provider",
+  },
+  {
     "description": "Get automation rule by ID.",
     "name": "get_automation",
+  },
+  {
+    "description": "Get a bookmarklet-import entry by ID.",
+    "name": "get_bookmarklet_import",
+  },
+  {
+    "description": "Get a connector configuration by ID. Connector token redacted in slim; use format='full' to reveal.",
+    "name": "get_connector",
   },
   {
     "description": "Get a cook log entry by ID.",
     "name": "get_cook_log",
   },
   {
+    "description": "Get the space currently active for this API token.",
+    "name": "get_current_space",
+  },
+  {
     "description": "Get custom filter by ID.",
     "name": "get_custom_filter",
+  },
+  {
+    "description": "Get export log by ID.",
+    "name": "get_export_log",
+  },
+  {
+    "description": "Fetch a shareable external link for a recipe file (Storage-backed uploads such as Nextcloud). Returns link metadata only, not the binary.",
+    "name": "get_external_recipe_file_link",
   },
   {
     "description": "Get food by ID.",
     "name": "get_food",
   },
   {
+    "description": "Get a food-inherit-field definition by ID.",
+    "name": "get_food_inherit_field",
+  },
+  {
+    "description": "Get a permission group by ID.",
+    "name": "get_group",
+  },
+  {
     "description": "Inspect security-guard rejection counters (PathGuardError, SsrfBlockedError) since process start. Useful for dashboards and "is anything probing me?" checks.",
     "name": "get_guard_stats",
+  },
+  {
+    "description": "Get an import-log entry by ID.",
+    "name": "get_import_log",
   },
   {
     "description": "Get ingredient by ID",
     "name": "get_ingredient",
   },
   {
+    "description": "Get a space invite link by ID. The uuid field is the shareable invite token.",
+    "name": "get_invite_link",
+  },
+  {
     "description": "Get keyword by ID.",
     "name": "get_keyword",
   },
   {
+    "description": "Fetch the list of available Tandoor UI languages (code + display name).",
+    "name": "get_localization",
+  },
+  {
     "description": "Get meal plan by ID",
     "name": "get_meal_plan",
+  },
+  {
+    "description": "Get a meal type by ID.",
+    "name": "get_meal_type",
   },
   {
     "description": "Get property by ID.",
@@ -251,6 +435,14 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "get_recipe_book_entry",
   },
   {
+    "description": "Fetch metadata for a recipe file attachment by ID. Does not return the binary; use the UI download link for that.",
+    "name": "get_recipe_file_metadata",
+  },
+  {
+    "description": "Get a pending recipe-import queue entry by ID.",
+    "name": "get_recipe_import",
+  },
+  {
     "description": "Fetch current Tandoor server settings (feature flags, limits). Useful to check whether AI, sharing, or open-data import are enabled before calling those tools.",
     "name": "get_server_settings",
   },
@@ -267,8 +459,20 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "get_shopping_list_recipe",
   },
   {
+    "description": "Get a space (tenant workspace) by ID.",
+    "name": "get_space",
+  },
+  {
     "description": "Get a step by ID.",
     "name": "get_step",
+  },
+  {
+    "description": "Get a storage backend by ID. Storage records contain credentials for external file backends. Slim mode redacts token/password; use format='full' only if needed.",
+    "name": "get_storage",
+  },
+  {
+    "description": "Get supermarket by ID.",
+    "name": "get_supermarket",
   },
   {
     "description": "Get supermarket category by ID.",
@@ -279,12 +483,24 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "get_supermarket_category_relation",
   },
   {
+    "description": "Get a sync by ID.",
+    "name": "get_sync",
+  },
+  {
+    "description": "Get a sync-log entry by ID.",
+    "name": "get_sync_log",
+  },
+  {
     "description": "Get unit by ID.",
     "name": "get_unit",
   },
   {
     "description": "Get unit conversion by ID.",
     "name": "get_unit_conversion",
+  },
+  {
+    "description": "Get a user by ID.",
+    "name": "get_user",
   },
   {
     "description": "Get user file metadata by ID.",
@@ -295,8 +511,24 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "get_user_preference",
   },
   {
+    "description": "Get a user-space membership by ID.",
+    "name": "get_user_space",
+  },
+  {
     "description": "Report this MCP server's name/version and the Tandoor server version + compatibility status detected at startup (ok | unsupported | unknown). No arguments; answers from cached startup state without a network call.",
     "name": "get_version",
+  },
+  {
+    "description": "Get a recipe view-log entry by ID.",
+    "name": "get_view_log",
+  },
+  {
+    "description": "Trigger import of every entry currently in the recipe-import staging queue. For a single queued entry use import_pending_recipe.",
+    "name": "import_all_pending",
+  },
+  {
+    "description": "Import one already-staged entry from the recipe-import queue into a real Recipe. Required: id (of the queue entry). For raw text/file that has NOT been staged yet use import_recipes. For a URL use import_recipe_from_url.",
+    "name": "import_pending_recipe",
   },
   {
     "description": "Import a recipe from an image, PDF, or text via Tandoor AI provider. Provide one of: file_path (local file readable by the MCP server), file_url (remote URL we fetch then upload), or text. By default the parsed recipe is saved to Tandoor; pass save=false to only return the parse result. ai_provider_id is auto-picked if omitted. If no AI provider is configured, this tool cannot work — recommend: (1) ask the operator to add one in Tandoor Settings → AI; (2) for web recipes, fall back to import_recipe_from_url (uses Tandoor scraper + JSON-LD, no AI required); (3) for text-only input, type up the structure manually via create_recipe.",
@@ -307,12 +539,20 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "import_recipe_from_url",
   },
   {
+    "description": "Submit a raw recipe payload (text and/or uploaded file) to Tandoor for AI parsing into a Recipe. Requires ai_provider_id (see list_ai_providers). For URL scraping use import_recipe_from_url. For staged files already sitting in the recipe-import queue use import_pending_recipe. For the curated open-data seed set use run_open_data_import.",
+    "name": "import_recipes",
+  },
+  {
     "description": "Run a jq filter against a previously stashed tool result and return the focused subset. Use this when a prior tool returned \`{stashed:true, handle, shape, sample_filters}\` instead of the full payload. Treat the stash like a JSON document the user already paid for — extract only what you need. Common filters: ".results | length", ".results[] | select(.id == 42)", ".results | map({id, name})", "keys", ".count".",
     "name": "jq_query",
   },
   {
     "description": "Inspect the in-memory stash (count + total bytes). Diagnostic; not normally needed.",
     "name": "jq_stash_stats",
+  },
+  {
+    "description": "List Tandoor access tokens. ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user. Token strings redacted in slim; use format='full' to reveal.",
+    "name": "list_access_tokens",
   },
   {
     "description": "List AI-log entries (AI usage history + credit cost).",
@@ -323,8 +563,20 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "list_ai_providers",
   },
   {
+    "description": "List every user-space membership belonging to the calling user (across all their spaces).",
+    "name": "list_all_personal_user_spaces",
+  },
+  {
     "description": "List automation rules (auto-apply keyword aliases, food aliases, replace rules, etc.).",
     "name": "list_automations",
+  },
+  {
+    "description": "List saved bookmarklet-import entries (raw HTML captured from the browser bookmarklet, awaiting parse). Optional: page, page_size.",
+    "name": "list_bookmarklet_imports",
+  },
+  {
+    "description": "List external connector configurations (Home Assistant / MQTT / etc). Paginated. Connector token redacted in slim; use format='full' to reveal.",
+    "name": "list_connectors",
   },
   {
     "description": "List cook log entries (recipe cooking history). Optional: recipe (id filter), page, page_size.",
@@ -335,8 +587,20 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "list_custom_filters",
   },
   {
+    "description": "List export-log rows. Optional: page, page_size.",
+    "name": "list_export_logs",
+  },
+  {
+    "description": "List the set of Food fields that child foods can inherit from a parent food (diet, supermarket category, etc.). Reference data used when configuring inheritance on the Food tree.",
+    "name": "list_food_inherit_fields",
+  },
+  {
     "description": "List foods. Optional: query (case-insensitive name match), root (parent id, 0 for top-level), tree (id), random, limit, page, page_size.",
     "name": "list_foods",
+  },
+  {
+    "description": "List permission groups defined on the Tandoor server.",
+    "name": "list_groups",
   },
   {
     "description": "List import-log entries (URL/AI/bookmarklet import history).",
@@ -345,6 +609,10 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "List ingredients. Optional filters: food (food id), unit (unit id), page, page_size",
     "name": "list_ingredients",
+  },
+  {
+    "description": "List space invite links. Optional: page, page_size, limit, query, unused, internal_note, updated_at. The returned uuid is the shareable invite token.",
+    "name": "list_invite_links",
   },
   {
     "description": "List keywords (recipe tags). Optional: query, root, tree, random, limit, page, page_size.",
@@ -357,6 +625,10 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "List available meal types (breakfast, lunch, dinner, etc.)",
     "name": "list_meal_types",
+  },
+  {
+    "description": "List available versions and datatypes for the Tandoor open-data seed set (curated foods, units, categories, properties). Call before run_open_data_import to pick a version.",
+    "name": "list_open_data_imports",
   },
   {
     "description": "List properties.",
@@ -375,8 +647,24 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "list_recipe_books",
   },
   {
+    "description": "List entries in the recipe-import staging queue (files uploaded but not yet imported as recipes). Optional: page, page_size.",
+    "name": "list_recipe_imports",
+  },
+  {
     "description": "List/search recipes with extensive filtering. Default returns slim results (id, name, description, servings, rating, keywords). Pass format="full" for raw API response. sort_order options: score,-score,name,-name,lastcooked,-lastcooked,rating,-rating,times_cooked,-times_cooked,created_at,-created_at,lastviewed,-lastviewed. If filtering by food/keyword/book NAMES (not ids), prefer search_recipes — it resolves names to ids for you and reports unresolved names in _meta.unresolved so you know what was dropped. If this returns an empty result set, recommend: broaden the query, drop restrictive filters, or try search_recipes if you were passing names.",
     "name": "list_recipes",
+  },
+  {
+    "description": "Lighter alternative to list_recipes; returns minimal recipe metadata suitable for large browse queries. Use list_recipes if you need keywords/foods/steps nested.",
+    "name": "list_recipes_flat",
+  },
+  {
+    "description": "List available searchable fields (used when configuring search preferences).",
+    "name": "list_search_fields",
+  },
+  {
+    "description": "List search preferences (typically just the current user).",
+    "name": "list_search_preferences",
   },
   {
     "description": "List shopping list entries (auto-filtered to unchecked + recent by Tandoor). Optional: mealplan, updated_after (ISO), page, page_size, format.",
@@ -387,8 +675,16 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "list_shopping_list_recipes",
   },
   {
+    "description": "List spaces (tenant workspaces) the caller can see. Optional: page, page_size.",
+    "name": "list_spaces",
+  },
+  {
     "description": "List recipe steps (standalone). Optional: recipe (array of recipe ids), query, page, page_size.",
     "name": "list_steps",
+  },
+  {
+    "description": "List external file-storage backends. Storage records contain credentials for external file backends. Slim mode redacts token/password; use format='full' only if needed.",
+    "name": "list_storages",
   },
   {
     "description": "List supermarket categories (used to organize shopping list by aisle).",
@@ -397,6 +693,18 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "List supermarket↔category orderings.",
     "name": "list_supermarket_category_relations",
+  },
+  {
+    "description": "List supermarkets (physical stores). Optional: query (name substring), limit, page, page_size.",
+    "name": "list_supermarkets",
+  },
+  {
+    "description": "List sync-log entries (read-only). Optional: page, page_size.",
+    "name": "list_sync_logs",
+  },
+  {
+    "description": "List folder-to-storage syncs. Optional: page, page_size.",
+    "name": "list_syncs",
   },
   {
     "description": "List every tool group exposed by this MCP server and whether each is currently enabled. The "core" group is permanent and always enabled; non-core groups start disabled (with profile=core) and can be turned on by calling enable_tool_group with the group name. When a group is enabled, its tools become visible via tools/list and the SDK emits tools/list_changed so the client refreshes mid-conversation. Use this first to discover what is available before reaching for enable_tool_group.",
@@ -417,6 +725,14 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "List user preferences (typically just the current user).",
     "name": "list_user_preferences",
+  },
+  {
+    "description": "List user-space memberships (which users belong to which spaces, with roles). Optional: page, page_size, internal_note.",
+    "name": "list_user_spaces",
+  },
+  {
+    "description": "List users visible to the current user. Optional filter_list of user IDs.",
+    "name": "list_users",
   },
   {
     "description": "List recipe view-log entries (which recipes have been viewed and when).",
@@ -451,6 +767,142 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "parse_ingredient",
   },
   {
+    "description": "Preview which related objects would be cascading if you delete this food. Read-only, use before delete_food.",
+    "name": "preview_food_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this food. Read-only, use before delete_food.",
+    "name": "preview_food_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this food. Read-only, use before delete_food.",
+    "name": "preview_food_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this keyword. Read-only, use before delete_keyword.",
+    "name": "preview_keyword_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this keyword. Read-only, use before delete_keyword.",
+    "name": "preview_keyword_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this keyword. Read-only, use before delete_keyword.",
+    "name": "preview_keyword_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this meal type. Read-only, use before delete_meal_type.",
+    "name": "preview_meal_type_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this meal type. Read-only, use before delete_meal_type.",
+    "name": "preview_meal_type_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this meal type. Read-only, use before delete_meal_type.",
+    "name": "preview_meal_type_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this property type. Read-only, use before delete_property_type.",
+    "name": "preview_property_type_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this property type. Read-only, use before delete_property_type.",
+    "name": "preview_property_type_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this property type. Read-only, use before delete_property_type.",
+    "name": "preview_property_type_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this recipe book. Read-only, use before delete_recipe_book.",
+    "name": "preview_recipe_book_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this recipe book. Read-only, use before delete_recipe_book.",
+    "name": "preview_recipe_book_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this recipe book. Read-only, use before delete_recipe_book.",
+    "name": "preview_recipe_book_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this recipe. Read-only, use before delete_recipe.",
+    "name": "preview_recipe_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this recipe. Read-only, use before delete_recipe.",
+    "name": "preview_recipe_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this recipe. Read-only, use before delete_recipe.",
+    "name": "preview_recipe_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this storage. Read-only, use before delete_storage.",
+    "name": "preview_storage_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this storage. Read-only, use before delete_storage.",
+    "name": "preview_storage_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this storage. Read-only, use before delete_storage.",
+    "name": "preview_storage_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this supermarket category. Read-only, use before delete_supermarket_category.",
+    "name": "preview_supermarket_category_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this supermarket category. Read-only, use before delete_supermarket_category.",
+    "name": "preview_supermarket_category_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this supermarket category. Read-only, use before delete_supermarket_category.",
+    "name": "preview_supermarket_category_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this supermarket. Read-only, use before delete_supermarket.",
+    "name": "preview_supermarket_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this supermarket. Read-only, use before delete_supermarket.",
+    "name": "preview_supermarket_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this supermarket. Read-only, use before delete_supermarket.",
+    "name": "preview_supermarket_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this unit. Read-only, use before delete_unit.",
+    "name": "preview_unit_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this unit. Read-only, use before delete_unit.",
+    "name": "preview_unit_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this unit. Read-only, use before delete_unit.",
+    "name": "preview_unit_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this user file. Read-only, use before delete_user_file.",
+    "name": "preview_user_file_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this user file. Read-only, use before delete_user_file.",
+    "name": "preview_user_file_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this user file. Read-only, use before delete_user_file.",
+    "name": "preview_user_file_delete_protecting",
+  },
+  {
+    "description": "Trigger Tandoor to list files at the storage folder for the given sync. Required: id.",
+    "name": "query_synced_folder",
+  },
+  {
     "description": "Have AI compute nutrition/properties for a full recipe. Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend the operator add one in Tandoor Settings → AI. For single-ingredient nutrition use food_fdc_lookup instead — deterministic and no AI setup required.",
     "name": "recipe_ai_properties",
   },
@@ -467,12 +919,36 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "remove_recipe_from_book",
   },
   {
+    "description": "Import the Tandoor curated open-data seed set (foods, units, categories, properties, stores, conversions) for a chosen version. Required: selected_version, selected_datatypes[]. Optional: update_existing, use_metric. This is a bulk taxonomy seed; for a single recipe use import_recipes or import_recipe_from_url.",
+    "name": "run_open_data_import",
+  },
+  {
     "description": "High-level recipe search. Accepts food/keyword/book *names* (not IDs) and resolves them internally — typically collapses 3-4 round-trips into 1. Example: {foods: ["chicken", "broccoli"], exclude_foods: ["peanuts"], keywords: ["weeknight"]}. For complex ID-based filtering, fall back to list_recipes.",
     "name": "search_recipes",
   },
   {
+    "description": "DESTRUCTIVE state change. Switches the API token's active space server-side; every subsequent tool call in this session operates against the new space until switched again. Required: spaceId.",
+    "name": "switch_active_space",
+  },
+  {
+    "description": "Update an access token (PATCH). Required: id. Token strings redacted in slim; use format='full' to reveal.",
+    "name": "update_access_token",
+  },
+  {
+    "description": "Update an AI provider (PATCH). Required: id. Contains provider API key. Slim mode redacts api_key; use format='full' only when necessary.",
+    "name": "update_ai_provider",
+  },
+  {
     "description": "Update automation (PATCH). Required: id.",
     "name": "update_automation",
+  },
+  {
+    "description": "Update a bookmarklet-import entry (PATCH). Required: id.",
+    "name": "update_bookmarklet_import",
+  },
+  {
+    "description": "Update a connector configuration (PATCH). Required: id. Connector token redacted in slim; use format='full' to reveal.",
+    "name": "update_connector",
   },
   {
     "description": "Update a cook log entry (PATCH). Required: id.",
@@ -483,12 +959,24 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_custom_filter",
   },
   {
+    "description": "Update an export log (PATCH). Required: id.",
+    "name": "update_export_log",
+  },
+  {
     "description": "Update food (PATCH). Required: id.",
     "name": "update_food",
   },
   {
+    "description": "Update an import-log entry (PATCH). Required: id.",
+    "name": "update_import_log",
+  },
+  {
     "description": "Partially update ingredient (PATCH). Required: id. All other fields optional. Pass unit_id: null to clear unit",
     "name": "update_ingredient",
+  },
+  {
+    "description": "Update a space invite link (PATCH). Required: id. Changing valid_until or reusable alters who can still join your space.",
+    "name": "update_invite_link",
   },
   {
     "description": "Update keyword (PATCH). Required: id.",
@@ -497,6 +985,10 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "Update meal plan. Required: id. All other fields optional",
     "name": "update_meal_plan",
+  },
+  {
+    "description": "Update a meal type (PATCH). Required: id.",
+    "name": "update_meal_type",
   },
   {
     "description": "Update property (PATCH). Required: id.",
@@ -515,6 +1007,14 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_recipe_book",
   },
   {
+    "description": "Update a pending recipe-import queue entry (PATCH). Required: id.",
+    "name": "update_recipe_import",
+  },
+  {
+    "description": "Update a user's search preference (PATCH). Required: user (id). Field arrays (unaccent, icontains, istartswith, trigram, fulltext) accept SearchFields IDs.",
+    "name": "update_search_preference",
+  },
+  {
     "description": "Update a shopping entry (PATCH). Required: id. Other fields optional.",
     "name": "update_shopping_entry",
   },
@@ -523,8 +1023,20 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_shopping_list_recipe",
   },
   {
+    "description": "Update a space (PATCH). Required: id, plus at least one field.",
+    "name": "update_space",
+  },
+  {
     "description": "Update a step (PATCH). Required: id. Any field provided replaces. ingredients[] is a full replacement of the step's ingredients.",
     "name": "update_step",
+  },
+  {
+    "description": "Update a storage backend (PATCH). Required: id. Storage records contain credentials for external file backends. Slim mode redacts token/password; use format='full' only if needed.",
+    "name": "update_storage",
+  },
+  {
+    "description": "Update a supermarket (PATCH). Required: id.",
+    "name": "update_supermarket",
   },
   {
     "description": "Update supermarket category (PATCH). Required: id.",
@@ -535,6 +1047,10 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_supermarket_category_relation",
   },
   {
+    "description": "Update a sync (PATCH). Required: id.",
+    "name": "update_sync",
+  },
+  {
     "description": "Update unit (PATCH). Required: id.",
     "name": "update_unit",
   },
@@ -543,12 +1059,24 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_unit_conversion",
   },
   {
+    "description": "Update a user (PATCH). Required: id. Writable fields: first_name, last_name (username / staff flags are read-only).",
+    "name": "update_user",
+  },
+  {
     "description": "Rename a user file (PATCH). Required: id, name.",
     "name": "update_user_file",
   },
   {
     "description": "Update user preferences (PATCH). Required: user_id. Common fields: theme, default_page (SEARCH/PLAN/BOOKS/SHOPPING), default_unit, use_fractions, use_kj, comments, ingredient_decimals, shopping_auto_sync, shopping_recent_days, mealplan_autoadd_shopping, mealplan_autoinclude_related, mealplan_autoexclude_onhand, filter_to_supermarket, left_handed, plan_share_user_ids[], shopping_share_user_ids[].",
     "name": "update_user_preference",
+  },
+  {
+    "description": "Update a user-space membership (PATCH). Required: id, plus at least one field (active, groups, internal_note).",
+    "name": "update_user_space",
+  },
+  {
+    "description": "Update a view-log entry (PATCH). Required: id. Typically used to correct the linked recipe.",
+    "name": "update_view_log",
   },
   {
     "description": "Attach an image to a recipe. Provide exactly one of: file_path (local file on MCP server), file_url (remote URL; we fetch and upload bytes), or image_url (remote URL; Tandoor fetches it server-side). If a large local upload fails on size/timeout, recommend image_url instead — Tandoor fetches it server-side so the file never transits through the MCP process.",
@@ -628,6 +1156,42 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "add_recipe_to_shopping_list",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "recipe_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "recipe_id",
+      ],
+      "type": "object",
+    },
+    "name": "ai_step_sort",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "password": {
+          "type": "string",
+        },
+        "username": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "username",
+        "password",
+      ],
+      "type": "object",
+    },
+    "name": "authenticate",
   },
   {
     "inputSchema": {
@@ -812,6 +1376,73 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "expires": {
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "scope": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "scope",
+        "expires",
+      ],
+      "type": "object",
+    },
+    "name": "create_access_token",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "api_key": {
+          "type": "string",
+        },
+        "endpoint": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "model": {
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "provider": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+        "api_key",
+        "model",
+        "provider",
+      ],
+      "type": "object",
+    },
+    "name": "create_ai_provider",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "description": {
           "type": "string",
         },
@@ -862,6 +1493,107 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "create_automation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "html": {
+          "type": "string",
+        },
+        "url": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "html",
+      ],
+      "type": "object",
+    },
+    "name": "create_bookmarklet_import",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "on_shopping_list_entry_created_enabled": {
+          "type": "boolean",
+        },
+        "on_shopping_list_entry_deleted_enabled": {
+          "type": "boolean",
+        },
+        "on_shopping_list_entry_updated_enabled": {
+          "type": "boolean",
+        },
+        "supports_description_field": {
+          "type": "boolean",
+        },
+        "todo_entity": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "token": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "type": {
+          "enum": [
+            "HomeAssistant",
+          ],
+          "type": "string",
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "name",
+        "type",
+      ],
+      "type": "object",
+    },
+    "name": "create_connector",
   },
   {
     "inputSchema": {
@@ -957,6 +1689,44 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "cache_duration": {
+          "type": "number",
+        },
+        "exported_recipes": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "msg": {
+          "type": "string",
+        },
+        "running": {
+          "type": "boolean",
+        },
+        "total_recipes": {
+          "type": "number",
+        },
+        "type": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "type",
+      ],
+      "type": "object",
+    },
+    "name": "create_export_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "description": {
           "type": "string",
         },
@@ -1002,6 +1772,41 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "imported_recipes": {
+          "type": "number",
+        },
+        "msg": {
+          "type": "string",
+        },
+        "running": {
+          "type": "boolean",
+        },
+        "total_recipes": {
+          "type": "number",
+        },
+        "type": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "type",
+      ],
+      "type": "object",
+    },
+    "name": "create_import_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "always_use_plural_food": {
           "type": "boolean",
         },
@@ -1039,6 +1844,50 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "create_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "email": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "group": {
+          "type": "number",
+        },
+        "internal_note": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "reusable": {
+          "type": "boolean",
+        },
+        "valid_until": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "email",
+        "group",
+        "valid_until",
+      ],
+      "type": "object",
+    },
+    "name": "create_invite_link",
   },
   {
     "inputSchema": {
@@ -1104,6 +1953,45 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "create_meal_plan",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "default": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "order": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_meal_type",
   },
   {
     "inputSchema": {
@@ -1393,6 +2281,43 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "file_path": {
+          "type": "string",
+        },
+        "file_uid": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "space": {
+          "type": "number",
+        },
+        "storage": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "name",
+        "storage",
+        "space",
+      ],
+      "type": "object",
+    },
+    "name": "create_recipe_import",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "amount": {
           "type": "number",
         },
@@ -1494,6 +2419,44 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "allow_sharing": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "max_file_storage_mb": {
+          "type": "number",
+        },
+        "max_recipes": {
+          "type": "number",
+        },
+        "max_users": {
+          "type": "number",
+        },
+        "message": {
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_space",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "format": {
           "enum": [
             "slim",
@@ -1580,6 +2543,125 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "method": {
+          "enum": [
+            "DB",
+            "NEXTCLOUD",
+            "LOCAL",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "password": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "path": {
+          "type": "string",
+        },
+        "token": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "username": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "name",
+        "method",
+        "path",
+      ],
+      "type": "object",
+    },
+    "name": "create_storage",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "open_data_slug": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_supermarket",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "description": {
           "type": "string",
         },
@@ -1630,6 +2712,46 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "create_supermarket_category_relation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "active": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "last_checked": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "path": {
+          "type": "string",
+        },
+        "storage_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "storage_id",
+        "path",
+      ],
+      "type": "object",
+    },
+    "name": "create_sync",
   },
   {
     "inputSchema": {
@@ -1722,7 +2844,71 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       ],
       "type": "object",
     },
+    "name": "delete_access_token",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_ai_provider",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "delete_automation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_bookmarklet_import",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_connector",
   },
   {
     "inputSchema": {
@@ -1770,6 +2956,22 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       ],
       "type": "object",
     },
+    "name": "delete_export_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "delete_food",
   },
   {
@@ -1786,7 +2988,39 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       ],
       "type": "object",
     },
+    "name": "delete_import_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "delete_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_invite_link",
   },
   {
     "inputSchema": {
@@ -1819,6 +3053,22 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "delete_meal_plan",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_meal_type",
   },
   {
     "inputSchema": {
@@ -1891,6 +3141,39 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Recipe ID",
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_recipe_external",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_recipe_import",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
           "type": "number",
         },
       },
@@ -1947,6 +3230,38 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       ],
       "type": "object",
     },
+    "name": "delete_storage",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_supermarket",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "delete_supermarket_category",
   },
   {
@@ -1964,6 +3279,22 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "delete_supermarket_category_relation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_sync",
   },
   {
     "inputSchema": {
@@ -2018,6 +3349,38 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_user_space",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_view_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "group": {
           "description": "Name of the group to disable. The synthetic "core" group cannot be disabled.",
           "minLength": 1,
@@ -2048,6 +3411,107 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "enable_tool_group",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "from_date": {
+          "description": "YYYY-MM-DD inclusive",
+          "type": "string",
+        },
+        "meal_type": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "to_date": {
+          "description": "YYYY-MM-DD inclusive",
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "export_meal_plan_ical",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "all": {
+          "type": "boolean",
+        },
+        "custom_filter": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "recipes": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "type": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "type",
+      ],
+      "type": "object",
+    },
+    "name": "export_recipes",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "dataType": {
+          "items": {
+            "enum": [
+              "Branded",
+              "Foundation",
+              "Survey (FNDDS)",
+              "SR Legacy",
+            ],
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "query": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "query",
+      ],
+      "type": "object",
+    },
+    "name": "fdc_search",
   },
   {
     "inputSchema": {
@@ -2314,6 +3778,52 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       ],
       "type": "object",
     },
+    "name": "get_access_token",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_ai_provider",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "get_automation",
   },
   {
@@ -2337,7 +3847,70 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       ],
       "type": "object",
     },
+    "name": "get_bookmarklet_import",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_connector",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "get_cook_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "get_current_space",
   },
   {
     "inputSchema": {
@@ -2383,7 +3956,92 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       ],
       "type": "object",
     },
+    "name": "get_export_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_external_recipe_file_link",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "get_food",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_food_inherit_field",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_group",
   },
   {
     "inputSchema": {
@@ -2393,6 +4051,29 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "get_guard_stats",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_import_log",
   },
   {
     "inputSchema": {
@@ -2431,7 +4112,39 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       ],
       "type": "object",
     },
+    "name": "get_invite_link",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "get_keyword",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object",
+    },
+    "name": "get_localization",
   },
   {
     "inputSchema": {
@@ -2448,6 +4161,29 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "get_meal_plan",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_meal_type",
   },
   {
     "inputSchema": {
@@ -2570,6 +4306,45 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_recipe_file_metadata",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_recipe_import",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
       "properties": {},
       "type": "object",
     },
@@ -2658,7 +4433,76 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       ],
       "type": "object",
     },
+    "name": "get_space",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "get_step",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_storage",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_supermarket",
   },
   {
     "inputSchema": {
@@ -2727,6 +4571,52 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       ],
       "type": "object",
     },
+    "name": "get_sync",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_sync_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "get_unit",
   },
   {
@@ -2751,6 +4641,29 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "get_unit_conversion",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_user",
   },
   {
     "inputSchema": {
@@ -2802,10 +4715,96 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_user_space",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
       "properties": {},
       "type": "object",
     },
     "name": "get_version",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_view_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "import_all_pending",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "import_pending_recipe",
   },
   {
     "inputSchema": {
@@ -2885,6 +4884,38 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "ai_provider_id": {
+          "type": "number",
+        },
+        "file": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "recipe_id": {
+          "type": "string",
+        },
+        "text": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "ai_provider_id",
+      ],
+      "type": "object",
+    },
+    "name": "import_recipes",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "filter": {
           "description": "jq filter to apply to the stashed value. Examples: ".results | length", ".results[0]", ".results | map({id, name})", "keys", ".count".",
           "maxLength": 4096,
@@ -2913,6 +4944,29 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "jq_stash_stats",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_access_tokens",
   },
   {
     "inputSchema": {
@@ -2981,7 +5035,76 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       },
       "type": "object",
     },
+    "name": "list_all_personal_user_spaces",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
     "name": "list_automations",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_bookmarklet_imports",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_connectors",
   },
   {
     "inputSchema": {
@@ -3044,6 +5167,46 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           ],
           "type": "string",
         },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_export_logs",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_food_inherit_fields",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
         "limit": {
           "type": "number",
         },
@@ -3075,6 +5238,23 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "list_foods",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_groups",
   },
   {
     "inputSchema": {
@@ -3122,6 +5302,44 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "list_ingredients",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "internal_note": {
+          "type": "string",
+        },
+        "limit": {
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "query": {
+          "type": "string",
+        },
+        "unused": {
+          "type": "boolean",
+        },
+        "updated_at": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_invite_links",
   },
   {
     "inputSchema": {
@@ -3192,6 +5410,23 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
   {
     "inputSchema": null,
     "name": "list_meal_types",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_open_data_imports",
   },
   {
     "inputSchema": {
@@ -3318,6 +5553,29 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "list_recipe_books",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_recipe_imports",
   },
   {
     "inputSchema": {
@@ -3519,6 +5777,58 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "Response detail level. Default "slim".",
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_recipes_flat",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_search_fields",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_search_preferences",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
           "enum": [
             "slim",
             "full",
@@ -3586,6 +5896,29 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "page_size": {
           "type": "number",
         },
+      },
+      "type": "object",
+    },
+    "name": "list_spaces",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
         "query": {
           "type": "string",
         },
@@ -3599,6 +5932,29 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "list_steps",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_storages",
   },
   {
     "inputSchema": {
@@ -3645,6 +6001,81 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "list_supermarket_category_relations",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "limit": {
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+        "query": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_supermarkets",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_sync_logs",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_syncs",
   },
   {
     "inputSchema": {
@@ -3761,6 +6192,56 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "list_user_preferences",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "internal_note": {
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_user_spaces",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "filter_list": {
+          "description": "User IDs to filter to",
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_users",
   },
   {
     "inputSchema": {
@@ -3920,6 +6401,557 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "parse_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_food_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_food_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_food_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_keyword_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_keyword_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_keyword_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_meal_type_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_meal_type_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_meal_type_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_property_type_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_property_type_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_property_type_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_recipe_book_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_recipe_book_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_recipe_book_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_recipe_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_recipe_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_recipe_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_storage_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_storage_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_storage_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_supermarket_category_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_supermarket_category_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_supermarket_category_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_supermarket_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_supermarket_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_supermarket_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_unit_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_unit_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_unit_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_user_file_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_user_file_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_user_file_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "query_synced_folder",
   },
   {
     "inputSchema": {
@@ -4123,6 +7155,42 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "selected_datatypes": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "selected_version": {
+          "type": "string",
+        },
+        "update_existing": {
+          "type": "boolean",
+        },
+        "use_metric": {
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "selected_version",
+        "selected_datatypes",
+      ],
+      "type": "object",
+    },
+    "name": "run_open_data_import",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "books": {
           "description": "Recipe book names — recipe must be in ANY of these",
           "items": {
@@ -4209,6 +7277,91 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "spaceId": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "spaceId",
+      ],
+      "type": "object",
+    },
+    "name": "switch_active_space",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "expires": {
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "scope": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_access_token",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "api_key": {
+          "type": "string",
+        },
+        "endpoint": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "model": {
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "provider": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_ai_provider",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "description": {
           "type": "string",
         },
@@ -4262,6 +7415,112 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "update_automation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "html": {
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "url": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_bookmarklet_import",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+        "on_shopping_list_entry_created_enabled": {
+          "type": "boolean",
+        },
+        "on_shopping_list_entry_deleted_enabled": {
+          "type": "boolean",
+        },
+        "on_shopping_list_entry_updated_enabled": {
+          "type": "boolean",
+        },
+        "supports_description_field": {
+          "type": "boolean",
+        },
+        "todo_entity": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "token": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "type": {
+          "enum": [
+            "HomeAssistant",
+          ],
+          "type": "string",
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_connector",
   },
   {
     "inputSchema": {
@@ -4362,6 +7621,47 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "cache_duration": {
+          "type": "number",
+        },
+        "exported_recipes": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "msg": {
+          "type": "string",
+        },
+        "running": {
+          "type": "boolean",
+        },
+        "total_recipes": {
+          "type": "number",
+        },
+        "type": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_export_log",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "description": {
           "type": "string",
         },
@@ -4404,6 +7704,44 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "update_food",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "imported_recipes": {
+          "type": "number",
+        },
+        "msg": {
+          "type": "string",
+        },
+        "running": {
+          "type": "boolean",
+        },
+        "total_recipes": {
+          "type": "number",
+        },
+        "type": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_import_log",
   },
   {
     "inputSchema": {
@@ -4457,6 +7795,51 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "update_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "email": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "group": {
+          "type": "number",
+        },
+        "id": {
+          "type": "number",
+        },
+        "internal_note": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "reusable": {
+          "type": "boolean",
+        },
+        "valid_until": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_invite_link",
   },
   {
     "inputSchema": {
@@ -4530,6 +7913,48 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "update_meal_plan",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "default": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+        "order": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_meal_type",
   },
   {
     "inputSchema": {
@@ -4830,6 +8255,113 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "file_path": {
+          "type": "string",
+        },
+        "file_uid": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+        "space": {
+          "type": "number",
+        },
+        "storage": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_recipe_import",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "fulltext": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "icontains": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "istartswith": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "lookup": {
+          "type": "boolean",
+        },
+        "search": {
+          "enum": [
+            "PLAIN",
+            "PHRASE",
+            "RAW",
+            "WEB",
+            "FUZZY",
+          ],
+          "type": "string",
+        },
+        "trigram": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "trigram_threshold": {
+          "type": "number",
+        },
+        "unaccent": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "user": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "user",
+      ],
+      "type": "object",
+    },
+    "name": "update_search_preference",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "amount": {
           "type": "number",
         },
@@ -4914,6 +8446,53 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "update_shopping_list_recipe",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "allow_sharing": {
+          "type": "boolean",
+        },
+        "food_inherit": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "max_file_storage_mb": {
+          "type": "number",
+        },
+        "max_recipes": {
+          "type": "number",
+        },
+        "max_users": {
+          "type": "number",
+        },
+        "message": {
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_space",
   },
   {
     "inputSchema": {
@@ -5009,6 +8588,129 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "method": {
+          "enum": [
+            "DB",
+            "NEXTCLOUD",
+            "LOCAL",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+        "password": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "path": {
+          "type": "string",
+        },
+        "token": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "username": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_storage",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+        "open_data_slug": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_supermarket",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "description": {
           "type": "string",
         },
@@ -5064,6 +8766,48 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "update_supermarket_category_relation",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "active": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "last_checked": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "path": {
+          "type": "string",
+        },
+        "storage_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_sync",
   },
   {
     "inputSchema": {
@@ -5144,6 +8888,35 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "update_unit_conversion",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "first_name": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "last_name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_user",
   },
   {
     "inputSchema": {
@@ -5257,6 +9030,67 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "update_user_preference",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "active": {
+          "type": "boolean",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "groups": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "id": {
+          "type": "number",
+        },
+        "internal_note": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_user_space",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "recipe": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_view_log",
   },
   {
     "inputSchema": {

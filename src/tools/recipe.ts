@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
+import { formatEnum as sharedFormatEnum } from '../lib/slim.js';
 import {
   handleListRecipes,
   handleGetRecipe,
@@ -16,10 +17,11 @@ import {
   handleAddRecipeToShoppingList,
   handleSearchRecipes,
   handleRecipeBatchUpdate,
+  handleListRecipesFlat,
+  handleDeleteRecipeExternal,
 } from '../handlers/recipe.js';
 
-const formatEnum = z.enum(['slim', 'full']).optional()
-  .describe('Response detail level. Default "slim".');
+const recipeFormatEnum = sharedFormatEnum.describe('Response detail level. Default "slim".');
 
 const ingredientInput = z.object({
   food: z.string(),
@@ -92,12 +94,12 @@ export const listRecipesShape = {
   books_and: z.array(z.number()).optional(),
   books_or_not: z.array(z.number()).optional(),
   books_and_not: z.array(z.number()).optional(),
-  format: formatEnum,
+  format: recipeFormatEnum,
 } as const;
 
 export const getRecipeShape = {
   id: z.number().describe('Recipe ID'),
-  format: formatEnum,
+  format: recipeFormatEnum,
 } as const;
 
 export const createRecipeShape = {
@@ -115,7 +117,7 @@ export const createRecipeShape = {
   private: z.boolean().optional(),
   nutrition: nutritionInput.optional(),
   properties: z.array(propertyInput).optional(),
-  format: formatEnum,
+  format: recipeFormatEnum,
 } as const;
 
 export const updateRecipeShape = {
@@ -134,16 +136,20 @@ export const updateRecipeShape = {
   steps: z.array(stepInput).optional(),
   nutrition: nutritionInput.optional(),
   properties: z.array(propertyInput).optional(),
-  format: formatEnum,
+  format: recipeFormatEnum,
 } as const;
 
 export const deleteRecipeShape = { id: z.number().describe('Recipe ID') } as const;
+
+export const listRecipesFlatShape = { format: recipeFormatEnum } as const;
+
+export const deleteRecipeExternalShape = { id: z.number().describe('Recipe ID') } as const;
 
 export const importRecipeFromUrlShape = {
   url: z.string().describe('Recipe URL to import'),
   name: z.string().optional().describe('Optional name for the stub recipe (only used if create_stub_on_failure=true and both scrapers fail)'),
   create_stub_on_failure: z.boolean().optional().describe('Default false. When true AND both scraper attempts fail, create a minimal empty recipe pointing at the URL instead of throwing.'),
-  format: formatEnum,
+  format: recipeFormatEnum,
 } as const;
 
 export const uploadRecipeImageShape = {
@@ -153,7 +159,7 @@ export const uploadRecipeImageShape = {
   image_url: z.string().optional(),
 } as const;
 
-export const relatedRecipesShape = { id: z.number(), format: formatEnum } as const;
+export const relatedRecipesShape = { id: z.number(), format: recipeFormatEnum } as const;
 
 export const addRecipeToShoppingListShape = {
   id: z.number().describe('Recipe ID'),
@@ -178,7 +184,7 @@ export const searchRecipesShape = {
   sort_order: z.string().optional().describe('score | -score | name | -name | lastcooked | -lastcooked | rating | -rating | times_cooked | -times_cooked'),
   page: z.number().optional(),
   page_size: z.number().optional(),
-  format: formatEnum,
+  format: recipeFormatEnum,
 } as const;
 
 export type ListRecipesArgs = z.infer<z.ZodObject<typeof listRecipesShape>>;
@@ -191,6 +197,8 @@ export type UploadRecipeImageArgs = z.infer<z.ZodObject<typeof uploadRecipeImage
 export type RelatedRecipesArgs = z.infer<z.ZodObject<typeof relatedRecipesShape>>;
 export type AddRecipeToShoppingListArgs = z.infer<z.ZodObject<typeof addRecipeToShoppingListShape>>;
 export type SearchRecipesArgs = z.infer<z.ZodObject<typeof searchRecipesShape>>;
+export type ListRecipesFlatArgs = z.infer<z.ZodObject<typeof listRecipesFlatShape>>;
+export type DeleteRecipeExternalArgs = z.infer<z.ZodObject<typeof deleteRecipeExternalShape>>;
 
 // Mirrors Tandoor's RecipeBatchUpdate serializer. `recipes` is the target set;
 // all other fields are optional mutations applied across that set.
@@ -279,4 +287,16 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
     description: 'Apply a narrow set of bulk mutations across many recipes in one call via Tandoor\'s /api/recipe/batch_update/ endpoint. Required: recipes[]. Optional (all apply to every recipe in recipes[]): keywords_add/remove/set/remove_all, shared_add/remove/set/remove_all, working_time, waiting_time, servings, servings_text, private, show_ingredient_overview, clear_description. Does NOT support bulk step/ingredient edits — those still need update_recipe per-item. Use for: bulk keyword retagging, sharing recipes with a user across a set, flipping privacy on many recipes at once.',
     inputSchema: recipeBatchUpdateShape,
   }, handleRecipeBatchUpdate);
+
+  registerStringTool(server, client, 'list_recipes_flat', {
+    description:
+      'Lighter alternative to list_recipes; returns minimal recipe metadata suitable for large browse queries. Use list_recipes if you need keywords/foods/steps nested.',
+    inputSchema: listRecipesFlatShape,
+  }, handleListRecipesFlat);
+
+  registerStringTool(server, client, 'delete_recipe_external', {
+    description:
+      'Remove only the external-source link on a recipe (source_url and related external flags). The recipe itself is preserved. Use when a recipe was imported from a URL that is no longer valid and you want to detach the source without deleting the recipe.',
+    inputSchema: deleteRecipeExternalShape,
+  }, handleDeleteRecipeExternal);
 }

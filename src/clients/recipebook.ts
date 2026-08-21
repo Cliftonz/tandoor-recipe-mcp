@@ -1,17 +1,6 @@
 // Recipe book API client.
 
-import { BaseClient } from './base.js';
-
-function qs(params?: Record<string, any>): string {
-  const sp = new URLSearchParams();
-  if (params) {
-    Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined) sp.append(k, String(v));
-    });
-  }
-  const s = sp.toString();
-  return s ? `?${s}` : '';
-}
+import { BaseClient, qs } from './base.js';
 
 export class RecipeBookClient extends BaseClient {
   // ---------- Recipe books ----------
