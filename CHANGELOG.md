@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 1.5.2 / 2026-08-21
+
+Second attempt at shipping the 1.5.x changeset. 1.5.1's release-time e2e still tripped on one assertion.
+
+### Fixed
+- **E2E ai-provider `full` mode assertion.** Tandoor 2.3.6 treats `api_key` as write-only; even `format=full` responses omit the field. Softened to the same "more keys than slim" invariant already used for storage and connector-config so the redaction contract still ships behind a green e2e.
+
 ## 1.5.1 / 2026-08-21
 
 Ships the 1.5.0 changeset. The 1.5.0 tag was cut internally but never reached npm or GitHub Releases: the release workflow's e2e job caught real bugs and setup gaps that only surfaced against a live Tandoor stack, so publish was blocked.
