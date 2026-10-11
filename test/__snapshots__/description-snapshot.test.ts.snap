@@ -963,7 +963,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_export_log",
   },
   {
-    "description": "Update food (PATCH). Required: id.",
+    "description": "Update food (PATCH). Required: id. Optional properties[] {property_type_id, property_amount} upserts property values (e.g. nutrition per 100 g; see list_property_types), with properties_food_amount / properties_food_unit_id setting the reference quantity.",
     "name": "update_food",
   },
   {
@@ -7696,6 +7696,48 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         },
         "plural_name": {
           "type": "string",
+        },
+        "properties": {
+          "description": "Property values (e.g. nutrition) per properties_food_amount of properties_food_unit. Upserted by property_type_id; other existing properties are kept.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "property_amount": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "property_type_id": {
+                "type": "number",
+              },
+            },
+            "required": [
+              "property_type_id",
+              "property_amount",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "properties_food_amount": {
+          "description": "Reference amount the property values refer to (Tandoor default 100).",
+          "type": "number",
+        },
+        "properties_food_unit_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+          "description": "Unit of properties_food_amount (e.g. the id of "g").",
         },
         "supermarket_category_id": {
           "anyOf": [

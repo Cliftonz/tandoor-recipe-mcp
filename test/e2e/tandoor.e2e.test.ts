@@ -448,6 +448,33 @@ describeE2E('Tandoor E2E workflow', () => {
     expect(conv.food_id).toBe(ctx.foodId);
   });
 
+  it('update_food writes properties and upserts them by property type', async () => {
+    // Dedicated food so the shared one stays free of property rows.
+    const f = await client.foodUnits.createFood({ name: `e2e-food-props-${Date.now()}` });
+    cleanup.push({ label: `food ${f.id}`, fn: () => client.foodUnits.deleteFood(f.id) });
+    await invokeAndParse(mcp, 'update_food', {
+      id: f.id,
+      properties_food_amount: 100,
+      properties_food_unit_id: ctx.gramUnitId,
+      properties: [{ property_type_id: ctx.propertyTypeId, property_amount: 10 }],
+    });
+    const updated = await invokeAndParse(mcp, 'update_food', {
+      id: f.id,
+      properties: [{ property_type_id: ctx.propertyTypeId, property_amount: 20 }],
+      format: 'full',
+    });
+    // Deleting a food leaves its property rows behind, and those keep the
+    // property type from being deleted, so remove them explicitly.
+    for (const p of updated.properties) {
+      cleanup.push({ label: `property ${p.id}`, fn: () => client.properties.deleteProperty(p.id) });
+    }
+    const rows = updated.properties.filter((p: any) => p.property_type.id === ctx.propertyTypeId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].property_amount).toBe(20);
+    expect(updated.properties_food_amount).toBe(100);
+    expect(updated.properties_food_unit.id).toBe(ctx.gramUnitId);
+  });
+
   it('update_step accepts ingredient food_id / unit_id', async () => {
     const list = await client.steps.listSteps({ recipe: [ctx.recipeId] });
     const step = (list.results ?? list)[0];

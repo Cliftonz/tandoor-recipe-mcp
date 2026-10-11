@@ -22,6 +22,7 @@ import type {
 } from '../tools/foodunit.js';
 
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
+import { unitRef, propertyTypeRef, nullableRef } from '../lib/fk.js';
 
 function slimFood(f: any) {
   if (!f) return f;
@@ -98,6 +99,35 @@ export async function handleUpdateFood(
   if (args.fdc_id !== undefined) body.fdc_id = args.fdc_id;
   if (args.supermarket_category_id !== undefined) {
     body.supermarket_category = await nullableRef(supermarketCategoryRef, client, args.supermarket_category_id);
+  }
+  if (args.properties_food_amount !== undefined) body.properties_food_amount = args.properties_food_amount;
+  if (args.properties_food_unit_id !== undefined) {
+    body.properties_food_unit = await nullableRef(unitRef, client, args.properties_food_unit_id);
+  }
+  if (args.properties !== undefined) {
+    // The nested `properties` list replaces the food's set, so merge with the
+    // existing rows: reuse the row id for a known property type (update in
+    // place instead of duplicating) and keep types the caller didn't mention.
+    const current = await client.foodUnits.getFood(args.id);
+    const existing: any[] = Array.isArray(current?.properties) ? current.properties : [];
+    const merged = existing.map((p: any) => ({
+      id: p.id,
+      property_amount: p.property_amount,
+      property_type: { id: p.property_type.id, name: p.property_type.name },
+    }));
+    for (const p of args.properties) {
+      const row = merged.find((m) => m.property_type.id === p.property_type_id);
+      if (row) {
+        row.property_amount = p.property_amount;
+      } else {
+        merged.push({
+          id: undefined,
+          property_amount: p.property_amount,
+          property_type: await propertyTypeRef(client, p.property_type_id),
+        });
+      }
+    }
+    body.properties = merged;
   }
   assertNonEmptyBody(body);
   const updated = await client.foodUnits.patchFood(args.id, body);

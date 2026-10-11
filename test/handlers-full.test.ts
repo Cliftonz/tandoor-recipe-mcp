@@ -544,6 +544,41 @@ describe('food handlers', () => {
     ]);
   });
 
+  it('handleUpdateFood upserts properties by type and keeps untouched ones', async () => {
+    const patchFood = vi.fn(async (_id, b) => ({ id: 1, name: 'Mirin', ...b }));
+    const client = {
+      foodUnits: {
+        patchFood,
+        getFood: vi.fn(async () => ({
+          id: 1,
+          properties: [
+            { id: 50, property_amount: 1, property_type: { id: 1, name: 'Calories' } },
+            { id: 51, property_amount: 2, property_type: { id: 2, name: 'Protéines' } },
+          ],
+        })),
+        getUnit: vi.fn(async (id: number) => ({ id, name: 'g' })),
+      },
+      propertyTypes: { getPropertyType: vi.fn(async (id: number) => ({ id, name: 'Glucides' })) },
+    } as any;
+    await handleUpdateFood(client, {
+      id: 1,
+      properties_food_amount: 100,
+      properties_food_unit_id: 13,
+      properties: [
+        { property_type_id: 1, property_amount: 241 },
+        { property_type_id: 4, property_amount: 43 },
+      ],
+    });
+    const body = patchFood.mock.calls[0][1];
+    expect(body.properties_food_amount).toBe(100);
+    expect(body.properties_food_unit).toEqual({ id: 13, name: 'g' });
+    expect(body.properties).toEqual([
+      { id: 50, property_amount: 241, property_type: { id: 1, name: 'Calories' } },
+      { id: 51, property_amount: 2, property_type: { id: 2, name: 'Protéines' } },
+      { id: undefined, property_amount: 43, property_type: { id: 4, name: 'Glucides' } },
+    ]);
+  });
+
   it('handleMergeFood calls the merge endpoint with both ids', async () => {
     const mergeFood = vi.fn(async () => ({ id: 3, name: 'beef' }));
     const client = { foodUnits: { mergeFood } } as any;

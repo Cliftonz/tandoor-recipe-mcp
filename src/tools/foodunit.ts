@@ -58,6 +58,12 @@ export const updateFoodShape = {
   food_onhand: z.boolean().optional(),
   fdc_id: z.number().optional(),
   supermarket_category_id: z.number().nullable().optional(),
+  properties: z.array(z.object({
+    property_type_id: z.number(),
+    property_amount: z.number().nullable(),
+  })).optional().describe('Property values (e.g. nutrition) per properties_food_amount of properties_food_unit. Upserted by property_type_id; other existing properties are kept.'),
+  properties_food_amount: z.number().optional().describe('Reference amount the property values refer to (Tandoor default 100).'),
+  properties_food_unit_id: z.number().nullable().optional().describe('Unit of properties_food_amount (e.g. the id of "g").'),
   format: formatEnum,
 } as const;
 
@@ -169,7 +175,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleCreateFood);
 
   registerStringTool(server, client, 'update_food', {
-    description: 'Update food (PATCH). Required: id.',
+    description: 'Update food (PATCH). Required: id. Optional properties[] {property_type_id, property_amount} upserts property values (e.g. nutrition per 100 g; see list_property_types), with properties_food_amount / properties_food_unit_id setting the reference quantity.',
     inputSchema: updateFoodShape,
   }, handleUpdateFood);
 
