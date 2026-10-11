@@ -29,6 +29,11 @@ import { registerStorageTools } from '../../src/tools/storage.js';
 import { registerAiTools } from '../../src/tools/ai.js';
 import { registerHousekeepingTools } from '../../src/tools/housekeeping.js';
 import { registerMealTypeTools } from '../../src/tools/mealtype.js';
+import { registerFoodUnitTools } from '../../src/tools/foodunit.js';
+import { registerMiscTools } from '../../src/tools/misc.js';
+import { registerStepTools } from '../../src/tools/step.js';
+import { registerIngredientTools } from '../../src/tools/ingredient.js';
+import { registerShoppingTools } from '../../src/tools/shopping.js';
 import { _stashClear } from '../../src/lib/stash.js';
 import { checkTandoorVersion } from '../../src/lib/version-check.js';
 import { getRegisteredTool } from '../helpers/mcp.js';
@@ -100,6 +105,11 @@ describeE2E('Tandoor E2E workflow', () => {
     registerAiTools(mcp, client);
     registerHousekeepingTools(mcp, client);
     registerMealTypeTools(mcp, client);
+    registerFoodUnitTools(mcp, client);
+    registerMiscTools(mcp, client);
+    registerStepTools(mcp, client);
+    registerIngredientTools(mcp, client);
+    registerShoppingTools(mcp, client);
     // eslint-disable-next-line no-console
     console.log(`\n  Using Tandoor @ ${url}\n  Keep resources on failure: ${!!process.env.TANDOOR_E2E_KEEP}\n`);
   });
@@ -407,6 +417,61 @@ describeE2E('Tandoor E2E workflow', () => {
     ctx.supermarketCategoryId = sc.id;
     cleanup.push({ label: `supermarket-category ${sc.id}`, fn: () => client.supermarketCategories.deleteCategory(sc.id) });
     expect(sc.id).toBeGreaterThan(0);
+  });
+
+  // ---------------- id-only FK arguments through the MCP handlers ----------------
+  // Tools that take `food_id` / `unit_id` / `property_type_id` must resolve
+  // them to `{ id, name }`: Tandoor's nested serializers reject a bare `{ id }`
+  // with 400 "name: This field is required." (#13). The client-level tests
+  // above hand-build the envelopes, so only these exercise the handlers.
+
+  it('create_unit_conversion accepts unit and food ids', async () => {
+    // A fresh space has no open-data units, so bring a mass unit of our own.
+    const g = await client.foodUnits.createUnit({ name: `e2e-gram-${Date.now()}`, base_unit: 'g' });
+    ctx.gramUnitId = g.id;
+    cleanup.push({ label: `unit ${g.id}`, fn: () => client.foodUnits.deleteUnit(g.id) });
+    const conv = await invokeAndParse(mcp, 'create_unit_conversion', {
+      base_amount: 1,
+      base_unit_id: ctx.unitId,
+      converted_amount: 50,
+      converted_unit_id: g.id,
+      food_id: ctx.foodId,
+    });
+    cleanup.push({ label: `unit-conversion ${conv.id}`, fn: () => client.unitConversions.deleteConversion(conv.id) });
+    expect(conv.base_unit_id).toBe(ctx.unitId);
+    expect(conv.converted_unit_id).toBe(g.id);
+    expect(conv.food_id).toBe(ctx.foodId);
+  });
+
+  it('update_step accepts ingredient food_id / unit_id', async () => {
+    const list = await client.steps.listSteps({ recipe: [ctx.recipeId] });
+    const step = (list.results ?? list)[0];
+    const patched = await invokeAndParse(mcp, 'update_step', {
+      id: step.id,
+      ingredients: [{ food_id: ctx.foodId, unit_id: ctx.unitId, amount: 3 }],
+    });
+    expect(patched.ingredients).toHaveLength(1);
+    expect(patched.ingredients[0].food).toBe(ctx.foodName);
+    expect(patched.ingredients[0].unit).toBe(ctx.unitName);
+    ctx.ingredientId = patched.ingredients[0].id;
+  });
+
+  it('update_ingredient accepts unit_id, and unit_id null clears the unit', async () => {
+    const withUnit = await invokeAndParse(mcp, 'update_ingredient', { id: ctx.ingredientId, unit_id: ctx.gramUnitId });
+    expect(withUnit.unit.id).toBe(ctx.gramUnitId);
+    const cleared = await invokeAndParse(mcp, 'update_ingredient', { id: ctx.ingredientId, unit_id: null });
+    expect(cleared.unit).toBeNull();
+  });
+
+  it('create_shopping_entry accepts food_id / unit_id', async () => {
+    const entry = await invokeAndParse(mcp, 'create_shopping_entry', {
+      amount: 1,
+      food_id: ctx.foodId,
+      unit_id: ctx.unitId,
+    });
+    cleanup.push({ label: `shopping-entry ${entry.id}`, fn: () => client.shopping.deleteEntry(entry.id) });
+    expect(entry.food_id).toBe(ctx.foodId);
+    expect(entry.unit_id).toBe(ctx.unitId);
   });
 
   // ---------------- 1.5.0 access-token (redaction) ----------------

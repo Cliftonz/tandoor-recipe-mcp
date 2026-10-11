@@ -2,6 +2,7 @@
 
 import { TandoorClient } from '../clients/index.js';
 import { Ingredient } from '../types/index.js';
+import { foodRef, unitRef, nullableRef } from '../lib/fk.js';
 import type {
   ListIngredientsArgs,
   GetIngredientArgs,
@@ -26,16 +27,20 @@ type IngredientMutable = {
   always_use_plural_food?: boolean;
 };
 
-function buildIngredientPayload(args: IngredientMutable, opts: { partial: boolean }): Partial<Ingredient> {
+async function buildIngredientPayload(
+  client: TandoorClient,
+  args: IngredientMutable,
+  opts: { partial: boolean }
+): Promise<Partial<Ingredient>> {
   const payload: any = {};
 
   if (args.food_id !== undefined) {
-    // IngredientSerializer expects nested food/unit objects with `id`.
-    payload.food = { id: args.food_id };
+    // IngredientSerializer expects nested food/unit objects with `id` and `name`.
+    payload.food = await foodRef(client, args.food_id);
   }
 
   if (args.unit_id !== undefined) {
-    payload.unit = args.unit_id === null ? null : { id: args.unit_id };
+    payload.unit = await nullableRef(unitRef, client, args.unit_id);
   }
 
   if (args.amount !== undefined) {
@@ -106,7 +111,7 @@ export async function handleCreateIngredient(
   client: TandoorClient,
   args: CreateIngredientArgs
 ): Promise<string> {
-  const payload = buildIngredientPayload(args, { partial: false });
+  const payload = await buildIngredientPayload(client, args, { partial: false });
   const created = await client.ingredients.createIngredient(payload);
   return `Ingredient created successfully!\n\n${JSON.stringify(created, null, 2)}`;
 }
@@ -115,7 +120,7 @@ export async function handleUpdateIngredient(
   client: TandoorClient,
   args: UpdateIngredientArgs
 ): Promise<string> {
-  const payload = buildIngredientPayload(args, { partial: true });
+  const payload = await buildIngredientPayload(client, args, { partial: true });
   if (Object.keys(payload).length === 0) {
     throw new Error('At least one field must be provided to update');
   }

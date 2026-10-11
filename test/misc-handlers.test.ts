@@ -154,24 +154,33 @@ describe('handlers/misc.ts', () => {
   });
 
   describe('body builders forward nested-id envelopes', () => {
-    it('create_property wraps property_type_id into {property_type:{id}}', async () => {
+    it('create_property wraps property_type_id into {property_type:{id,name}}', async () => {
       const create = vi.fn().mockResolvedValue({ id: 1, property_type: { id: 9 } });
-      const client = mock({ properties: { createProperty: create } });
+      const client = mock({
+        properties: { createProperty: create },
+        propertyTypes: { getPropertyType: vi.fn().mockResolvedValue({ id: 9, name: 'Calories' }) },
+      });
       await handleCreateProperty(client, { property_amount: 5, property_type_id: 9 } as any);
-      expect(create).toHaveBeenCalledWith({ property_amount: 5, property_type: { id: 9 } });
+      expect(create).toHaveBeenCalledWith({ property_amount: 5, property_type: { id: 9, name: 'Calories' } });
     });
 
-    it('create_unit_conversion wraps base/converted/food ids', async () => {
+    it('create_unit_conversion resolves base/converted/food ids to {id,name}', async () => {
       const create = vi.fn().mockResolvedValue({ id: 1 });
-      const client = mock({ unitConversions: { createConversion: create } });
+      const client = mock({
+        unitConversions: { createConversion: create },
+        foodUnits: {
+          getUnit: vi.fn(async (id: number) => ({ id, name: `unit${id}` })),
+          getFood: vi.fn(async (id: number) => ({ id, name: `food${id}` })),
+        },
+      });
       await handleCreateUnitConversion(client, {
         base_amount: 1, converted_amount: 240,
         base_unit_id: 1, converted_unit_id: 2, food_id: 5,
       } as any);
       expect(create).toHaveBeenCalledWith({
         base_amount: 1, converted_amount: 240,
-        base_unit: { id: 1 }, converted_unit: { id: 2 },
-        food: { id: 5 },
+        base_unit: { id: 1, name: 'unit1' }, converted_unit: { id: 2, name: 'unit2' },
+        food: { id: 5, name: 'food5' },
       });
     });
 

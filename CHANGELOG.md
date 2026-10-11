@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Fixed
+- **Id-only foreign keys rejected by Tandoor (#13).** Tandoor's writable nested serializers (Food, Unit, PropertyType) require `name` even when `id` references an existing row, so handlers that built bare `{ id }` envelopes failed with `400 "name": ["This field is required."]` (or a 500 on ingredient PATCH). `create_unit_conversion` / `update_unit_conversion`, `create_property` / `update_property`, `properties[].property_type_id` on `create_recipe` / `update_recipe`, `create_step` / `update_step` ingredients given `food_id` / `unit_id`, `create_ingredient` / `update_ingredient`, and `create_shopping_entry` / `update_shopping_entry` now resolve ids to `{ id, name }` via the new `src/lib/fk.ts` helpers. New e2e cases drive these tools through the MCP handlers; the existing client-level e2e tests hand-built the envelopes and never exercised this path.
+
 ## 2.0.1 / 2026-08-21
 
 ### Fixed

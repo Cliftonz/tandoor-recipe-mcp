@@ -20,6 +20,7 @@ import type {
 import type { HandlerContext } from '../lib/register.js';
 
 import { emit } from '../lib/slim.js';
+import { propertyTypeRef } from '../lib/fk.js';
 import path from 'node:path';
 import { readSafeUpload } from '../lib/path-guard.js';
 import { safeFetch, safeFetchBytes, assertPublicUrl } from '../lib/safe-fetch.js';
@@ -210,13 +211,13 @@ export async function handleCreateRecipe(
     recipe.nutrition = args.nutrition;
   }
   if (Array.isArray(args.properties)) {
-    recipe.properties = args.properties.map((p: any) => ({
+    recipe.properties = await Promise.all(args.properties.map(async (p: any) => ({
       id: p.id,
       property_amount: p.property_amount,
       property_type: typeof p.property_type_id === 'number'
-        ? { id: p.property_type_id }
+        ? await propertyTypeRef(client, p.property_type_id)
         : p.property_type,
-    })) as any;
+    }))) as any;
   }
 
   const created = await client.recipes.createRecipe(recipe);
@@ -260,13 +261,13 @@ export async function handleUpdateRecipe(
     updates.nutrition = updateData.nutrition;
   }
   if (Array.isArray(updateData.properties)) {
-    updates.properties = updateData.properties.map((p: any) => ({
+    updates.properties = await Promise.all(updateData.properties.map(async (p: any) => ({
       id: p.id,
       property_amount: p.property_amount,
       property_type: typeof p.property_type_id === 'number'
-        ? { id: p.property_type_id }
+        ? await propertyTypeRef(client, p.property_type_id)
         : p.property_type,
-    })) as any;
+    }))) as any;
   }
 
   const updated = await client.recipes.patchRecipe(id, updates);

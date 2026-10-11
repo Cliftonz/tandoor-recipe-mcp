@@ -18,7 +18,7 @@ import { handleCreateCookLog, handleListCookLogs } from '../src/handlers/cooklog
 import { handleCreateShoppingEntry, handleBulkCheckShoppingEntries } from '../src/handlers/shopping.js';
 import { handleCreateStep } from '../src/handlers/step.js';
 import { handleCreateBook, handleCreateBookEntry } from '../src/handlers/recipebook.js';
-import { handleSearchRecipes, handleRecipeBatchUpdate, handleDeleteRecipe } from '../src/handlers/recipe.js';
+import { handleSearchRecipes, handleRecipeBatchUpdate, handleDeleteRecipe, handleUpdateRecipe } from '../src/handlers/recipe.js';
 import { slimPaginated, emit } from '../src/lib/slim.js';
 import { paginated } from './helpers/factories.js';
 
@@ -531,6 +531,18 @@ describe('food handlers', () => {
     expect(client.foodUnits.patchFood).not.toHaveBeenCalled();
   });
 
+  it('handleUpdateRecipe resolves properties[].property_type_id to {id,name}', async () => {
+    const patchRecipe = vi.fn(async (_id, b) => ({ id: 3, ...b }));
+    const client = {
+      recipes: { patchRecipe },
+      propertyTypes: { getPropertyType: vi.fn(async (id: number) => ({ id, name: 'Calories' })) },
+    } as any;
+    await handleUpdateRecipe(client, { id: 3, properties: [{ property_type_id: 1, property_amount: 500 }] } as any);
+    expect(patchRecipe.mock.calls[0][1].properties).toEqual([
+      { id: undefined, property_amount: 500, property_type: { id: 1, name: 'Calories' } },
+    ]);
+  });
+
   it('handleMergeFood calls the merge endpoint with both ids', async () => {
     const mergeFood = vi.fn(async () => ({ id: 3, name: 'beef' }));
     const client = { foodUnits: { mergeFood } } as any;
@@ -580,7 +592,7 @@ describe('cook log handlers', () => {
 describe('shopping handlers', () => {
   it('handleCreateShoppingEntry sends nested food/unit and optional mealplan_id', async () => {
     const createEntry = vi.fn(async (b) => ({ id: 1, ...b }));
-    const client = { shopping: { createEntry } } as any;
+    const client = { shopping: { createEntry }, foodUnits: { getFood: vi.fn(async (id: number) => ({ id, name: `food${id}` })), getUnit: vi.fn(async (id: number) => ({ id, name: `unit${id}` })) } } as any;
     await handleCreateShoppingEntry(client, {
       amount: 2,
       food_id: 3,
@@ -588,14 +600,14 @@ describe('shopping handlers', () => {
       mealplan_id: 99,
     });
     const body = createEntry.mock.calls[0][0];
-    expect(body.food).toEqual({ id: 3 });
-    expect(body.unit).toEqual({ id: 4 });
+    expect(body.food).toEqual({ id: 3, name: 'food3' });
+    expect(body.unit).toEqual({ id: 4, name: 'unit4' });
     expect(body.mealplan_id).toBe(99);
   });
 
   it('handleCreateShoppingEntry passes null unit when unit_id is null', async () => {
     const createEntry = vi.fn(async (b) => ({ id: 1, ...b }));
-    const client = { shopping: { createEntry } } as any;
+    const client = { shopping: { createEntry }, foodUnits: { getFood: vi.fn(async (id: number) => ({ id, name: `food${id}` })), getUnit: vi.fn(async (id: number) => ({ id, name: `unit${id}` })) } } as any;
     await handleCreateShoppingEntry(client, { amount: 1, food_id: 3, unit_id: null });
     expect(createEntry.mock.calls[0][0].unit).toBeNull();
   });
@@ -643,6 +655,7 @@ describe('step handler find-or-create path', () => {
     const client = {
       recipes: { findOrCreateFood, findOrCreateUnit },
       steps: { createStep },
+      foodUnits: { getFood: vi.fn(async (id: number) => ({ id, name: `food${id}` })), getUnit: vi.fn(async (id: number) => ({ id, name: `unit${id}` })) },
     } as any;
 
     await handleCreateStep(client, {
@@ -652,7 +665,8 @@ describe('step handler find-or-create path', () => {
 
     expect(findOrCreateFood).not.toHaveBeenCalled();
     expect(findOrCreateUnit).not.toHaveBeenCalled();
-    expect(createStep.mock.calls[0][0].ingredients[0].food).toEqual({ id: 100 });
+    expect(createStep.mock.calls[0][0].ingredients[0].food).toEqual({ id: 100, name: 'food100' });
+    expect(createStep.mock.calls[0][0].ingredients[0].unit).toEqual({ id: 200, name: 'unit200' });
   });
 });
 

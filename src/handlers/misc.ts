@@ -44,6 +44,7 @@ import type {
 } from '../tools/misc.js';
 
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
+import { foodRef, unitRef, propertyTypeRef, nullableRef } from '../lib/fk.js';
 
 const slimKeyword = (k: any) => k && {
   id: k.id, name: k.name, label: k.label, description: k.description,
@@ -208,7 +209,7 @@ export async function handleGetProperty(client: TandoorClient, args: GetProperty
 export async function handleCreateProperty(client: TandoorClient, args: CreatePropertyArgs): Promise<string> {
   const body: any = {
     property_amount: args.property_amount,
-    property_type: { id: args.property_type_id },
+    property_type: await propertyTypeRef(client, args.property_type_id),
   };
   const r = await client.properties.createProperty(body);
   return `Property created.\n\n${emit(args.format === 'full' ? r : slimProperty(r))}`;
@@ -217,7 +218,7 @@ export async function handleCreateProperty(client: TandoorClient, args: CreatePr
 export async function handleUpdateProperty(client: TandoorClient, args: UpdatePropertyArgs): Promise<string> {
   const body: any = {};
   if (args.property_amount !== undefined) body.property_amount = args.property_amount;
-  if (args.property_type_id !== undefined) body.property_type = { id: args.property_type_id };
+  if (args.property_type_id !== undefined) body.property_type = await propertyTypeRef(client, args.property_type_id);
   assertNonEmptyBody(body);
   const r = await client.properties.patchProperty(args.id, body);
   return `Property updated.\n\n${emit(args.format === 'full' ? r : slimProperty(r))}`;
@@ -328,10 +329,10 @@ export async function handleCreateUnitConversion(client: TandoorClient, args: Cr
   const body: any = {
     base_amount: args.base_amount,
     converted_amount: args.converted_amount,
-    base_unit: { id: args.base_unit_id },
-    converted_unit: { id: args.converted_unit_id },
+    base_unit: await unitRef(client, args.base_unit_id),
+    converted_unit: await unitRef(client, args.converted_unit_id),
   };
-  if (args.food_id !== undefined) body.food = args.food_id == null ? null : { id: args.food_id };
+  if (args.food_id !== undefined) body.food = await nullableRef(foodRef, client, args.food_id);
   const r = await client.unitConversions.createConversion(body);
   return `Unit conversion created.\n\n${emit(args.format === 'full' ? r : slimConversion(r))}`;
 }
@@ -340,9 +341,9 @@ export async function handleUpdateUnitConversion(client: TandoorClient, args: Up
   const body: any = {};
   if (args.base_amount !== undefined) body.base_amount = args.base_amount;
   if (args.converted_amount !== undefined) body.converted_amount = args.converted_amount;
-  if (args.base_unit_id !== undefined) body.base_unit = { id: args.base_unit_id };
-  if (args.converted_unit_id !== undefined) body.converted_unit = { id: args.converted_unit_id };
-  if (args.food_id !== undefined) body.food = args.food_id == null ? null : { id: args.food_id };
+  if (args.base_unit_id !== undefined) body.base_unit = await unitRef(client, args.base_unit_id);
+  if (args.converted_unit_id !== undefined) body.converted_unit = await unitRef(client, args.converted_unit_id);
+  if (args.food_id !== undefined) body.food = await nullableRef(foodRef, client, args.food_id);
   assertNonEmptyBody(body);
   const r = await client.unitConversions.patchConversion(args.id, body);
   return `Unit conversion updated.\n\n${emit(args.format === 'full' ? r : slimConversion(r))}`;
