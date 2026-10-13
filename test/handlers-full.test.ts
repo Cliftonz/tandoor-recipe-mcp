@@ -511,11 +511,12 @@ describe('food handlers', () => {
     expect(parsed.results[0]).not.toHaveProperty('recipe');
   });
 
-  it('handleCreateFood builds {supermarket_category: {id}} envelope when id provided', async () => {
+  it('handleCreateFood builds {supermarket_category: {id,name}} envelope when id provided', async () => {
     const createFood = vi.fn(async (b) => ({ id: 20, ...b }));
-    const client = { foodUnits: { createFood } } as any;
+    const getCategory = vi.fn(async (id: number) => ({ id, name: 'Produce' }));
+    const client = { foodUnits: { createFood }, supermarketCategories: { getCategory } } as any;
     await handleCreateFood(client, { name: 'kale', supermarket_category_id: 5 });
-    expect(createFood.mock.calls[0][0].supermarket_category).toEqual({ id: 5 });
+    expect(createFood.mock.calls[0][0].supermarket_category).toEqual({ id: 5, name: 'Produce' });
   });
 
   it('handleCreateFood passes null supermarket_category_id through as null', async () => {
@@ -678,6 +679,14 @@ describe('recipe book handlers', () => {
     const client = { recipeBooks: { createBook } } as any;
     await handleCreateBook(client, { name: 'Weeknight', shared_user_ids: [2, 3] });
     expect(createBook.mock.calls[0][0].shared).toEqual([{ id: 2 }, { id: 3 }]);
+  });
+
+  it('handleCreateBook resolves filter_id to a {id,name,search} envelope', async () => {
+    const createBook = vi.fn(async (b) => ({ id: 1, ...b }));
+    const getFilter = vi.fn(async (id: number) => ({ id, name: 'Quick', search: '{}' }));
+    const client = { recipeBooks: { createBook }, customFilters: { getFilter } } as any;
+    await handleCreateBook(client, { name: 'Weeknight', filter_id: 4 });
+    expect(createBook.mock.calls[0][0].filter).toEqual({ id: 4, name: 'Quick', search: '{}' });
   });
 
   it('handleCreateBookEntry links a recipe to a book with both ids in the body', async () => {

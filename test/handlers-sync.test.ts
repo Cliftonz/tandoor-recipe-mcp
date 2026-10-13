@@ -65,10 +65,11 @@ describe('sync handlers', () => {
 
   it('handleCreateSync posts nested storage envelope + returns slim confirmation', async () => {
     const createSync = vi.fn(async (b) => ({ ...rawSync, ...b, id: 9 }));
-    const client = { syncs: { createSync } } as any;
+    const getStorage = vi.fn(async (id: number) => ({ id, name: 'Nextcloud' }));
+    const client = { syncs: { createSync }, storages: { getStorage } } as any;
     const out = await handleCreateSync(client, { storage_id: 4, path: '/recipes', active: true });
     expect(createSync).toHaveBeenCalledWith({
-      storage: { id: 4 },
+      storage: { id: 4, name: 'Nextcloud' },
       path: '/recipes',
       active: true,
     }, { signal: undefined });

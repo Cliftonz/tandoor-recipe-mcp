@@ -44,7 +44,7 @@ import type {
 } from '../tools/misc.js';
 
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
-import { foodRef, unitRef, propertyTypeRef, nullableRef } from '../lib/fk.js';
+import { foodRef, unitRef, propertyTypeRef, supermarketCategoryRef, nullableRef } from '../lib/fk.js';
 
 const slimKeyword = (k: any) => k && {
   id: k.id, name: k.name, label: k.label, description: k.description,
@@ -289,7 +289,7 @@ export async function handleGetSupermarketCategoryRelation(client: TandoorClient
 
 export async function handleCreateSupermarketCategoryRelation(client: TandoorClient, args: CreateSupermarketCategoryRelationArgs): Promise<string> {
   const body: any = {
-    category: { id: args.category_id },
+    category: await supermarketCategoryRef(client, args.category_id),
     supermarket: args.supermarket,
   };
   if (args.order !== undefined) body.order = args.order;
@@ -299,7 +299,7 @@ export async function handleCreateSupermarketCategoryRelation(client: TandoorCli
 
 export async function handleUpdateSupermarketCategoryRelation(client: TandoorClient, args: UpdateSupermarketCategoryRelationArgs): Promise<string> {
   const body: any = {};
-  if (args.category_id !== undefined) body.category = { id: args.category_id };
+  if (args.category_id !== undefined) body.category = await supermarketCategoryRef(client, args.category_id);
   if (args.supermarket !== undefined) body.supermarket = args.supermarket;
   if (args.order !== undefined) body.order = args.order;
   assertNonEmptyBody(body);

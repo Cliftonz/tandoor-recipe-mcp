@@ -1,6 +1,7 @@
 // Food + Unit handlers.
 
 import { TandoorClient } from '../clients/index.js';
+import { supermarketCategoryRef, nullableRef } from '../lib/fk.js';
 import type {
   ListFoodsArgs,
   GetFoodArgs,
@@ -79,7 +80,7 @@ export async function handleCreateFood(
   if (args.food_onhand !== undefined) body.food_onhand = args.food_onhand;
   if (args.fdc_id !== undefined) body.fdc_id = args.fdc_id;
   if (args.supermarket_category_id !== undefined) {
-    body.supermarket_category = args.supermarket_category_id == null ? null : { id: args.supermarket_category_id };
+    body.supermarket_category = await nullableRef(supermarketCategoryRef, client, args.supermarket_category_id);
   }
   const created = await client.foodUnits.createFood(body);
   return `Food created.\n\n${emit(args.format === 'full' ? created : slimFood(created))}`;
@@ -96,7 +97,7 @@ export async function handleUpdateFood(
   if (args.food_onhand !== undefined) body.food_onhand = args.food_onhand;
   if (args.fdc_id !== undefined) body.fdc_id = args.fdc_id;
   if (args.supermarket_category_id !== undefined) {
-    body.supermarket_category = args.supermarket_category_id == null ? null : { id: args.supermarket_category_id };
+    body.supermarket_category = await nullableRef(supermarketCategoryRef, client, args.supermarket_category_id);
   }
   assertNonEmptyBody(body);
   const updated = await client.foodUnits.patchFood(args.id, body);

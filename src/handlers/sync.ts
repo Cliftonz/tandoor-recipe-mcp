@@ -1,4 +1,5 @@
 import { TandoorClient } from '../clients/index.js';
+import { storageRef } from '../lib/fk.js';
 import type {
   ListSyncsArgs,
   GetSyncArgs,
@@ -58,7 +59,7 @@ export async function handleCreateSync(
   ctx?: HandlerContext,
 ): Promise<string> {
   // Body shape follows this endpoint's spec verbatim; sibling endpoints use different envelopes.
-  const body: any = { storage: { id: args.storage_id }, path: args.path };
+  const body: any = { storage: await storageRef(client, args.storage_id), path: args.path };
   if (args.active !== undefined) body.active = args.active;
   if (args.last_checked !== undefined) body.last_checked = args.last_checked;
   const r = await client.syncs.createSync(body, { signal: ctx?.signal });
@@ -71,7 +72,7 @@ export async function handleUpdateSync(
   ctx?: HandlerContext,
 ): Promise<string> {
   const body: any = {};
-  if (args.storage_id !== undefined) body.storage = { id: args.storage_id };
+  if (args.storage_id !== undefined) body.storage = await storageRef(client, args.storage_id);
   if (args.path !== undefined) body.path = args.path;
   if (args.active !== undefined) body.active = args.active;
   if (args.last_checked !== undefined) body.last_checked = args.last_checked;

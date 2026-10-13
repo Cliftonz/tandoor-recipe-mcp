@@ -193,12 +193,15 @@ describe('handlers/misc.ts', () => {
 
     it('create_relation wraps category_id and forwards order when present', async () => {
       const create = vi.fn().mockResolvedValue({ id: 1 });
-      const client = mock({ supermarketCategoryRelations: { createRelation: create } });
+      const client = mock({
+        supermarketCategoryRelations: { createRelation: create },
+        supermarketCategories: { getCategory: vi.fn(async (id: number) => ({ id, name: 'Dairy' })) },
+      });
       await handleCreateSupermarketCategoryRelation(client, {
         category_id: 7, supermarket: 3, order: 2,
       } as any);
       expect(create).toHaveBeenCalledWith({
-        category: { id: 7 }, supermarket: 3, order: 2,
+        category: { id: 7, name: 'Dairy' }, supermarket: 3, order: 2,
       });
     });
 
