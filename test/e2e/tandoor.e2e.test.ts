@@ -34,6 +34,8 @@ import { registerMiscTools } from '../../src/tools/misc.js';
 import { registerStepTools } from '../../src/tools/step.js';
 import { registerIngredientTools } from '../../src/tools/ingredient.js';
 import { registerShoppingTools } from '../../src/tools/shopping.js';
+import { registerRecipeBookTools } from '../../src/tools/recipebook.js';
+import { registerSyncTools } from '../../src/tools/sync.js';
 import { _stashClear } from '../../src/lib/stash.js';
 import { checkTandoorVersion } from '../../src/lib/version-check.js';
 import { getRegisteredTool } from '../helpers/mcp.js';
@@ -110,6 +112,8 @@ describeE2E('Tandoor E2E workflow', () => {
     registerStepTools(mcp, client);
     registerIngredientTools(mcp, client);
     registerShoppingTools(mcp, client);
+    registerRecipeBookTools(mcp, client);
+    registerSyncTools(mcp, client);
     // eslint-disable-next-line no-console
     console.log(`\n  Using Tandoor @ ${url}\n  Keep resources on failure: ${!!process.env.TANDOOR_E2E_KEEP}\n`);
   });
@@ -420,8 +424,9 @@ describeE2E('Tandoor E2E workflow', () => {
   });
 
   // ---------------- id-only FK arguments through the MCP handlers ----------------
-  // Tools that take `food_id` / `unit_id` / `property_type_id` must resolve
-  // them to `{ id, name }`: Tandoor's nested serializers reject a bare `{ id }`
+  // Tools that take `food_id` / `unit_id` / `property_type_id` /
+  // `supermarket_category_id` / `category_id` / `filter_id` / `storage_id`
+  // must resolve them to `{ id, name }`: Tandoor's nested serializers reject a bare `{ id }`
   // with 400 "name: This field is required." (#13). The client-level tests
   // above hand-build the envelopes, so only these exercise the handlers.
 
@@ -472,6 +477,55 @@ describeE2E('Tandoor E2E workflow', () => {
     cleanup.push({ label: `shopping-entry ${entry.id}`, fn: () => client.shopping.deleteEntry(entry.id) });
     expect(entry.food_id).toBe(ctx.foodId);
     expect(entry.unit_id).toBe(ctx.unitId);
+  });
+
+  it('update_food accepts supermarket_category_id, and null clears it', async () => {
+    const set = await invokeAndParse(mcp, 'update_food', {
+      id: ctx.foodId,
+      supermarket_category_id: ctx.supermarketCategoryId,
+      format: 'full',
+    });
+    expect(set.supermarket_category.id).toBe(ctx.supermarketCategoryId);
+    const cleared = await invokeAndParse(mcp, 'update_food', { id: ctx.foodId, supermarket_category_id: null, format: 'full' });
+    expect(cleared.supermarket_category).toBeNull();
+  });
+
+  it('create_food accepts supermarket_category_id', async () => {
+    const f = await invokeAndParse(mcp, 'create_food', {
+      name: `${E2E_PREFIX}-food-cat`,
+      supermarket_category_id: ctx.supermarketCategoryId,
+      format: 'full',
+    });
+    cleanup.push({ label: `food ${f.id}`, fn: () => client.foodUnits.deleteFood(f.id) });
+    expect(f.supermarket_category.id).toBe(ctx.supermarketCategoryId);
+  });
+
+  it('create/update_supermarket_category_relation accept category_id', async () => {
+    const market = await client.supermarkets.createSupermarket({ name: `${E2E_PREFIX}-rel-market` });
+    cleanup.push({ label: `supermarket ${market.id}`, fn: () => client.supermarkets.deleteSupermarket(market.id) });
+    const other = await client.supermarketCategories.createCategory({ name: `${E2E_PREFIX}-rel-cat` });
+    cleanup.push({ label: `supermarket-category ${other.id}`, fn: () => client.supermarketCategories.deleteCategory(other.id) });
+    const rel = await invokeAndParse(mcp, 'create_supermarket_category_relation', {
+      category_id: ctx.supermarketCategoryId,
+      supermarket: market.id,
+      order: 1,
+    });
+    cleanup.push({ label: `supermarket-category-relation ${rel.id}`, fn: () => client.supermarketCategoryRelations.deleteRelation(rel.id) });
+    expect(rel.category_id).toBe(ctx.supermarketCategoryId);
+    const moved = await invokeAndParse(mcp, 'update_supermarket_category_relation', { id: rel.id, category_id: other.id });
+    expect(moved.category_id).toBe(other.id);
+  });
+
+  it('create/update_recipe_book accept filter_id, and null clears it', async () => {
+    const book = await invokeAndParse(mcp, 'create_recipe_book', {
+      name: `${E2E_PREFIX}-filter-book`,
+      filter_id: ctx.customFilterId,
+      format: 'full',
+    });
+    cleanup.push({ label: `recipe-book ${book.id}`, fn: () => client.recipeBooks.deleteBook(book.id) });
+    expect(book.filter.id).toBe(ctx.customFilterId);
+    const cleared = await invokeAndParse(mcp, 'update_recipe_book', { id: book.id, filter_id: null, format: 'full' });
+    expect(cleared.filter).toBeNull();
   });
 
   // ---------------- 1.5.0 access-token (redaction) ----------------
@@ -685,20 +739,19 @@ describeE2E('Tandoor E2E workflow', () => {
     });
     cleanup.push({ label: `sync-storage ${storage.id}`, fn: () => client.storages.deleteStorage(storage.id) });
 
-    let created: any;
-    try {
-      // Tandoor expects a nested storage envelope: { storage: { id }, path }.
-      created = await client.syncs.createSync({ storage: { id: storage.id }, path: '/tmp/e2e-sync', active: false });
-    } catch (err) {
-      // Some Tandoor deployments reject sync creation without a real backend.
-      // The point of this test is URL-template validation, so a well-formed
-      // 400 from Tandoor still proves the path template is right.
-      const msg = (err as Error).message;
-      expect(msg).toMatch(/Tandoor API error: 4\d\d/);
-      return;
-    }
+    // Through the handler so storage_id goes out as { id, name }: a bare
+    // { id } is rejected with 400 "storage.name: This field is required."
+    const created = await invokeAndParse(mcp, 'create_sync', {
+      storage_id: storage.id,
+      path: '/tmp/e2e-sync',
+      active: false,
+      format: 'full',
+    });
     cleanup.push({ label: `sync ${created.id}`, fn: () => client.syncs.deleteSync(created.id) });
     expect(created.id).toBeGreaterThan(0);
+    expect(created.storage.id).toBe(storage.id);
+    const updated = await invokeAndParse(mcp, 'update_sync', { id: created.id, storage_id: storage.id, active: true, format: 'full' });
+    expect(updated.active).toBe(true);
 
     // query_synced_folder may fail against a fake LOCAL path; we only care
     // that the URL template is correct (not a 404).
