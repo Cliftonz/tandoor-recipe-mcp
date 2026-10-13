@@ -1,7 +1,6 @@
 // Food + Unit handlers.
 
 import { TandoorClient } from '../clients/index.js';
-import { supermarketCategoryRef, nullableRef } from '../lib/fk.js';
 import type {
   ListFoodsArgs,
   GetFoodArgs,
@@ -22,7 +21,7 @@ import type {
 } from '../tools/foodunit.js';
 
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
-import { unitRef, propertyTypeRef, nullableRef } from '../lib/fk.js';
+import { unitRef, propertyTypeRef, supermarketCategoryRef, nullableRef } from '../lib/fk.js';
 
 function slimFood(f: any) {
   if (!f) return f;
@@ -110,7 +109,9 @@ export async function handleUpdateFood(
     // place instead of duplicating) and keep types the caller didn't mention.
     const current = await client.foodUnits.getFood(args.id);
     const existing: any[] = Array.isArray(current?.properties) ? current.properties : [];
-    const merged = existing.map((p: any) => ({
+    // A row whose property_type is missing can't be re-sent (the serializer
+    // requires it), so it is dropped rather than crashing the whole update.
+    const merged = existing.filter((p: any) => p?.property_type?.id != null).map((p: any) => ({
       id: p.id,
       property_amount: p.property_amount,
       property_type: { id: p.property_type.id, name: p.property_type.name },

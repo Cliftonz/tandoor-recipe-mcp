@@ -579,6 +579,26 @@ describe('food handlers', () => {
     ]);
   });
 
+  it('handleUpdateFood drops existing property rows that have no property_type', async () => {
+    const patchFood = vi.fn(async (_id, b) => ({ id: 1, name: 'Mirin', ...b }));
+    const client = {
+      foodUnits: {
+        patchFood,
+        getFood: vi.fn(async () => ({
+          id: 1,
+          properties: [
+            { id: 50, property_amount: 1, property_type: null },
+            { id: 51, property_amount: 2, property_type: { id: 2, name: 'Protéines' } },
+          ],
+        })),
+      },
+    } as any;
+    await handleUpdateFood(client, { id: 1, properties: [{ property_type_id: 2, property_amount: 9 }] });
+    expect(patchFood.mock.calls[0][1].properties).toEqual([
+      { id: 51, property_amount: 9, property_type: { id: 2, name: 'Protéines' } },
+    ]);
+  });
+
   it('handleMergeFood calls the merge endpoint with both ids', async () => {
     const mergeFood = vi.fn(async () => ({ id: 3, name: 'beef' }));
     const client = { foodUnits: { mergeFood } } as any;
