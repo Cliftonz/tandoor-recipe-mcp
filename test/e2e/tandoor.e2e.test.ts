@@ -32,6 +32,21 @@ import { registerMealTypeTools } from '../../src/tools/mealtype.js';
 import { _stashClear } from '../../src/lib/stash.js';
 import { checkTandoorVersion } from '../../src/lib/version-check.js';
 import { getRegisteredTool } from '../helpers/mcp.js';
+import { handleCreateFood, handleUpdateFood } from '../../src/handlers/foodunit.js';
+import { handleUpdateIngredient } from '../../src/handlers/ingredient.js';
+import { handleUpdateStep } from '../../src/handlers/step.js';
+import { handleCreateShoppingEntry, handleUpdateShoppingEntry } from '../../src/handlers/shopping.js';
+import {
+  handleCreateUnitConversion,
+  handleUpdateUnitConversion,
+  handleCreateProperty,
+  handleUpdateProperty,
+  handleCreateSupermarketCategoryRelation,
+  handleUpdateSupermarketCategoryRelation,
+} from '../../src/handlers/misc.js';
+import { handleUpdateRecipe } from '../../src/handlers/recipe.js';
+import { handleCreateBook, handleUpdateBook } from '../../src/handlers/recipebook.js';
+import { handleCreateSync, handleUpdateSync } from '../../src/handlers/sync.js';
 
 // One-line prefix so every resource this suite creates is greppable in the
 // live space if cleanup ever fails midway.
@@ -51,6 +66,10 @@ async function invokeAndParse(server: McpServer, name: string, args: unknown): P
   const start = jsonStart === -1 ? arrayStart : arrayStart === -1 ? jsonStart : Math.min(jsonStart, arrayStart);
   if (start === -1) return text;
   try { return JSON.parse(text.slice(start)); } catch { return text; }
+}
+
+function parseHandlerJson(text: string): any {
+  return JSON.parse(text.slice(text.indexOf('{')));
 }
 
 const url = process.env.TANDOOR_URL;
@@ -409,6 +428,155 @@ describeE2E('Tandoor E2E workflow', () => {
     expect(sc.id).toBeGreaterThan(0);
   });
 
+  // ---------------- #13: id-only foreign-key writes through the handlers ----------------
+
+  it('fk: second food + unit for reassignment checks', async () => {
+    const f = await client.foodUnits.createFood({ name: `${E2E_PREFIX}-food2` });
+    cleanup.push({ label: `food ${f.id}`, fn: () => client.foodUnits.deleteFood(f.id) });
+    const u = await client.foodUnits.createUnit({ name: `${E2E_PREFIX}-unit2` });
+    cleanup.push({ label: `unit ${u.id}`, fn: () => client.foodUnits.deleteUnit(u.id) });
+    ctx.food2Id = f.id;
+    ctx.unit2Id = u.id;
+  });
+
+  it('fk: create_food / update_food set and clear supermarket_category by id', async () => {
+    const created = parseHandlerJson(await handleCreateFood(client, {
+      name: `${E2E_PREFIX}-food-cat`, supermarket_category_id: ctx.supermarketCategoryId, format: 'full',
+    }));
+    cleanup.push({ label: `food ${created.id}`, fn: () => client.foodUnits.deleteFood(created.id) });
+    expect(created.supermarket_category.id).toBe(ctx.supermarketCategoryId);
+
+    const cleared = parseHandlerJson(await handleUpdateFood(client, {
+      id: created.id, supermarket_category_id: null, format: 'full',
+    }));
+    expect(cleared.supermarket_category).toBeNull();
+
+    const reset = parseHandlerJson(await handleUpdateFood(client, {
+      id: created.id, supermarket_category_id: ctx.supermarketCategoryId, format: 'full',
+    }));
+    expect(reset.supermarket_category.id).toBe(ctx.supermarketCategoryId);
+  });
+
+  it('fk: update_step writes ingredients by food_id / unit_id', async () => {
+    const list = await client.steps.listSteps({ recipe: [ctx.recipeId] });
+    const step = (list.results ?? list)[0];
+    const updated = parseHandlerJson(await handleUpdateStep(client, {
+      id: step.id, ingredients: [{ food_id: ctx.foodId, unit_id: ctx.unitId, amount: 3 }], format: 'full',
+    }));
+    expect(updated.ingredients[0].food.id).toBe(ctx.foodId);
+    expect(updated.ingredients[0].unit.id).toBe(ctx.unitId);
+    ctx.ingredientId = updated.ingredients[0].id;
+  });
+
+  it('fk: update_ingredient reassigns food and unit by id', async () => {
+    const updated = parseHandlerJson(await handleUpdateIngredient(client, {
+      id: ctx.ingredientId, food_id: ctx.food2Id, unit_id: ctx.unit2Id,
+    }));
+    expect(updated.food.id).toBe(ctx.food2Id);
+    expect(updated.unit.id).toBe(ctx.unit2Id);
+  });
+
+  it('fk: create_shopping_entry / update_shopping_entry write food and unit by id', async () => {
+    const created = parseHandlerJson(await handleCreateShoppingEntry(client, {
+      amount: 1, food_id: ctx.foodId, unit_id: ctx.unitId, format: 'full',
+    }));
+    cleanup.push({ label: `shopping-entry ${created.id}`, fn: () => client.shopping.deleteEntry(created.id) });
+    expect(created.food.id).toBe(ctx.foodId);
+    expect(created.unit.id).toBe(ctx.unitId);
+
+    const updated = parseHandlerJson(await handleUpdateShoppingEntry(client, {
+      id: created.id, food_id: ctx.food2Id, unit_id: ctx.unit2Id, format: 'full',
+    }));
+    expect(updated.food.id).toBe(ctx.food2Id);
+    expect(updated.unit.id).toBe(ctx.unit2Id);
+  });
+
+  it('fk: create_unit_conversion / update_unit_conversion write units and food by id', async () => {
+    const created = parseHandlerJson(await handleCreateUnitConversion(client, {
+      base_amount: 1, converted_amount: 240,
+      base_unit_id: ctx.unitId, converted_unit_id: ctx.unit2Id, food_id: ctx.foodId, format: 'full',
+    }));
+    cleanup.push({ label: `unit-conversion ${created.id}`, fn: () => client.unitConversions.deleteConversion(created.id) });
+    expect(created.base_unit.id).toBe(ctx.unitId);
+    expect(created.converted_unit.id).toBe(ctx.unit2Id);
+    expect(created.food.id).toBe(ctx.foodId);
+
+    const updated = parseHandlerJson(await handleUpdateUnitConversion(client, {
+      id: created.id, base_unit_id: ctx.unit2Id, converted_unit_id: ctx.unitId, food_id: ctx.food2Id, format: 'full',
+    }));
+    expect(updated.base_unit.id).toBe(ctx.unit2Id);
+    expect(updated.converted_unit.id).toBe(ctx.unitId);
+    expect(updated.food.id).toBe(ctx.food2Id);
+  });
+
+  it('fk: create_property / update_property write property_type by id', async () => {
+    const pt2 = await client.propertyTypes.createPropertyType({ name: `${E2E_PREFIX}-ptype2`, unit: 'g' });
+    cleanup.push({ label: `property-type ${pt2.id}`, fn: () => client.propertyTypes.deletePropertyType(pt2.id) });
+
+    const created = parseHandlerJson(await handleCreateProperty(client, {
+      property_amount: 7, property_type_id: ctx.propertyTypeId, format: 'full',
+    }));
+    cleanup.push({ label: `property ${created.id}`, fn: () => client.properties.deleteProperty(created.id) });
+    expect(created.property_type.id).toBe(ctx.propertyTypeId);
+
+    const updated = parseHandlerJson(await handleUpdateProperty(client, {
+      id: created.id, property_type_id: pt2.id, format: 'full',
+    }));
+    expect(updated.property_type.id).toBe(pt2.id);
+  });
+
+  it('fk: update_recipe writes properties[].property_type by property_type_id', async () => {
+    const updated = parseHandlerJson(await handleUpdateRecipe(client, {
+      id: ctx.recipeId, properties: [{ property_amount: 12, property_type_id: ctx.propertyTypeId }], format: 'full',
+    }));
+    expect(updated.properties.map((p: any) => p.property_type.id)).toEqual([ctx.propertyTypeId]);
+  });
+
+  it('fk: create_supermarket_category_relation / update write category by id', async () => {
+    const market = await client.supermarkets.createSupermarket({ name: `${E2E_PREFIX}-fk-market` });
+    cleanup.push({ label: `supermarket ${market.id}`, fn: () => client.supermarkets.deleteSupermarket(market.id) });
+    const cat2 = await client.supermarketCategories.createCategory({ name: `${E2E_PREFIX}-cat2` });
+    cleanup.push({ label: `supermarket-category ${cat2.id}`, fn: () => client.supermarketCategories.deleteCategory(cat2.id) });
+
+    const created = parseHandlerJson(await handleCreateSupermarketCategoryRelation(client, {
+      category_id: ctx.supermarketCategoryId, supermarket: market.id, format: 'full',
+    }));
+    cleanup.push({ label: `category-relation ${created.id}`, fn: () => client.supermarketCategoryRelations.deleteRelation(created.id) });
+    expect(created.category.id).toBe(ctx.supermarketCategoryId);
+
+    const updated = parseHandlerJson(await handleUpdateSupermarketCategoryRelation(client, {
+      id: created.id, category_id: cat2.id, format: 'full',
+    }));
+    expect(updated.category.id).toBe(cat2.id);
+  });
+
+  it('fk: create_recipe_book / update_recipe_book set and clear filter by id', async () => {
+    const created = parseHandlerJson(await handleCreateBook(client, {
+      name: `${E2E_PREFIX}-fk-book`, filter_id: ctx.customFilterId, format: 'full',
+    }));
+    cleanup.push({ label: `recipe-book ${created.id}`, fn: () => client.recipeBooks.deleteBook(created.id) });
+    expect(created.filter.id).toBe(ctx.customFilterId);
+
+    const cleared = parseHandlerJson(await handleUpdateBook(client, { id: created.id, filter_id: null, format: 'full' }));
+    expect(cleared.filter).toBeNull();
+  });
+
+  it('fk: create_sync / update_sync write storage by id', async () => {
+    const s1 = await client.storages.createStorage({ name: `${E2E_PREFIX}-fk-storage1`, method: 'LOCAL', path: '/tmp/e2e-fk' });
+    cleanup.push({ label: `storage ${s1.id}`, fn: () => client.storages.deleteStorage(s1.id) });
+    const s2 = await client.storages.createStorage({ name: `${E2E_PREFIX}-fk-storage2`, method: 'LOCAL', path: '/tmp/e2e-fk' });
+    cleanup.push({ label: `storage ${s2.id}`, fn: () => client.storages.deleteStorage(s2.id) });
+
+    const created = parseHandlerJson(await handleCreateSync(client, {
+      storage_id: s1.id, path: '/tmp/e2e-fk', active: false, format: 'full',
+    }));
+    cleanup.push({ label: `sync ${created.id}`, fn: () => client.syncs.deleteSync(created.id) });
+    expect(created.storage.id).toBe(s1.id);
+
+    const updated = parseHandlerJson(await handleUpdateSync(client, { id: created.id, storage_id: s2.id, format: 'full' }));
+    expect(updated.storage.id).toBe(s2.id);
+  });
+
   // ---------------- 1.5.0 access-token (redaction) ----------------
   // Redaction-critical family: slim MUST omit the raw token; format='full'
   // MUST reveal it. Create response always reveals (mint semantics).
@@ -622,8 +790,7 @@ describeE2E('Tandoor E2E workflow', () => {
 
     let created: any;
     try {
-      // Tandoor expects a nested storage envelope: { storage: { id }, path }.
-      created = await client.syncs.createSync({ storage: { id: storage.id }, path: '/tmp/e2e-sync', active: false });
+      created = await client.syncs.createSync({ storage: storage.id, path: '/tmp/e2e-sync', active: false });
     } catch (err) {
       // Some Tandoor deployments reject sync creation without a real backend.
       // The point of this test is URL-template validation, so a well-formed

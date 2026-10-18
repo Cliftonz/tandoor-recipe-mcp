@@ -78,11 +78,10 @@ export async function handleCreateShoppingEntry(
   client: TandoorClient,
   args: CreateShoppingEntryArgs
 ): Promise<string> {
-  // ShoppingListEntrySerializer expects nested food/unit objects with id.
   const body: any = {
     amount: args.amount,
-    food: { id: args.food_id },
-    unit: args.unit_id != null ? { id: args.unit_id } : null,
+    food: args.food_id,
+    unit: args.unit_id ?? null,
     checked: args.checked ?? false,
   };
   if (args.list_recipe !== undefined) body.list_recipe = args.list_recipe;
@@ -101,8 +100,8 @@ export async function handleUpdateShoppingEntry(
 ): Promise<string> {
   const body: any = {};
   if (args.amount !== undefined) body.amount = args.amount;
-  if (args.food_id !== undefined) body.food = args.food_id == null ? null : { id: args.food_id };
-  if (args.unit_id !== undefined) body.unit = args.unit_id == null ? null : { id: args.unit_id };
+  if (args.food_id !== undefined) body.food = args.food_id;
+  if (args.unit_id !== undefined) body.unit = args.unit_id;
   if (args.checked !== undefined) body.checked = args.checked;
   if (args.order !== undefined) body.order = args.order;
   if (args.delay_until !== undefined) body.delay_until = args.delay_until;

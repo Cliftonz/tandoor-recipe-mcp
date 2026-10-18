@@ -30,12 +30,11 @@ function buildIngredientPayload(args: IngredientMutable, opts: { partial: boolea
   const payload: any = {};
 
   if (args.food_id !== undefined) {
-    // IngredientSerializer expects nested food/unit objects with `id`.
-    payload.food = { id: args.food_id };
+    payload.food = args.food_id;
   }
 
   if (args.unit_id !== undefined) {
-    payload.unit = args.unit_id === null ? null : { id: args.unit_id };
+    payload.unit = args.unit_id;
   }
 
   if (args.amount !== undefined) {

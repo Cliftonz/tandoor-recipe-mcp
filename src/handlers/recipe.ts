@@ -214,7 +214,7 @@ export async function handleCreateRecipe(
       id: p.id,
       property_amount: p.property_amount,
       property_type: typeof p.property_type_id === 'number'
-        ? { id: p.property_type_id }
+        ? p.property_type_id
         : p.property_type,
     })) as any;
   }
@@ -264,7 +264,7 @@ export async function handleUpdateRecipe(
       id: p.id,
       property_amount: p.property_amount,
       property_type: typeof p.property_type_id === 'number'
-        ? { id: p.property_type_id }
+        ? p.property_type_id
         : p.property_type,
     })) as any;
   }

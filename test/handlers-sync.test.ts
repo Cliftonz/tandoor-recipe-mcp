@@ -63,12 +63,12 @@ describe('sync handlers', () => {
     });
   });
 
-  it('handleCreateSync posts nested storage envelope + returns slim confirmation', async () => {
+  it('handleCreateSync posts storage as a bare id + returns slim confirmation', async () => {
     const createSync = vi.fn(async (b) => ({ ...rawSync, ...b, id: 9 }));
     const client = { syncs: { createSync } } as any;
     const out = await handleCreateSync(client, { storage_id: 4, path: '/recipes', active: true });
     expect(createSync).toHaveBeenCalledWith({
-      storage: { id: 4 },
+      storage: 4,
       path: '/recipes',
       active: true,
     }, { signal: undefined });
@@ -82,6 +82,13 @@ describe('sync handlers', () => {
     const out = await handleUpdateSync(client, { id: 3, active: false });
     expect(patchSync).toHaveBeenCalledWith(3, { active: false }, { signal: undefined });
     expect(out).toContain('Sync updated');
+  });
+
+  it('handleUpdateSync sends storage as a bare id', async () => {
+    const patchSync = vi.fn(async (id, b) => ({ ...rawSync, id }));
+    const client = { syncs: { patchSync } } as any;
+    await handleUpdateSync(client, { id: 3, storage_id: 4 });
+    expect(patchSync).toHaveBeenCalledWith(3, { storage: 4 }, { signal: undefined });
   });
 
   it('handleUpdateSync rejects id-only patches', async () => {
