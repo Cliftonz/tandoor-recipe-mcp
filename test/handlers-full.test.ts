@@ -622,6 +622,13 @@ describe('shopping handlers', () => {
     expect(patchEntry.mock.calls[0][1]).toEqual({ food: null, unit: null });
   });
 
+  it('handleCreateShoppingEntry sends null unit when unit_id is omitted', async () => {
+    const createEntry = vi.fn(async (b) => ({ id: 1, ...b }));
+    const client = { shopping: { createEntry } } as any;
+    await handleCreateShoppingEntry(client, { amount: 1, food_id: 3 });
+    expect(createEntry.mock.calls[0][0].unit).toBeNull();
+  });
+
   it('handleCreateShoppingEntry passes null unit when unit_id is null', async () => {
     const createEntry = vi.fn(async (b) => ({ id: 1, ...b }));
     const client = { shopping: { createEntry } } as any;
@@ -693,6 +700,13 @@ describe('recipe book handlers', () => {
     const client = { recipeBooks: { createBook } } as any;
     await handleCreateBook(client, { name: 'Weeknight', shared_user_ids: [2, 3] });
     expect(createBook.mock.calls[0][0].shared).toEqual([{ id: 2 }, { id: 3 }]);
+  });
+
+  it('handleCreateBook sends null filter when filter_id is null', async () => {
+    const createBook = vi.fn(async (b) => ({ id: 1, ...b }));
+    const client = { recipeBooks: { createBook } } as any;
+    await handleCreateBook(client, { name: 'Weeknight', filter_id: null });
+    expect(createBook.mock.calls[0][0].filter).toBeNull();
   });
 
   it('handleCreateBook sends filter as a bare id', async () => {
@@ -1055,6 +1069,13 @@ describe('recipe properties', () => {
 });
 
 describe('ingredient handlers', () => {
+  it('handleUpdateIngredient sends null unit when unit_id is null', async () => {
+    const patchIngredient = vi.fn(async (id, b) => ({ id, ...b }));
+    const client = { ingredients: { patchIngredient } } as any;
+    await handleUpdateIngredient(client, { id: 5, unit_id: null });
+    expect(patchIngredient.mock.calls[0][1]).toEqual({ unit: null });
+  });
+
   it('handleUpdateIngredient sends food/unit as bare ids', async () => {
     const patchIngredient = vi.fn(async (id, b) => ({ id, ...b }));
     const client = { ingredients: { patchIngredient } } as any;

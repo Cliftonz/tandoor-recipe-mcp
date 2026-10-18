@@ -191,6 +191,19 @@ describe('handlers/misc.ts', () => {
       expect(patch).toHaveBeenCalledWith(1, { base_unit: 1, converted_unit: 2, food: 5 });
     });
 
+    it('create_unit_conversion food_id=null sends food: null', async () => {
+      const create = vi.fn().mockResolvedValue({ id: 1 });
+      const client = mock({ unitConversions: { createConversion: create } });
+      await handleCreateUnitConversion(client, {
+        base_amount: 1, converted_amount: 240,
+        base_unit_id: 1, converted_unit_id: 2, food_id: null,
+      } as any);
+      expect(create).toHaveBeenCalledWith({
+        base_amount: 1, converted_amount: 240,
+        base_unit: 1, converted_unit: 2, food: null,
+      });
+    });
+
     it('update_unit_conversion food_id=null clears the food link', async () => {
       const patch = vi.fn().mockResolvedValue({ id: 1 });
       const client = mock({ unitConversions: { patchConversion: patch } });

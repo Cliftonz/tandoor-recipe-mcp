@@ -48,8 +48,7 @@ export function buildInstructions(
     'NOT re-run the original tool. Example: `jq_query({handle, filter: ".results | map({id, name})"})`.',
     'Operators can set TANDOOR_MCP_STASH_ENABLED=0 to disable this behavior.',
     '',
-    'Tandoor serializer etiquette: nested foreign-key writes send bare integer ids, which',
-    'Tandoor hydrates server-side. All tools here already handle that, just pass `food_id`, etc.',
+    'Pass ids (`food_id`, `unit_id`, ...), not objects; the tools build the request shape.',
   );
   if (transport) {
     const bind = transport.bind ? ` bind=${transport.bind}` : '';

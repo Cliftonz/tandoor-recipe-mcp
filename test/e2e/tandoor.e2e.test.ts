@@ -428,7 +428,7 @@ describeE2E('Tandoor E2E workflow', () => {
     expect(sc.id).toBeGreaterThan(0);
   });
 
-  // ---------------- #13: id-only foreign-key writes through the handlers ----------------
+  // ---------------- id-only foreign-key writes through the handlers ----------------
 
   it('fk: second food + unit for reassignment checks', async () => {
     const f = await client.foodUnits.createFood({ name: `${E2E_PREFIX}-food2` });
@@ -459,7 +459,7 @@ describeE2E('Tandoor E2E workflow', () => {
 
   it('fk: update_step writes ingredients by food_id / unit_id', async () => {
     const list = await client.steps.listSteps({ recipe: [ctx.recipeId] });
-    const step = (list.results ?? list)[0];
+    const step = list.results[0];
     const updated = parseHandlerJson(await handleUpdateStep(client, {
       id: step.id, ingredients: [{ food_id: ctx.foodId, unit_id: ctx.unitId, amount: 3 }], format: 'full',
     }));
@@ -529,6 +529,9 @@ describeE2E('Tandoor E2E workflow', () => {
     const updated = parseHandlerJson(await handleUpdateRecipe(client, {
       id: ctx.recipeId, properties: [{ property_amount: 12, property_type_id: ctx.propertyTypeId }], format: 'full',
     }));
+    for (const p of updated.properties) {
+      cleanup.push({ label: `recipe-property ${p.id}`, fn: () => client.properties.deleteProperty(p.id) });
+    }
     expect(updated.properties.map((p: any) => p.property_type.id)).toEqual([ctx.propertyTypeId]);
   });
 

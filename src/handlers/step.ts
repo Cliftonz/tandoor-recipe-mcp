@@ -57,11 +57,6 @@ export async function handleGetStep(
   return args.format === 'full' ? emit(r) : emit(slimStep(r));
 }
 
-/**
- * Convert a flat ingredient spec `{food_id, unit_id, amount, note, ...}` or
- * `{food: <name>, unit: <name>, amount, ...}` into the nested envelope the
- * Step serializer expects. Names get find-or-created.
- */
 async function buildIngredients(
   client: TandoorClient,
   ings: IngredientInput[] | undefined
