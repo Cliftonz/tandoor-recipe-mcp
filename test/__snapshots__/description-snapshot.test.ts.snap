@@ -307,7 +307,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "export_meal_plan_ical",
   },
   {
-    "description": "Trigger a recipe export job. Required: type (e.g. json, zip, pdf; depends on Tandoor build). Provide recipes[] (ids) or all=true. Returns the ExportLog for the queued job.",
+    "description": "Trigger a recipe export job. Required: type (e.g. json, zip, pdf; depends on Tandoor build). Provide recipes[] (ids), all=true, or custom_filter (a saved search filter id). all=true takes precedence over custom_filter. Only filters you own or that are shared with you directly are reachable; filters reachable only through a shared recipe book return 404. If the filter is deleted mid-export or its search is empty, Tandoor exports every recipe. Returns the ExportLog for the queued job.",
     "name": "export_recipes",
   },
   {
@@ -3449,14 +3449,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "custom_filter": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
-          ],
+          "type": "number",
         },
         "format": {
           "enum": [
