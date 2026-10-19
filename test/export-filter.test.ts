@@ -51,4 +51,14 @@ describe('export_recipes custom_filter request shape', () => {
     await expect(handleExportRecipes(client, { type: 'DEFAULT', custom_filter: 7 }, { signal: controller.signal })).rejects.toBe(controller.signal.reason);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
+
+  it('rejects recipes[] together with custom_filter without sending any request', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const client = new TandoorClient({ url: 'https://tandoor.test', token: 't' });
+
+    await expect(handleExportRecipes(client, { type: 'DEFAULT', recipes: [1], custom_filter: 7 })).rejects.toThrow(
+      /recipes\[\] and custom_filter cannot be combined/,
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
 });

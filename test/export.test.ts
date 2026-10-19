@@ -61,6 +61,10 @@ describe('export handlers', () => {
     expect(exportRecipes).toHaveBeenCalledWith({ recipes: [], type: 'zip', all: true }, { signal: undefined });
   });
 
+  it.each([0, -1, 1.5])('export_recipes rejects custom_filter=%s at the input schema', (custom_filter) => {
+    expect(z.object(exportRecipesShape).safeParse({ type: 'json', custom_filter }).success).toBe(false);
+  });
+
   it('export_recipes rejects custom_filter=null at the input schema', () => {
     expect(z.object(exportRecipesShape).safeParse({ type: 'json', all: true, custom_filter: null }).success).toBe(false);
   });

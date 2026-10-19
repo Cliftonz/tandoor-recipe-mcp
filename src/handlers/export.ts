@@ -29,6 +29,9 @@ export async function handleExportRecipes(
   if (!hasIds && args.all !== true && args.custom_filter == null) {
     throw new Error('Provide recipes[] with at least one id, all=true, or custom_filter');
   }
+  if (hasIds && args.custom_filter != null) {
+    throw new Error('recipes[] and custom_filter cannot be combined; provide one');
+  }
   const body: any = {
     recipes: Array.isArray(args.recipes) ? args.recipes.map((id: number) => ({ id })) : [],
     type: args.type,
