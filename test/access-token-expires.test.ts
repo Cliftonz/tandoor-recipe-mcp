@@ -37,6 +37,13 @@ describe('access token expires requires seconds', () => {
   ];
 
   for (const { name, base, ok } of cases) {
+    it(`${name} warns that it is an escalation surface`, async () => {
+      const { tools } = await client.listTools();
+      expect(tools.find((t) => t.name === name)!.description).toContain(
+        "ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user.",
+      );
+    });
+
     it(`${name} tells callers expires needs seconds and a Z suffix`, async () => {
       const { tools } = await client.listTools();
       const description = tools.find((t) => t.name === name)!.description;
