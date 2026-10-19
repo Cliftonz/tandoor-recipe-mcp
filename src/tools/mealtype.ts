@@ -50,7 +50,7 @@ export function registerMealTypeTools(server: McpServer, client: TandoorClient):
   }, handleGetMealType);
 
   registerStringTool(server, client, 'update_meal_type', {
-    description: 'Update a meal type (PATCH). Required: id. Optional: name, order, color, time (HH:MM or HH:MM:SS).',
+    description: 'Update a meal type (PATCH). Required: id. Optional: name, order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; null clears it).',
     inputSchema: updateMealTypeShape,
   }, handleUpdateMealType);
 
