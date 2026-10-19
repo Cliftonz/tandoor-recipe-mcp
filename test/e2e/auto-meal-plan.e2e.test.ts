@@ -18,18 +18,18 @@ d('auto_meal_plan against live Tandoor', () => {
   let recipeBoth: number;
   let recipeSharedOnly: number;
 
-  async function planRecipes(day: string): Promise<number[]> {
-    const page = await client.mealPlans.listMealPlans({ from_date: day, to_date: day, meal_type: [mealTypeId] });
+  async function planRecipes(from: string, to: string): Promise<number[]> {
+    const page = await client.mealPlans.listMealPlans({ from_date: from, to_date: to, meal_type: [mealTypeId] });
     for (const mp of page.results) cleanup.push(() => client.mealPlans.deleteMealPlan(mp.id));
     return page.results.map((mp) => mp.recipe!.id!);
   }
 
-  async function autoPlan(day: string, keyword_ids: number[], keyword_mode?: 'or' | 'and') {
+  async function autoPlan(from: string, to: string, keyword_ids: number[], keyword_mode?: 'or' | 'and') {
     await handleAutoMealPlan(client, {
-      start_date: day, end_date: day, meal_type_id: mealTypeId,
+      start_date: from, end_date: to, meal_type_id: mealTypeId,
       keyword_ids, servings: 1, addshopping: false, ...(keyword_mode && { keyword_mode }),
     });
-    return planRecipes(day);
+    return planRecipes(from, to);
   }
 
   beforeAll(async () => {
@@ -62,23 +62,25 @@ d('auto_meal_plan against live Tandoor', () => {
   });
 
   afterAll(async () => {
-    for (const fn of cleanup.reverse()) await fn();
+    const errors: unknown[] = [];
+    for (const fn of cleanup.reverse()) await fn().catch((e) => errors.push(e));
+    if (errors.length) throw errors[0];
   });
 
-  it('filters by keywords with the default mode', async () => {
-    expect(await autoPlan(dayFromNow(200), [onlyBoth])).toEqual([recipeBoth]);
+  it("defaults to 'and': keywords no single recipe carries find no recipes", async () => {
+    await expect(autoPlan(dayFromNow(200), dayFromNow(200), [onlyBoth, solo])).rejects.toThrow(/No recipes found/);
   });
 
   it("keyword_mode 'and' plans only recipes carrying every keyword", async () => {
-    expect(await autoPlan(dayFromNow(201), [shared, onlyBoth], 'and')).toEqual([recipeBoth]);
+    expect(await autoPlan(dayFromNow(201), dayFromNow(201), [shared, onlyBoth], 'and')).toEqual([recipeBoth]);
   });
 
   it("keyword_mode 'or' plans recipes carrying any keyword", async () => {
-    const [recipe] = await autoPlan(dayFromNow(202), [onlyBoth, solo], 'or');
-    expect([recipeBoth, recipeSharedOnly]).toContain(recipe);
+    const recipes = await autoPlan(dayFromNow(202), dayFromNow(203), [onlyBoth, solo], 'or');
+    expect(recipes.sort()).toEqual([recipeBoth, recipeSharedOnly].sort());
   });
 
   it('an empty keyword list plans a recipe', async () => {
-    expect(await autoPlan(dayFromNow(203), [])).toHaveLength(1);
+    expect(await autoPlan(dayFromNow(204), dayFromNow(204), [])).toHaveLength(1);
   });
 });
