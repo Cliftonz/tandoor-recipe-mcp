@@ -129,6 +129,17 @@ describe('createHttpTransport round-trip', () => {
     expect(res.body).toContain('"result"');
   });
 
+  it.each(['GET', 'DELETE', 'PUT'])('%s on the MCP path returns 405 with Allow: POST', async (method) => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    handle = createHttpTransport(buildServer());
+    await handle.start();
+
+    const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method, headers: { Accept: 'text/event-stream' } });
+    expect(res.status).toBe(405);
+    expect(res.headers.get('allow')).toBe('POST');
+  });
+
   it('returns 401 with WWW-Authenticate when token is set and missing', async () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);

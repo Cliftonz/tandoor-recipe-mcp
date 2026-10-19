@@ -221,8 +221,8 @@ export function createHttpTransport(server: McpServer): HttpTransportHandle {
         return;
       }
 
-      if (req.method === 'GET' && urlPath === cfg.path) {
-        await transport.handleRequest(req, res);
+      if (urlPath === cfg.path) {
+        res.writeHead(405, { Allow: 'POST' }).end();
         return;
       }
 
