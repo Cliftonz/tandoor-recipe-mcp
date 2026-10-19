@@ -144,9 +144,8 @@ export class FailedAuthLimiter {
   }
 }
 
-export function createHttpTransport(server: McpServer): HttpTransportHandle {
+export function createHttpTransport(buildServer: () => McpServer): HttpTransportHandle {
   const cfg = resolveHttpConfig();
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   const expected = cfg.token ?? '';
   const limiter = new FailedAuthLimiter();
 
@@ -208,6 +207,10 @@ export function createHttpTransport(server: McpServer): HttpTransportHandle {
         try {
           const raw = await readBody(req, cfg.maxBodyBytes);
           const parsed = raw.length > 0 ? JSON.parse(raw) : undefined;
+          const server = buildServer();
+          const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+          res.on('close', () => server.close());
+          await server.connect(transport);
           await transport.handleRequest(req, res, parsed);
         } catch (err) {
           if (err instanceof PayloadTooLargeError) {
@@ -245,7 +248,6 @@ export function createHttpTransport(server: McpServer): HttpTransportHandle {
 
   return {
     async start() {
-      await server.connect(transport);
       await new Promise<void>((resolve) => {
         httpServer.listen(cfg.port, cfg.host, () => resolve());
       });
@@ -263,7 +265,6 @@ export function createHttpTransport(server: McpServer): HttpTransportHandle {
           t.unref();
         });
       }
-      await transport.close();
       await new Promise<void>((resolve) => {
         httpServer.close(() => resolve());
       });
