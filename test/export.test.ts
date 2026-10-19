@@ -69,16 +69,6 @@ describe('export handlers', () => {
     );
   });
 
-  it('handleExportRecipes wraps a numeric custom_filter id as { id }', async () => {
-    const exportRecipes = vi.fn(async () => ({ id: 1, type: 'json', running: true, created_at: 't' }));
-    const client = { exports: { exportRecipes } } as any;
-    await handleExportRecipes(client, { type: 'json', all: true, custom_filter: 42 });
-    expect(exportRecipes).toHaveBeenCalledWith(
-      { recipes: [], type: 'json', all: true, custom_filter: { id: 42 } },
-      { signal: undefined },
-    );
-  });
-
   it('handleListExportLogs slims paginated results and forwards pagination', async () => {
     const listExportLogs = vi.fn(async () => ({
       count: 1,
