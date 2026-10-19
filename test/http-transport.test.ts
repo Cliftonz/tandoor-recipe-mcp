@@ -148,6 +148,22 @@ describe('createHttpTransport round-trip', () => {
     expect(second.body).toContain('"name":"ping"');
   });
 
+  it('closes the per-request server once its response ends', async () => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    let closed = 0;
+    handle = createHttpTransport(() => {
+      const server = buildServer();
+      server.server.onclose = () => { closed++; };
+      return server;
+    });
+    await handle.start();
+
+    const res = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc());
+    expect(res.status).toBe(200);
+    await vi.waitFor(() => expect(closed).toBe(1));
+  });
+
   it.each(['GET', 'DELETE', 'PUT'])('%s on the MCP path returns 405 with Allow: POST', async (method) => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
