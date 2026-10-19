@@ -20,7 +20,7 @@ d('export_recipes with custom_filter', () => {
     client = new TandoorClient({ url: url!, token: token! });
     mcp = new McpServer({ name: 'e2e', version: 'e2e' });
     registerExportTools(mcp, client);
-    for (const name of [`${marker} soup`, `unrelated stew ${Date.now()}`]) {
+    for (const name of [`${marker} soup`, 'unrelated stew']) {
       const r = await client.recipes.createRecipe({ name, internal: true, steps: [] } as any);
       recipeIds.push(r.id!);
     }
