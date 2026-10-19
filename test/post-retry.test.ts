@@ -11,7 +11,7 @@ class TestClient extends BaseClient {
 let stub: Stub;
 
 afterEach(async () => {
-  await stub.close();
+  await stub?.close();
 });
 
 async function serveStatusesThenOk(statuses: number[]) {
@@ -26,12 +26,12 @@ async function serveStatusesThenOk(statuses: number[]) {
 }
 
 describe('5xx retry by method', () => {
-  it('sends a POST that gets a 503 exactly once and surfaces the error', async () => {
-    const { client, received } = await serveStatusesThenOk([503]);
+  it.each([502, 503, 504])('sends a POST that gets a %i exactly once and surfaces the error', async (status) => {
+    const { client, received } = await serveStatusesThenOk([status]);
 
     await expect(
       client.exec('/api/auto-plan/', { method: 'POST', body: '{}' }),
-    ).rejects.toThrow(/Tandoor API error: 503/);
+    ).rejects.toThrow(`Tandoor API error: ${status}`);
     expect(received).toEqual(['POST']);
   });
 

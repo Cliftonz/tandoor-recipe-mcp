@@ -178,7 +178,7 @@ export class BaseClient {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...((options.headers as Record<string, string>) || {}),
     };
-    const isIdempotentBody = isFormData ? false : true; // JSON bodies are safe to replay; we don't retry streams.
+    const isReplayableBody = !isFormData;
     const bodyPreview = typeof options.body === 'string'
       ? redactToken(options.body, this.token)
       : undefined;
@@ -195,9 +195,9 @@ export class BaseClient {
         logRequest(method, url, bodyPreview);
         const response = await fetch(url, { ...options, headers });
 
-        // Retry on transient 5xx / 429 before reading the body.
+        // Retry on transient 5xx / 429 before reading the body, except POST 5xx: it may follow a committed write, so a replay can duplicate it.
         const isPost5xx = method === 'POST' && response.status >= 500;
-        if (shouldRetry(response.status) && attempt < maxRetries && isIdempotentBody && !isPost5xx && !signal?.aborted) {
+        if (shouldRetry(response.status) && attempt < maxRetries && isReplayableBody && !isPost5xx && !signal?.aborted) {
           const wait = backoffMs(attempt, response.headers.get('retry-after'));
           await sleep(wait);
           continue;
@@ -258,7 +258,7 @@ export class BaseClient {
         }
         // Network errors (DNS failure, socket reset) — worth retrying.
         const isNetwork = error instanceof TypeError || (error as any)?.name === 'FetchError';
-        if (isNetwork && attempt < maxRetries && isIdempotentBody) {
+        if (isNetwork && attempt < maxRetries && isReplayableBody) {
           await sleep(backoffMs(attempt, null));
           continue;
         }
