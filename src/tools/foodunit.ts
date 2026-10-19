@@ -63,6 +63,8 @@ export const updateFoodShape = {
     property_amount: z.number().nullable(),
   })).optional(),
   remove_property_type_ids: z.array(z.number()).optional(),
+  properties_food_amount: z.number().optional(),
+  properties_food_unit_id: z.number().optional(),
   format: formatEnum,
 } as const;
 
@@ -174,7 +176,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleCreateFood);
 
   registerStringTool(server, client, 'update_food', {
-    description: 'Update food (PATCH). Required: id. Optional properties[] {property_type_id, property_amount} sets one value per property type (amount null = unknown), replacing any existing value of that type; remove_property_type_ids[] deletes values by type. Other existing property values are kept. A type may appear once across both lists.',
+    description: 'Update food (PATCH). Required: id. Optional properties[] {property_type_id, property_amount} sets one value per property type (amount null = unknown), replacing any existing value of that type; remove_property_type_ids[] deletes values by type. Other existing property values are kept. A type may appear once across both lists. properties_food_amount and properties_food_unit_id set the food amount the property values refer to (e.g. 100 g).',
     inputSchema: updateFoodShape,
   }, handleUpdateFood);
 

@@ -98,24 +98,43 @@ export async function handleUpdateFood(
   if (args.supermarket_category_id !== undefined) {
     body.supermarket_category = args.supermarket_category_id;
   }
+  if (args.properties_food_amount !== undefined) body.properties_food_amount = args.properties_food_amount;
+  if (args.properties_food_unit_id !== undefined) body.properties_food_unit = args.properties_food_unit_id;
   const set = args.properties ?? [];
   const remove = args.remove_property_type_ids ?? [];
+  const doomedRowIds: number[] = [];
   if (set.length > 0 || remove.length > 0) {
-    const touched = new Set<number>();
-    for (const typeId of [...set.map((p) => p.property_type_id), ...remove]) {
-      if (touched.has(typeId)) throw new Error(`property_type_id ${typeId} appears more than once across properties and remove_property_type_ids`);
-      touched.add(typeId);
+    const setIds = set.map((p) => p.property_type_id);
+    for (const [list, ids] of [['properties', setIds], ['remove_property_type_ids', remove]] as const) {
+      const repeated = ids.find((id, i) => ids.indexOf(id) !== i);
+      if (repeated !== undefined) throw new Error(`property_type_id ${repeated} appears more than once in ${list}`);
     }
+    const overlap = setIds.find((id) => remove.includes(id));
+    if (overlap !== undefined) throw new Error(`property_type_id ${overlap} is in both properties and remove_property_type_ids`);
     const current = await client.foodUnits.getFood(args.id);
+    const amountByType = new Map(set.map((p) => [p.property_type_id, p.property_amount]));
+    const inPlace = new Set<number>();
+    const rows: any[] = [];
+    for (const p of current.properties) {
+      const typeId = p.property_type.id;
+      if (remove.includes(typeId) || inPlace.has(typeId)) {
+        doomedRowIds.push(p.id);
+        continue;
+      }
+      const amount = amountByType.has(typeId) ? amountByType.get(typeId) : p.property_amount;
+      if (amountByType.has(typeId)) inPlace.add(typeId);
+      rows.push({ id: p.id, property_amount: amount, property_type: typeId });
+    }
     body.properties = [
-      ...current.properties
-        .filter((p: any) => !touched.has(p.property_type.id))
-        .map((p: any) => ({ id: p.id, property_amount: p.property_amount, property_type: p.property_type.id })),
-      ...set.map((p) => ({ property_amount: p.property_amount, property_type: p.property_type_id })),
+      ...rows,
+      ...set
+        .filter((p) => !inPlace.has(p.property_type_id))
+        .map((p) => ({ property_amount: p.property_amount, property_type: p.property_type_id })),
     ];
   }
   assertNonEmptyBody(body);
   const updated = await client.foodUnits.patchFood(args.id, body);
+  for (const id of doomedRowIds) await client.properties.deleteProperty(id);
   return `Food updated.\n\n${emit(args.format === 'full' ? updated : slimFood(updated))}`;
 }
 
