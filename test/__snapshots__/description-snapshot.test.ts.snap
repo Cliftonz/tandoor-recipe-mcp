@@ -19,7 +19,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "authenticate",
   },
   {
-    "description": "Auto-generate meal plans. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, keyword_ids[], servings, addshopping. Optional: keyword_mode ("and" default: recipes must carry every keyword; "or": any keyword)",
+    "description": "Auto-generate meal plans from internal recipes the user can see. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, servings, addshopping. Optional: keyword_ids[] (omitted or empty plans from all recipes), keyword_mode ("and" default: recipes must carry every keyword; "or": any keyword). Tandoor plans at most 14 days and ignores shared. When no recipe matches, Tandoor returns 400 "No recipes found."",
     "name": "auto_meal_plan",
   },
   {
@@ -1231,7 +1231,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "start_date",
         "end_date",
         "meal_type_id",
-        "keyword_ids",
         "servings",
         "addshopping",
       ],
