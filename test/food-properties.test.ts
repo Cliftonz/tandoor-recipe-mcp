@@ -116,7 +116,7 @@ describe('update_food properties', () => {
     });
   });
 
-  it('removing a type the food does not have changes nothing', async () => {
+  it('removing a type the food does not have deletes nothing and re-sends the current rows', async () => {
     const result = await handleUpdateFood(client, { id: 5, remove_property_type_ids: [99] });
     expect(result).toMatch(/^Food updated\./);
     expect(requests.filter((r) => r.method === 'DELETE')).toEqual([]);
