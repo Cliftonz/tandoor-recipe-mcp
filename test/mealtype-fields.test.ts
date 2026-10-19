@@ -90,7 +90,7 @@ describe('meal type tool fields against Tandoor 2.6', () => {
   it('create_meal_type description says time is returned as HH:MM:SS', async () => {
     const { tools } = await mcp.listTools();
     const tool = tools.find((t) => t.name === 'create_meal_type')!;
-    expect(tool.description).toContain('time (HH:MM; returned as HH:MM:SS)');
+    expect(tool.description).toContain('time (HH:MM or HH:MM:SS; returned as HH:MM:SS)');
   });
 
   for (const name of ['create_meal_type', 'update_meal_type']) {

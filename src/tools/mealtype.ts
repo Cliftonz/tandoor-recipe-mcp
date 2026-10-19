@@ -40,7 +40,7 @@ export type DeleteMealTypeArgs = z.infer<z.ZodObject<typeof deleteMealTypeShape>
 
 export function registerMealTypeTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'create_meal_type', {
-    description: 'Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), time (HH:MM; returned as HH:MM:SS). Creating with an existing name returns the existing meal type unchanged and ignores the order, color and time passed.',
+    description: 'Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; returned as HH:MM:SS). Creating with an existing name returns the existing meal type unchanged and ignores the order, color and time passed.',
     inputSchema: createMealTypeShape,
   }, handleCreateMealType);
 
