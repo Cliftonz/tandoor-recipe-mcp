@@ -763,7 +763,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "move_keyword",
   },
   {
-    "description": "Parse a free-form ingredient string (e.g. "2 cups flour") into amount, unit, unit_id, food, food_id, note. Writes to the database: Tandoor creates any Food or Unit row it does not already have. unit and food are the matched row names, so "cups" can come back as "cup". With no unit, unit is "" and unit_id is omitted. food_id and unit_id pass straight to create_ingredient. Blank text returns Tandoor's 400. Tandoor's parser is heuristic and can misfire on compound descriptions, brand names, or non-English units. If the result looks wrong, construct the ingredient directly via create_ingredient with explicit food_id (via find_or_create on the food name) and unit_id. That path is deterministic.",
+    "description": "Parse a free-form ingredient string (e.g. "2 cups flour") into amount, unit, unit_id, food, food_id, note. Writes to the database: Tandoor creates any Food or Unit row it does not already have. unit and food are the matched row names, so "cups" can come back as "cup". With no unit, unit is "" and unit_id is omitted. food_id and unit_id pass straight to create_ingredient. Blank text returns Tandoor's 400. Tandoor's parser is heuristic and can misfire on compound descriptions, brand names, or non-English units.",
     "name": "parse_ingredient",
   },
   {
