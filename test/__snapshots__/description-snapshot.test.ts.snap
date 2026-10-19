@@ -91,7 +91,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_meal_plan",
   },
   {
-    "description": "Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), default.",
+    "description": "Create a meal type. Required: name. Optional: order, color (hex, max 7 chars).",
     "name": "create_meal_type",
   },
   {
@@ -1972,9 +1972,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
               "type": "null",
             },
           ],
-        },
-        "default": {
-          "type": "boolean",
         },
         "format": {
           "enum": [
@@ -7938,9 +7935,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
               "type": "null",
             },
           ],
-        },
-        "default": {
-          "type": "boolean",
         },
         "format": {
           "enum": [
