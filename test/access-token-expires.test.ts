@@ -40,7 +40,7 @@ describe('access token expires requires seconds', () => {
     it(`${name} tells callers expires needs seconds and a Z suffix`, async () => {
       const { tools } = await client.listTools();
       const description = tools.find((t) => t.name === name)!.description;
-      expect(description).toMatch(/expires \(ISO 8601 datetime with seconds, e\.g\. \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\)/);
+      expect(description).toMatch(/expires \(UTC ISO 8601 datetime with seconds and Z suffix, e\.g\. \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\)/);
     });
 
     it(`${name} rejects a minutes-only datetime`, async () => {
