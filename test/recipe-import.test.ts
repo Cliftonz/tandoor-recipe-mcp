@@ -7,7 +7,7 @@ import {
   handleGetRecipeImport,
   handleListRecipeImports,
 } from '../src/handlers/import.js';
-import { createRecipeImportShape } from '../src/tools/import.js';
+import { createRecipeImportShape, importAllPendingShape } from '../src/tools/import.js';
 import { startStub, Stub } from './helpers/stub-http.js';
 
 const nestedStorage = { id: 4, name: 'local', method: 'LOCAL', username: null, url: null, path: '/r', created_by: 1 };
@@ -38,6 +38,10 @@ afterAll(() => stub.close());
 beforeEach(() => { lastBody = undefined; });
 
 describe('recipe-import against Tandoor 2.6 shape', () => {
+  it('import_all_pending input has no format option', () => {
+    expect(importAllPendingShape).not.toHaveProperty('format');
+  });
+
   it('create input does not require space', () => {
     expect(z.object(createRecipeImportShape).safeParse({ name: 'a.pdf', storage: 4 }).success).toBe(true);
   });

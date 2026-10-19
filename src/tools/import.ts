@@ -105,7 +105,7 @@ export const updateRecipeImportShape = {
 
 export const deleteRecipeImportShape = { id: z.number() } as const;
 
-export const importAllPendingShape = { format: formatEnum } as const;
+export const importAllPendingShape = {} as const;
 
 export const importPendingRecipeShape = { id: z.number(), format: formatEnum } as const;
 
