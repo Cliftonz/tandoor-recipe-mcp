@@ -15,7 +15,6 @@ function slimMealType(m: any) {
     name: m.name,
     order: m.order,
     color: m.color,
-    default: m.default,
   };
 }
 
@@ -27,7 +26,6 @@ export async function handleCreateMealType(
   const body: any = { name: args.name };
   if (args.order !== undefined) body.order = args.order;
   if (args.color !== undefined) body.color = args.color;
-  if (args.default !== undefined) body.default = args.default;
   const r = await client.mealTypes.createMealType(body, { signal: ctx?.signal });
   return `Meal type created.\n\n${emit(args.format === 'full' ? r : slimMealType(r))}`;
 }
@@ -50,7 +48,6 @@ export async function handleUpdateMealType(
   if (args.name !== undefined) body.name = args.name;
   if (args.order !== undefined) body.order = args.order;
   if (args.color !== undefined) body.color = args.color;
-  if (args.default !== undefined) body.default = args.default;
   assertNonEmptyBody(body);
   const r = await client.mealTypes.patchMealType(args.id, body, { signal: ctx?.signal });
   return `Meal type updated.\n\n${emit(args.format === 'full' ? r : slimMealType(r))}`;

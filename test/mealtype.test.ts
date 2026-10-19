@@ -13,7 +13,6 @@ describe('meal type handlers', () => {
       name: b.name,
       order: b.order ?? 0,
       color: b.color ?? null,
-      default: b.default ?? false,
       created_by: 1,
     }));
     const client = { mealTypes: { createMealType } } as any;
@@ -21,20 +20,18 @@ describe('meal type handlers', () => {
       name: 'Brunch',
       order: 2,
       color: '#abcdef',
-      default: true,
     });
     expect(createMealType.mock.calls[0][0]).toEqual({
       name: 'Brunch',
       order: 2,
       color: '#abcdef',
-      default: true,
     });
     expect(out).toContain('Meal type created');
     expect(out).toContain('"id":7');
     expect(out).toContain('"name":"Brunch"');
   });
 
-  it('handleGetMealType returns slim projection (id, name, order, color, default) and drops created_by', async () => {
+  it('handleGetMealType returns slim projection (id, name, order, color) and drops created_by', async () => {
     const getMealType = vi.fn(async () => ({
       id: 3,
       name: 'Dinner',
@@ -53,7 +50,6 @@ describe('meal type handlers', () => {
       name: 'Dinner',
       order: 5,
       color: '#ff0000',
-      default: false,
     });
     expect(parsed).not.toHaveProperty('created_by');
     expect(parsed).not.toHaveProperty('time');
@@ -77,8 +73,8 @@ describe('meal type handlers', () => {
       ...body,
     }));
     const client = { mealTypes: { patchMealType } } as any;
-    await handleUpdateMealType(client, { id: 4, color: '#000000', default: true });
-    expect(patchMealType).toHaveBeenCalledWith(4, { color: '#000000', default: true }, { signal: undefined });
+    await handleUpdateMealType(client, { id: 4, color: '#000000' });
+    expect(patchMealType).toHaveBeenCalledWith(4, { color: '#000000' }, { signal: undefined });
   });
 
   it('handleUpdateMealType rejects id-only updates', async () => {
