@@ -302,7 +302,7 @@ export class BaseClient {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...((options.headers as Record<string, string>) || {}),
     };
-    const isIdempotentBody = isFormData ? false : true;
+    const isReplayableBody = !isFormData;
     const bodyPreview = typeof options.body === 'string'
       ? redactToken(options.body, this.token)
       : undefined;
@@ -317,7 +317,7 @@ export class BaseClient {
         logRequest(method, url, bodyPreview);
         const response = await fetch(url, { ...options, headers });
 
-        if (shouldRetry(response.status) && attempt < maxRetries && isIdempotentBody && !signal?.aborted) {
+        if (shouldRetry(response.status) && attempt < maxRetries && isReplayableBody && !signal?.aborted) {
           const wait = backoffMs(attempt, response.headers.get('retry-after'));
           await sleep(wait);
           continue;
@@ -339,7 +339,7 @@ export class BaseClient {
           throw error;
         }
         const isNetwork = error instanceof TypeError || (error as { name?: string })?.name === 'FetchError';
-        if (isNetwork && attempt < maxRetries && isIdempotentBody) {
+        if (isNetwork && attempt < maxRetries && isReplayableBody) {
           await sleep(backoffMs(attempt, null));
           continue;
         }
