@@ -18,7 +18,11 @@ describeE2E('user preference round-trip', () => {
     client = new TandoorClient({ url: url!, token: token! });
     const [pref] = await client.userPreferences.listPreferences();
     userId = pref.user.id;
-    original = slim(await handleGetUserPreference(client, { user_id: userId }));
+    const read = slim(await handleGetUserPreference(client, { user_id: userId }));
+    original = {
+      default_meal_type_id: read.default_meal_type_id,
+      shopping_update_food_lists: read.shopping_update_food_lists,
+    };
     const mealType = await client.mealTypes.createMealType({ name: `mcp-e2e-userpref-${Date.now()}` });
     mealTypeId = mealType.id;
   });

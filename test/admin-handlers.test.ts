@@ -34,8 +34,8 @@ describe('handlers/admin.ts', () => {
       const client = mock({
         userPreferences: {
           listPreferences: async () => [
-            { user: { id: 1, username: 'alice' }, theme: 'TANDOOR', default_page: 'PLAN', plan_share: [{ id: 2 }], shopping_share: [] },
-            { user: { id: 3, username: 'bob' }, theme: 'BOOTSTRAP', plan_share: null },
+            { user: { id: 1, username: 'alice' }, theme: 'TANDOOR', default_page: 'PLAN' },
+            { user: { id: 3, username: 'bob' }, theme: 'BOOTSTRAP' },
           ],
         },
       });

@@ -23,7 +23,7 @@ async function stubPreference(response: object) {
   return { client: new TandoorClient({ url: stub.url, token: 't' }), seen };
 }
 
-const breakfast = { id: 4, name: 'Breakfast', order: 0, color: null, default: false, created_by: 1 };
+const breakfast = { id: 4, name: 'Breakfast', order: 0, time: null, color: null, created_by: 1 };
 
 describe('user preference wire shape', () => {
   it('sends default_meal_type_id as a bare integer default_meal_type', async () => {
