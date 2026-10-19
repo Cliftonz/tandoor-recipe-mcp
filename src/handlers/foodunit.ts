@@ -134,7 +134,11 @@ export async function handleUpdateFood(
   }
   assertNonEmptyBody(body);
   const updated = await client.foodUnits.patchFood(args.id, body);
-  for (const id of doomedRowIds) await client.properties.deleteProperty(id);
+  for (const id of doomedRowIds) {
+    await client.properties.deleteProperty(id).catch((err: Error) => {
+      if (!/^Tandoor API error: 404\b/.test(err.message)) throw err;
+    });
+  }
   return `Food updated.\n\n${emit(args.format === 'full' ? updated : slimFood(updated))}`;
 }
 

@@ -18,6 +18,7 @@ const existingFood = {
 
 let stub: Stub;
 let requests: Recorded[];
+let failingDeletes: Record<string, number>;
 let client: TandoorClient;
 
 beforeAll(async () => {
@@ -27,6 +28,12 @@ beforeAll(async () => {
     req.on('end', () => {
       requests.push({ method: req.method!, url: req.url!, body: raw ? JSON.parse(raw) : undefined });
       res.setHeader('content-type', 'application/json');
+      const failStatus = req.method === 'DELETE' ? failingDeletes[req.url!] : undefined;
+      if (failStatus) {
+        res.statusCode = failStatus;
+        res.end(JSON.stringify({ detail: 'nope' }));
+        return;
+      }
       res.end(JSON.stringify(existingFood));
     });
   });
@@ -34,7 +41,7 @@ beforeAll(async () => {
 });
 
 afterAll(() => stub.close());
-beforeEach(() => { requests = []; });
+beforeEach(() => { requests = []; failingDeletes = {}; });
 
 const patchBody = () => requests.find((r) => r.method === 'PATCH')!.body;
 
@@ -73,6 +80,22 @@ describe('update_food properties', () => {
       '/api/property/12/',
       '/api/property/13/',
     ]);
+  });
+
+  it('treats a 404 on a row delete as already deleted and keeps deleting', async () => {
+    failingDeletes['/api/property/12/'] = 404;
+    const result = await handleUpdateFood(client, { id: 5, remove_property_type_ids: [2, 3] });
+    expect(result).toMatch(/^Food updated\./);
+    expect(requests.filter((r) => r.method === 'DELETE').map((r) => r.url)).toEqual([
+      '/api/property/12/',
+      '/api/property/13/',
+      '/api/property/14/',
+    ]);
+  });
+
+  it('fails when a row delete fails with anything but 404', async () => {
+    failingDeletes['/api/property/12/'] = 403;
+    await expect(handleUpdateFood(client, { id: 5, remove_property_type_ids: [2] })).rejects.toThrow(/403/);
   });
 
   it('rejects a property_type_id repeated in properties before any request', async () => {
