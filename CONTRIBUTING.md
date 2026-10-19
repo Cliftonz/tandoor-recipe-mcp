@@ -9,7 +9,7 @@ You get credit when your change lands, whichever way it lands.
 - If I merge your PR, you are the author of the commit.
 - If I reimplement the change to match the standards below, you are still credited. The commit carries a `Co-authored-by:` trailer with your name, `CHANGELOG.md` thanks you in the release entry, and I close the PR with a comment that links the change that replaced it.
 
-Reimplementation is normal here and is not a rejection. It usually means the idea was right and the code needed to fit the project's conventions.
+Reimplementation is normal here and is not a rejection.
 
 ## Standards for merging a PR unchanged
 
