@@ -68,7 +68,11 @@ async function call(server: McpServer, name: string, args: Record<string, unknow
     const first = await call(server, 'create_meal_type', { name: dupName, order: 1, color: '#111111', time: '06:00' });
     created.push(first.id);
     const second = await call(server, 'create_meal_type', { name: dupName, order: 9, color: '#999999', time: '22:00' });
+    if (second.id !== first.id) created.push(second.id);
     expect(second).toEqual(first);
+    const upper = await call(server, 'create_meal_type', { name: dupName.toUpperCase() });
+    if (upper.id !== first.id) created.push(upper.id);
+    expect(upper.id).toBe(first.id);
   });
 
   it('lists the meal type and Tandoor emits no `default`', async () => {
