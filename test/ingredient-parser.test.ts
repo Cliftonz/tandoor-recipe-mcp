@@ -46,10 +46,15 @@ async function stubTandoor(captured: Captured[]): Promise<TandoorClient> {
       const body = raw ? JSON.parse(raw) : undefined;
       captured.push({ method: req.method!, url: req.url!, body });
       res.setHeader('Content-Type', 'application/json');
+      if (!body.ingredient.trim()) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ error: true, msg: { ingredient: ['This field may not be blank.'] } }));
+        return;
+      }
       res.end(JSON.stringify(parserResponse(body.ingredient)));
     });
   });
-  return new TandoorClient({ url: stub.url, token: 't' });
+  return new TandoorClient({ url: stub.url, token: 'stub-token' });
 }
 
 describe('parse_ingredient against the Tandoor 2.6 ingredient-parser endpoint', () => {
@@ -90,6 +95,18 @@ describe('parse_ingredient against the Tandoor 2.6 ingredient-parser endpoint', 
       note: '',
       original_text: 'salt',
     });
+  });
+
+  it('surfaces Tandoor\'s 400 for blank input', async () => {
+    const client = await stubTandoor([]);
+    const server = new McpServer({ name: 't', version: 't' });
+    registerIngredientTools(server, client);
+
+    const res = await invokeTool(server, 'parse_ingredient', { text: '   ' });
+
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toMatch(/400/);
+    expect(res.content[0].text).toMatch(/This field may not be blank\./);
   });
 
   it('JSON-LD import fallback builds ingredients with parsed food and unit names', async () => {
