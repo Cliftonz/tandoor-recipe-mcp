@@ -4,8 +4,8 @@
 # user/space and create a fresh token each call.
 #
 # Outputs to stdout when GITHUB_ENV is not set:
-#   TANDOOR_URL=<url>
-#   TANDOOR_TOKEN=<token>
+#   export TANDOOR_URL=<url>
+#   export TANDOOR_TOKEN=<token>
 # When running in GitHub Actions: writes those plus TANDOOR_COMPOSE_FILE to
 # $GITHUB_ENV, and stays silent on stdout for the token (the value is also
 # masked via `::add-mask::` so it never appears verbatim in build logs).
@@ -233,6 +233,7 @@ fi
 # Local-dev eval pattern still needs the assignments on stdout. Outside CI
 # we accept that the token ends up in the parent shell's scrollback —
 # documented in the script header.
-echo "TANDOOR_URL=$URL"
-echo "TANDOOR_TOKEN=$TOKEN"
-echo "TANDOOR_COMPOSE_FILE=$COMPOSE_FILE"
+printf 'export %s=%q\n' \
+  TANDOOR_URL "$URL" \
+  TANDOOR_TOKEN "$TOKEN" \
+  TANDOOR_COMPOSE_FILE "$COMPOSE_FILE"
