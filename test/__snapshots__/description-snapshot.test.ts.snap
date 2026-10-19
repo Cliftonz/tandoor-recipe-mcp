@@ -987,7 +987,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_meal_plan",
   },
   {
-    "description": "Update a meal type (PATCH). Required: id. Optional: name, order, color, time (HH:MM or HH:MM:SS).",
+    "description": "Update a meal type (PATCH). Required: id. Optional: name, order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; null clears it).",
     "name": "update_meal_type",
   },
   {
