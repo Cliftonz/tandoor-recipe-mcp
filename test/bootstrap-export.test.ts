@@ -58,12 +58,13 @@ describe('tandoor-bootstrap.sh output', () => {
     const githubEnv = path.join(root, 'github-env');
     writeFileSync(githubEnv, '');
     const out = run('"$SCRIPT"', { GITHUB_ENV: githubEnv });
-    expect(out).not.toMatch(/^export /m);
+    expect(out).toBe(`::add-mask::${TOKEN}\n`);
     expect(readFileSync(githubEnv, 'utf8').split('\n')).toEqual(
       expect.arrayContaining([
         'TANDOOR_URL=http://127.0.0.1:8123',
         `TANDOOR_TOKEN=${TOKEN}`,
         `TANDOOR_COMPOSE_FILE=${path.join(root, 'tandoor test', 'docker-compose.yml')}`,
+        `TANDOOR_BOOTSTRAP_LOG=${path.join(root, 'tandoor test', 'bootstrap-django.log')}`,
       ]),
     );
   });
