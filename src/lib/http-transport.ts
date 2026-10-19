@@ -230,7 +230,8 @@ export function createHttpTransport(buildServer: () => McpServer): HttpTransport
       }
 
       if (urlPath === cfg.path) {
-        res.writeHead(405, { Allow: 'POST' }).end();
+        httpLog(reqId, 'info', 'method_not_allowed', { method: req.method, path: urlPath });
+        jsonRpcError(res, 405, -32000, 'Method not allowed', undefined, { Allow: 'POST' });
         return;
       }
 

@@ -194,7 +194,7 @@ describe('createHttpTransport round-trip', () => {
     await call;
   });
 
-  it.each(['GET', 'DELETE', 'PUT'])('%s on the MCP path returns 405 with Allow: POST', async (method) => {
+  it.each(['GET', 'DELETE', 'PUT'])('%s on the MCP path returns 405 with Allow: POST and a JSON-RPC error body', async (method) => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     handle = createHttpTransport(buildServer);
@@ -203,6 +203,21 @@ describe('createHttpTransport round-trip', () => {
     const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method });
     expect(res.status).toBe(405);
     expect(res.headers.get('allow')).toBe('POST');
+    expect(res.headers.get('content-type')).toBe('application/json');
+    expect(await res.json()).toEqual({ jsonrpc: '2.0', id: null, error: { code: -32000, message: 'Method not allowed' } });
+  });
+
+  it('logs event=method_not_allowed on stderr for a non-POST on the MCP path', async () => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+
+    const cap = captureStderr();
+    const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method: 'GET' });
+    cap.restore();
+    expect(res.status).toBe(405);
+    expect(cap.joined()).toContain(`reqId=${res.headers.get('x-tandoor-req-id')} level=info event=method_not_allowed method=GET path=/mcp`);
   });
 
   it('GET on the MCP path without a token returns 401, not 405, when auth is required', async () => {
