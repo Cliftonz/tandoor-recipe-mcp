@@ -163,7 +163,7 @@ export function registerAdminTools(server: McpServer, client: TandoorClient): vo
   }, handleGetUserPreference);
 
   registerStringTool(server, client, 'update_user_preference', {
-    description: 'Update user preferences (PATCH). Required: user_id. Common fields: theme, default_page (SEARCH/PLAN/BOOKS/SHOPPING), default_unit, use_fractions, use_kj, comments, ingredient_decimals, shopping_auto_sync, shopping_recent_days, mealplan_autoadd_shopping, mealplan_autoinclude_related, mealplan_autoexclude_onhand, filter_to_supermarket, left_handed, default_meal_type_id (meal type preselected for new meal plans; null clears it), shopping_update_food_lists (new shopping entries inherit their food\'s shopping lists).',
+    description: 'Update user preferences (PATCH). Required: user_id. Common fields: theme, default_page (SEARCH/PLAN/BOOKS/SHOPPING), default_unit, use_fractions, use_kj, comments, ingredient_decimals, shopping_auto_sync, shopping_recent_days, mealplan_autoadd_shopping, mealplan_autoinclude_related, mealplan_autoexclude_onhand, filter_to_supermarket, left_handed, default_meal_type_id (the user\'s default meal type; null clears it), shopping_update_food_lists (a new shopping entry created without shopping lists gets its food\'s shopping lists).',
     inputSchema: updateUserPreferenceShape,
   }, handleUpdateUserPreference);
 
