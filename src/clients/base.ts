@@ -196,7 +196,8 @@ export class BaseClient {
         const response = await fetch(url, { ...options, headers });
 
         // Retry on transient 5xx / 429 before reading the body.
-        if (shouldRetry(response.status) && attempt < maxRetries && isIdempotentBody && !signal?.aborted) {
+        const isPost5xx = method === 'POST' && response.status >= 500;
+        if (shouldRetry(response.status) && attempt < maxRetries && isIdempotentBody && !isPost5xx && !signal?.aborted) {
           const wait = backoffMs(attempt, response.headers.get('retry-after'));
           await sleep(wait);
           continue;
