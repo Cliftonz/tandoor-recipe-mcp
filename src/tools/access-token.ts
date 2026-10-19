@@ -67,7 +67,7 @@ export function registerAccessTokenTools(server: McpServer, client: TandoorClien
   }, handleGetAccessToken);
 
   registerStringTool(server, client, 'create_access_token', {
-    description: `Mint a new Tandoor access token. Required: scope, expires (ISO datetime). ${ESCALATION_WARNING}`,
+    description: `Mint a new Tandoor access token. Required: scope, expires (ISO 8601 datetime with seconds, e.g. 2026-12-01T10:00:00Z). ${ESCALATION_WARNING}`,
     inputSchema: createAccessTokenShape,
   }, handleCreateAccessToken);
 
