@@ -61,7 +61,7 @@ export type DeleteExportLogArgs = z.infer<z.ZodObject<typeof deleteExportLogShap
 
 export function registerExportTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'export_recipes', {
-    description: 'Trigger a recipe export job. Required: type (e.g. json, zip, pdf; depends on Tandoor build). Provide recipes[] (ids), all=true, or custom_filter (a saved search filter id). all=true takes precedence over custom_filter. Only filters you own or that are shared with you directly are reachable; filters reachable only through a shared recipe book return 404. If the filter is deleted mid-export or its search is empty, Tandoor exports every recipe. Returns the ExportLog for the queued job.',
+    description: 'Trigger a recipe export job. Required: type (e.g. json, zip, pdf; depends on Tandoor build). Provide recipes[] (ids), all=true, or custom_filter (saved filter id). all=true overrides custom_filter. Filters reachable only via a shared recipe book return 404. A deleted or empty filter exports every recipe. Returns the ExportLog for the queued job.',
     inputSchema: exportRecipesShape,
   }, handleExportRecipes);
 
