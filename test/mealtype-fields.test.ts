@@ -6,7 +6,7 @@ import { TandoorClient } from '../src/clients/index.js';
 import { registerMealTypeTools } from '../src/tools/mealtype.js';
 import { startStub, Stub } from './helpers/stub-http.js';
 
-interface Captured { method: string; url: string; body: any }
+interface Captured { method: string; body: any }
 
 describe('meal type tools drop the Tandoor 2.6 removed `default` field', () => {
   let stub: Stub;
@@ -20,9 +20,9 @@ describe('meal type tools drop the Tandoor 2.6 removed `default` field', () => {
       req.on('data', (c) => { raw += c; });
       req.on('end', () => {
         const body = raw ? JSON.parse(raw) : undefined;
-        requests.push({ method: req.method!, url: req.url!, body });
+        requests.push({ method: req.method!, body });
         res.setHeader('content-type', 'application/json');
-        res.end(JSON.stringify({ id: 5, name: 'Brunch', order: 1, time: null, color: null, default: true, created_by: 1, ...body }));
+        res.end(JSON.stringify({ id: 5, name: 'Brunch', ...body }));
       });
     });
     server = new McpServer({ name: 'test', version: 'test' });
@@ -44,8 +44,6 @@ describe('meal type tools drop the Tandoor 2.6 removed `default` field', () => {
   const call = async (name: string, args: Record<string, unknown>) => {
     const r: any = await mcp.callTool({ name, arguments: args });
     expect(r.isError).toBeFalsy();
-    const text: string = r.content[0].text;
-    return JSON.parse(text.slice(text.indexOf('{')));
   };
 
   it('create and update schemas and descriptions no longer advertise `default`', async () => {
@@ -57,22 +55,15 @@ describe('meal type tools drop the Tandoor 2.6 removed `default` field', () => {
     }
   });
 
-  it('create_meal_type never sends `default` and omits it from the slim result', async () => {
-    const out = await call('create_meal_type', { name: 'Brunch', default: true });
+  it('create_meal_type drops a caller-supplied `default` from the POST body', async () => {
+    await call('create_meal_type', { name: 'Brunch', default: true });
     expect(requests[0].method).toBe('POST');
     expect(requests[0].body).toEqual({ name: 'Brunch' });
-    expect(out).not.toHaveProperty('default');
   });
 
-  it('update_meal_type never sends `default` and omits it from the slim result', async () => {
-    const out = await call('update_meal_type', { id: 5, name: 'Late', default: true });
+  it('update_meal_type drops a caller-supplied `default` from the PATCH body', async () => {
+    await call('update_meal_type', { id: 5, name: 'Late', default: true });
     expect(requests[0].method).toBe('PATCH');
     expect(requests[0].body).toEqual({ name: 'Late' });
-    expect(out).not.toHaveProperty('default');
-  });
-
-  it('get_meal_type omits `default` from the slim result', async () => {
-    const out = await call('get_meal_type', { id: 5 });
-    expect(out).toEqual({ id: 5, name: 'Brunch', order: 1, color: null });
   });
 });

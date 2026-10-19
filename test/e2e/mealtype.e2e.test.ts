@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../../src/clients/index.js';
 import { registerMealTypeTools } from '../../src/tools/mealtype.js';
@@ -18,20 +18,27 @@ async function call(server: McpServer, name: string, args: Record<string, unknow
 
 (url && token ? describe : describe.skip)('meal type lifecycle against live Tandoor', () => {
   let server: McpServer;
+  let client: TandoorClient;
   let id: number;
+  const created: number[] = [];
   const name = `mcp-e2e-mealtype-${Date.now()}`;
 
   beforeAll(() => {
     server = new McpServer({ name: 'e2e', version: 'e2e' });
-    const client = new TandoorClient({ url: url!, token: token! });
+    client = new TandoorClient({ url: url!, token: token! });
     registerMealTypeTools(server, client);
     registerMealPlanTools(server, client);
   });
 
+  afterAll(async () => {
+    for (const leftover of created) await client.mealTypes.deleteMealType(leftover);
+  });
+
   it('creates a meal type without `default`', async () => {
-    const created = await call(server, 'create_meal_type', { name, order: 3, color: '#123456' });
-    expect(created).toEqual({ id: expect.any(Number), name, order: 3, color: '#123456' });
-    id = created.id;
+    const result = await call(server, 'create_meal_type', { name, order: 3, color: '#123456' });
+    expect(result).toEqual({ id: expect.any(Number), name, order: 3, color: '#123456' });
+    id = result.id;
+    created.push(id);
   });
 
   it('updates the meal type without `default`', async () => {
@@ -48,6 +55,7 @@ async function call(server: McpServer, name: string, args: Record<string, unknow
 
   it('deletes the meal type', async () => {
     expect(await call(server, 'delete_meal_type', { id })).toBe(`Meal type ${id} deleted.`);
+    created.splice(created.indexOf(id), 1);
     await expect(call(server, 'get_meal_type', { id })).rejects.toThrow();
   });
 });
