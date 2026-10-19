@@ -137,3 +137,13 @@ describe('ingredient tools no longer expose the plural flags Tandoor 2.6 removed
     expect(JSON.stringify(tools)).not.toMatch(/always_use_plural/);
   });
 });
+
+describe('parse_ingredient description', () => {
+  it('warns that parsing creates Food and Unit rows', () => {
+    const server = new McpServer({ name: 't', version: 't' });
+    registerIngredientTools(server, new TandoorClient({ url: 'https://x.test', token: 't' }));
+    const tool = listRegisteredTools(server).find((t) => t.name === 'parse_ingredient');
+
+    expect(tool?.description).toMatch(/creates any Food or Unit row/);
+  });
+});
