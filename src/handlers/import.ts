@@ -57,7 +57,7 @@ function slimRecipeImport(r: any) {
     file_uid: r.file_uid,
     file_path: r.file_path,
     created_at: r.created_at,
-    storage: r.storage,
+    storage: r.storage.id,
     space: r.space,
   };
 }
@@ -198,7 +198,7 @@ export async function handleCreateRecipeImport(
   ctx?: HandlerContext,
 ): Promise<string> {
   // Body shape follows this endpoint's spec verbatim; sibling endpoints use different envelopes.
-  const body: any = { name: args.name, storage: args.storage, space: args.space };
+  const body: any = { name: args.name, storage: args.storage };
   if (args.file_uid !== undefined) body.file_uid = args.file_uid;
   if (args.file_path !== undefined) body.file_path = args.file_path;
   const r = await client.imports.createRecipeImport(body, { signal: ctx?.signal });
@@ -224,7 +224,6 @@ export async function handleUpdateRecipeImport(
   if (args.file_uid !== undefined) body.file_uid = args.file_uid;
   if (args.file_path !== undefined) body.file_path = args.file_path;
   if (args.storage !== undefined) body.storage = args.storage;
-  if (args.space !== undefined) body.space = args.space;
   assertNonEmptyBody(body);
   const r = await client.imports.patchRecipeImport(args.id, body, { signal: ctx?.signal });
   return `Recipe import updated.\n\n${emit(args.format === 'full' ? r : slimRecipeImport(r))}`;
