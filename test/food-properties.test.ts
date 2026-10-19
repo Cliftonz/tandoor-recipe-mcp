@@ -33,7 +33,6 @@ beforeAll(async () => {
       const failStatus = req.method === 'DELETE' ? failingDeletes[req.url!] : undefined;
       if (failStatus) {
         res.statusCode = failStatus;
-        res.setHeader('retry-after', '0');
         res.end(JSON.stringify({ detail: `refused-${failStatus}` }));
         return;
       }
