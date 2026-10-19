@@ -86,4 +86,10 @@ describe('meal type tool fields against Tandoor 2.6', () => {
     const tool = tools.find((t) => t.name === 'create_meal_type')!;
     expect(tool.description).toMatch(/existing name returns the existing meal type/i);
   });
+
+  it('create_meal_type description says time is returned as HH:MM:SS', async () => {
+    const { tools } = await mcp.listTools();
+    const tool = tools.find((t) => t.name === 'create_meal_type')!;
+    expect(tool.description).toContain('time (HH:MM; returned as HH:MM:SS)');
+  });
 });

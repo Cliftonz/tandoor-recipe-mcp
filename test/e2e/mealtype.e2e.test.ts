@@ -55,6 +55,14 @@ async function call(server: McpServer, name: string, args: Record<string, unknow
     expect((await call(server, 'get_meal_type', { id: timed.id })).time).toBe('19:45:00');
   });
 
+  it('creating an existing name returns the existing row with its original values', async () => {
+    const dupName = `${name}-dup`;
+    const first = await call(server, 'create_meal_type', { name: dupName, order: 1, color: '#111111', time: '06:00' });
+    created.push(first.id);
+    const second = await call(server, 'create_meal_type', { name: dupName, order: 9, color: '#999999', time: '22:00' });
+    expect(second).toEqual(first);
+  });
+
   it('lists the meal type and Tandoor emits no `default`', async () => {
     const types: any[] = await call(server, 'list_meal_types', {});
     const found = types.find((t) => t.id === id);
