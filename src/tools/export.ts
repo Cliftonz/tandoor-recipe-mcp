@@ -17,7 +17,7 @@ export const exportRecipesShape = {
   type: z.string(),
   recipes: z.array(z.number()).optional(),
   all: z.boolean().optional(),
-  custom_filter: z.number().nullable().optional(),
+  custom_filter: z.number().optional(),
   format: formatEnum,
 } as const;
 
