@@ -84,9 +84,6 @@ export class IngredientClient extends BaseClient {
     });
   }
 
-  /**
-   * Parse a free-form ingredient string into amount/unit/food/note.
-   */
   async parseIngredientString(text: string): Promise<ParsedIngredient> {
     const { ingredient } = await this.request<{ ingredient: ParserIngredient }>('/api/ingredient-parser/post/', {
       method: 'POST',

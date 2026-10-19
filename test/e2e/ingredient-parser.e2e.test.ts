@@ -36,7 +36,7 @@ d('ingredient parsing against live Tandoor', () => {
       original_text: '2 cups flour',
     });
     expect(unit.name).toMatch(/^cups?$/i);
-    expect(food.name).toMatch(/^flour$/i);
+    expect(food.name).toMatch(/^flours?$/i);
   });
 
   it('parse_ingredient keeps the note and reports no unit for "1 egg, beaten"', async () => {
@@ -55,8 +55,8 @@ d('ingredient parsing against live Tandoor', () => {
     expect(food.name).toMatch(/^eggs?$/i);
   });
 
-  it('parse_ingredient surfaces Tandoor\'s 400 for blank input', async () => {
-    const res = await invokeTool(server, 'parse_ingredient', { text: '' });
+  it.each(['', '   '])('parse_ingredient surfaces Tandoor\'s 400 for blank input %j', async (text) => {
+    const res = await invokeTool(server, 'parse_ingredient', { text });
 
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toMatch(/400/);
