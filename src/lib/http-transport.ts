@@ -118,14 +118,9 @@ interface Bucket {
 
 export class FailedAuthLimiter {
   private buckets = new Map<string, Bucket>();
-  private readonly now: () => number;
-
-  constructor(now: () => number = Date.now) {
-    this.now = now;
-  }
 
   consume(key: string): boolean {
-    const now = this.now();
+    const now = Date.now();
     const b = this.buckets.get(key);
     if (!b) {
       // First failure spends 1 of RL_BURST tokens.
@@ -149,9 +144,10 @@ export class FailedAuthLimiter {
   }
 }
 
-export function createHttpTransport(buildServer: () => McpServer, limiter = new FailedAuthLimiter()): HttpTransportHandle {
+export function createHttpTransport(buildServer: () => McpServer): HttpTransportHandle {
   const cfg = resolveHttpConfig();
   const expected = cfg.token ?? '';
+  const limiter = new FailedAuthLimiter();
 
   let draining = false;
   let inFlight = 0;

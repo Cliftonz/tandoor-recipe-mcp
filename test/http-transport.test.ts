@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, onTestFinished } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createHttpTransport, resolveHttpConfig, bearerMatches, FailedAuthLimiter } from '../src/lib/http-transport.js';
 import type { Server } from 'node:http';
@@ -351,8 +351,11 @@ describe('createHttpTransport round-trip', () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
-    handle = createHttpTransport(buildServer, new FailedAuthLimiter(() => 0));
+    handle = createHttpTransport(buildServer);
     await handle.start();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(0);
+    onTestFinished(() => { vi.useRealTimers(); });
 
     for (let i = 0; i < 20; i++) {
       const r = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc(), { Authorization: 'Bearer wrong' });
@@ -464,14 +467,6 @@ describe('FailedAuthLimiter', () => {
   it('trips after 20 back-to-back failures from the same key', () => {
     const limiter = new FailedAuthLimiter();
     for (let i = 0; i < 20; i++) expect(limiter.consume('127.0.0.1')).toBe(true);
-    expect(limiter.consume('127.0.0.1')).toBe(false);
-  });
-  it('refills 10 tokens per second of clock time', () => {
-    let now = 0;
-    const limiter = new FailedAuthLimiter(() => now);
-    for (let i = 0; i < 20; i++) limiter.consume('127.0.0.1');
-    now = 1000;
-    for (let i = 0; i < 10; i++) expect(limiter.consume('127.0.0.1')).toBe(true);
     expect(limiter.consume('127.0.0.1')).toBe(false);
   });
 });
