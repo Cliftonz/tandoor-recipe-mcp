@@ -1067,7 +1067,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_user_file",
   },
   {
-    "description": "Update user preferences (PATCH). Required: user_id. Common fields: theme, default_page (SEARCH/PLAN/BOOKS/SHOPPING), default_unit, use_fractions, use_kj, comments, ingredient_decimals, shopping_auto_sync, shopping_recent_days, mealplan_autoadd_shopping, mealplan_autoinclude_related, mealplan_autoexclude_onhand, filter_to_supermarket, left_handed, plan_share_user_ids[], shopping_share_user_ids[].",
+    "description": "Update user preferences (PATCH). Required: user_id. Common fields: theme, default_page (SEARCH/PLAN/BOOKS/SHOPPING), default_unit, use_fractions, use_kj, comments, ingredient_decimals, shopping_auto_sync, shopping_recent_days, mealplan_autoadd_shopping, mealplan_autoinclude_related, mealplan_autoexclude_onhand, filter_to_supermarket, left_handed, default_meal_type_id (meal type preselected for new meal plans; null clears it), shopping_update_food_lists (new shopping entries inherit their food's shopping lists).",
     "name": "update_user_preference",
   },
   {
@@ -8963,6 +8963,16 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "comments": {
           "type": "boolean",
         },
+        "default_meal_type_id": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
         "default_page": {
           "enum": [
             "SEARCH",
@@ -9000,12 +9010,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "mealplan_autoinclude_related": {
           "type": "boolean",
         },
-        "plan_share_user_ids": {
-          "items": {
-            "type": "number",
-          },
-          "type": "array",
-        },
         "shopping_add_onhand": {
           "type": "boolean",
         },
@@ -9015,11 +9019,8 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "shopping_recent_days": {
           "type": "number",
         },
-        "shopping_share_user_ids": {
-          "items": {
-            "type": "number",
-          },
-          "type": "array",
+        "shopping_update_food_lists": {
+          "type": "boolean",
         },
         "theme": {
           "type": "string",
