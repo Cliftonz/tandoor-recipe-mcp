@@ -351,7 +351,7 @@ describe('createHttpTransport round-trip', () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
-    handle = createHttpTransport(buildServer);
+    handle = createHttpTransport(buildServer, new FailedAuthLimiter(() => 0));
     await handle.start();
 
     for (let i = 0; i < 20; i++) {
@@ -464,6 +464,14 @@ describe('FailedAuthLimiter', () => {
   it('trips after 20 back-to-back failures from the same key', () => {
     const limiter = new FailedAuthLimiter();
     for (let i = 0; i < 20; i++) expect(limiter.consume('127.0.0.1')).toBe(true);
+    expect(limiter.consume('127.0.0.1')).toBe(false);
+  });
+  it('refills 10 tokens per second of clock time', () => {
+    let now = 0;
+    const limiter = new FailedAuthLimiter(() => now);
+    for (let i = 0; i < 20; i++) limiter.consume('127.0.0.1');
+    now = 1000;
+    for (let i = 0; i < 10; i++) expect(limiter.consume('127.0.0.1')).toBe(true);
     expect(limiter.consume('127.0.0.1')).toBe(false);
   });
 });
