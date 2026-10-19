@@ -93,6 +93,24 @@ describe('meal type tool fields against Tandoor 2.6', () => {
     expect(tool.description).toContain('time (HH:MM or HH:MM:SS; returned as HH:MM:SS)');
   });
 
+  it('update_meal_type sends time: null to clear the time', async () => {
+    await call('update_meal_type', { id: 5, time: null });
+    expect(requests[0].body).toEqual({ time: null });
+  });
+
+  it('create_meal_type description says the duplicate-name match ignores case and only finds your meal types', async () => {
+    const { tools } = await mcp.listTools();
+    const tool = tools.find((t) => t.name === 'create_meal_type')!;
+    expect(tool.description).toMatch(/ignores case/);
+    expect(tool.description).toMatch(/only finds meal types you created/);
+  });
+
+  it('update_meal_type description lists its optional fields', async () => {
+    const { tools } = await mcp.listTools();
+    const tool = tools.find((t) => t.name === 'update_meal_type')!;
+    expect(tool.description).toContain('Optional: name, order, color, time (HH:MM or HH:MM:SS)');
+  });
+
   for (const name of ['create_meal_type', 'update_meal_type']) {
     const base = name === 'create_meal_type' ? { name: 'Brunch' } : { id: 5 };
 

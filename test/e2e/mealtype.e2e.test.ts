@@ -55,6 +55,14 @@ async function call(server: McpServer, name: string, args: Record<string, unknow
     expect((await call(server, 'get_meal_type', { id: timed.id })).time).toBe('19:45:00');
   });
 
+  it('clears `time` with null on update', async () => {
+    const timed = await call(server, 'create_meal_type', { name: `${name}-cleared`, time: '12:00' });
+    created.push(timed.id);
+    expect(timed.time).toBe('12:00:00');
+    expect((await call(server, 'update_meal_type', { id: timed.id, time: null })).time).toBeNull();
+    expect((await call(server, 'get_meal_type', { id: timed.id })).time).toBeNull();
+  });
+
   it('creating an existing name returns the existing row with its original values', async () => {
     const dupName = `${name}-dup`;
     const first = await call(server, 'create_meal_type', { name: dupName, order: 1, color: '#111111', time: '06:00' });
