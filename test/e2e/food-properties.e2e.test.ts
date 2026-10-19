@@ -72,11 +72,14 @@ describeE2E('update_food properties against live Tandoor', () => {
     await expect(client.properties.getProperty(fatRowId)).rejects.toThrow(/404/);
   });
 
-  it('sets the properties reference amount and unit', async () => {
+  it('sets the properties reference amount and unit, then clears the unit', async () => {
     await handleUpdateFood(client, { id: foodId, properties_food_amount: 50, properties_food_unit_id: unitId });
     const food = await client.foodUnits.getFood(foodId);
     expect(Number(food.properties_food_amount)).toBe(50);
     expect(food.properties_food_unit.id).toBe(unitId);
+
+    await handleUpdateFood(client, { id: foodId, properties_food_unit_id: null });
+    expect((await client.foodUnits.getFood(foodId)).properties_food_unit).toBeNull();
   });
 
   it('surfaces Tandoor\'s response for a nonexistent property type id', async () => {

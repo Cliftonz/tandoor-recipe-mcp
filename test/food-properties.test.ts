@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { z } from 'zod';
 import { TandoorClient } from '../src/clients/index.js';
+import { updateFoodShape } from '../src/tools/foodunit.js';
 import { handleUpdateFood } from '../src/handlers/foodunit.js';
 import { startStub, Stub } from './helpers/stub-http.js';
 
@@ -157,6 +159,12 @@ describe('update_food properties', () => {
     await handleUpdateFood(client, { id: 5, properties_food_amount: 50, properties_food_unit_id: 7 });
     expect(requests.map((r) => `${r.method} ${r.url}`)).toEqual(['PATCH /api/food/5/']);
     expect(patchBody()).toEqual({ properties_food_amount: 50, properties_food_unit: 7 });
+  });
+
+  it('clears the properties reference unit with null', async () => {
+    const args = z.object(updateFoodShape).parse({ id: 5, properties_food_unit_id: null });
+    await handleUpdateFood(client, args);
+    expect(patchBody()).toEqual({ properties_food_unit: null });
   });
 
   it('empty arrays leave properties untouched', async () => {
