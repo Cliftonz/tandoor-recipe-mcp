@@ -118,7 +118,7 @@ TANDOOR_MCP_HTTP_TOKEN=some-long-random-string \
 npx -y @cliftonz/tandoor-recipes-mcp
 ```
 
-The server listens on `http://127.0.0.1:${TANDOOR_MCP_HTTP_PORT:-3737}/mcp` (POST for JSON-RPC requests, GET for the streaming session). The bind is loopback-only; expose it to another host only through an operator-managed reverse proxy.
+The server listens on `http://127.0.0.1:${TANDOOR_MCP_HTTP_PORT:-3737}/mcp` (POST only for JSON-RPC requests; GET returns 405). The bind is loopback-only; expose it to another host only through an operator-managed reverse proxy.
 
 If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: Bearer <token>`. Missing or wrong tokens get a 401 with `WWW-Authenticate: Bearer`.
 

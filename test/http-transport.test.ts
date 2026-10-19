@@ -154,7 +154,7 @@ describe('createHttpTransport round-trip', () => {
     handle = createHttpTransport(buildServer);
     await handle.start();
 
-    const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method, headers: { Accept: 'text/event-stream' } });
+    const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method });
     expect(res.status).toBe(405);
     expect(res.headers.get('allow')).toBe('POST');
   });
@@ -393,10 +393,6 @@ describe('createHttpTransport round-trip', () => {
   });
 
   it('serves parallel requests without transport-layer crashes and stamps distinct reqIds', async () => {
-    // Note: MCP StreamableHTTPServerTransport (stateless mode) serializes RPCs
-    // at the SDK layer, so a truly concurrent second RPC can return 500 from
-    // the SDK itself. Our http transport must still respond to both and stamp
-    // distinct x-tandoor-req-id headers on each.
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     handle = createHttpTransport(buildServer);
