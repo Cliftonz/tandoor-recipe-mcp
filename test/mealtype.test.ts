@@ -38,7 +38,6 @@ describe('meal type handlers', () => {
       order: 5,
       time: null,
       color: '#ff0000',
-      default: false,
       created_by: 9,
     }));
     const client = { mealTypes: { getMealType } } as any;
@@ -56,7 +55,7 @@ describe('meal type handlers', () => {
   });
 
   it('handleGetMealType with format=full returns raw response verbatim', async () => {
-    const raw = { id: 3, name: 'Dinner', order: 5, time: null, color: null, default: false, created_by: 9 };
+    const raw = { id: 3, name: 'Dinner', order: 5, time: null, color: null, created_by: 9 };
     const getMealType = vi.fn(async () => raw);
     const client = { mealTypes: { getMealType } } as any;
     const out = await handleGetMealType(client, { id: 3, format: 'full' });
@@ -69,7 +68,6 @@ describe('meal type handlers', () => {
       name: 'Old',
       order: 0,
       color: null,
-      default: false,
       ...body,
     }));
     const client = { mealTypes: { patchMealType } } as any;
