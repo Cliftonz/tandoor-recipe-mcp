@@ -46,8 +46,6 @@ export interface Ingredient {
   is_header?: boolean;
   no_amount?: boolean;
   original_text?: string;
-  always_use_plural_unit?: boolean;
-  always_use_plural_food?: boolean;
 }
 
 export interface Step {

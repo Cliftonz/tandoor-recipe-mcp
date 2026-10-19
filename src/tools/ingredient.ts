@@ -34,8 +34,6 @@ export const createIngredientShape = {
   is_header: z.boolean().optional(),
   no_amount: z.boolean().optional(),
   original_text: z.string().optional(),
-  always_use_plural_unit: z.boolean().optional(),
-  always_use_plural_food: z.boolean().optional(),
 } as const;
 
 export const updateIngredientShape = {
@@ -48,8 +46,6 @@ export const updateIngredientShape = {
   is_header: z.boolean().optional(),
   no_amount: z.boolean().optional(),
   original_text: z.string().optional(),
-  always_use_plural_unit: z.boolean().optional(),
-  always_use_plural_food: z.boolean().optional(),
 } as const;
 
 export const deleteIngredientShape = {
@@ -79,7 +75,7 @@ export function registerIngredientTools(server: McpServer, client: TandoorClient
   }, handleGetIngredient);
 
   registerStringTool(server, client, 'create_ingredient', {
-    description: 'Create ingredient. Required: food_id. Optional: unit_id, amount, note, order, is_header, no_amount, original_text, always_use_plural_unit, always_use_plural_food',
+    description: 'Create ingredient. Required: food_id. Optional: unit_id, amount, note, order, is_header, no_amount, original_text',
     inputSchema: createIngredientShape,
   }, handleCreateIngredient);
 

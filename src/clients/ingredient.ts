@@ -2,10 +2,14 @@
 
 import { BaseClient } from './base.js';
 import {
+  Food,
   Ingredient,
   PaginatedIngredientList,
   ParsedIngredient,
+  Unit,
 } from '../types/index.js';
+
+type ParserIngredient = Omit<ParsedIngredient, 'unit' | 'food'> & { unit: Unit | null; food: Food | null };
 
 export class IngredientClient extends BaseClient {
   /**
@@ -83,9 +87,16 @@ export class IngredientClient extends BaseClient {
    * Parse a free-form ingredient string into amount/unit/food/note.
    */
   async parseIngredientString(text: string): Promise<ParsedIngredient> {
-    return this.request<ParsedIngredient>('/api/ingredient-from-string/', {
+    const { ingredient } = await this.request<{ ingredient: ParserIngredient }>('/api/ingredient-parser/post/', {
       method: 'POST',
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ ingredient: text }),
     });
+    return {
+      amount: ingredient.amount,
+      unit: ingredient.unit?.name ?? '',
+      food: ingredient.food?.name ?? '',
+      note: ingredient.note,
+      original_text: ingredient.original_text,
+    };
   }
 }
