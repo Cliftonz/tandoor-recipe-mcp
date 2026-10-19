@@ -44,6 +44,14 @@ describeE2E('user preference round-trip', () => {
     expect(read.default_meal_type_id).toBeNull();
   });
 
+  it('reports no default meal type after the default meal type is deleted', async () => {
+    const doomed = await client.mealTypes.createMealType({ name: `mcp-e2e-userpref-doomed-${Date.now()}` });
+    await handleUpdateUserPreference(client, { user_id: userId, default_meal_type_id: doomed.id });
+    await client.mealTypes.deleteMealType(doomed.id);
+    const read = slim(await handleGetUserPreference(client, { user_id: userId }));
+    expect(read.default_meal_type_id).toBeNull();
+  });
+
   it('toggles shopping_update_food_lists', async () => {
     const flipped = !original.shopping_update_food_lists;
     await handleUpdateUserPreference(client, { user_id: userId, shopping_update_food_lists: flipped });
