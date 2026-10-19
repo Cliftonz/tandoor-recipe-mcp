@@ -92,4 +92,24 @@ describe('meal type tool fields against Tandoor 2.6', () => {
     const tool = tools.find((t) => t.name === 'create_meal_type')!;
     expect(tool.description).toContain('time (HH:MM; returned as HH:MM:SS)');
   });
+
+  for (const name of ['create_meal_type', 'update_meal_type']) {
+    const base = name === 'create_meal_type' ? { name: 'Brunch' } : { id: 5 };
+
+    for (const time of ['25:00', '8:30pm', '8:30', '12:60', '12:30:60']) {
+      it(`${name} rejects time ${time} without calling Tandoor`, async () => {
+        const r: any = await mcp.callTool({ name, arguments: { ...base, time } });
+        expect(r.isError).toBe(true);
+        expect(requests).toEqual([]);
+      });
+    }
+
+    for (const time of ['00:00', '23:59', '08:30:00', '23:59:59']) {
+      it(`${name} accepts time ${time}`, async () => {
+        await call(name, { ...base, time });
+        expect(requests[0].body.time).toBe(time);
+      });
+    }
+  }
 });
+

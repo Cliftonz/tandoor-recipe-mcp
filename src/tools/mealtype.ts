@@ -10,12 +10,13 @@ import {
   handleDeleteMealType,
 } from '../handlers/mealtype.js';
 
+const mealTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/).nullable().optional();
 
 export const createMealTypeShape = {
   name: z.string(),
   order: z.number().optional(),
   color: z.string().nullable().optional(),
-  time: z.string().nullable().optional(),
+  time: mealTime,
   format: formatEnum,
 } as const;
 
@@ -26,7 +27,7 @@ export const updateMealTypeShape = {
   name: z.string().optional(),
   order: z.number().optional(),
   color: z.string().nullable().optional(),
-  time: z.string().nullable().optional(),
+  time: mealTime,
   format: formatEnum,
 } as const;
 
