@@ -8,7 +8,7 @@ import { startStub, Stub } from './helpers/stub-http.js';
 
 interface Captured { method: string; body: any }
 
-describe('meal type tools drop the Tandoor 2.6 removed `default` field', () => {
+describe('meal type tool fields against Tandoor 2.6', () => {
   let stub: Stub;
   let mcp: Client;
   let server: McpServer;
@@ -44,6 +44,8 @@ describe('meal type tools drop the Tandoor 2.6 removed `default` field', () => {
   const call = async (name: string, args: Record<string, unknown>) => {
     const r: any = await mcp.callTool({ name, arguments: args });
     expect(r.isError).toBeFalsy();
+    const text: string = r.content[0].text;
+    return JSON.parse(text.slice(text.indexOf('{')));
   };
 
   it('create and update schemas and descriptions no longer advertise `default`', async () => {
@@ -65,5 +67,23 @@ describe('meal type tools drop the Tandoor 2.6 removed `default` field', () => {
     await call('update_meal_type', { id: 5, name: 'Late', default: true });
     expect(requests[0].method).toBe('PATCH');
     expect(requests[0].body).toEqual({ name: 'Late' });
+  });
+
+  it('create_meal_type sends `time` and returns it in the slim output', async () => {
+    const out = await call('create_meal_type', { name: 'Brunch', time: '10:30' });
+    expect(requests[0].body).toEqual({ name: 'Brunch', time: '10:30' });
+    expect(out).toEqual({ id: 5, name: 'Brunch', time: '10:30' });
+  });
+
+  it('update_meal_type sends `time` and returns it in the slim output', async () => {
+    const out = await call('update_meal_type', { id: 5, time: '07:15' });
+    expect(requests[0].body).toEqual({ time: '07:15' });
+    expect(out).toEqual({ id: 5, name: 'Brunch', time: '07:15' });
+  });
+
+  it('create_meal_type description says an existing name returns the existing row', async () => {
+    const { tools } = await mcp.listTools();
+    const tool = tools.find((t) => t.name === 'create_meal_type')!;
+    expect(tool.description).toMatch(/existing name returns the existing meal type/i);
   });
 });

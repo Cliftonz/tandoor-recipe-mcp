@@ -15,6 +15,7 @@ export const createMealTypeShape = {
   name: z.string(),
   order: z.number().optional(),
   color: z.string().nullable().optional(),
+  time: z.string().nullable().optional(),
   format: formatEnum,
 } as const;
 
@@ -25,6 +26,7 @@ export const updateMealTypeShape = {
   name: z.string().optional(),
   order: z.number().optional(),
   color: z.string().nullable().optional(),
+  time: z.string().nullable().optional(),
   format: formatEnum,
 } as const;
 
@@ -37,7 +39,7 @@ export type DeleteMealTypeArgs = z.infer<z.ZodObject<typeof deleteMealTypeShape>
 
 export function registerMealTypeTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'create_meal_type', {
-    description: 'Create a meal type. Required: name. Optional: order, color (hex, max 7 chars).',
+    description: 'Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), time (HH:MM). Creating with an existing name returns the existing meal type unchanged and ignores the order, color and time passed.',
     inputSchema: createMealTypeShape,
   }, handleCreateMealType);
 

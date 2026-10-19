@@ -31,7 +31,7 @@ describe('meal type handlers', () => {
     expect(out).toContain('"name":"Brunch"');
   });
 
-  it('handleGetMealType returns slim projection (id, name, order, color) and drops created_by', async () => {
+  it('handleGetMealType returns slim projection (id, name, order, color, time) and drops created_by', async () => {
     const getMealType = vi.fn(async () => ({
       id: 3,
       name: 'Dinner',
@@ -50,9 +50,9 @@ describe('meal type handlers', () => {
       name: 'Dinner',
       order: 5,
       color: '#ff0000',
+      time: null,
     });
     expect(parsed).not.toHaveProperty('created_by');
-    expect(parsed).not.toHaveProperty('time');
   });
 
   it('handleGetMealType with format=full returns raw response verbatim', async () => {

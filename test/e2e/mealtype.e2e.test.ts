@@ -36,14 +36,23 @@ async function call(server: McpServer, name: string, args: Record<string, unknow
 
   it('creates a meal type without `default`', async () => {
     const result = await call(server, 'create_meal_type', { name, order: 3, color: '#123456' });
-    expect(result).toEqual({ id: expect.any(Number), name, order: 3, color: '#123456' });
+    expect(result).toEqual({ id: expect.any(Number), name, order: 3, color: '#123456', time: null });
     id = result.id;
     created.push(id);
   });
 
   it('updates the meal type without `default`', async () => {
     const updated = await call(server, 'update_meal_type', { id, name: `${name}-renamed` });
-    expect(updated).toEqual({ id, name: `${name}-renamed`, order: 3, color: '#123456' });
+    expect(updated).toEqual({ id, name: `${name}-renamed`, order: 3, color: '#123456', time: null });
+  });
+
+  it('round-trips `time` through create and update', async () => {
+    const timed = await call(server, 'create_meal_type', { name: `${name}-timed`, time: '08:30' });
+    created.push(timed.id);
+    expect(timed.time).toBe('08:30:00');
+    const updated = await call(server, 'update_meal_type', { id: timed.id, time: '19:45' });
+    expect(updated.time).toBe('19:45:00');
+    expect((await call(server, 'get_meal_type', { id: timed.id })).time).toBe('19:45:00');
   });
 
   it('lists the meal type and Tandoor emits no `default`', async () => {
