@@ -66,8 +66,8 @@ export const bulkCreateMealPlansShape = {
 } as const;
 
 export const autoMealPlanShape = {
-  start_date: z.string(),
-  end_date: z.string(),
+  start_date: z.iso.date(),
+  end_date: z.iso.date(),
   meal_type_id: z.number(),
   keyword_ids: z.array(z.number()).optional(),
   keyword_mode: z.enum(['or', 'and']).optional(),

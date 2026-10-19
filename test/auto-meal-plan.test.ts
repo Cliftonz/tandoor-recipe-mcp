@@ -9,11 +9,14 @@ import { startStub, Stub } from './helpers/stub-http.js';
 
 let stub: Stub;
 let body: Record<string, unknown>;
+let requests: number;
 let reply: { status: number; json: string };
 
 beforeEach(async () => {
   reply = { status: 200, json: '[]' };
+  requests = 0;
   stub = await startStub((req, res) => {
+    requests++;
     let raw = '';
     req.on('data', (c) => { raw += c; });
     req.on('end', () => {
@@ -80,5 +83,15 @@ describe('auto_meal_plan when Tandoor finds no recipes', () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('400');
     expect(result.content[0].text).toContain('No recipes found.');
+  });
+});
+
+describe('auto_meal_plan date validation', () => {
+  it.each(['2026-13-45', '2026-02-30', 'tomorrow'])('rejects %s as start_date or end_date without calling Tandoor', async (bad) => {
+    const asStart = await callTool({ ...base, start_date: bad });
+    const asEnd = await callTool({ ...base, end_date: bad });
+    expect(asStart.isError).toBe(true);
+    expect(asEnd.isError).toBe(true);
+    expect(requests).toBe(0);
   });
 });
