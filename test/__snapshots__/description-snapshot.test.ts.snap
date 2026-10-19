@@ -963,7 +963,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_export_log",
   },
   {
-    "description": "Update food (PATCH). Required: id.",
+    "description": "Update food (PATCH). Required: id. Optional properties[] {property_type_id, property_amount} sets one value per property type (amount null = unknown), replacing any existing value of that type; remove_property_type_ids[] deletes values by type. Other existing property values are kept. A type may appear once across both lists.",
     "name": "update_food",
   },
   {
@@ -7696,6 +7696,38 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         },
         "plural_name": {
           "type": "string",
+        },
+        "properties": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "property_amount": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "property_type_id": {
+                "type": "number",
+              },
+            },
+            "required": [
+              "property_type_id",
+              "property_amount",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "remove_property_type_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
         },
         "supermarket_category_id": {
           "anyOf": [
