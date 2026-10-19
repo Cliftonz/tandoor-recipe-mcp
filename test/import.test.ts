@@ -167,10 +167,10 @@ describe('handleCreateRecipeImport', () => {
     const createRecipeImport = vi.fn(async (b: any) => ({ id: 5, created_at: 't', ...b, storage: { id: b.storage } }));
     const client = mkClient({ createRecipeImport });
     const out = await handleCreateRecipeImport(client, {
-      name: 'b.pdf', file_uid: 'uu', file_path: '/p/b', storage: 2,
+      name: 'b.pdf', storage: 2,
     });
     expect(createRecipeImport).toHaveBeenCalledWith({
-      name: 'b.pdf', file_uid: 'uu', file_path: '/p/b', storage: 2,
+      name: 'b.pdf', storage: 2,
     }, { signal: undefined });
     expect(out).toContain('Recipe import queued');
   });
@@ -214,12 +214,12 @@ describe('handleDeleteRecipeImport', () => {
 });
 
 describe('handleImportAllPending', () => {
-  it('POSTs to /import_all/ and returns confirmation', async () => {
-    const importAllPending = vi.fn(async () => ({ id: 0, name: 'batch', created_at: 't', storage: 0, space: 0 }));
+  it('returns Tandoor\'s {msg} response unchanged', async () => {
+    const importAllPending = vi.fn(async () => ({ msg: 'ok' }));
     const client = mkClient({ importAllPending });
     const out = await handleImportAllPending(client, {});
-    expect(importAllPending).toHaveBeenCalled();
     expect(out).toContain('Bulk import of pending recipes triggered');
+    expect(out).toContain('{"msg":"ok"}');
   });
 });
 

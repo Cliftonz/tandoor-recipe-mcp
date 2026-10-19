@@ -10,7 +10,7 @@ import {
 import { createRecipeImportShape } from '../src/tools/import.js';
 import { startStub, Stub } from './helpers/stub-http.js';
 
-const nestedStorage = { id: 4, name: 'local', method: 'LOCAL', path: '/r', token: 'secret-xyz' };
+const nestedStorage = { id: 4, name: 'local', method: 'LOCAL', username: null, url: null, path: '/r', created_by: 1 };
 const tandoorRow = {
   id: 9, storage: nestedStorage, name: 'a.pdf', file_uid: 'u', file_path: '/r/a.pdf', created_at: 't',
 };
@@ -52,10 +52,20 @@ describe('recipe-import against Tandoor 2.6 shape', () => {
     expect(lastBody).toEqual({ storage: 4 });
   });
 
+  it('create does not send file_uid or file_path', async () => {
+    await handleCreateRecipeImport(client, { name: 'a.pdf', storage: 4, file_uid: 'u', file_path: '/r/a.pdf' } as any);
+    expect(lastBody).toEqual({ name: 'a.pdf', storage: 4 });
+  });
+
+  it('update with only file_uid and file_path is rejected as empty', async () => {
+    await expect(handleUpdateRecipeImport(client, { id: 9, file_uid: 'u', file_path: '/r/a.pdf' } as any))
+      .rejects.toThrow(/At least one field/);
+    expect(lastBody).toBeUndefined();
+  });
+
   it('slim output flattens nested storage to its id', async () => {
     const out = JSON.parse(await handleGetRecipeImport(client, { id: 9 }));
     expect(out.storage).toBe(4);
-    expect(JSON.stringify(out)).not.toContain('secret-xyz');
   });
 
   it('slim list output flattens nested storage to its id', async () => {

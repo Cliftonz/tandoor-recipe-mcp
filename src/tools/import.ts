@@ -90,8 +90,6 @@ export const listRecipeImportsShape = {
 
 export const createRecipeImportShape = {
   name: z.string(),
-  file_uid: z.string().optional(),
-  file_path: z.string().optional(),
   storage: z.number(),
   format: formatEnum,
 } as const;
@@ -101,8 +99,6 @@ export const getRecipeImportShape = { id: z.number(), format: formatEnum } as co
 export const updateRecipeImportShape = {
   id: z.number(),
   name: z.string().optional(),
-  file_uid: z.string().optional(),
-  file_path: z.string().optional(),
   storage: z.number().optional(),
   format: formatEnum,
 } as const;
@@ -226,7 +222,7 @@ export function registerImportTools(server: McpServer, client: TandoorClient): v
   }, handleListRecipeImports);
 
   registerStringTool(server, client, 'create_recipe_import', {
-    description: 'Add an entry to the recipe-import staging queue. Required: name, storage. Optional: file_uid, file_path. Does not import; call import_pending_recipe or import_all_pending afterwards.',
+    description: 'Add an entry to the recipe-import staging queue. Required: name, storage. Does not import; call import_pending_recipe or import_all_pending afterwards.',
     inputSchema: createRecipeImportShape,
   }, handleCreateRecipeImport);
 

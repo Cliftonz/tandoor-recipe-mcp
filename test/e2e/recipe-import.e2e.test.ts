@@ -16,12 +16,14 @@ const parse = (text: string) => JSON.parse(text.slice(text.indexOf('{')));
 describe.skipIf(!(url && token))('recipe-import against live Tandoor', () => {
   let client: TandoorClient;
   const storageIds: number[] = [];
+  const importIds = new Set<number>();
 
   beforeAll(() => {
     client = new TandoorClient({ url: url!, token: token! });
   });
 
   afterAll(async () => {
+    for (const id of importIds) await client.imports.deleteRecipeImport(id);
     for (const id of storageIds) await client.storages.deleteStorage(id);
   });
 
@@ -32,6 +34,7 @@ describe.skipIf(!(url && token))('recipe-import against live Tandoor', () => {
     storageIds.push(s2.id);
 
     const created = parse(await handleCreateRecipeImport(client, { name: `${prefix}.pdf`, storage: s1.id }));
+    importIds.add(created.id);
     expect(created.storage).toBe(s1.id);
 
     const updated = parse(await handleUpdateRecipeImport(client, { id: created.id, storage: s2.id }));
@@ -41,6 +44,7 @@ describe.skipIf(!(url && token))('recipe-import against live Tandoor', () => {
     expect(listed.results).toContainEqual(expect.objectContaining({ id: created.id, storage: s2.id }));
 
     await handleDeleteRecipeImport(client, { id: created.id });
+    importIds.delete(created.id);
     const after = parse(await handleListRecipeImports(client, { page_size: 100 }));
     expect(after.results.map((r: any) => r.id)).not.toContain(created.id);
   });
