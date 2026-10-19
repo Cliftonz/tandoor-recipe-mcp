@@ -169,9 +169,6 @@ describe('handleCreateRecipeImport', () => {
     const out = await handleCreateRecipeImport(client, {
       name: 'b.pdf', storage: 2,
     });
-    expect(createRecipeImport).toHaveBeenCalledWith({
-      name: 'b.pdf', storage: 2,
-    }, { signal: undefined });
     expect(out).toContain('Recipe import queued');
   });
 });

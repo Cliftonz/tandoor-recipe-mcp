@@ -50,7 +50,6 @@ function slimOpenDataMeta(m: any) {
 }
 
 function slimRecipeImport(r: any) {
-  if (!r) return r;
   return {
     id: r.id,
     name: r.name,
@@ -58,7 +57,6 @@ function slimRecipeImport(r: any) {
     file_path: r.file_path,
     created_at: r.created_at,
     storage: r.storage.id,
-    space: r.space,
   };
 }
 
@@ -198,8 +196,7 @@ export async function handleCreateRecipeImport(
   ctx?: HandlerContext,
 ): Promise<string> {
   // Body shape follows this endpoint's spec verbatim; sibling endpoints use different envelopes.
-  const body: any = { name: args.name, storage: args.storage };
-  const r = await client.imports.createRecipeImport(body, { signal: ctx?.signal });
+  const r = await client.imports.createRecipeImport({ name: args.name, storage: args.storage }, { signal: ctx?.signal });
   return `Recipe import queued.\n\n${emit(args.format === 'full' ? r : slimRecipeImport(r))}`;
 }
 

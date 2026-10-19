@@ -65,7 +65,7 @@ describe('recipe-import against Tandoor 2.6 shape', () => {
 
   it('slim output flattens nested storage to its id', async () => {
     const out = JSON.parse(await handleGetRecipeImport(client, { id: 9 }));
-    expect(out.storage).toBe(4);
+    expect(out).toEqual({ id: 9, name: 'a.pdf', file_uid: 'u', file_path: '/r/a.pdf', created_at: 't', storage: 4 });
   });
 
   it('slim list output flattens nested storage to its id', async () => {

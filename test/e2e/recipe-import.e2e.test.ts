@@ -5,6 +5,7 @@ import {
   handleUpdateRecipeImport,
   handleListRecipeImports,
   handleDeleteRecipeImport,
+  handleImportAllPending,
 } from '../../src/handlers/import.js';
 
 const url = process.env.TANDOOR_URL;
@@ -16,14 +17,18 @@ const parse = (text: string) => JSON.parse(text.slice(text.indexOf('{')));
 describe.skipIf(!(url && token))('recipe-import against live Tandoor', () => {
   let client: TandoorClient;
   const storageIds: number[] = [];
-  const importIds = new Set<number>();
 
   beforeAll(() => {
     client = new TandoorClient({ url: url!, token: token! });
   });
 
   afterAll(async () => {
-    for (const id of importIds) await client.imports.deleteRecipeImport(id);
+    const recipes = await client.recipes.listRecipes({ query: prefix, page_size: 100 });
+    for (const r of recipes.results) await client.recipes.deleteRecipe(r.id!);
+    const imports = await client.imports.listRecipeImports({ page_size: 100 });
+    for (const i of imports.results.filter((i: any) => i.name.startsWith(prefix))) {
+      await client.imports.deleteRecipeImport(i.id);
+    }
     for (const id of storageIds) await client.storages.deleteStorage(id);
   });
 
@@ -34,7 +39,6 @@ describe.skipIf(!(url && token))('recipe-import against live Tandoor', () => {
     storageIds.push(s2.id);
 
     const created = parse(await handleCreateRecipeImport(client, { name: `${prefix}.pdf`, storage: s1.id }));
-    importIds.add(created.id);
     expect(created.storage).toBe(s1.id);
 
     const updated = parse(await handleUpdateRecipeImport(client, { id: created.id, storage: s2.id }));
@@ -44,8 +48,20 @@ describe.skipIf(!(url && token))('recipe-import against live Tandoor', () => {
     expect(listed.results).toContainEqual(expect.objectContaining({ id: created.id, storage: s2.id }));
 
     await handleDeleteRecipeImport(client, { id: created.id });
-    importIds.delete(created.id);
     const after = parse(await handleListRecipeImports(client, { page_size: 100 }));
     expect(after.results.map((r: any) => r.id)).not.toContain(created.id);
+  });
+
+  it('import_all_pending returns Tandoor\'s raw response and converts queued imports to recipes', async () => {
+    const s = await client.storages.createStorage({ name: `${prefix}-s3`, method: 'LOCAL', path: '/tmp/e2e-rimport' });
+    storageIds.push(s.id);
+    const name = `${prefix}-all.pdf`;
+    await handleCreateRecipeImport(client, { name, storage: s.id });
+
+    const out = await handleImportAllPending(client, {});
+    expect(parse(out)).toEqual({ msg: 'ok' });
+
+    const recipes = await client.recipes.listRecipes({ query: name });
+    expect(recipes.results.map((r: any) => r.name)).toContain(name);
   });
 });
