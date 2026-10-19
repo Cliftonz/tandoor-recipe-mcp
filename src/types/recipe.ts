@@ -159,7 +159,9 @@ export interface PaginatedIngredientList {
 export interface ParsedIngredient {
   amount: number;
   unit: string;
+  unit_id?: number;
   food: string;
+  food_id: number;
   note: string;
   original_text: string;
 }

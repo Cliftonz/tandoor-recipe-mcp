@@ -15,14 +15,14 @@ interface Captured {
 function parserResponse(ingredient: string) {
   const table: Record<string, any> = {
     '2 cups flour': {
-      food: { name: 'flour' },
-      unit: { name: 'cups' },
+      food: { id: 11, name: 'flour' },
+      unit: { id: 22, name: 'cups' },
       amount: 2,
       note: '',
       original_text: '2 cups flour',
     },
     'salt': {
-      food: { name: 'salt' },
+      food: { id: 33, name: 'salt' },
       unit: null,
       amount: 0,
       note: '',
@@ -67,13 +67,15 @@ describe('parse_ingredient against the Tandoor 2.6 ingredient-parser endpoint', 
     expect(JSON.parse(res.content[0].text)).toEqual({
       amount: 2,
       unit: 'cups',
+      unit_id: 22,
       food: 'flour',
+      food_id: 11,
       note: '',
       original_text: '2 cups flour',
     });
   });
 
-  it('reports an empty unit when the parser finds none', async () => {
+  it('reports an empty unit and no unit_id when the parser finds none', async () => {
     const client = await stubTandoor([]);
     const server = new McpServer({ name: 't', version: 't' });
     registerIngredientTools(server, client);
@@ -84,6 +86,7 @@ describe('parse_ingredient against the Tandoor 2.6 ingredient-parser endpoint', 
       amount: 0,
       unit: '',
       food: 'salt',
+      food_id: 33,
       note: '',
       original_text: 'salt',
     });
