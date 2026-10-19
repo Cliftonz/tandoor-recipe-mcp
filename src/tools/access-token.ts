@@ -72,7 +72,7 @@ export function registerAccessTokenTools(server: McpServer, client: TandoorClien
   }, handleCreateAccessToken);
 
   registerStringTool(server, client, 'update_access_token', {
-    description: "Update an access token (PATCH). Required: id. Token strings redacted in slim; use format='full' to reveal.",
+    description: "Update an access token (PATCH). Required: id. Optional: scope, expires (ISO 8601 datetime with seconds, e.g. 2026-12-01T10:00:00Z). Token strings redacted in slim; use format='full' to reveal.",
     inputSchema: updateAccessTokenShape,
   }, handleUpdateAccessToken);
 
