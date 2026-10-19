@@ -164,6 +164,36 @@ describe('createHttpTransport round-trip', () => {
     await vi.waitFor(() => expect(closed).toBe(1));
   });
 
+  it('stop() ends an in-flight tool call at the drain deadline', async () => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    process.env.TANDOOR_MCP_HTTP_DRAIN_MS = '200';
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => { release = resolve; });
+    onTestFinished(() => release());
+    let entered!: () => void;
+    const started = new Promise<void>((resolve) => { entered = resolve; });
+    const h = createHttpTransport(() => {
+      const server = buildServer();
+      server.registerTool('hang', { description: 'hang' }, async () => {
+        entered();
+        await blocked;
+        return { content: [{ type: 'text', text: 'done' }] };
+      });
+      return server;
+    });
+    await h.start();
+
+    const call = postJson(`http://127.0.0.1:${port}/mcp`, { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'hang', arguments: {} } }).catch(() => undefined);
+    await started;
+    const outcome = await Promise.race([
+      h.stop().then(() => 'stopped'),
+      new Promise((resolve) => setTimeout(() => resolve('still draining'), 1000)),
+    ]);
+    expect(outcome).toBe('stopped');
+    await call;
+  });
+
   it.each(['GET', 'DELETE', 'PUT'])('%s on the MCP path returns 405 with Allow: POST', async (method) => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);

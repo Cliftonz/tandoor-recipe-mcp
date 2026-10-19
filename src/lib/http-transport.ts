@@ -148,6 +148,7 @@ export function createHttpTransport(buildServer: () => McpServer): HttpTransport
   const cfg = resolveHttpConfig();
   const expected = cfg.token ?? '';
   const limiter = new FailedAuthLimiter();
+  const live = new Set<McpServer>();
 
   let draining = false;
   let inFlight = 0;
@@ -209,7 +210,11 @@ export function createHttpTransport(buildServer: () => McpServer): HttpTransport
           const parsed = raw.length > 0 ? JSON.parse(raw) : undefined;
           const server = buildServer();
           const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-          res.on('close', () => server.close());
+          live.add(server);
+          res.on('close', () => {
+            live.delete(server);
+            server.close();
+          });
           await server.connect(transport);
           await transport.handleRequest(req, res, parsed);
         } catch (err) {
@@ -265,6 +270,7 @@ export function createHttpTransport(buildServer: () => McpServer): HttpTransport
           t.unref();
         });
       }
+      await Promise.all([...live].map((s) => s.close()));
       await new Promise<void>((resolve) => {
         httpServer.close(() => resolve());
       });
