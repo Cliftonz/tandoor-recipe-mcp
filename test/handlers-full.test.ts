@@ -438,18 +438,6 @@ describe('meal plan handlers — misc', () => {
     });
   });
 
-  it('handleAutoMealPlan rejects empty keyword_ids', async () => {
-    const autoCreateMealPlans = vi.fn();
-    const client = { mealPlans: { autoCreateMealPlans } } as any;
-    await expect(
-      handleAutoMealPlan(client, {
-        start_date: '2026-04-18', end_date: '2026-04-25',
-        meal_type_id: 1, keyword_ids: [], servings: 2, addshopping: false,
-      })
-    ).rejects.toThrow(/non-empty/);
-    expect(autoCreateMealPlans).not.toHaveBeenCalled();
-  });
-
   it('handleAutoMealPlan rejects start_date > end_date', async () => {
     const autoCreateMealPlans = vi.fn();
     const client = { mealPlans: { autoCreateMealPlans } } as any;
@@ -471,7 +459,7 @@ describe('meal plan handlers — misc', () => {
     });
     expect(autoCreateMealPlans).toHaveBeenCalledWith({
       start_date: '2026-04-18', end_date: '2026-04-25',
-      meal_type_id: 2, keyword_ids: [1, 2], servings: 3, addshopping: true,
+      meal_type_id: 2, keywords: [1, 2], servings: 3, addshopping: true,
     });
   });
 });

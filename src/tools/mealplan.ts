@@ -70,6 +70,7 @@ export const autoMealPlanShape = {
   end_date: z.string(),
   meal_type_id: z.number(),
   keyword_ids: z.array(z.number()),
+  keyword_mode: z.enum(['or', 'and']).optional(),
   servings: z.number(),
   addshopping: z.boolean(),
 } as const;
@@ -109,7 +110,7 @@ export function registerMealPlanTools(server: McpServer, client: TandoorClient):
   }, handleDeleteMealPlan);
 
   registerStringTool(server, client, 'auto_meal_plan', {
-    description: 'Auto-generate meal plans. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, keyword_ids[], servings, addshopping',
+    description: 'Auto-generate meal plans. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, keyword_ids[], servings, addshopping. Optional: keyword_mode ("and" default: recipes must carry every keyword; "or": any keyword)',
     inputSchema: autoMealPlanShape,
   }, handleAutoMealPlan);
 
