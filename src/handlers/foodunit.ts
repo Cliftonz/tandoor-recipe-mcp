@@ -98,6 +98,22 @@ export async function handleUpdateFood(
   if (args.supermarket_category_id !== undefined) {
     body.supermarket_category = args.supermarket_category_id;
   }
+  const set = args.properties ?? [];
+  const remove = args.remove_property_type_ids ?? [];
+  if (set.length > 0 || remove.length > 0) {
+    const touched = new Set<number>();
+    for (const typeId of [...set.map((p) => p.property_type_id), ...remove]) {
+      if (touched.has(typeId)) throw new Error(`property_type_id ${typeId} appears more than once across properties and remove_property_type_ids`);
+      touched.add(typeId);
+    }
+    const current = await client.foodUnits.getFood(args.id);
+    body.properties = [
+      ...current.properties
+        .filter((p: any) => !touched.has(p.property_type.id))
+        .map((p: any) => ({ id: p.id, property_amount: p.property_amount, property_type: p.property_type.id })),
+      ...set.map((p) => ({ property_amount: p.property_amount, property_type: p.property_type_id })),
+    ];
+  }
   assertNonEmptyBody(body);
   const updated = await client.foodUnits.patchFood(args.id, body);
   return `Food updated.\n\n${emit(args.format === 'full' ? updated : slimFood(updated))}`;
