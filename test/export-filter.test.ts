@@ -48,7 +48,7 @@ describe('export_recipes custom_filter request shape', () => {
     const controller = new AbortController();
     controller.abort();
 
-    await expect(handleExportRecipes(client, { type: 'DEFAULT', custom_filter: 7 }, { signal: controller.signal })).rejects.toThrow();
+    await expect(handleExportRecipes(client, { type: 'DEFAULT', custom_filter: 7 }, { signal: controller.signal })).rejects.toBe(controller.signal.reason);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
