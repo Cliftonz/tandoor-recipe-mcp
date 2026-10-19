@@ -4764,15 +4764,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
-      "properties": {
-        "format": {
-          "enum": [
-            "slim",
-            "full",
-          ],
-          "type": "string",
-        },
-      },
+      "properties": {},
       "type": "object",
     },
     "name": "import_all_pending",
