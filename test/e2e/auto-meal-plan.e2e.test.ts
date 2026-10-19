@@ -24,7 +24,7 @@ d('auto_meal_plan against live Tandoor', () => {
     return page.results.map((mp) => mp.recipe!.id!);
   }
 
-  async function autoPlan(from: string, to: string, keyword_ids: number[], keyword_mode?: 'or' | 'and') {
+  async function autoPlan(from: string, to: string, keyword_ids?: number[], keyword_mode?: 'or' | 'and') {
     await handleAutoMealPlan(client, {
       start_date: from, end_date: to, meal_type_id: mealTypeId,
       keyword_ids, servings: 1, addshopping: false, ...(keyword_mode && { keyword_mode }),
@@ -82,5 +82,9 @@ d('auto_meal_plan against live Tandoor', () => {
 
   it('an empty keyword list plans a recipe', async () => {
     expect(await autoPlan(dayFromNow(204), dayFromNow(204), [])).toHaveLength(1);
+  });
+
+  it('omitting keyword_ids plans a recipe', async () => {
+    expect(await autoPlan(dayFromNow(205), dayFromNow(205))).toHaveLength(1);
   });
 });

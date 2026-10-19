@@ -69,7 +69,7 @@ export const autoMealPlanShape = {
   start_date: z.string(),
   end_date: z.string(),
   meal_type_id: z.number(),
-  keyword_ids: z.array(z.number()),
+  keyword_ids: z.array(z.number()).optional(),
   keyword_mode: z.enum(['or', 'and']).optional(),
   servings: z.number(),
   addshopping: z.boolean(),
@@ -110,7 +110,7 @@ export function registerMealPlanTools(server: McpServer, client: TandoorClient):
   }, handleDeleteMealPlan);
 
   registerStringTool(server, client, 'auto_meal_plan', {
-    description: 'Auto-generate meal plans. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, keyword_ids[], servings, addshopping. Optional: keyword_mode ("and" default: recipes must carry every keyword; "or": any keyword)',
+    description: 'Auto-generate meal plans from internal recipes the user can see. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, servings, addshopping. Optional: keyword_ids[] (omitted or empty plans from all recipes), keyword_mode ("and" default: recipes must carry every keyword; "or": any keyword). Tandoor plans at most 14 days and ignores shared. When no recipe matches, Tandoor returns 400 "No recipes found."',
     inputSchema: autoMealPlanShape,
   }, handleAutoMealPlan);
 
