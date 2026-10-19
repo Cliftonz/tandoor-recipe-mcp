@@ -6,6 +6,7 @@
 # Outputs to stdout when GITHUB_ENV is not set:
 #   export TANDOOR_URL=<url>
 #   export TANDOOR_TOKEN=<token>
+#   export TANDOOR_COMPOSE_FILE=<path>
 # When running in GitHub Actions: writes those plus TANDOOR_COMPOSE_FILE to
 # $GITHUB_ENV, and stays silent on stdout for the token (the value is also
 # masked via `::add-mask::` so it never appears verbatim in build logs).

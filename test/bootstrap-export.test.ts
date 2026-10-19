@@ -18,7 +18,6 @@ beforeAll(() => {
   root = mkdtempSync(path.join(tmpdir(), 'bootstrap-export-'));
   const bin = path.join(root, 'bin');
   mkdirSync(bin);
-  stub(bin, 'openssl', 'echo deadbeef');
   stub(bin, 'curl', 'echo 200');
   stub(bin, 'docker', `case "$*" in
   *showmigrations*) echo 0 ;;
@@ -43,7 +42,8 @@ describe('tandoor-bootstrap.sh local output', () => {
           TANDOOR_TEST_DIR: testDir,
           TANDOOR_TEST_PORT: '8123',
         },
-        stdio: ['ignore', 'pipe', 'ignore'],
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: 20_000,
       },
     ).toString();
     const childEnv = Object.fromEntries(
