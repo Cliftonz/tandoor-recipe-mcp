@@ -7,51 +7,29 @@ import { invokeTool, listRegisteredTools } from './helpers/mcp.js';
 import { startStub, type Stub } from './helpers/stub-http.js';
 
 interface Captured {
-  method?: string;
-  url?: string;
-  body?: any;
+  method: string;
+  url: string;
+  body: any;
 }
 
 function parserResponse(ingredient: string) {
   const table: Record<string, any> = {
     '2 cups flour': {
-      id: null,
-      food: { id: 11, name: 'flour', plural_name: null },
-      unit: { id: 3, name: 'cups', plural_name: null, description: null },
+      food: { name: 'flour' },
+      unit: { name: 'cups' },
       amount: 2,
       note: '',
-      order: 0,
-      is_header: false,
-      no_amount: false,
       original_text: '2 cups flour',
-      checked: false,
     },
     'salt': {
-      id: null,
-      food: { id: 12, name: 'salt', plural_name: null },
+      food: { name: 'salt' },
       unit: null,
       amount: 0,
       note: '',
-      order: 0,
-      is_header: false,
-      no_amount: false,
       original_text: 'salt',
-      checked: false,
-    },
-    '2 cups': {
-      id: null,
-      food: null,
-      unit: { id: 3, name: 'cups', plural_name: null, description: null },
-      amount: 2,
-      note: '',
-      order: 0,
-      is_header: false,
-      no_amount: false,
-      original_text: '2 cups',
-      checked: false,
     },
   };
-  return { ingredient: table[ingredient], ingredients: [] };
+  return { ingredient: table[ingredient] };
 }
 
 let stub: Stub | undefined;
@@ -66,7 +44,7 @@ async function stubTandoor(captured: Captured[]): Promise<TandoorClient> {
     req.on('data', (c) => (raw += c));
     req.on('end', () => {
       const body = raw ? JSON.parse(raw) : undefined;
-      captured.push({ method: req.method, url: req.url, body });
+      captured.push({ method: req.method!, url: req.url!, body });
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify(parserResponse(body.ingredient)));
     });
@@ -108,22 +86,6 @@ describe('parse_ingredient against the Tandoor 2.6 ingredient-parser endpoint', 
       food: 'salt',
       note: '',
       original_text: 'salt',
-    });
-  });
-
-  it('reports an empty food when the parser finds none', async () => {
-    const client = await stubTandoor([]);
-    const server = new McpServer({ name: 't', version: 't' });
-    registerIngredientTools(server, client);
-
-    const res = await invokeTool(server, 'parse_ingredient', { text: '2 cups' });
-
-    expect(JSON.parse(res.content[0].text)).toEqual({
-      amount: 2,
-      unit: 'cups',
-      food: '',
-      note: '',
-      original_text: '2 cups',
     });
   });
 

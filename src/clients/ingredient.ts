@@ -2,14 +2,12 @@
 
 import { BaseClient } from './base.js';
 import {
-  Food,
   Ingredient,
   PaginatedIngredientList,
   ParsedIngredient,
-  Unit,
 } from '../types/index.js';
 
-type ParserIngredient = Omit<ParsedIngredient, 'unit' | 'food'> & { unit: Unit | null; food: Food | null };
+type ParserIngredient = Omit<ParsedIngredient, 'unit' | 'food'> & { unit: { name: string } | null; food: { name: string } };
 
 export class IngredientClient extends BaseClient {
   /**
@@ -94,7 +92,7 @@ export class IngredientClient extends BaseClient {
     return {
       amount: ingredient.amount,
       unit: ingredient.unit?.name ?? '',
-      food: ingredient.food?.name ?? '',
+      food: ingredient.food.name,
       note: ingredient.note,
       original_text: ingredient.original_text,
     };
