@@ -1989,6 +1989,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "time": {
           "anyOf": [
             {
+              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$",
               "type": "string",
             },
             {
@@ -7965,6 +7966,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "time": {
           "anyOf": [
             {
+              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$",
               "type": "string",
             },
             {
