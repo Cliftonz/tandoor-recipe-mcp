@@ -91,7 +91,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_meal_plan",
   },
   {
-    "description": "Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; returned as HH:MM:SS). Creating with an existing name returns the existing meal type unchanged and ignores the order, color and time passed.",
+    "description": "Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; returned as HH:MM:SS). Creating with an existing name returns the existing meal type unchanged and ignores the order, color and time passed. The name match ignores case and only finds meal types you created.",
     "name": "create_meal_type",
   },
   {
@@ -987,7 +987,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_meal_plan",
   },
   {
-    "description": "Update a meal type (PATCH). Required: id.",
+    "description": "Update a meal type (PATCH). Required: id. Optional: name, order, color, time (HH:MM or HH:MM:SS).",
     "name": "update_meal_type",
   },
   {
