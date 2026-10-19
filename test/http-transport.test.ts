@@ -205,6 +205,29 @@ describe('createHttpTransport round-trip', () => {
     expect(res.headers.get('allow')).toBe('POST');
   });
 
+  it('GET on the MCP path without a token returns 401, not 405, when auth is required', async () => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+
+    const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method: 'GET' });
+    expect(res.status).toBe(401);
+  });
+
+  it('GET on the MCP path with the correct token returns 405 when auth is required', async () => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+
+    const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method: 'GET', headers: { Authorization: 'Bearer sekret' } });
+    expect(res.status).toBe(405);
+    expect(res.headers.get('allow')).toBe('POST');
+  });
+
   it('returns 401 with WWW-Authenticate when token is set and missing', async () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
