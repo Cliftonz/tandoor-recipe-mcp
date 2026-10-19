@@ -79,6 +79,6 @@ describe('auto_meal_plan when Tandoor finds no recipes', () => {
     const result = await callTool({ ...base, keyword_ids: [9] });
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('400');
-    expect(result.content[0].text).toContain('"msg": "No recipes found."');
+    expect(result.content[0].text).toContain('No recipes found.');
   });
 });

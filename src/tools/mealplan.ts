@@ -110,7 +110,7 @@ export function registerMealPlanTools(server: McpServer, client: TandoorClient):
   }, handleDeleteMealPlan);
 
   registerStringTool(server, client, 'auto_meal_plan', {
-    description: 'Auto-generate meal plans from internal recipes the user can see. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, servings, addshopping. Optional: keyword_ids[] (omitted or empty plans from all recipes), keyword_mode ("and" default: recipes must carry every keyword; "or": any keyword). Tandoor plans at most 14 days and ignores shared. When no recipe matches, Tandoor returns 400 "No recipes found."',
+    description: 'Auto-generate meal plans from internal recipes the user can see. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, servings, addshopping. Optional: keyword_ids[] (if omitted or empty, plans from all recipes), keyword_mode ("and" default: recipes must carry every keyword; "or": any keyword). Tandoor plans at most 14 days and ignores shared. When no recipe matches, Tandoor returns 400 "No recipes found."',
     inputSchema: autoMealPlanShape,
   }, handleAutoMealPlan);
 

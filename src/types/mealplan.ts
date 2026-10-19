@@ -45,7 +45,6 @@ export interface AutoMealPlan {
   keywords?: number[];
   keyword_mode?: 'or' | 'and';
   servings: number;
-  shared?: User[] | null;
   addshopping: boolean;
 }
 
