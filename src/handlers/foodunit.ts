@@ -134,10 +134,14 @@ export async function handleUpdateFood(
   }
   assertNonEmptyBody(body);
   const updated = await client.foodUnits.patchFood(args.id, body);
+  const failedDeletes: string[] = [];
   for (const id of doomedRowIds) {
     await client.properties.deleteProperty(id).catch((err: Error) => {
-      if (!/^Tandoor API error: 404\b/.test(err.message)) throw err;
+      if (!/^Tandoor API error: 404\b/.test(err.message)) failedDeletes.push(`property row ${id}: ${err.message}`);
     });
+  }
+  if (failedDeletes.length > 0) {
+    throw new Error(`Food updated, but these property rows could not be deleted:\n${failedDeletes.join('\n')}`);
   }
   return `Food updated.\n\n${emit(args.format === 'full' ? updated : slimFood(updated))}`;
 }

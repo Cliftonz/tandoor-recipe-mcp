@@ -33,7 +33,8 @@ beforeAll(async () => {
       const failStatus = req.method === 'DELETE' ? failingDeletes[req.url!] : undefined;
       if (failStatus) {
         res.statusCode = failStatus;
-        res.end(JSON.stringify({ detail: 'nope' }));
+        res.setHeader('retry-after', '0');
+        res.end(JSON.stringify({ detail: `refused-${failStatus}` }));
         return;
       }
       res.end(JSON.stringify(existingFood));
@@ -95,9 +96,17 @@ describe('update_food properties', () => {
     ]);
   });
 
-  it('fails when a row delete fails with anything but 404', async () => {
-    failingDeletes['/api/property/12/'] = 403;
-    await expect(handleUpdateFood(client, { id: 5, remove_property_type_ids: [2] })).rejects.toThrow(/403/);
+  it('tries every row delete and names each failed row with its Tandoor error', async () => {
+    failingDeletes['/api/property/12/'] = 500;
+    failingDeletes['/api/property/13/'] = 403;
+    const error = await handleUpdateFood(client, { id: 5, remove_property_type_ids: [2, 3] }).catch((e: Error) => e);
+    expect(error).toBeInstanceOf(Error);
+    const message = (error as Error).message;
+    expect(message).toMatch(/12\b[^\n]*500[\s\S]*refused-500/);
+    expect(message).toMatch(/13\b[^\n]*403[\s\S]*refused-403/);
+    expect(new Set(requests.filter((r) => r.method === 'DELETE').map((r) => r.url))).toEqual(
+      new Set(['/api/property/12/', '/api/property/13/', '/api/property/14/']),
+    );
   });
 
   it('rejects a property_type_id repeated in properties before any request', async () => {
