@@ -108,6 +108,7 @@ describe('createHttpTransport round-trip', () => {
 
   beforeEach(resetEnv);
   afterEach(async () => {
+    vi.useRealTimers();
     if (handle) {
       await handle.stop();
       handle = undefined;
@@ -323,6 +324,7 @@ describe('createHttpTransport round-trip', () => {
     process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
     handle = createHttpTransport(buildServer());
     await handle.start();
+    vi.useFakeTimers({ toFake: ['Date'] });
 
     for (let i = 0; i < 20; i++) {
       const r = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc(), { Authorization: 'Bearer wrong' });
