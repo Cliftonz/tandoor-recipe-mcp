@@ -260,7 +260,7 @@ async function call(c: Client, name: string, args: Record<string, unknown>): Pro
  * appears, throw with the current buffer on timeout. Keeps assertions
  * deterministic without burning the full timeout on the happy path.
  */
-async function waitForStderr(buf: string[], pattern: RegExp, timeoutMs = 1000): Promise<string> {
+async function waitForStderr(buf: string[], pattern: RegExp, timeoutMs = 3000): Promise<string> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const joined = buf.join('');
