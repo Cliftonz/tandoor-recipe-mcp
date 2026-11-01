@@ -122,7 +122,7 @@ describe('createHttpTransport round-trip', () => {
     Object.assign(process.env, ORIGINAL_ENV);
   });
 
-  it('rejects start() with EADDRINUSE when the port is already held', async () => {
+  it('rejects start() with EADDRINUSE when the port is already in use', async () => {
     const holder = createNetServer();
     await new Promise<void>((resolve) => holder.listen(0, '127.0.0.1', resolve));
     onTestFinished(() => new Promise<void>((resolve) => holder.close(() => resolve())));
