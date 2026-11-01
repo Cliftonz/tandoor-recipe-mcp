@@ -422,3 +422,28 @@ describe('empty shopping_lists_add and shopping_lists_remove', () => {
     ]);
   });
 });
+
+describe('create_shopping_entry with shopping_list_ids []', () => {
+  it('clears the lists Tandoor copied from the food with a PATCH that keeps checked', async () => {
+    const sent = stubTandoor({
+      'POST /api/shopping-list-entry/': entry({ checked: true, shopping_lists: [aldi] }),
+      'PATCH /api/shopping-list-entry/7/': entry({ checked: true, shopping_lists: [] }),
+    });
+    const out = await handleCreateShoppingEntry(client(), { amount: 1, food_id: 1, checked: true, shopping_list_ids: [] });
+    expect(sent.map((s) => [s.method, s.body])).toEqual([
+      ['POST', { amount: 1, food: 1, unit: null, checked: true, shopping_lists: [] }],
+      ['PATCH', { shopping_lists: [], checked: true }],
+    ]);
+    expect(body(out).shopping_lists).toEqual([]);
+  });
+
+  it('says the entry was created when clearing its lists fails', async () => {
+    stubTandoor({
+      'POST /api/shopping-list-entry/': entry({ shopping_lists: [aldi] }),
+      'PATCH /api/shopping-list-entry/7/': { status: 400, body: { detail: 'bad' } },
+    });
+    await expect(handleCreateShoppingEntry(client(), { amount: 1, food_id: 1, shopping_list_ids: [] })).rejects.toThrow(
+      /^Shopping entry 7 was created, possibly with its food's shopping lists; clearing its lists failed: Tandoor API error: 400/,
+    );
+  });
+});

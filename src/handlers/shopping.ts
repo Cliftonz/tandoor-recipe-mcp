@@ -170,7 +170,12 @@ export async function handleCreateShoppingEntry(
     body.shopping_lists = args.shopping_list_ids;
   }
 
-  const created = await client.shopping.createEntry(body);
+  let created = await client.shopping.createEntry(body);
+  if (args.shopping_list_ids?.length === 0) {
+    created = await client.shopping.patchEntry(created.id, { shopping_lists: [], checked: created.checked }).catch((e: Error) => {
+      throw new Error(`Shopping entry ${created.id} was created, possibly with its food's shopping lists; clearing its lists failed: ${e.message}`);
+    });
+  }
   return `Shopping entry created.\n\n${emit(args.format === 'full' ? created : slimEntry(created))}`;
 }
 
