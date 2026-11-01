@@ -273,8 +273,8 @@ describe('consume_inventory_item', () => {
     });
     await expect(handleConsumeInventoryItem(client(), { food_id: 5, amount: 1 })).rejects.toThrow(
       'Food 5 has 2 inventory entries; pass entry_id. Candidates: ' + JSON.stringify([
-        { id: 11, location: 'Freezer', amount: 400, unit: 'g', expires: '2027-01-31' },
-        { id: 12, location: 'Pantry', amount: 50, unit: 'g', expires: null },
+        slimEntry,
+        { ...slimEntry, id: 12, location: 'Pantry', location_id: 7, is_freezer: false, amount: 50, expires: null },
       ]),
     );
     expect(patches(sent)).toEqual([]);
