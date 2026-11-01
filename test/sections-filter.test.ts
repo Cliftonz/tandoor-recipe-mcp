@@ -44,6 +44,20 @@ describe('sections over INCLUDE_ONLY / EXCLUDE filtered tools', () => {
     ]);
   });
 
+  it('rejects a section emptied by the filters, leaving it out of the known list', async () => {
+    const res = (await client.callTool({ name: 'enable_tool_group', arguments: { group: 'cooklog' } })) as { isError?: boolean; content: Array<{ text: string }> };
+    expect(res.isError).toBe(true);
+    expect(res.content[0]!.text).toContain("unknown tool group 'cooklog'. Known groups: always, recipes.");
+  });
+
+  it('leaves emptied sections out of the instructions line', async () => {
+    const { buildInstructions } = await import('../src/lib/instructions.js');
+    const { getStashConfig } = await import('../src/lib/stash.js');
+    const { parseSectionModes } = await import('../src/lib/sections.js');
+    const out = buildInstructions({ status: 'ok', level: 'note', detail: '' }, getStashConfig(), parseSectionModes({}));
+    expect(out.split('\n')).toContain('Tool sections: recipes=simple. Call list_tool_groups to see them.');
+  });
+
   it('never enables a filtered tool', async () => {
     const result = await callJson('enable_tool_group', { group: 'recipes' });
     expect(result.enabled).toEqual(['delete_recipe']);

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
-import { ALWAYS_ON_GROUP, ALWAYS_ON_TOOLS, SECTIONS, SECTION_ENV_VARS, modesOf, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
+import { ALWAYS_ON_GROUP, ALWAYS_ON_TOOLS, SECTIONS, SECTIONS_WITH_TOOLS, SECTION_ENV_VARS, modesOf, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
 
 interface RegisteredToolEntry {
   enabled: boolean;
@@ -43,10 +43,10 @@ export function applySectionModes(server: McpServer, modes: SectionModes): void 
 }
 
 function findSection(group: string): Section {
-  const section = SECTIONS.find((s) => s.name === group);
+  const section = SECTIONS_WITH_TOOLS.find((s) => s.name === group);
   if (!section) {
     throw new Error(
-      `unknown tool group '${group}'. Known groups: ${[ALWAYS_ON_GROUP, ...SECTIONS.map((s) => s.name)].join(', ')}. Call list_tool_groups for descriptions.`,
+      `unknown tool group '${group}'. Known groups: ${[ALWAYS_ON_GROUP, ...SECTIONS_WITH_TOOLS.map((s) => s.name)].join(', ')}. Call list_tool_groups for descriptions.`,
     );
   }
   return section;
@@ -116,8 +116,7 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
         modes: ['on'],
         tools: registered(ALWAYS_ON_TOOLS),
       }];
-      for (const section of SECTIONS) {
-        if (registered(sectionTools(section)).length === 0) continue;
+      for (const section of SECTIONS_WITH_TOOLS) {
         groups.push({
           name: section.name,
           description: section.description,

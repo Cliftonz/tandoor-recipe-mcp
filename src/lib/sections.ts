@@ -1,3 +1,5 @@
+import { isToolAllowed } from './register.js';
+
 export const ALWAYS_ON_GROUP = 'always';
 
 export const ALWAYS_ON_TOOLS: readonly string[] = [
@@ -237,6 +239,8 @@ export function visibleTools(section: Section, mode: SectionMode): readonly stri
 
 export const SECTION_ENV_VARS = SECTIONS.map((s) => s.envVar).join(', ');
 
+export const SECTIONS_WITH_TOOLS: readonly Section[] = SECTIONS.filter((s) => sectionTools(s).some(isToolAllowed));
+
 export function formatSectionModes(modes: SectionModes): string {
-  return [...modes].map(([name, mode]) => `${name}=${mode}`).join(', ');
+  return SECTIONS_WITH_TOOLS.map((s) => `${s.name}=${modes.get(s.name)}`).join(', ');
 }

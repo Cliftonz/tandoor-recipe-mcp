@@ -123,7 +123,13 @@ describe('enable_tool_group', () => {
     const result = await call(await connect(), 'enable_tool_group', { group: 'recipe-write' });
     expect(result.isError).toBe(true);
     expect(result.text).toContain("unknown tool group 'recipe-write'");
-    expect(result.text).toContain(': always, recipes, meal-plan, shopping, inventory, foods, cooklog, recipe-books, ai, import-export, household-space, admin.');
+    expect(result.text).toContain(': always, recipes, meal-plan, shopping, foods, cooklog, recipe-books, ai, import-export, household-space, admin.');
+  });
+
+  it.each(['enable_tool_group', 'disable_tool_group'])('%s rejects inventory, which has no tools', async (tool) => {
+    const result = await call(await connect(), tool, { group: 'inventory' });
+    expect(result.isError).toBe(true);
+    expect(result.text).toContain("unknown tool group 'inventory'");
   });
 
   it('treats the always group as a no-op', async () => {

@@ -39,7 +39,7 @@ describe('buildInstructions', () => {
     const modes = parseSectionModes({ TANDOOR_MCP_RECIPES: 'full', TANDOOR_MCP_AI: 'on' });
     const lines = buildInstructions(result('ok'), stashCfg, modes).split('\n');
     expect(lines).toContain(
-      'Tool sections: recipes=full, meal-plan=simple, shopping=simple, inventory=simple, foods=simple, ' +
+      'Tool sections: recipes=full, meal-plan=simple, shopping=simple, foods=simple, ' +
         'cooklog=off, recipe-books=off, ai=on, import-export=off, household-space=off, admin=off. ' +
         'Call list_tool_groups to see them.',
     );
