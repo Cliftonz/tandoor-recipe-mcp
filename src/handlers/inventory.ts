@@ -30,8 +30,8 @@ function slimEntry(e: any) {
     food: e.food.name,
     food_id: e.food.id,
     amount: e.amount,
-    unit: e.unit.name,
-    unit_id: e.unit.id,
+    unit: e.unit?.name ?? null,
+    unit_id: e.unit?.id ?? null,
     location: e.inventory_location.name,
     location_id: e.inventory_location.id,
     is_freezer: e.inventory_location.is_freezer,
@@ -202,6 +202,7 @@ export async function handleConsumeInventoryItem(
   const e = args.entry_id !== undefined
     ? await client.inventory.getEntry(args.entry_id, { signal: ctx?.signal })
     : await findEntryForFood(client, args.food_id!, args.location_id, ctx?.signal);
+  if (!e.unit) throw new Error(`Entry ${e.id} has no unit; set one with update_inventory_entry.`);
   if (args.unit_id !== undefined && args.unit_id !== e.unit.id) {
     throw new Error(`Entry ${e.id} is stored in ${e.unit.name} (unit_id ${e.unit.id}); consume in that unit. Unit conversion is not supported.`);
   }

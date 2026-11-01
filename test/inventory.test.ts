@@ -160,6 +160,11 @@ describe('inventory entries', () => {
     expect(sent.map((s) => s.path)).toEqual(['/api/inventory-entry/?empty=true', '/api/inventory-entry/']);
   });
 
+  it('slims an entry whose unit was deleted to unit and unit_id null', async () => {
+    stubTandoor({ 'GET /api/inventory-entry/11/': entry({ unit: null }) });
+    expect(JSON.parse(await handleGetInventoryEntry(client(), { id: 11 }))).toEqual({ ...slimEntry, unit: null, unit_id: null });
+  });
+
   it('gets an entry slim by default and raw with format full', async () => {
     stubTandoor({ 'GET /api/inventory-entry/11/': entry() });
     expect(JSON.parse(await handleGetInventoryEntry(client(), { id: 11 }))).toEqual(slimEntry);
@@ -314,6 +319,16 @@ describe('consume_inventory_item', () => {
     expect(await handleConsumeInventoryItem(client(), { entry_id: 11, all: true })).toBe(
       `Inventory item 11 has nothing on hand (amount ${amount}); nothing consumed.`,
     );
+    expect(patches(sent)).toEqual([]);
+  });
+
+  it('refuses an entry with no unit before any write, with or without unit_id', async () => {
+    const sent = stubTandoor({ 'GET /api/inventory-entry/11/': entry({ unit: null }) });
+    for (const args of [{ entry_id: 11, amount: 1 }, { entry_id: 11, amount: 1, unit_id: 3 }]) {
+      await expect(handleConsumeInventoryItem(client(), args)).rejects.toThrow(
+        'Entry 11 has no unit; set one with update_inventory_entry.',
+      );
+    }
     expect(patches(sent)).toEqual([]);
   });
 
