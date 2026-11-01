@@ -183,7 +183,8 @@ async function findEntryForFood(client: TandoorClient, foodId: number, locationI
   const where = locationId === undefined ? '' : ` at location ${locationId}`;
   if (page.count === 0) throw new Error(`Food ${foodId} has no inventory entry${where}.`);
   if (page.count > 1) {
-    throw new Error(`Food ${foodId} has ${page.count} inventory entries${where}; pass entry_id. Candidates: ${emit(page.results.map(slimEntry))}`);
+    const shown = page.results.length < page.count ? ` (showing ${page.results.length} of ${page.count})` : '';
+    throw new Error(`Food ${foodId} has ${page.count} inventory entries${where}; pass entry_id. Candidates${shown}: ${emit(page.results.map(slimEntry))}`);
   }
   return page.results[0];
 }

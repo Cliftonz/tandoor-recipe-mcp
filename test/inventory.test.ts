@@ -280,6 +280,16 @@ describe('consume_inventory_item', () => {
     expect(patches(sent)).toEqual([]);
   });
 
+  it('says how many candidates it shows when the matches span more than one page', async () => {
+    stubTandoor({
+      'GET /api/inventory-entry/?food_id=5': { count: 30, next: 'n', previous: null, results: [entry(), entry({ id: 12 })] },
+    });
+    await expect(handleConsumeInventoryItem(client(), { food_id: 5, amount: 1 })).rejects.toThrow(
+      'Food 5 has 30 inventory entries; pass entry_id. Candidates (showing 2 of 30): ' +
+        JSON.stringify([slimEntry, { ...slimEntry, id: 12 }]),
+    );
+  });
+
   it('errors when the food has no entry', async () => {
     stubTandoor({ 'GET /api/inventory-entry/?food_id=5&inventory_location_id=2': { count: 0, next: null, previous: null, results: [] } });
     await expect(handleConsumeInventoryItem(client(), { food_id: 5, location_id: 2, amount: 1 })).rejects.toThrow(
