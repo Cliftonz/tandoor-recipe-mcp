@@ -24,7 +24,6 @@ import type {
 } from '../tools/shopping.js';
 import type { HandlerContext } from '../lib/register.js';
 import { emit, assertNonEmptyBody, slimPaginated } from '../lib/slim.js';
-import { allPages } from '../lib/paging.js';
 
 function assertNoRepeatedIds(field: string, ids: number[]): void {
   const repeated = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))].sort((a, b) => a - b);
@@ -36,9 +35,9 @@ export async function checkShoppingListIds(client: TandoorClient, ids: number[],
   await client.shopping.assertShoppingListsExist(ids, { signal });
 }
 
-export function assertListsApplied(done: string, requested: number[] | undefined, lists: { id: number }[]): void {
+export function assertListsApplied(outcome: string, requested: number[] | undefined, lists: { id: number }[]): void {
   const missing = (requested ?? []).filter((id) => !lists.some((l) => l.id === id));
-  if (missing.length > 0) throw new Error(`${done}, but Tandoor did not put it on these shopping lists: ${missing.join(', ')}.`);
+  if (missing.length > 0) throw new Error(`${outcome}, but Tandoor did not put it on these shopping lists: ${missing.join(', ')}.`);
 }
 
 export function slimListRefs(lists: any[]) {
@@ -87,7 +86,7 @@ export async function handleUpdateShoppingList(
   assertNonEmptyBody(body);
   if (body.name !== undefined) {
     const name = body.name.toLowerCase();
-    const taken = (await allPages((page) => client.shopping.listShoppingLists({ page, page_size: 100 }, { signal: ctx?.signal })))
+    const taken = (await client.shopping.listAllShoppingLists({ signal: ctx?.signal }))
       .find((l) => l.id !== id && l.name.toLowerCase() === name);
     if (taken) throw new Error(`A shopping list named ${taken.name} already exists (id ${taken.id}); choose another name.`);
   }
@@ -235,7 +234,7 @@ export async function handleBulkCheckShoppingEntries(
 
 const nonEmpty = (ids?: number[]) => (ids?.length ? ids : undefined);
 
-export function validateListOperations<T extends ListOperations>(args: T): { request: T; listIds: number[] | null } {
+export function parseListOperations<T extends ListOperations>(args: T): { request: T; listIds: number[] | null } {
   const add = nonEmpty(args.shopping_lists_add);
   const remove = nonEmpty(args.shopping_lists_remove);
   const { shopping_lists_set: set, shopping_lists_remove_all: removeAll } = args;
@@ -268,7 +267,7 @@ export async function handleBulkUpdateShoppingEntries(
   args: BulkUpdateShoppingEntriesArgs,
   ctx?: HandlerContext,
 ): Promise<string> {
-  const { request, listIds } = validateListOperations(args);
+  const { request, listIds } = parseListOperations(args);
   if (listIds === null && args.checked === undefined) throw new Error('Give checked, a list change, or both.');
   await client.shopping.assertShoppingListsExist(listIds ?? [], { signal: ctx?.signal });
   return emit(await client.shopping.bulkUpdateEntries(request, { signal: ctx?.signal }));

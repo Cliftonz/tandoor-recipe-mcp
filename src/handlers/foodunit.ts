@@ -23,7 +23,7 @@ import type {
 import type { HandlerContext } from '../lib/register.js';
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
 import { allPages } from '../lib/paging.js';
-import { slimListRefs, validateListOperations, checkShoppingListIds, assertListsApplied } from './shopping.js';
+import { slimListRefs, parseListOperations, checkShoppingListIds, assertListsApplied } from './shopping.js';
 
 function slimFood(f: any) {
   if (!f) return f;
@@ -87,8 +87,8 @@ export async function handleCreateFood(
     body.supermarket_category = args.supermarket_category_id;
   }
   const listIds = args.shopping_list_ids;
-  if (listIds !== undefined) await checkShoppingListIds(client, listIds, ctx?.signal);
   if (listIds?.length) {
+    await checkShoppingListIds(client, listIds, ctx?.signal);
     const sameName = (await allPages((page) => client.foodUnits.listFoods({ query: args.name, page, page_size: 100 })))
       .find((f) => f.name.toLowerCase() === args.name.toLowerCase());
     if (sameName) throw new Error(`A food named ${sameName.name} already exists (id ${sameName.id}); use update_food to change its lists.`);
@@ -99,7 +99,7 @@ export async function handleCreateFood(
       throw new Error(`Food ${created.id} was created without shopping lists; setting its lists failed: ${e.message}`);
     });
   }
-  assertListsApplied(`Food ${created.id} was created`, args.shopping_list_ids, created.shopping_lists);
+  assertListsApplied(`Food ${created.id} was created`, listIds, created.shopping_lists);
   return `Food created.\n\n${emit(args.format === 'full' ? created : slimFood(created))}`;
 }
 
@@ -198,8 +198,8 @@ export async function handleFoodFdcLookup(
   client: TandoorClient,
   args: FoodFdcLookupArgs
 ): Promise<string> {
-  // Fetch current food first so the required body satisfies the Food serializer
-  // — set fdc_id if the caller supplied one.
+  // Fetch current food first so the required body satisfies the Food serializer,
+  // then set fdc_id if the caller supplied one.
   const current = await client.foodUnits.getFood(args.id);
   const body = { ...current };
   if (args.fdc_id !== undefined) body.fdc_id = args.fdc_id;
@@ -287,7 +287,7 @@ export async function handleFoodBatchUpdate(
   if (!args.foods || args.foods.length === 0) {
     throw new Error('foods must be a non-empty array of food IDs');
   }
-  const { request, listIds } = validateListOperations(args);
+  const { request, listIds } = parseListOperations(args);
   if (listIds !== null) await client.shopping.assertShoppingListsExist(listIds, { signal: ctx?.signal });
   const r = await client.foodUnits.foodBatchUpdate(request);
   return `Batch-updated ${args.foods.length} food(s).\n\n${emit(r)}`;
