@@ -39,12 +39,12 @@ export function listMismatch(requested: number[] | undefined, lists: { id: numbe
   if (requested === undefined) return null;
   const got = lists.map((l) => l.id);
   const missing = requested.filter((id) => !got.includes(id));
-  const extra = got.filter((id) => !requested.includes(id)).sort((a, b) => a - b);
+  const extra = got.filter((id) => !requested.includes(id));
   const parts = [
     missing.length > 0 ? `Tandoor did not put it on these shopping lists: ${missing.join(', ')}` : null,
     extra.length > 0 ? `Tandoor also put it on these shopping lists: ${extra.join(', ')}` : null,
   ].filter((p) => p !== null);
-  return parts.length > 0 ? parts.join('; ') : null;
+  return parts.join('; ') || null;
 }
 
 export function assertListsApplied(outcome: string, requested: number[] | undefined, lists: { id: number }[], advice = ''): void {
@@ -99,11 +99,11 @@ export async function handleUpdateShoppingList(
   const { id, format, ...body } = args;
   assertNonEmptyBody(body);
   if (body.name !== undefined) {
-    const key = (n: string) => n.trim().toLowerCase();
-    const name = key(body.name);
+    const normalizeName = (n: string) => n.trim().toLowerCase();
+    const name = normalizeName(body.name);
     const lists = await client.shopping.listAllShoppingLists({ signal: ctx?.signal });
     const own = lists.find((l) => l.id === id);
-    const taken = own && key(own.name) === name ? undefined : lists.find((l) => l.id !== id && key(l.name) === name);
+    const taken = own && normalizeName(own.name) === name ? undefined : lists.find((l) => l.id !== id && normalizeName(l.name) === name);
     if (taken) throw new Error(`A shopping list named ${taken.name} already exists (id ${taken.id}); choose another name.`);
   }
   const r = await client.shopping.patchShoppingList(id, body, { signal: ctx?.signal });

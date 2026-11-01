@@ -92,7 +92,7 @@ export async function handleCreateFood(
     let sameName: any;
     for (let page = 1; !sameName; page++) {
       const r = await client.foodUnits.listFoods({ query: name, page, page_size: 100 });
-      sameName = r.results.find((f: any) => f.name.trim().toLowerCase() === name.toLowerCase());
+      sameName = r.results.find((f: any) => f.name.toLowerCase() === name.toLowerCase());
       if (!r.next) break;
     }
     if (sameName) throw new Error(`A food named ${sameName.name} already exists (id ${sameName.id}); use update_food to change its lists.`);
@@ -204,8 +204,7 @@ export async function handleFoodFdcLookup(
   client: TandoorClient,
   args: FoodFdcLookupArgs
 ): Promise<string> {
-  // Fetch current food first so the required body satisfies the Food serializer,
-  // then set fdc_id if the caller supplied one.
+  // Fetch current food first so the required body satisfies the Food serializer.
   const current = await client.foodUnits.getFood(args.id);
   const body = { ...current };
   if (args.fdc_id !== undefined) body.fdc_id = args.fdc_id;
@@ -294,7 +293,7 @@ export async function handleFoodBatchUpdate(
     throw new Error('foods must be a non-empty array of food IDs');
   }
   const { request, listIds } = parseListOperations(args);
-  const otherChange = Object.entries(request).some(([k, v]) => k !== 'foods' && !k.startsWith('shopping_lists_') && v !== undefined);
+  const otherChange = Object.keys(request).some((k) => k !== 'foods' && !k.startsWith('shopping_lists_'));
   if (listIds === null && !otherChange) throw new Error('Give a field to change, a list change, or both.');
   if (listIds !== null) await client.shopping.assertShoppingListsExist(listIds, { signal: ctx?.signal });
   const r = await client.foodUnits.foodBatchUpdate(request);

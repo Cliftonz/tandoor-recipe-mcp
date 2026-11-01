@@ -602,6 +602,9 @@ describe('post-write errors on create tools', () => {
     ['create_shopping_entry, lists do not match', 'Do not retry; use update_shopping_entry on id 7.',
       { 'POST /api/shopping-list-entry/': entry({ shopping_lists: [] }) },
       () => handleCreateShoppingEntry(client(), { amount: 1, food_id: 1, shopping_list_ids: [2] })],
+    ['create_food with [], the POST returns a food on a list', 'Food 1 was created, but Tandoor also put it on these shopping lists: 2. Do not retry; use update_food on id 1.',
+      { ...noSuchFood, 'POST /api/food/': { ...milk, shopping_lists: [costco] } },
+      () => handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [] })],
   ])('%s says not to retry', async (_case, advice, routes, run) => {
     stubTandoor({ ...listPages, ...routes });
     await expect(run()).rejects.toThrow(new RegExp(`${advice.replace(/[.]/g, '\\.')}$`));
