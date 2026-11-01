@@ -57,11 +57,6 @@ export async function handleGetStep(
   return args.format === 'full' ? emit(r) : emit(slimStep(r));
 }
 
-/**
- * Convert a flat ingredient spec `{food_id, unit_id, amount, note, ...}` or
- * `{food: <name>, unit: <name>, amount, ...}` into the nested envelope the
- * Step serializer expects. Names get find-or-created.
- */
 async function buildIngredients(
   client: TandoorClient,
   ings: IngredientInput[] | undefined
@@ -72,7 +67,7 @@ async function buildIngredients(
     const ing = ings[i];
     let food: any;
     if (typeof ing.food_id === 'number') {
-      food = { id: ing.food_id };
+      food = ing.food_id;
     } else if (typeof ing.food === 'string' && ing.food) {
       food = await client.recipes.findOrCreateFood(ing.food);
     } else {
@@ -81,7 +76,7 @@ async function buildIngredients(
 
     let unit: any = null;
     if (typeof ing.unit_id === 'number') {
-      unit = { id: ing.unit_id };
+      unit = ing.unit_id;
     } else if (typeof ing.unit === 'string' && ing.unit) {
       unit = await client.recipes.findOrCreateUnit(ing.unit);
     }
