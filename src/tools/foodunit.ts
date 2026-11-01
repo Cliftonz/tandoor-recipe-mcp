@@ -27,7 +27,7 @@ import { LIST_IDS_CHECKED, LIST_OPERATIONS, listOperationsShape } from './shoppi
 
 const FOOD_LISTS = 'Changing a food\'s lists does not change its existing shopping entries. New entries copy the food\'s lists when added through add_recipe_to_shopping_list, '
   + 'through bulk_create_shopping_list_recipe_entries without shopping_list_ids (or with []) whatever the user preference, '
-  + `or through create_shopping_entry without shopping_list_ids (or with []) while the user preference shopping_update_food_lists is on. ${LIST_IDS_CHECKED}`;
+  + `or through create_shopping_entry without shopping_list_ids while the user preference shopping_update_food_lists is on. ${LIST_IDS_CHECKED}`;
 
 
 export const listFoodsShape = {

@@ -26,10 +26,11 @@ import {
   handleBulkUpdateShoppingEntries,
 } from '../handlers/shopping.js';
 
-export const LIST_IDS_CHECKED = 'Every list id is checked against list_shopping_lists first; unknown ids are rejected and nothing is written.';
+export const LIST_IDS_CHECKED = 'Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written. If Tandoor leaves out a requested list, the tool errors after the write and names the list.';
 
 const ENTRY_LISTS = 'shopping_list_ids (ids from list_shopping_lists) puts the entry on exactly those lists; the food\'s lists are not added. '
-  + 'When shopping_list_ids is omitted or [], Tandoor copies the food\'s lists onto the new entry if the user preference shopping_update_food_lists is on. '
+  + 'When shopping_list_ids is omitted, Tandoor copies the food\'s lists onto the new entry if the user preference shopping_update_food_lists is on. '
+  + 'With [], the tool clears any lists Tandoor copied, so the entry is on no list. '
   + 'add_recipe_to_shopping_list always copies each food\'s lists; food_shopping_update never does. '
   + `Changing a food's lists later does not change existing entries. ${LIST_IDS_CHECKED}`;
 
@@ -72,7 +73,8 @@ export const listOperationsShape = {
 
 export const LIST_OPERATIONS = 'shopping_lists_add and shopping_lists_remove (may be combined), shopping_lists_set (replaces the lists; must not be empty) '
   + 'or shopping_lists_remove_all: true (takes every list off). set and remove_all must be used alone. '
-  + `List changes do not update updated_at. ${LIST_IDS_CHECKED}`;
+  + 'An empty shopping_lists_add or shopping_lists_remove changes nothing. An id may not appear in both shopping_lists_add and shopping_lists_remove. '
+  + LIST_IDS_CHECKED;
 
 export const listShoppingEntriesShape = {
   mealplan: z.number().optional(),
@@ -201,7 +203,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   }, handleCreateShoppingList);
 
   registerStringTool(server, client, 'update_shopping_list', {
-    description: 'Update a named shopping list (PATCH). Required: id and at least one of name (1 to 32 characters), description, color (#rrggbb, or null to clear it).',
+    description: 'Update a named shopping list (PATCH). Required: id and at least one of name (1 to 32 characters), description, color (#rrggbb, or null to clear it). Tandoor accepts a name that another list already has (in any case); after that, create_shopping_list with that name fails with a 500 until one of the lists is renamed.',
     inputSchema: updateShoppingListShape,
   }, handleUpdateShoppingList);
 
@@ -211,7 +213,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   }, handleDeleteShoppingList);
 
   registerStringTool(server, client, 'list_shopping_entries', {
-    description: 'List shopping list entries (auto-filtered to unchecked + recent by Tandoor). Optional: mealplan, updated_after (ISO), page, page_size, format.',
+    description: 'List shopping list entries (auto-filtered to unchecked + recent by Tandoor). Optional: mealplan, updated_after (ISO), page, page_size, format. Entries cannot be filtered by shopping list; use the shopping_lists field of the results.',
     inputSchema: listShoppingEntriesShape,
   }, handleListShoppingEntries);
 
@@ -226,7 +228,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   }, handleCreateShoppingEntry);
 
   registerStringTool(server, client, 'update_shopping_entry', {
-    description: `Update a shopping entry (PATCH). Required: id. Other fields optional. When checked is omitted, the tool reads the entry and sends its current checked value, so a checked entry keeps its completed_at. shopping_list_ids puts the entry on exactly those lists; the food's lists are not added. [] clears them; omit it to keep them. ${LIST_IDS_CHECKED}`,
+    description: `Update a shopping entry (PATCH). Required: id. Other fields optional. When checked is omitted, the tool reads the entry and sends its current checked value again, so a checked entry keeps its completed_at. A check made elsewhere between that read and the write is undone (last write wins). shopping_list_ids puts the entry on exactly those lists; the food's lists are not added. [] clears them; omit it to keep them. ${LIST_IDS_CHECKED}`,
     inputSchema: updateShoppingEntryShape,
   }, handleUpdateShoppingEntry);
 
@@ -241,7 +243,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   }, handleBulkCheckShoppingEntries);
 
   registerStringTool(server, client, 'bulk_update_shopping_entries', {
-    description: `Update many shopping entries in one call. Required: ids (entry ids; ids that do not exist are skipped). Give checked, a list change, or both. checked: true checks every entry and sets completed_at to now, also on entries already checked; without checked, checked and completed_at stay as they are. List changes: ${LIST_OPERATIONS}`,
+    description: `Update many shopping entries in one call. Required: ids (entry ids; ids that do not exist or are not visible to you are skipped). Give checked, a list change, or both. checked: true checks every entry and sets completed_at to now, also on entries already checked; without checked, checked and completed_at stay as they are. List changes do not update the entries' updated_at. List changes: ${LIST_OPERATIONS}`,
     inputSchema: bulkUpdateShoppingEntriesShape,
   }, handleBulkUpdateShoppingEntries);
 
@@ -271,7 +273,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   }, handleDeleteShoppingListRecipe);
 
   registerStringTool(server, client, 'bulk_create_shopping_list_recipe_entries', {
-    description: `Append many shopping entries to an existing shopping-list-recipe in one call. Optional: shopping_list_ids puts every new entry on those lists. When shopping_list_ids is omitted or [], each new entry gets its food's lists, whatever the user preference. ${LIST_IDS_CHECKED}`,
+    description: `Append many shopping entries to an existing shopping-list-recipe in one call. Tandoor answers 404 when the shopping-list-recipe has no entries yet. Optional: shopping_list_ids puts every new entry on those lists. When shopping_list_ids is omitted or [], each new entry gets its food's lists, whatever the user preference. ${LIST_IDS_CHECKED}`,
     inputSchema: bulkCreateShoppingListRecipeEntriesShape,
   }, handleBulkCreateShoppingListRecipeEntries);
 }
