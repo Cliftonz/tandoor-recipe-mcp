@@ -2,6 +2,28 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased (3.0.0)
+
+### Breaking changes
+- **`TANDOOR_MCP_PROFILE` is removed.** The server ignores it and writes one stderr warning when it has a value. The per-section settings below replace it.
+- **Old tool-group names are removed, with no aliases.** `recipe-write`, `mealplan-write`, `shopping-write`, `foods-write`, `ingredients-write`, `keywords`, `steps`, `units`, `unit-conversions`, `properties`, `custom-filters`, `supermarket-write`, `multi-space`, `tree-safety`, `housekeeping-read`, and `recipebook` no longer exist. The old `cooklog`, `ai`, `admin`, and `import-export` groups are replaced by the sections of the same names. The always-on group is now `always` (was `core`).
+- **`enable_tool_group` and `disable_tool_group` results changed.** They no longer include the `already_enabled` and `skipped` lists.
+- **Default startup tools change.** The old `core` profile started with about 23 tools, mostly reads. The new defaults start with 39 tools, including create, update, and delete tools from the simple tiers, such as `create_recipe`, `delete_meal_plan`, and `delete_shopping_entry`.
+- **Claude Code plugin default changes.** The plugin used to default to `full` (every tool). It now starts with the section defaults.
+
+### Migration
+- `TANDOOR_MCP_PROFILE=full`: set every tiered section to `full` and every toggle section to `on`.
+- To hide the write tools that now start by default, set those sections to `off` or list the tools in `TANDOOR_MCP_EXCLUDE`.
+- Calls to `enable_tool_group` with an old group name: use the section name instead. See the README's Tool sections table.
+
+### Added
+- **Per-section tool settings.** One env var per section. Values are trimmed and case-insensitive. Unset, empty, or whitespace-only means the default. Invalid values stop startup with one error that names every invalid variable and its valid values.
+  - Tiered sections (`off`, `simple`, `full`; default `simple`): `TANDOOR_MCP_RECIPES`, `TANDOOR_MCP_MEAL_PLAN`, `TANDOOR_MCP_SHOPPING`, `TANDOOR_MCP_INVENTORY`, `TANDOOR_MCP_FOODS`. The inventory section has no tools yet.
+  - Toggle sections (`off`, `on`; default `off`): `TANDOOR_MCP_COOKLOG`, `TANDOOR_MCP_RECIPE_BOOKS`, `TANDOOR_MCP_AI`, `TANDOOR_MCP_IMPORT_EXPORT`, `TANDOOR_MCP_HOUSEHOLD_SPACE`, `TANDOOR_MCP_ADMIN`.
+- **Runtime section control in stdio mode.** `enable_tool_group({group, tier?})` widens a section (`off` to `simple` or `full`, `simple` to `full`) and never narrows one. `tier` is `simple` or `full` for tiered sections and defaults to `full`. Passing `tier` for an on/off section is an error. `disable_tool_group({group})` sets a section to `off` and cannot disable `always`. `enable_tool_group` on `always` succeeds and changes nothing. A section with no registered tools (`inventory` today, or a section that `INCLUDE_ONLY` or `EXCLUDE` empties) is rejected as unknown and left out of `list_tool_groups` and the server instructions. HTTP mode has no runtime enabling; the settings fix the tool list at startup.
+- **Always-on tools.** `list_tool_groups`, `enable_tool_group`, `disable_tool_group`, `get_version`, `jq_query`, `jq_stash_stats`, `get_guard_stats`, and `get_current_space`, plus every `tandoor://` resource and prompt, stay available whatever the section settings.
+- `TANDOOR_MCP_INCLUDE_ONLY` and `TANDOOR_MCP_EXCLUDE` are unchanged and run before the section settings. `EXCLUDE` is a hard block: nothing can enable an excluded tool.
+
 ## 2.0.1 / 2026-08-21
 
 ### Fixed
