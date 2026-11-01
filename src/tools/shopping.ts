@@ -205,7 +205,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   }, handleCreateShoppingList);
 
   registerStringTool(server, client, 'update_shopping_list', {
-    description: 'Update a named shopping list (PATCH). Required: id and at least one of name (1 to 32 characters), description, color (#rrggbb, or null to clear it). A new name that another list already has (case-insensitive) is refused, because Tandoor would accept it and then fail every create_shopping_list with that name.',
+    description: 'Update a named shopping list (PATCH). Required: id and at least one of name (1 to 32 characters), description, color (#rrggbb, or null to clear it). A new name that another list already has (ignoring case and surrounding spaces) is refused, because Tandoor would accept it and then fail every create_shopping_list with that name. Renaming a list to its own name is always allowed.',
     inputSchema: updateShoppingListShape,
   }, handleUpdateShoppingList);
 

@@ -28,6 +28,7 @@ import { LIST_IDS_CHECKED, LISTS_APPLIED, LIST_OPERATIONS, listOperationsShape }
 const FOOD_LISTS = 'Changing a food\'s lists does not change its existing shopping entries. '
   + 'add_recipe_to_shopping_list copies the food\'s lists onto new entries. '
   + 'create_shopping_entry without shopping_list_ids copies them when the user preference shopping_update_food_lists is on. '
+  + 'bulk_create_shopping_list_recipe_entries without shopping_list_ids copies each food\'s lists whatever the user preference. '
   + `${LIST_IDS_CHECKED} ${LISTS_APPLIED}`;
 
 
@@ -180,7 +181,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleGetFood);
 
   registerStringTool(server, client, 'create_food', {
-    description: `Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). If a food with this name exists, Tandoor returns it instead of creating one. With shopping_list_ids (including []) the tool checks for that first and refuses, changing nothing; use update_food. Tandoor cannot set lists while creating a food, so the tool creates the food first and then sets its lists. If setting the lists fails, the error gives the new food's id. ${FOOD_LISTS}`,
+    description: `Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). If a food with this name exists, Tandoor returns it instead of creating one. With shopping_list_ids (including []), the tool looks up the name first and, if a food with that name exists (ignoring case and surrounding spaces), refuses and changes nothing; use update_food. With non-empty shopping_list_ids, the tool creates the food first and then sets its lists, because Tandoor cannot set lists while creating a food; if a step after the create fails, the error gives the new food's id and says not to retry. ${FOOD_LISTS}`,
     inputSchema: createFoodShape,
   }, handleCreateFood);
 
@@ -245,7 +246,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleMergeUnit);
 
   registerStringTool(server, client, 'food_batch_update', {
-    description: `Apply a narrow set of bulk mutations across many foods in one call via Tandoor's /api/food/batch_update/ endpoint. Required: foods[]. Optional (all apply to every food in foods[]): category (set supermarket_category, null clears), substitute_add/remove/set/remove_all, inherit_fields_add/remove/set/remove_all, child_inherit_fields_* (same pattern), substitute_children/siblings (boolean), ignore_shopping, on_hand, parent_set/parent_remove. Does NOT support bulk name/plural/description/fdc_id edits; those still need update_food per-item. Use for: pantry on-hand toggle across a set, retagging supermarket category, configuring substitute groups, moving foods between shopping lists. Shopping list changes: ${LIST_OPERATIONS} Existing shopping entries keep their lists.`,
+    description: `Apply a narrow set of bulk mutations across many foods in one call via Tandoor's /api/food/batch_update/ endpoint. Required: foods[]. Optional (all apply to every food in foods[]): category (set supermarket_category, null clears), substitute_add/remove/set/remove_all, inherit_fields_add/remove/set/remove_all, child_inherit_fields_* (same pattern), substitute_children/siblings (boolean), ignore_shopping, on_hand, parent_set/parent_remove. Does NOT support bulk name/plural/description/fdc_id edits; those still need update_food per-item. Use for: pantry on-hand toggle across a set, retagging supermarket category, configuring substitute groups, moving foods between shopping lists. A call with no field change and no list change is rejected ("Give a field to change, a list change, or both."). Shopping list changes: ${LIST_OPERATIONS} Existing shopping entries keep their lists.`,
     inputSchema: foodBatchUpdateShape,
   }, handleFoodBatchUpdate);
 }
