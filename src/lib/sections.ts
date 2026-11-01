@@ -98,6 +98,7 @@ export const SECTIONS: readonly Section[] = [
       ...crud('supermarket_category', 'supermarket_categories'),
       'merge_supermarket_category',
       ...crud('supermarket_category_relation'),
+      ...preview('shopping_list'),
       ...preview('supermarket'),
       ...preview('supermarket_category'),
     ],
