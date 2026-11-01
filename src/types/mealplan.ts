@@ -9,7 +9,6 @@ export interface MealType {
   order?: number;
   time?: string | null;
   color?: string | null;
-  default?: boolean;
   created_by?: number;
 }
 

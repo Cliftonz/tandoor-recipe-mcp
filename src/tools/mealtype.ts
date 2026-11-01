@@ -10,12 +10,13 @@ import {
   handleDeleteMealType,
 } from '../handlers/mealtype.js';
 
+const mealTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/).nullable().optional();
 
 export const createMealTypeShape = {
   name: z.string(),
   order: z.number().optional(),
   color: z.string().nullable().optional(),
-  default: z.boolean().optional(),
+  time: mealTime,
   format: formatEnum,
 } as const;
 
@@ -26,7 +27,7 @@ export const updateMealTypeShape = {
   name: z.string().optional(),
   order: z.number().optional(),
   color: z.string().nullable().optional(),
-  default: z.boolean().optional(),
+  time: mealTime,
   format: formatEnum,
 } as const;
 
@@ -39,7 +40,7 @@ export type DeleteMealTypeArgs = z.infer<z.ZodObject<typeof deleteMealTypeShape>
 
 export function registerMealTypeTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'create_meal_type', {
-    description: 'Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), default.',
+    description: 'Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; returned as HH:MM:SS). Creating with an existing name returns the existing meal type unchanged and ignores the order, color and time passed. The name match ignores case and only finds meal types you created.',
     inputSchema: createMealTypeShape,
   }, handleCreateMealType);
 
@@ -49,7 +50,7 @@ export function registerMealTypeTools(server: McpServer, client: TandoorClient):
   }, handleGetMealType);
 
   registerStringTool(server, client, 'update_meal_type', {
-    description: 'Update a meal type (PATCH). Required: id.',
+    description: 'Update a meal type (PATCH). Required: id. Optional: name, order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; null clears it).',
     inputSchema: updateMealTypeShape,
   }, handleUpdateMealType);
 

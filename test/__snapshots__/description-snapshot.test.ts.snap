@@ -91,7 +91,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_meal_plan",
   },
   {
-    "description": "Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), default.",
+    "description": "Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; returned as HH:MM:SS). Creating with an existing name returns the existing meal type unchanged and ignores the order, color and time passed. The name match ignores case and only finds meal types you created.",
     "name": "create_meal_type",
   },
   {
@@ -987,7 +987,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_meal_plan",
   },
   {
-    "description": "Update a meal type (PATCH). Required: id.",
+    "description": "Update a meal type (PATCH). Required: id. Optional: name, order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; null clears it).",
     "name": "update_meal_type",
   },
   {
@@ -1925,9 +1925,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
             "null",
           ],
         },
-        "default": {
-          "type": "boolean",
-        },
         "format": {
           "enum": [
             "slim",
@@ -1940,6 +1937,17 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         },
         "order": {
           "type": "number",
+        },
+        "time": {
+          "anyOf": [
+            {
+              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$",
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
         },
       },
       "required": [
@@ -7750,9 +7758,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
             "null",
           ],
         },
-        "default": {
-          "type": "boolean",
-        },
         "format": {
           "enum": [
             "slim",
@@ -7768,6 +7773,17 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         },
         "order": {
           "type": "number",
+        },
+        "time": {
+          "anyOf": [
+            {
+              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$",
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
         },
       },
       "required": [
