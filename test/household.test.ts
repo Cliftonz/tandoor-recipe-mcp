@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { z } from 'zod';
 import { TandoorClient } from '../src/clients/index.js';
-import { assignHouseholdShape } from '../src/tools/household.js';
+import { assignHouseholdShape, createHouseholdShape, updateHouseholdShape } from '../src/tools/household.js';
 import {
   handleListHouseholds,
   handleGetHousehold,
@@ -228,5 +228,14 @@ describe('household tools', () => {
     const schema = z.object(assignHouseholdShape);
     expect(schema.safeParse({ user_space_ids: [1, 2, 1], household_id: 4 }).success).toBe(false);
     expect(schema.safeParse({ user_space_ids: [1, 2], household_id: 4 }).success).toBe(true);
+  });
+
+  it('accepts household names of 1 to 128 characters on create and update', () => {
+    for (const schema of [z.object(createHouseholdShape), z.object(updateHouseholdShape)]) {
+      expect(schema.safeParse({ id: 4, name: '' }).success).toBe(false);
+      expect(schema.safeParse({ id: 4, name: 'x'.repeat(129) }).success).toBe(false);
+      expect(schema.safeParse({ id: 4, name: 'x' }).success).toBe(true);
+      expect(schema.safeParse({ id: 4, name: 'x'.repeat(128) }).success).toBe(true);
+    }
   });
 });

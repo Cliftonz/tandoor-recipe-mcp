@@ -22,9 +22,11 @@ export const listHouseholdsShape = {
 
 export const getHouseholdShape = { id: z.number(), format: formatEnum } as const;
 
-export const createHouseholdShape = { name: z.string(), format: formatEnum } as const;
+const householdName = z.string().min(1).max(128);
 
-export const updateHouseholdShape = { id: z.number(), name: z.string(), format: formatEnum } as const;
+export const createHouseholdShape = { name: householdName, format: formatEnum } as const;
+
+export const updateHouseholdShape = { id: z.number(), name: householdName, format: formatEnum } as const;
 
 export const deleteHouseholdShape = { id: z.number() } as const;
 
