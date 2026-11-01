@@ -273,7 +273,7 @@ export function parseListOperations<T extends ListOperations>(args: T): { reques
     throw new Error(`Only shopping_lists_add and shopping_lists_remove can be combined; shopping_lists_set and shopping_lists_remove_all must be used alone. Got: ${given.join(', ')}.`);
   }
   return {
-    request: { ...args, shopping_lists_add: add, shopping_lists_remove: remove },
+    request: { ...args, shopping_lists_add: add, shopping_lists_remove: remove, shopping_lists_remove_all: removeAll || undefined },
     listIds: given.length === 0 ? null : [...(add ?? []), ...(remove ?? []), ...(set ?? [])],
   };
 }

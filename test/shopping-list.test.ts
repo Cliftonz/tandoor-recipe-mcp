@@ -637,3 +637,19 @@ describe('food_batch_update empty arrays', () => {
     expect(sent).toEqual([{ method: 'PUT', path: '/api/food/batch_update/', body: { foods: [1], on_hand: false } }]);
   });
 });
+
+describe('remove_all false', () => {
+  it.each([[{ substitute_remove_all: false }], [{ inherit_fields_remove_all: false, shopping_lists_remove_all: false }]])(
+    'food_batch_update rejects %o as no change', async (ops) => {
+      const sent = stubTandoor({});
+      await expect(handleFoodBatchUpdate(client(), { foods: [1], ...ops })).rejects.toThrow('Give a field to change, a list change, or both.');
+      expect(sent).toEqual([]);
+    });
+
+  it('is not sent by food_batch_update or bulk_update_shopping_entries, while a real false is', async () => {
+    const sent = stubTandoor({ 'PUT /api/food/batch_update/': {}, 'POST /api/shopping-list-entry/bulk/': {} });
+    await handleFoodBatchUpdate(client(), { foods: [1], on_hand: false, child_inherit_fields_remove_all: false, shopping_lists_remove_all: false });
+    await handleBulkUpdateShoppingEntries(client(), { ids: [7], checked: false, shopping_lists_remove_all: false });
+    expect(sent.map((s) => s.body)).toEqual([{ foods: [1], on_hand: false }, { ids: [7], checked: false }]);
+  });
+});
