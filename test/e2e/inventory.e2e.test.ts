@@ -113,6 +113,13 @@ async function api(method: string, path: string, body?: unknown): Promise<any> {
     expect((await call(server, 'get_inventory_entry', { id: entryId })).amount).toBe(0);
   });
 
+  it('consuming an entry at 0 writes nothing', async () => {
+    const res = await raw('consume_inventory_item', server, { entry_id: entryId, all: true });
+    expect(res).toEqual({ isError: false, text: `Inventory item ${entryId} has nothing on hand (amount 0); nothing consumed.` });
+    const logs = await call(server, 'list_inventory_logs', { entry_id: entryId });
+    expect(logs.count).toBe(3);
+  });
+
   it('hides the empty entry by default and shows it with include_empty', async () => {
     const hidden = await call(server, 'list_inventory_entries', { location_id: freezerId });
     expect(hidden.results.map((e: any) => e.id)).not.toContain(entryId);
@@ -166,5 +173,29 @@ async function api(method: string, path: string, body?: unknown): Promise<any> {
     const logIds = (await call(server, 'list_inventory_logs', { entry_id: entryId })).results.map((l: any) => l.id);
     const cascaded = cascade.results.filter((r: any) => r.model === 'InventoryLog').map((r: any) => r.id);
     expect(cascaded).toEqual(expect.arrayContaining(logIds));
+  });
+
+  it('list_inventory_logs food_id returns only that food rows', async () => {
+    const otherFood = (await client.foodUnits.createFood({ name: `${tag}-corn` })).id;
+    try {
+      const other = await call(server, 'add_inventory_item', { food_id: otherFood, unit_id: unitId, amount: 1, location_id: pantryId });
+      const logs = await call(server, 'list_inventory_logs', { food_id: foodId, page_size: 100 });
+      const entryIds = logs.results.map((l: any) => l.entry_id);
+      expect(entryIds).toContain(entryId);
+      expect(entryIds).not.toContain(other.id);
+      expect(new Set(logs.results.map((l: any) => l.food))).toEqual(new Set([`${tag}-peas`]));
+    } finally {
+      await client.foodUnits.deleteFood(otherFood);
+    }
+  });
+
+  it('an entry whose unit was deleted shows a null unit and cannot be consumed', async () => {
+    const doomed = (await client.foodUnits.createUnit({ name: `${tag}-doomed` })).id;
+    const added = await call(server, 'add_inventory_item', { food_id: foodId, unit_id: doomed, amount: 5, location_id: pantryId });
+    await client.foodUnits.deleteUnit(doomed);
+    expect(await call(server, 'get_inventory_entry', { id: added.id })).toMatchObject({ unit: null, unit_id: null, amount: 5 });
+    const res = await raw('consume_inventory_item', server, { entry_id: added.id, amount: 1 });
+    expect(res).toEqual({ isError: true, text: expect.stringContaining(`Entry ${added.id} has no unit; set one with update_inventory_entry.`) });
+    expect((await call(server, 'get_inventory_entry', { id: added.id })).amount).toBe(5);
   });
 });
