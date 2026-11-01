@@ -95,6 +95,12 @@ const ids = (lists: { id: number }[]) => lists.map((l) => l.id).sort((a, b) => a
       text: expect.stringContaining(`A food named ${tag}-milk already exists (id ${foodId}); use update_food to change its lists.`),
     });
     expect(ids((await client.foodUnits.getFood(foodId)).shopping_lists)).toEqual([listA]);
+    await call(server, 'update_food', { id: foodId, plural_name: `${tag}-milks` });
+    expect(await raw(server, 'create_food', { name: `${tag}-MILKS`, shopping_list_ids: [listB] })).toEqual({
+      isError: true,
+      text: expect.stringContaining(`A food named ${tag}-milk already exists (id ${foodId}); use update_food to change its lists.`),
+    });
+    expect(ids((await client.foodUnits.getFood(foodId)).shopping_lists)).toEqual([listA]);
   });
 
   it('creates an entry on the given lists', async () => {

@@ -340,6 +340,18 @@ describe('food shopping lists', () => {
     expect(sent.filter((s) => s.path.startsWith('/api/food/')).map((s) => s.path)).toEqual(['/api/food/?query=Milk&page=1&page_size=100']);
   });
 
+  it('refuses when Tandoor answers the POST with a food whose plural name matches, and sends no PATCH', async () => {
+    const sent = stubTandoor({
+      ...listPages,
+      'GET /api/food/?query=eggs&page=1&page_size=100': page([]),
+      'POST /api/food/': { ...milk, id: 9, name: 'Egg', plural_name: 'Eggs' },
+    });
+    await expect(handleCreateFood(client(), { name: ' eggs ', shopping_list_ids: [2] })).rejects.toThrow(
+      new Error('A food named Egg already exists (id 9); use update_food to change its lists.'),
+    );
+    expect(sent.filter((s) => s.method !== 'GET').map((s) => s.method)).toEqual(['POST']);
+  });
+
   it('trims the name before looking for an existing food', async () => {
     const sent = stubTandoor({
       ...listPages,

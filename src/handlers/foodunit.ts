@@ -86,18 +86,20 @@ export async function handleCreateFood(
     body.supermarket_category = args.supermarket_category_id;
   }
   const listIds = args.shopping_list_ids;
+  const name = args.name.trim();
+  const existingFood = (f: any) => new Error(`A food named ${f.name} already exists (id ${f.id}); use update_food to change its lists.`);
   if (listIds !== undefined) {
     await checkShoppingListIds(client, listIds, ctx?.signal);
-    const name = args.name.trim();
     let sameName: any;
     for (let page = 1; !sameName; page++) {
       const r = await client.foodUnits.listFoods({ query: name, page, page_size: 100 });
       sameName = r.results.find((f: any) => f.name.toLowerCase() === name.toLowerCase());
       if (!r.next) break;
     }
-    if (sameName) throw new Error(`A food named ${sameName.name} already exists (id ${sameName.id}); use update_food to change its lists.`);
+    if (sameName) throw existingFood(sameName);
   }
   let created = await client.foodUnits.createFood(body);
+  if (listIds !== undefined && created.name.toLowerCase() !== name.toLowerCase()) throw existingFood(created);
   if (listIds?.length) {
     created = await client.foodUnits.patchFood(created.id, { shopping_lists: listIds }).catch((e: Error) => {
       throw new Error(`Food ${created.id} was created without shopping lists; setting its lists failed: ${e.message}${doNotRetry('update_food', created.id)}`);
