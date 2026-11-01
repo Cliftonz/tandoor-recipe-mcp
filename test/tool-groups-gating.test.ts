@@ -126,3 +126,36 @@ describe('enable_tool_group', () => {
     expect(result.text).toContain('recipes, meal-plan, shopping, inventory, foods, cooklog, recipe-books, ai, import-export, household-space, admin');
   });
 });
+
+describe('disable_tool_group', () => {
+  it('turns off a section that was on at startup', async () => {
+    const client = await connect({ TANDOOR_MCP_RECIPES: 'full' });
+    const result = await callOk(client, 'disable_tool_group', { group: 'recipes' });
+    expect(result).toMatchObject({ ok: true, group: 'recipes', mode: 'off' });
+    expect(result.disabled).toEqual(expect.arrayContaining(['list_recipes', 'delete_step']));
+    const names = await visible(client);
+    expect(names).not.toContain('list_recipes');
+    expect(names).not.toContain('delete_step');
+  });
+
+  it('lets a disabled section be enabled again', async () => {
+    const client = await connect();
+    await callOk(client, 'disable_tool_group', { group: 'shopping' });
+    await callOk(client, 'enable_tool_group', { group: 'shopping', tier: 'simple' });
+    expect(await visible(client)).toContain('list_shopping_entries');
+  });
+
+  it('refuses to disable the always group', async () => {
+    const client = await connect();
+    const result = await call(client, 'disable_tool_group', { group: 'always' });
+    expect(result.isError).toBe(true);
+    expect(result.text).toContain("cannot disable 'always'");
+    expect(await visible(client)).toContain('get_version');
+  });
+
+  it('rejects old group names', async () => {
+    const result = await call(await connect(), 'disable_tool_group', { group: 'shopping-write' });
+    expect(result.isError).toBe(true);
+    expect(result.text).toContain("unknown tool group 'shopping-write'");
+  });
+});

@@ -25,7 +25,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
 import { CORE_TOOLS, TOOL_GROUPS } from '../lib/tool-groups.js';
-import { SECTIONS, modesOf, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
+import { ALWAYS_ON_GROUP, SECTIONS, modesOf, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
 
 interface RegisteredToolEntry {
   enabled: boolean;
@@ -113,9 +113,7 @@ export const disableToolGroupShape = {
   group: z
     .string()
     .min(1)
-    .describe(
-      'Name of the group to disable. The synthetic "core" group cannot be disabled.',
-    ),
+    .describe('Name of the section to turn off. The "always" group cannot be disabled.'),
 } as const;
 
 export type EnableToolGroupArgs = z.infer<z.ZodObject<typeof enableToolGroupShape>>;
@@ -216,41 +214,11 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
     },
     async (_client, args) => {
       if (isHttpMode()) throw new Error(HTTP_GATING_DISABLED_MSG);
-      const group = args.group;
-      if (group === SYNTHETIC_CORE_GROUP) {
-        throw new Error("cannot disable 'core' — it is the permanent always-on group.");
-      }
-      const g = TOOL_GROUPS.find((x) => x.name === group);
-      if (!g) {
-        const known = [SYNTHETIC_CORE_GROUP, ...TOOL_GROUPS.map((x) => x.name)];
-        throw new Error(
-          `unknown tool group '${group}'. Known groups: ${known.join(', ')}. Call list_tool_groups for descriptions.`,
-        );
-      }
-      const reg = getRegistry(server);
-      const disabled: string[] = [];
-      const alreadyDisabled: string[] = [];
-      const skipped: string[] = [];
-      for (const t of g.tools) {
-        const r = reg[t];
-        if (!r) {
-          skipped.push(t);
-          continue;
-        }
-        if (!r.enabled) {
-          alreadyDisabled.push(t);
-        } else {
-          r.disable();
-          disabled.push(t);
-        }
-      }
-      return JSON.stringify({
-        ok: true,
-        group,
-        disabled,
-        already_disabled: alreadyDisabled,
-        skipped,
-      });
+      if (args.group === ALWAYS_ON_GROUP) throw new Error(`cannot disable '${ALWAYS_ON_GROUP}'; its tools are always on.`);
+      const section = findSection(args.group);
+      modes.set(section.name, 'off');
+      const { disabled } = applyMode(getRegistry(server), section, 'off');
+      return JSON.stringify({ ok: true, group: section.name, mode: 'off', disabled });
     },
   );
 }
