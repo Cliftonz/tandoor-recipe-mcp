@@ -15,6 +15,8 @@ import {
   handleDeleteInventoryEntry,
   handleConsumeInventoryItem,
   handleMoveInventoryItem,
+  handleListInventoryLogs,
+  handleGetInventoryLog,
 } from '../src/handlers/inventory.js';
 
 type Sent = { method: string; path: string; body?: unknown };
@@ -357,5 +359,38 @@ describe('move_inventory_item', () => {
     const out = await handleMoveInventoryItem(client(), { entry_id: 11, to_location_id: 2, sub_location: 'door' });
     expect(writes(sent)).toEqual([{ method: 'PATCH', path: '/api/inventory-entry/11/', body: { sub_location: 'door' } }]);
     expect(JSON.parse(out.split('\n\n')[1])).toMatchObject({ sub_location: 'door', from_location: 'Freezer' });
+  });
+});
+
+describe('inventory logs', () => {
+  const pantry = { id: 7, name: 'Pantry', is_freezer: false, household };
+  const log = {
+    id: 30,
+    entry: entry(),
+    booking_type: 'move',
+    old_amount: 400,
+    new_amount: 400,
+    old_inventory_location: freezer,
+    new_inventory_location: pantry,
+    note: null,
+    created_at: '2026-11-01T10:00:00Z',
+  };
+  const slimLog = {
+    id: 30, entry_id: 11, food: 'peas', booking_type: 'move', old_amount: 400, new_amount: 400,
+    old_location: 'Freezer', new_location: 'Pantry', note: null, created_at: '2026-11-01T10:00:00Z',
+  };
+
+  it('lists logs filtered by entry and food, slimmed', async () => {
+    stubTandoor({
+      'GET /api/inventory-log/?entry_id=11&food_id=5&page=1&page_size=10': { count: 1, next: null, previous: null, results: [log] },
+    });
+    const out = await handleListInventoryLogs(client(), { entry_id: 11, food_id: 5, page: 1, page_size: 10 });
+    expect(JSON.parse(out)).toEqual({ count: 1, next: null, previous: null, results: [slimLog] });
+  });
+
+  it('gets a log slim by default and raw with format full', async () => {
+    stubTandoor({ 'GET /api/inventory-log/30/': log });
+    expect(JSON.parse(await handleGetInventoryLog(client(), { id: 30 }))).toEqual(slimLog);
+    expect(JSON.parse(await handleGetInventoryLog(client(), { id: 30, format: 'full' }))).toEqual(log);
   });
 });

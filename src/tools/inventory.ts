@@ -16,6 +16,8 @@ import {
   handleDeleteInventoryEntry,
   handleConsumeInventoryItem,
   handleMoveInventoryItem,
+  handleListInventoryLogs,
+  handleGetInventoryLog,
 } from '../handlers/inventory.js';
 
 export const listInventoryLocationsShape = {
@@ -97,6 +99,16 @@ export const moveInventoryItemShape = {
   format: formatEnum,
 } as const;
 
+export const listInventoryLogsShape = {
+  entry_id: z.number().optional(),
+  food_id: z.number().optional(),
+  page: z.number().optional(),
+  page_size: z.number().optional(),
+  format: formatEnum,
+} as const;
+
+export const getInventoryLogShape = { id: z.number(), format: formatEnum } as const;
+
 export type ListInventoryLocationsArgs = z.infer<z.ZodObject<typeof listInventoryLocationsShape>>;
 export type GetInventoryLocationArgs = z.infer<z.ZodObject<typeof getInventoryLocationShape>>;
 export type CreateInventoryLocationArgs = z.infer<z.ZodObject<typeof createInventoryLocationShape>>;
@@ -110,6 +122,8 @@ export type UpdateInventoryEntryArgs = z.infer<z.ZodObject<typeof updateInventor
 export type DeleteInventoryEntryArgs = z.infer<z.ZodObject<typeof deleteInventoryEntryShape>>;
 export type ConsumeInventoryItemArgs = z.infer<z.ZodObject<typeof consumeInventoryItemShape>>;
 export type MoveInventoryItemArgs = z.infer<z.ZodObject<typeof moveInventoryItemShape>>;
+export type ListInventoryLogsArgs = z.infer<z.ZodObject<typeof listInventoryLogsShape>>;
+export type GetInventoryLogArgs = z.infer<z.ZodObject<typeof getInventoryLogShape>>;
 
 export function registerInventoryTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_inventory_locations', {
@@ -171,4 +185,14 @@ export function registerInventoryTools(server: McpServer, client: TandoorClient)
     description: 'Move a whole inventory entry to another location. Required: entry_id, to_location_id. Optional: sub_location (null clears it). To move only part of an entry, consume_inventory_item the part and add_inventory_item it at the new location.',
     inputSchema: moveInventoryItemShape,
   }, handleMoveInventoryItem);
+
+  registerStringTool(server, client, 'list_inventory_logs', {
+    description: 'List inventory log rows (read-only history of amount and location changes). Optional: entry_id, food_id, page, page_size. booking_type is move when the location changed; an amount change at the same location is logged as remove, even when the amount goes up.',
+    inputSchema: listInventoryLogsShape,
+  }, handleListInventoryLogs);
+
+  registerStringTool(server, client, 'get_inventory_log', {
+    description: 'Get an inventory log row by ID.',
+    inputSchema: getInventoryLogShape,
+  }, handleGetInventoryLog);
 }

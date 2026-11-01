@@ -12,6 +12,8 @@ import type {
   DeleteInventoryEntryArgs,
   ConsumeInventoryItemArgs,
   MoveInventoryItemArgs,
+  ListInventoryLogsArgs,
+  GetInventoryLogArgs,
 } from '../tools/inventory.js';
 import type { HandlerContext } from '../lib/register.js';
 import { emit, assertNonEmptyBody, slimPaginated } from '../lib/slim.js';
@@ -35,6 +37,21 @@ function slimEntry(e: any) {
     expires: e.expires,
     note: e.note,
     code: e.code,
+  };
+}
+
+function slimLog(l: any) {
+  return {
+    id: l.id,
+    entry_id: l.entry.id,
+    food: l.entry.food.name,
+    booking_type: l.booking_type,
+    old_amount: l.old_amount,
+    new_amount: l.new_amount,
+    old_location: l.old_inventory_location.name,
+    new_location: l.new_inventory_location.name,
+    note: l.note,
+    created_at: l.created_at,
   };
 }
 
@@ -210,4 +227,23 @@ export async function handleMoveInventoryItem(
   if (Object.keys(body).length === 0) return `Inventory item ${e.id} is already in ${from.name}.`;
   const r = await client.inventory.patchEntry(e.id, body, { signal: ctx?.signal });
   return `Inventory item moved.\n\n${emit({ ...(args.format === 'full' ? r : slimEntry(r)), from_location: from.name })}`;
+}
+
+export async function handleListInventoryLogs(
+  client: TandoorClient,
+  args: ListInventoryLogsArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const { format, ...params } = args;
+  const r = await client.inventory.listLogs(params, { signal: ctx?.signal });
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimLog));
+}
+
+export async function handleGetInventoryLog(
+  client: TandoorClient,
+  args: GetInventoryLogArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const r = await client.inventory.getLog(args.id, { signal: ctx?.signal });
+  return emit(args.format === 'full' ? r : slimLog(r));
 }
