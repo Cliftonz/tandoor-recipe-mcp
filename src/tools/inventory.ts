@@ -182,7 +182,7 @@ export function registerInventoryTools(server: McpServer, client: TandoorClient)
   }, handleConsumeInventoryItem);
 
   registerStringTool(server, client, 'move_inventory_item', {
-    description: 'Move a whole inventory entry to another location. Required: entry_id, to_location_id. Optional: sub_location (null clears it). To move only part of an entry, consume_inventory_item the part and add_inventory_item it at the new location.',
+    description: 'Move a whole inventory entry to another location. Required: entry_id, to_location_id. Optional: sub_location (null clears it).',
     inputSchema: moveInventoryItemShape,
   }, handleMoveInventoryItem);
 
