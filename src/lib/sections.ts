@@ -202,3 +202,23 @@ export const SECTIONS: readonly Section[] = [
     ],
   },
 ];
+
+export type SectionModes = Map<string, SectionMode>;
+
+const DEFAULT_MODE = { tiered: 'simple', toggle: 'off' } as const satisfies Record<Section['kind'], SectionMode>;
+
+export function modesOf(section: Section): readonly SectionMode[] {
+  return section.kind === 'tiered' ? TIERED_MODES : TOGGLE_MODES;
+}
+
+function parseMode(section: Section, raw: string | undefined): SectionMode {
+  const modes = modesOf(section);
+  if (!raw) return DEFAULT_MODE[section.kind];
+  const mode = modes.find((m) => m === raw.toLowerCase());
+  if (!mode) throw new Error(`${section.envVar}=${raw} is not valid. Valid values: ${modes.join(', ')}.`);
+  return mode;
+}
+
+export function parseSectionModes(env: Record<string, string | undefined>): SectionModes {
+  return new Map(SECTIONS.map((s) => [s.name, parseMode(s, env[s.envVar])]));
+}
