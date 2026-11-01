@@ -9,6 +9,11 @@ import {
   handleCreateInventoryLocation,
   handleUpdateInventoryLocation,
   handleDeleteInventoryLocation,
+  handleListInventoryEntries,
+  handleGetInventoryEntry,
+  handleAddInventoryItem,
+  handleUpdateInventoryEntry,
+  handleDeleteInventoryEntry,
 } from '../handlers/inventory.js';
 
 export const listInventoryLocationsShape = {
@@ -34,11 +39,56 @@ export const updateInventoryLocationShape = {
 
 export const deleteInventoryLocationShape = { id: z.number() } as const;
 
+export const listInventoryEntriesShape = {
+  location_id: z.number().optional(),
+  food_id: z.number().optional(),
+  code: z.string().optional(),
+  include_empty: z.boolean().optional(),
+  page: z.number().optional(),
+  page_size: z.number().optional(),
+  format: formatEnum,
+} as const;
+
+export const getInventoryEntryShape = { id: z.number(), format: formatEnum } as const;
+
+export const addInventoryItemShape = {
+  food_id: z.number(),
+  unit_id: z.number(),
+  amount: z.number().positive(),
+  location_id: z.number(),
+  expires: z.iso.date().optional(),
+  sub_location: z.string().optional(),
+  note: z.string().optional(),
+  code: z.string().optional(),
+  format: formatEnum,
+} as const;
+
+export const updateInventoryEntryShape = {
+  id: z.number(),
+  food_id: z.number().optional(),
+  unit_id: z.number().optional(),
+  amount: z.number().nonnegative().optional(),
+  location_id: z.number().optional(),
+  expires: z.iso.date().nullable().optional(),
+  sub_location: z.string().nullable().optional(),
+  note: z.string().nullable().optional(),
+  code: z.string().optional(),
+  format: formatEnum,
+} as const;
+
+export const deleteInventoryEntryShape = { id: z.number() } as const;
+
 export type ListInventoryLocationsArgs = z.infer<z.ZodObject<typeof listInventoryLocationsShape>>;
 export type GetInventoryLocationArgs = z.infer<z.ZodObject<typeof getInventoryLocationShape>>;
 export type CreateInventoryLocationArgs = z.infer<z.ZodObject<typeof createInventoryLocationShape>>;
 export type UpdateInventoryLocationArgs = z.infer<z.ZodObject<typeof updateInventoryLocationShape>>;
 export type DeleteInventoryLocationArgs = z.infer<z.ZodObject<typeof deleteInventoryLocationShape>>;
+
+export type ListInventoryEntriesArgs = z.infer<z.ZodObject<typeof listInventoryEntriesShape>>;
+export type GetInventoryEntryArgs = z.infer<z.ZodObject<typeof getInventoryEntryShape>>;
+export type AddInventoryItemArgs = z.infer<z.ZodObject<typeof addInventoryItemShape>>;
+export type UpdateInventoryEntryArgs = z.infer<z.ZodObject<typeof updateInventoryEntryShape>>;
+export type DeleteInventoryEntryArgs = z.infer<z.ZodObject<typeof deleteInventoryEntryShape>>;
 
 export function registerInventoryTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_inventory_locations', {
@@ -65,4 +115,29 @@ export function registerInventoryTools(server: McpServer, client: TandoorClient)
     description: 'Delete an inventory location by ID. This also deletes every inventory entry in it and the log rows of every entry that ever passed through it, including entries since moved elsewhere. Use preview_inventory_location_delete_cascading to see the full cascade first.',
     inputSchema: deleteInventoryLocationShape,
   }, handleDeleteInventoryLocation);
+
+  registerStringTool(server, client, 'list_inventory_entries', {
+    description: 'List inventory entries (what is on hand, where). Optional: location_id, food_id, code, include_empty (entries with amount 0 or less are hidden unless true), page, page_size.',
+    inputSchema: listInventoryEntriesShape,
+  }, handleListInventoryEntries);
+
+  registerStringTool(server, client, 'get_inventory_entry', {
+    description: 'Get an inventory entry by ID.',
+    inputSchema: getInventoryEntryShape,
+  }, handleGetInventoryEntry);
+
+  registerStringTool(server, client, 'add_inventory_item', {
+    description: 'Add food to inventory. Required: food_id, unit_id, amount (> 0), location_id. Optional: expires (YYYY-MM-DD), sub_location, note, code. Always creates a new entry, even when the same food already has an entry at that location.',
+    inputSchema: addInventoryItemShape,
+  }, handleAddInventoryItem);
+
+  registerStringTool(server, client, 'update_inventory_entry', {
+    description: 'Update an inventory entry (PATCH). Required: id. Optional: food_id, unit_id, amount (>= 0), location_id, expires (YYYY-MM-DD; null clears it), sub_location (null clears it), note (null clears it), code.',
+    inputSchema: updateInventoryEntryShape,
+  }, handleUpdateInventoryEntry);
+
+  registerStringTool(server, client, 'delete_inventory_entry', {
+    description: 'Delete an inventory entry by ID. This also deletes its log rows.',
+    inputSchema: deleteInventoryEntryShape,
+  }, handleDeleteInventoryEntry);
 }

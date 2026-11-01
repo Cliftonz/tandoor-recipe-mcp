@@ -23,4 +23,24 @@ export class InventoryClient extends BaseClient {
   async deleteLocation(id: number, opts?: Opts): Promise<void> {
     return this.request(`/api/inventory-location/${id}/`, { method: 'DELETE', signal: opts?.signal });
   }
+
+  async listEntries(params?: Paging & { inventory_location_id?: number; food_id?: number; code?: string; empty?: true }, opts?: Opts): Promise<any> {
+    return this.request(`/api/inventory-entry/${qs(params)}`, { signal: opts?.signal });
+  }
+
+  async getEntry(id: number, opts?: Opts): Promise<any> {
+    return this.request(`/api/inventory-entry/${id}/`, { signal: opts?.signal });
+  }
+
+  async createEntry(body: any, opts?: Opts): Promise<any> {
+    return this.request('/api/inventory-entry/', { method: 'POST', body: JSON.stringify(body), signal: opts?.signal });
+  }
+
+  async patchEntry(id: number, body: any, opts?: Opts): Promise<any> {
+    return this.request(`/api/inventory-entry/${id}/`, { method: 'PATCH', body: JSON.stringify(body), signal: opts?.signal });
+  }
+
+  async deleteEntry(id: number, opts?: Opts): Promise<void> {
+    return this.request(`/api/inventory-entry/${id}/`, { method: 'DELETE', signal: opts?.signal });
+  }
 }

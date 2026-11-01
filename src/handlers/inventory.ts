@@ -5,12 +5,48 @@ import type {
   CreateInventoryLocationArgs,
   UpdateInventoryLocationArgs,
   DeleteInventoryLocationArgs,
+  ListInventoryEntriesArgs,
+  GetInventoryEntryArgs,
+  AddInventoryItemArgs,
+  UpdateInventoryEntryArgs,
+  DeleteInventoryEntryArgs,
 } from '../tools/inventory.js';
 import type { HandlerContext } from '../lib/register.js';
 import { emit, assertNonEmptyBody, slimPaginated } from '../lib/slim.js';
 
 function slimLocation(l: any) {
   return { id: l.id, name: l.name, is_freezer: l.is_freezer, household: l.household.name };
+}
+
+function slimEntry(e: any) {
+  return {
+    id: e.id,
+    food: e.food.name,
+    food_id: e.food.id,
+    amount: e.amount,
+    unit: e.unit.name,
+    unit_id: e.unit.id,
+    location: e.inventory_location.name,
+    location_id: e.inventory_location.id,
+    is_freezer: e.inventory_location.is_freezer,
+    sub_location: e.sub_location,
+    expires: e.expires,
+    note: e.note,
+    code: e.code,
+  };
+}
+
+function entryBody(args: Omit<UpdateInventoryEntryArgs, 'id'>) {
+  const body: any = {};
+  if (args.food_id !== undefined) body.food = args.food_id;
+  if (args.unit_id !== undefined) body.unit = args.unit_id;
+  if (args.amount !== undefined) body.amount = args.amount;
+  if (args.location_id !== undefined) body.inventory_location = args.location_id;
+  if (args.expires !== undefined) body.expires = args.expires;
+  if (args.sub_location !== undefined) body.sub_location = args.sub_location;
+  if (args.note !== undefined) body.note = args.note;
+  if (args.code !== undefined) body.code = args.code;
+  return body;
 }
 
 export async function handleListInventoryLocations(
@@ -68,4 +104,58 @@ export async function handleDeleteInventoryLocation(
 ): Promise<string> {
   await client.inventory.deleteLocation(args.id, { signal: ctx?.signal });
   return `Inventory location ${args.id} deleted.`;
+}
+
+export async function handleListInventoryEntries(
+  client: TandoorClient,
+  args: ListInventoryEntriesArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const { format, location_id, include_empty, ...rest } = args;
+  const params = {
+    inventory_location_id: location_id,
+    ...rest,
+    ...(include_empty ? { empty: true as const } : {}),
+  };
+  const r = await client.inventory.listEntries(params, { signal: ctx?.signal });
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimEntry));
+}
+
+export async function handleGetInventoryEntry(
+  client: TandoorClient,
+  args: GetInventoryEntryArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const r = await client.inventory.getEntry(args.id, { signal: ctx?.signal });
+  return emit(args.format === 'full' ? r : slimEntry(r));
+}
+
+export async function handleAddInventoryItem(
+  client: TandoorClient,
+  args: AddInventoryItemArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const r = await client.inventory.createEntry(entryBody(args), { signal: ctx?.signal });
+  return `Inventory item added.\n\n${emit(args.format === 'full' ? r : slimEntry(r))}`;
+}
+
+export async function handleUpdateInventoryEntry(
+  client: TandoorClient,
+  args: UpdateInventoryEntryArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const { id, format, ...fields } = args;
+  const body = entryBody(fields);
+  assertNonEmptyBody(body);
+  const r = await client.inventory.patchEntry(id, body, { signal: ctx?.signal });
+  return `Inventory entry updated.\n\n${emit(format === 'full' ? r : slimEntry(r))}`;
+}
+
+export async function handleDeleteInventoryEntry(
+  client: TandoorClient,
+  args: DeleteInventoryEntryArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  await client.inventory.deleteEntry(args.id, { signal: ctx?.signal });
+  return `Inventory entry ${args.id} deleted.`;
 }
