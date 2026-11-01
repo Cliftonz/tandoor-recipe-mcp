@@ -23,6 +23,7 @@ export const RESOURCES: { resource: string; slug: string }[] = [
   { resource: 'user_file', slug: 'user-file' },
   { resource: 'inventory_entry', slug: 'inventory-entry' },
   { resource: 'inventory_location', slug: 'inventory-location' },
+  { resource: 'shopping_list', slug: 'shopping-list' },
 ];
 
 const ACTIONS: TreeSafetyAction[] = ['cascading', 'nulling', 'protecting'];
@@ -43,6 +44,7 @@ const deleteToolNameFor: Record<string, string> = {
   user_file: 'delete_user_file',
   inventory_entry: 'delete_inventory_entry',
   inventory_location: 'delete_inventory_location',
+  shopping_list: 'delete_shopping_list',
 };
 
 export function registerTreeSafetyTools(server: McpServer, client: TandoorClient): void {

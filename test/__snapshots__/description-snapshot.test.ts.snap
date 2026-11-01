@@ -39,8 +39,12 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "bulk_create_meal_plans",
   },
   {
-    "description": "Append many shopping entries to an existing shopping-list-recipe in one call.",
+    "description": "Append many shopping entries to an existing shopping-list-recipe in one call. Tandoor answers 404 when the shopping-list-recipe has no entries yet. Optional: shopping_list_ids puts every new entry on those lists. When shopping_list_ids is omitted, each new entry gets its food's lists, whatever the user preference. An empty shopping_list_ids is rejected. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written.",
     "name": "bulk_create_shopping_list_recipe_entries",
+  },
+  {
+    "description": "Update many shopping entries in one call. Required: ids (entry ids; ids that do not exist or are not visible to you are skipped). Give checked, a list change, or both. checked: true checks every entry and sets completed_at to now, also on entries already checked; without checked, checked and completed_at stay as they are. List changes do not update the entries' updated_at. List changes: shopping_lists_add and shopping_lists_remove (may be combined), shopping_lists_set (replaces the lists; must not be empty) or shopping_lists_remove_all: true (takes every list off). set and remove_all must be used alone. Empty arrays and shopping_lists_remove_all: false count as no change and are not sent. An id may not appear in both shopping_lists_add and shopping_lists_remove. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written.",
+    "name": "bulk_update_shopping_entries",
   },
   {
     "description": "Use up some or all of an inventory entry. Identify it by entry_id, or by food_id with optional location_id (errors listing the candidates when several entries match). Give exactly one of amount (> 0) or all: true. Optional unit_id must match the entry unit; there is no unit conversion. The amount never goes below 0: consuming more than is on hand sets it to 0 and returns a warning. Never deletes the entry; at 0 (including after all: true) it is hidden from list_inventory_entries unless include_empty is true. Not atomic: two concurrent consumes of one entry can lose an update.",
@@ -79,7 +83,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "create_export_log",
   },
   {
-    "description": "Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id.",
+    "description": "Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). If a food with this name exists, Tandoor returns it instead of creating one. With shopping_list_ids (including []), the tool looks up the name first and, if a food with that name exists (ignoring case and surrounding spaces), refuses and changes nothing; use update_food. Tandoor also returns an existing food whose plural name matches; the tool detects that from the create reply and refuses the same way, setting no lists. With non-empty shopping_list_ids, the tool creates the food first and then sets its lists, because Tandoor cannot set lists while creating a food. With any shopping_list_ids (including []), if a step after the create fails, the error gives the new food's id and says not to retry. Changing a food's lists does not change its existing shopping entries. add_recipe_to_shopping_list copies the food's lists onto new entries. create_shopping_entry without shopping_list_ids copies them when the user preference shopping_update_food_lists is on. bulk_create_shopping_list_recipe_entries without shopping_list_ids copies each food's lists whatever the user preference. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written. If the lists after the write differ from the request, the tool errors and names the missing and the extra lists.",
     "name": "create_food",
   },
   {
@@ -135,8 +139,12 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "create_recipe_import",
   },
   {
-    "description": "Create a shopping list entry. Required: amount, food_id. Optional: unit_id, checked, list_recipe, ingredient, order, delay_until, mealplan_id (links to existing/new ShoppingListRecipe for that mealplan).",
+    "description": "Create a shopping list entry. Required: amount, food_id. Optional: unit_id, checked, list_recipe, ingredient, order, delay_until, mealplan_id (links to existing/new ShoppingListRecipe for that mealplan), shopping_list_ids. shopping_list_ids (ids from list_shopping_lists) puts the entry on exactly those lists; the food's lists are not added. When shopping_list_ids is omitted, Tandoor copies the food's lists onto the new entry if the user preference shopping_update_food_lists is on. With [], the tool clears any lists Tandoor copied, so the entry is on no list. add_recipe_to_shopping_list always copies each food's lists; food_shopping_update never does. Changing a food's lists later does not change existing entries. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written. If the lists after the write differ from the request, the tool errors and names the missing and the extra lists.",
     "name": "create_shopping_entry",
+  },
+  {
+    "description": "Create a named shopping list. Required: name (1 to 32 characters). Optional: description, color (#rrggbb or null). If a list with the same name already exists (case-insensitive), Tandoor returns that list instead of creating a new one, and does not change its description or color.",
+    "name": "create_shopping_list",
   },
   {
     "description": "Create a shopping-list-recipe. Required: servings. Optional: name, recipe (id), mealplan (id).",
@@ -279,6 +287,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "delete_shopping_entry",
   },
   {
+    "description": "Delete a named shopping list by ID. This only removes the links to the list: foods, shopping entries and supermarkets that used it keep existing. To see the links first, use preview_shopping_list_delete_cascading.",
+    "name": "delete_shopping_list",
+  },
+  {
     "description": "Delete a shopping-list-recipe by ID.",
     "name": "delete_shopping_list_recipe",
   },
@@ -351,7 +363,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "food_ai_properties",
   },
   {
-    "description": "Apply a narrow set of bulk mutations across many foods in one call via Tandoor's /api/food/batch_update/ endpoint. Required: foods[]. Optional (all apply to every food in foods[]): category (set supermarket_category, null clears), substitute_add/remove/set/remove_all, inherit_fields_add/remove/set/remove_all, child_inherit_fields_* (same pattern), substitute_children/siblings (boolean), ignore_shopping, on_hand, parent_set/parent_remove. Does NOT support bulk name/plural/description/fdc_id edits — those still need update_food per-item. Use for: pantry on-hand toggle across a set, retagging supermarket category, configuring substitute groups.",
+    "description": "Apply a narrow set of bulk mutations across many foods in one call via Tandoor's /api/food/batch_update/ endpoint. Required: foods[]. Optional (all apply to every food in foods[]): category (set supermarket_category, null clears), substitute_add/remove/set/remove_all, inherit_fields_add/remove/set/remove_all, child_inherit_fields_* (same pattern), substitute_children/siblings (boolean), ignore_shopping, on_hand, parent_set/parent_remove. Does NOT support bulk name/plural/description/fdc_id edits; those still need update_food per-item. Use for: pantry on-hand toggle across a set, retagging supermarket category, configuring substitute groups, moving foods between shopping lists. Empty arrays and *_remove_all: false count as no change and are not sent. A call with no field change and no list change is rejected ("Give a field to change, a list change, or both."). Shopping list changes: shopping_lists_add and shopping_lists_remove (may be combined), shopping_lists_set (replaces the lists; must not be empty) or shopping_lists_remove_all: true (takes every list off). set and remove_all must be used alone. Empty arrays and shopping_lists_remove_all: false count as no change and are not sent. An id may not appear in both shopping_lists_add and shopping_lists_remove. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written. Existing shopping entries keep their lists.",
     "name": "food_batch_update",
   },
   {
@@ -501,6 +513,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
   {
     "description": "Get a shopping list entry by ID.",
     "name": "get_shopping_entry",
+  },
+  {
+    "description": "Get a named shopping list by ID.",
+    "name": "get_shopping_list",
   },
   {
     "description": "Get a shopping-list-recipe by ID.",
@@ -731,12 +747,16 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_search_preferences",
   },
   {
-    "description": "List shopping list entries (auto-filtered to unchecked + recent by Tandoor). Optional: mealplan, updated_after (ISO), page, page_size, format.",
+    "description": "List shopping list entries (auto-filtered to unchecked + recent by Tandoor). Optional: mealplan, updated_after (ISO), page, page_size, format. Entries cannot be filtered by shopping list; use the shopping_lists field of the results.",
     "name": "list_shopping_entries",
   },
   {
     "description": "List shopping-list-recipe groupings (a recipe added to the shopping list).",
     "name": "list_shopping_list_recipes",
+  },
+  {
+    "description": "List the named shopping lists of this space (for example one per store), as {id, name, description, color}. Every member of the space sees the same lists. Optional: page, page_size.",
+    "name": "list_shopping_lists",
   },
   {
     "description": "List spaces (tenant workspaces) the caller can see. Optional: page, page_size.",
@@ -931,6 +951,18 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "preview_recipe_delete_protecting",
   },
   {
+    "description": "Preview which related objects would be cascading if you delete this shopping list. Read-only, use before delete_shopping_list.",
+    "name": "preview_shopping_list_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this shopping list. Read-only, use before delete_shopping_list.",
+    "name": "preview_shopping_list_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this shopping list. Read-only, use before delete_shopping_list.",
+    "name": "preview_shopping_list_delete_protecting",
+  },
+  {
     "description": "Preview which related objects would be cascading if you delete this storage. Read-only, use before delete_storage.",
     "name": "preview_storage_delete_cascading",
   },
@@ -1055,7 +1087,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "update_export_log",
   },
   {
-    "description": "Update food (PATCH). Required: id. Optional properties[] {property_type_id, property_amount} sets one value per property type (amount null = unknown), updating the existing value of that type in place and deleting any duplicate values of that type; remove_property_type_ids[] deletes values by type. Other existing property values are kept. A type may appear once across both lists. properties_food_amount and properties_food_unit_id set the food amount the property values refer to (e.g. 100 g); properties_food_unit_id null clears the unit. Deleting a property row removes it from every food or recipe it is linked to. If a row delete fails, the food is already updated and the tool returns an error naming those rows.",
+    "description": "Update food (PATCH). Required: id. Optional properties[] {property_type_id, property_amount} sets one value per property type (amount null = unknown), updating the existing value of that type in place and deleting any duplicate values of that type; remove_property_type_ids[] deletes values by type. Other existing property values are kept. A type may appear once across both lists. properties_food_amount and properties_food_unit_id set the food amount the property values refer to (e.g. 100 g); properties_food_unit_id null clears the unit. Deleting a property row removes it from every food or recipe it is linked to. If a row delete fails, the food is already updated and the tool returns an error naming those rows. shopping_list_ids replaces the food's lists; [] clears them; omit it to keep them. Changing a food's lists does not change its existing shopping entries. add_recipe_to_shopping_list copies the food's lists onto new entries. create_shopping_entry without shopping_list_ids copies them when the user preference shopping_update_food_lists is on. bulk_create_shopping_list_recipe_entries without shopping_list_ids copies each food's lists whatever the user preference. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written. If the lists after the write differ from the request, the tool errors and names the missing and the extra lists.",
     "name": "update_food",
   },
   {
@@ -1119,8 +1151,12 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "update_search_preference",
   },
   {
-    "description": "Update a shopping entry (PATCH). Required: id. Other fields optional.",
+    "description": "Update a shopping entry (PATCH). Required: id. Other fields optional. When checked is omitted, the tool reads the entry and sends its current checked value again, so a checked entry keeps its completed_at. A check made elsewhere between that read and the write is undone (last write wins). shopping_list_ids puts the entry on exactly those lists; [] clears them; omit it to keep them. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written. If the lists after the write differ from the request, the tool errors and names the missing and the extra lists.",
     "name": "update_shopping_entry",
+  },
+  {
+    "description": "Update a named shopping list (PATCH). Required: id and at least one of name (1 to 32 characters), description, color (#rrggbb, or null to clear it). A new name that another list already has (ignoring case and surrounding spaces) is refused, because Tandoor would accept it and then fail every create_shopping_list with that name. Renaming a list to its own name is always allowed.",
+    "name": "update_shopping_list",
   },
   {
     "description": "Update a shopping-list-recipe (PATCH). Required: id.",
@@ -1537,6 +1573,12 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
         "id": {
           "type": "number",
         },
+        "shopping_list_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
       },
       "required": [
         "id",
@@ -1545,6 +1587,50 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "bulk_create_shopping_list_recipe_entries",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "checked": {
+          "type": "boolean",
+        },
+        "ids": {
+          "items": {
+            "type": "number",
+          },
+          "minItems": 1,
+          "type": "array",
+        },
+        "shopping_lists_add": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "shopping_lists_remove": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "shopping_lists_remove_all": {
+          "type": "boolean",
+        },
+        "shopping_lists_set": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "ids",
+      ],
+      "type": "object",
+    },
+    "name": "bulk_update_shopping_entries",
   },
   {
     "inputSchema": {
@@ -1940,6 +2026,12 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
         },
         "plural_name": {
           "type": "string",
+        },
+        "shopping_list_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
         },
         "supermarket_category_id": {
           "type": [
@@ -2558,6 +2650,12 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
         "order": {
           "type": "number",
         },
+        "shopping_list_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
         "unit_id": {
           "type": [
             "number",
@@ -2572,6 +2670,45 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "create_shopping_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "description": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "maxLength": 32,
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_shopping_list",
   },
   {
     "inputSchema": {
@@ -3401,6 +3538,22 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       ],
       "type": "object",
     },
+    "name": "delete_shopping_list",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "delete_shopping_list_recipe",
   },
   {
@@ -3828,6 +3981,27 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
             "number",
             "null",
           ],
+        },
+        "shopping_lists_add": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "shopping_lists_remove": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "shopping_lists_remove_all": {
+          "type": "boolean",
+        },
+        "shopping_lists_set": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
         },
         "substitute_add": {
           "items": {
@@ -4650,6 +4824,29 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "get_shopping_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_shopping_list",
   },
   {
     "inputSchema": {
@@ -6260,6 +6457,29 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       },
       "type": "object",
     },
+    "name": "list_shopping_lists",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
     "name": "list_spaces",
   },
   {
@@ -7179,6 +7399,54 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "preview_recipe_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_shopping_list_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_shopping_list_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_shopping_list_delete_protecting",
   },
   {
     "inputSchema": {
@@ -8168,6 +8436,12 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           },
           "type": "array",
         },
+        "shopping_list_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
         "supermarket_category_id": {
           "type": [
             "number",
@@ -8945,6 +9219,12 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
         "order": {
           "type": "number",
         },
+        "shopping_list_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
         "unit_id": {
           "type": [
             "number",
@@ -8958,6 +9238,48 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "update_shopping_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "description": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "maxLength": 32,
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_shopping_list",
   },
   {
     "inputSchema": {

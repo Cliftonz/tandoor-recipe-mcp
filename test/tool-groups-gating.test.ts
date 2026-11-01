@@ -41,14 +41,14 @@ describe('startup visibility', () => {
   it('shows always-on tools plus the simple tier of every tiered section by default', async () => {
     const client = await connect();
     expect(await visible(client)).toEqual([
-      'add_inventory_item', 'add_recipe_to_shopping_list', 'bulk_check_shopping_entries',
+      'add_inventory_item', 'add_recipe_to_shopping_list', 'bulk_check_shopping_entries', 'bulk_update_shopping_entries',
       'consume_inventory_item', 'create_food', 'create_meal_plan',
       'create_recipe', 'create_shopping_entry', 'delete_meal_plan', 'delete_shopping_entry',
       'disable_tool_group', 'enable_tool_group', 'food_shopping_update', 'get_current_space',
       'get_food', 'get_guard_stats', 'get_keyword', 'get_meal_plan', 'get_meal_type', 'get_recipe',
       'get_shopping_entry', 'get_version', 'import_recipe_from_url', 'jq_query', 'jq_stash_stats',
       'list_foods', 'list_inventory_entries', 'list_inventory_locations', 'list_keywords', 'list_meal_plans',
-      'list_meal_types', 'list_recipes', 'list_recipes_flat', 'list_shopping_entries', 'list_tool_groups',
+      'list_meal_types', 'list_recipes', 'list_recipes_flat', 'list_shopping_entries', 'list_shopping_lists', 'list_tool_groups',
       'list_units', 'move_inventory_item', 'parse_ingredient',
       'related_recipes', 'search_recipes', 'update_food', 'update_meal_plan', 'update_recipe',
       'update_shopping_entry',

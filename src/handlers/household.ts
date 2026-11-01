@@ -10,8 +10,7 @@ import type {
 import type { HandlerContext } from '../lib/register.js';
 import { emit, slimPaginated } from '../lib/slim.js';
 import { noGroupsMessage } from './space.js';
-
-type Page = { results: any[]; next: string | null };
+import { allPages } from '../lib/paging.js';
 
 function slimHousehold(h: any) {
   return { id: h.id, name: h.name };
@@ -21,15 +20,6 @@ function householdNotFound(id: number) {
   return (e: Error): never => {
     throw e.message.startsWith('Tandoor API error: 404') ? new Error(`Household ${id} not found.`) : e;
   };
-}
-
-async function allPages(fetchPage: (page: number) => Promise<Page>): Promise<any[]> {
-  const items: any[] = [];
-  for (let page = 1; ; page++) {
-    const r = await fetchPage(page);
-    items.push(...r.results);
-    if (!r.next) return items;
-  }
 }
 
 async function members(client: TandoorClient, householdId: number, signal?: AbortSignal) {

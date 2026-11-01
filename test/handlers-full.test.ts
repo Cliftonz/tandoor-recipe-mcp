@@ -484,6 +484,7 @@ describe('food handlers', () => {
         substitute: [{ id: 77 }],
         recipe: { steps: [/* enormous */] },
         created_by: { id: 1 },
+        shopping_lists: [],
       },
     ]));
     const client = { foodUnits: { listFoods } } as any;
@@ -501,28 +502,28 @@ describe('food handlers', () => {
   });
 
   it('handleCreateFood sends supermarket_category as a bare id', async () => {
-    const createFood = vi.fn(async (b) => ({ id: 20, ...b }));
+    const createFood = vi.fn(async (b) => ({ id: 20, shopping_lists: [], ...b }));
     const client = { foodUnits: { createFood } } as any;
     await handleCreateFood(client, { name: 'kale', supermarket_category_id: 5 });
     expect(createFood.mock.calls[0][0].supermarket_category).toBe(5);
   });
 
   it('handleUpdateFood sends supermarket_category as a bare id', async () => {
-    const patchFood = vi.fn(async (id, b) => ({ id, name: 'kale', ...b }));
+    const patchFood = vi.fn(async (id, b) => ({ id, name: 'kale', shopping_lists: [], ...b }));
     const client = { foodUnits: { patchFood } } as any;
     await handleUpdateFood(client, { id: 20, supermarket_category_id: 5 });
     expect(patchFood.mock.calls[0][1]).toEqual({ supermarket_category: 5 });
   });
 
   it('handleUpdateFood passes null supermarket_category_id through as null', async () => {
-    const patchFood = vi.fn(async (id, b) => ({ id, name: 'kale', ...b }));
+    const patchFood = vi.fn(async (id, b) => ({ id, name: 'kale', shopping_lists: [], ...b }));
     const client = { foodUnits: { patchFood } } as any;
     await handleUpdateFood(client, { id: 20, supermarket_category_id: null });
     expect(patchFood.mock.calls[0][1]).toEqual({ supermarket_category: null });
   });
 
   it('handleCreateFood passes null supermarket_category_id through as null', async () => {
-    const createFood = vi.fn(async (b) => ({ id: 20, ...b }));
+    const createFood = vi.fn(async (b) => ({ id: 20, shopping_lists: [], ...b }));
     const client = { foodUnits: { createFood } } as any;
     await handleCreateFood(client, { name: 'kale', supermarket_category_id: null });
     expect(createFood.mock.calls[0][0].supermarket_category).toBeNull();
@@ -551,7 +552,7 @@ describe('food handlers', () => {
 
   it('handleFoodFdcLookup fetches current food, overlays fdc_id, and posts', async () => {
     const getFood = vi.fn(async () => ({ id: 1, name: 'x', fdc_id: null }));
-    const foodFdcLookup = vi.fn(async () => ({ id: 1, name: 'x', fdc_id: 999 }));
+    const foodFdcLookup = vi.fn(async () => ({ id: 1, name: 'x', fdc_id: 999, shopping_lists: [] }));
     const client = { foodUnits: { getFood, foodFdcLookup } } as any;
     await handleFoodFdcLookup(client, { id: 1, fdc_id: 999 });
     const body = foodFdcLookup.mock.calls[0][1];
@@ -582,7 +583,7 @@ describe('cook log handlers', () => {
 
 describe('shopping handlers', () => {
   it('handleCreateShoppingEntry sends food/unit as bare ids and optional mealplan_id', async () => {
-    const createEntry = vi.fn(async (b) => ({ id: 1, ...b }));
+    const createEntry = vi.fn(async (b) => ({ id: 1, shopping_lists: [], ...b }));
     const client = { shopping: { createEntry } } as any;
     await handleCreateShoppingEntry(client, {
       amount: 2,
@@ -597,28 +598,28 @@ describe('shopping handlers', () => {
   });
 
   it('handleUpdateShoppingEntry sends food/unit as bare ids', async () => {
-    const patchEntry = vi.fn(async (id, b) => ({ id, ...b }));
-    const client = { shopping: { patchEntry } } as any;
+    const patchEntry = vi.fn(async (id, b) => ({ id, shopping_lists: [], ...b }));
+    const client = { shopping: { patchEntry, getEntry: async () => ({ checked: false }) } } as any;
     await handleUpdateShoppingEntry(client, { id: 7, food_id: 3, unit_id: 4 });
-    expect(patchEntry.mock.calls[0][1]).toEqual({ food: 3, unit: 4 });
+    expect(patchEntry.mock.calls[0][1]).toEqual({ food: 3, unit: 4, checked: false });
   });
 
   it('handleUpdateShoppingEntry passes null food/unit through as null', async () => {
-    const patchEntry = vi.fn(async (id, b) => ({ id, ...b }));
-    const client = { shopping: { patchEntry } } as any;
+    const patchEntry = vi.fn(async (id, b) => ({ id, shopping_lists: [], ...b }));
+    const client = { shopping: { patchEntry, getEntry: async () => ({ checked: false }) } } as any;
     await handleUpdateShoppingEntry(client, { id: 7, food_id: null, unit_id: null });
-    expect(patchEntry.mock.calls[0][1]).toEqual({ food: null, unit: null });
+    expect(patchEntry.mock.calls[0][1]).toEqual({ food: null, unit: null, checked: false });
   });
 
   it('handleCreateShoppingEntry sends null unit when unit_id is omitted', async () => {
-    const createEntry = vi.fn(async (b) => ({ id: 1, ...b }));
+    const createEntry = vi.fn(async (b) => ({ id: 1, shopping_lists: [], ...b }));
     const client = { shopping: { createEntry } } as any;
     await handleCreateShoppingEntry(client, { amount: 1, food_id: 3 });
     expect(createEntry.mock.calls[0][0].unit).toBeNull();
   });
 
   it('handleCreateShoppingEntry passes null unit when unit_id is null', async () => {
-    const createEntry = vi.fn(async (b) => ({ id: 1, ...b }));
+    const createEntry = vi.fn(async (b) => ({ id: 1, shopping_lists: [], ...b }));
     const client = { shopping: { createEntry } } as any;
     await handleCreateShoppingEntry(client, { amount: 1, food_id: 3, unit_id: null });
     expect(createEntry.mock.calls[0][0].unit).toBeNull();

@@ -16,6 +16,7 @@ const existingFood = {
     { id: 13, property_amount: 3, property_type: { id: 2, name: 'protein' } },
     { id: 14, property_amount: 4, property_type: { id: 3, name: 'sugar' } },
   ],
+  shopping_lists: [],
 };
 
 let stub: Stub;
