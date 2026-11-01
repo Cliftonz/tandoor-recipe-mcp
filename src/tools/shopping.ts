@@ -28,7 +28,7 @@ import {
 
 export const LIST_IDS_CHECKED = 'Every list id is checked against list_shopping_lists first; unknown ids are rejected and nothing is written.';
 
-const ENTRY_LISTS = 'shopping_list_ids (ids from list_shopping_lists) puts the entry on those lists, and only those ids are sent. '
+const ENTRY_LISTS = 'shopping_list_ids (ids from list_shopping_lists) puts the entry on exactly those lists; the food\'s lists are not added. '
   + 'When shopping_list_ids is omitted or [], Tandoor copies the food\'s lists onto the new entry if the user preference shopping_update_food_lists is on. '
   + 'add_recipe_to_shopping_list always copies each food\'s lists; food_shopping_update never does. '
   + `Changing a food's lists later does not change existing entries. ${LIST_IDS_CHECKED}`;
@@ -226,7 +226,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   }, handleCreateShoppingEntry);
 
   registerStringTool(server, client, 'update_shopping_entry', {
-    description: `Update a shopping entry (PATCH). Required: id. Other fields optional. When checked is omitted, the tool reads the entry and sends its current checked value, so a checked entry keeps its completed_at. shopping_list_ids replaces the entry's lists; [] clears them; omit it to keep them. ${LIST_IDS_CHECKED}`,
+    description: `Update a shopping entry (PATCH). Required: id. Other fields optional. When checked is omitted, the tool reads the entry and sends its current checked value, so a checked entry keeps its completed_at. shopping_list_ids puts the entry on exactly those lists; the food's lists are not added. [] clears them; omit it to keep them. ${LIST_IDS_CHECKED}`,
     inputSchema: updateShoppingEntryShape,
   }, handleUpdateShoppingEntry);
 

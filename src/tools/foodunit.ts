@@ -26,7 +26,8 @@ import {
 import { LIST_IDS_CHECKED, LIST_OPERATIONS, listOperationsShape } from './shopping.js';
 
 const FOOD_LISTS = 'Changing a food\'s lists does not change its existing shopping entries. New entries copy the food\'s lists when added through add_recipe_to_shopping_list, '
-  + `or through create_shopping_entry without shopping_list_ids while the user preference shopping_update_food_lists is on. ${LIST_IDS_CHECKED}`;
+  + 'through bulk_create_shopping_list_recipe_entries without shopping_list_ids (or with []) whatever the user preference, '
+  + `or through create_shopping_entry without shopping_list_ids (or with []) while the user preference shopping_update_food_lists is on. ${LIST_IDS_CHECKED}`;
 
 
 export const listFoodsShape = {
@@ -178,7 +179,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleGetFood);
 
   registerStringTool(server, client, 'create_food', {
-    description: `Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). Tandoor cannot set lists while creating a food, so the tool creates the food first and then sets its lists; if that second step fails, the error gives the new food's id. ${FOOD_LISTS}`,
+    description: `Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). If setting the lists fails, the error gives the new food's id. ${FOOD_LISTS}`,
     inputSchema: createFoodShape,
   }, handleCreateFood);
 
