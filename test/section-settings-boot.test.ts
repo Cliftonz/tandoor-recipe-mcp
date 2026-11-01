@@ -27,10 +27,20 @@ function boot(env: Record<string, string>, until?: RegExp): Promise<Boot> {
 }
 
 describe('section settings at boot', () => {
-  it('fails startup on an invalid section value, naming the variable and its valid values', async () => {
-    const result = await boot({ TANDOOR_MCP_COOKLOG: 'full' });
+  it('fails startup listing every invalid section value with its valid values', async () => {
+    const result = await boot({ TANDOOR_MCP_COOKLOG: 'full', TANDOOR_MCP_SHOPPING: 'on' });
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toContain('TANDOOR_MCP_COOKLOG=full is not valid. Valid values: off, on.');
+    expect(result.stderr).toContain(
+      'Error: TANDOOR_MCP_SHOPPING=on is not valid. Valid values: off, simple, full.\n' +
+        'TANDOOR_MCP_COOKLOG=full is not valid. Valid values: off, on.',
+    );
+  }, 15_000);
+
+  it('prints the TANDOOR_MCP_PROFILE warning even when validation fails', async () => {
+    const result = await boot({ TANDOOR_MCP_PROFILE: 'core', TANDOOR_MCP_ADMIN: 'full' });
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr.indexOf('TANDOOR_MCP_PROFILE is ignored')).toBeGreaterThanOrEqual(0);
+    expect(result.stderr.indexOf('TANDOOR_MCP_PROFILE is ignored')).toBeLessThan(result.stderr.indexOf('TANDOOR_MCP_ADMIN=full'));
   }, 15_000);
 
   it('warns once that TANDOOR_MCP_PROFILE is ignored and keeps starting', async () => {

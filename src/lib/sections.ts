@@ -209,17 +209,18 @@ export function modesOf(section: Section): readonly SectionMode[] {
   return section.kind === 'tiered' ? TIERED_MODES : TOGGLE_MODES;
 }
 
-function parseMode(section: Section, raw: string | undefined): SectionMode {
-  const modes = modesOf(section);
-  const value = (raw ?? '').trim();
-  if (!value) return DEFAULT_MODE[section.kind];
-  const mode = modes.find((m) => m === value.toLowerCase());
-  if (!mode) throw new Error(`${section.envVar}=${value} is not valid. Valid values: ${modes.join(', ')}.`);
-  return mode;
-}
-
 export function parseSectionModes(env: Record<string, string | undefined>): SectionModes {
-  return new Map(SECTIONS.map((s) => [s.name, parseMode(s, env[s.envVar])]));
+  const modes: SectionModes = new Map();
+  const problems: string[] = [];
+  for (const section of SECTIONS) {
+    const valid = modesOf(section);
+    const value = (env[section.envVar] ?? '').trim();
+    const mode = value ? valid.find((m) => m === value.toLowerCase()) : DEFAULT_MODE[section.kind];
+    if (mode) modes.set(section.name, mode);
+    else problems.push(`${section.envVar}=${value} is not valid. Valid values: ${valid.join(', ')}.`);
+  }
+  if (problems.length > 0) throw new Error(problems.join('\n'));
+  return modes;
 }
 
 export function sectionTools(section: Section): readonly string[] {

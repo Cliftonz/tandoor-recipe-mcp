@@ -76,4 +76,11 @@ describe('parseSectionModes', () => {
       `${envVar}=${value} is not valid. Valid values: ${valid}.`,
     );
   });
+
+  it('reports every invalid variable in one error, one line each', () => {
+    expect(() => parseSectionModes({ TANDOOR_MCP_RECIPES: 'on', TANDOOR_MCP_AI: 'full', TANDOOR_MCP_FOODS: 'full' })).toThrow(
+      'TANDOOR_MCP_RECIPES=on is not valid. Valid values: off, simple, full.\n' +
+        'TANDOOR_MCP_AI=full is not valid. Valid values: off, on.',
+    );
+  });
 });

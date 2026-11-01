@@ -40,6 +40,12 @@ if (!TANDOOR_URL || !TANDOOR_TOKEN) {
   process.exit(1);
 }
 
+if (process.env.TANDOOR_MCP_PROFILE !== undefined) {
+  console.error(
+    `[tandoor-mcp] WARNING: TANDOOR_MCP_PROFILE is ignored. Choose tools with the section settings: ${SECTION_ENV_VARS}.`,
+  );
+}
+
 function readSections(): SectionModes {
   try {
     return parseSectionModes(process.env);
@@ -49,11 +55,6 @@ function readSections(): SectionModes {
   }
 }
 const sections = readSections();
-if (process.env.TANDOOR_MCP_PROFILE !== undefined) {
-  console.error(
-    `[tandoor-mcp] WARNING: TANDOOR_MCP_PROFILE is ignored. Choose tools with the section settings: ${SECTION_ENV_VARS}.`,
-  );
-}
 
 const tandoorClient = new TandoorClient({
   url: TANDOOR_URL,
