@@ -97,7 +97,7 @@ export async function handleCreateInventoryLocation(
   const userSpaces: any[] = await client.spaces.listAllPersonalUserSpaces(undefined, { signal: ctx?.signal });
   const household = userSpaces.find((us) => us.active).household;
   if (!household) {
-    throw new Error('You are not in a household in this space. Assign yourself to a household in Tandoor, then retry.');
+    throw new Error('You are not in a household in this space. Create one with create_household and assign yourself with assign_household (household-space section, space owner only), or ask the space owner.');
   }
   const body = { name: args.name, household: household.id, is_freezer: args.is_freezer };
   const r = await client.inventory.createLocation(body, { signal: ctx?.signal });

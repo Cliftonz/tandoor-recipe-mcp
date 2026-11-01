@@ -94,6 +94,13 @@ export function redactToken(text: string, token: string): string {
     .split(token).join('***REDACTED***');
 }
 
+export function explainOwnerOnly403<T>(call: Promise<T>): Promise<T> {
+  return call.catch((e: Error) => {
+    if (!e.message.startsWith('Tandoor API error: 403')) throw e;
+    throw new Error(`${e.message}\n\nThis call requires the space owner and a read-write token; space admins and members get 403.`);
+  });
+}
+
 /** Statuses worth retrying with backoff. Everything else fails fast. */
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
 const DEFAULT_MAX_RETRIES = 3;

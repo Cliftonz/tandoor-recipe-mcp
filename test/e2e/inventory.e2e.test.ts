@@ -4,6 +4,7 @@ import { TandoorClient } from '../../src/clients/index.js';
 import { registerInventoryTools } from '../../src/tools/inventory.js';
 import { registerTreeSafetyTools } from '../../src/tools/tree-safety.js';
 import { invokeTool } from '../helpers/mcp.js';
+import { handleAssignHousehold } from '../../src/handlers/household.js';
 
 const url = process.env.TANDOOR_URL;
 const token = process.env.TANDOOR_TOKEN;
@@ -18,16 +19,6 @@ async function call(server: McpServer, name: string, args: Record<string, unknow
   if (res.isError) throw new Error(`tool ${name} errored: ${res.text}`);
   const start = res.text.search(/[[{]/);
   return start === -1 ? res.text : JSON.parse(res.text.slice(start));
-}
-
-async function api(method: string, path: string, body?: unknown): Promise<any> {
-  const res = await fetch(`${url}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`${method} ${path} -> ${res.status}`);
-  return res.status === 204 ? undefined : res.json();
 }
 
 (url && token ? describe : describe.skip)('inventory lifecycle against live Tandoor', () => {
@@ -66,17 +57,14 @@ async function api(method: string, path: string, body?: unknown): Promise<any> {
     const res = await raw('create_inventory_location', server, { name: `${tag}-nohh` });
     expect(res).toEqual({
       isError: true,
-      text: expect.stringContaining('You are not in a household in this space. Assign yourself to a household in Tandoor, then retry.'),
+      text: expect.stringContaining('You are not in a household in this space. Create one with create_household and assign yourself with assign_household (household-space section, space owner only), or ask the space owner.'),
     });
   });
 
   it('creates a freezer and a pantry location in the user household', async () => {
     if (startedWithoutHousehold) {
-      // Tandoor 2.6.15 answers 500 to PATCH /api/user-space/{id}/ with a household;
-      // the admin batch_update endpoint is the API path that assigns one. It cannot be
-      // unassigned afterwards, so the household stays until the stack is torn down.
-      const household = await api('POST', '/api/household/', { name: `${tag}-household` });
-      await api('PUT', '/api/user-space/batch_update/', { user_spaces: [userSpaceId], household: household.id, group_set: [] });
+      const household = await client.households.createHousehold({ name: `${tag}-household` });
+      await handleAssignHousehold(client, { user_space_ids: [userSpaceId], household_id: household.id });
     }
     const freezer = await call(server, 'create_inventory_location', { name: `${tag}-freezer`, is_freezer: true });
     locations.push(freezer.id);

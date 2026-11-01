@@ -1,6 +1,6 @@
 // Space, user-space, and switch-active-space API client.
 
-import { BaseClient, qs } from './base.js';
+import { BaseClient, qs, explainOwnerOnly403 } from './base.js';
 
 type Opts = { signal?: AbortSignal };
 
@@ -38,7 +38,7 @@ export class SpaceClient extends BaseClient {
   }
 
   async patchUserSpace(id: number, body: any, opts?: Opts): Promise<any> {
-    return this.request(`/api/user-space/${id}/`, { method: 'PATCH', body: JSON.stringify(body), signal: opts?.signal });
+    return explainOwnerOnly403(this.request(`/api/user-space/${id}/`, { method: 'PATCH', body: JSON.stringify(body), signal: opts?.signal }));
   }
 
   async deleteUserSpace(id: number, opts?: Opts): Promise<void> {

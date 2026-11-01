@@ -142,6 +142,14 @@ describe('enable_tool_group', () => {
     ]));
   });
 
+  it('keeps the household tools hidden by default and shows them with household-space', async () => {
+    const household = ['list_households', 'get_household', 'create_household', 'update_household', 'delete_household', 'assign_household'];
+    const client = await connect();
+    expect((await visible(client)).filter((n) => household.includes(n))).toEqual([]);
+    await callOk(client, 'enable_tool_group', { group: 'household-space' });
+    expect(await visible(client)).toEqual(expect.arrayContaining(household));
+  });
+
   it('treats the always group as a no-op', async () => {
     const client = await connect();
     const before = await visible(client);

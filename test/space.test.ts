@@ -16,6 +16,8 @@ import {
   handleSwitchActiveSpace,
 } from '../src/handlers/space.js';
 import { SpaceClient } from '../src/clients/space.js';
+import { z } from 'zod';
+import { updateUserSpaceShape } from '../src/tools/space.js';
 
 // ---------- Client URL construction ----------
 
@@ -84,6 +86,18 @@ describe('SpaceClient URL construction', () => {
       body: JSON.stringify({ active: true }),
       signal: undefined,
     });
+  });
+
+  it('patchUserSpace reports that a 403 means the call needs the space owner', async () => {
+    const c = new SpaceClient({ url: 'https://tandoor.example.com', token: 'test-token' });
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(
+      JSON.stringify({ detail: 'You do not have permission to perform this action.' }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } },
+    ));
+    await expect(c.patchUserSpace(9, { groups: [2] })).rejects.toThrow(
+      'This call requires the space owner and a read-write token; space admins and members get 403.',
+    );
+    vi.restoreAllMocks();
   });
 
   it('deleteUserSpace DELETEs /api/user-space/{id}/', async () => {
@@ -181,21 +195,22 @@ describe('space handlers', () => {
       results: [{
         id: 10, user: { id: 4 }, space: { id: 2 }, active: true,
         groups: [{ id: 1 }, { id: 2 }], invite_link: 'x', created_at: 'y',
+        household: { id: 4, name: 'Home', created_at: 't', updated_at: 't' },
       }],
     }));
     const client = { spaces: { listUserSpaces } } as any;
     const out = await handleListUserSpaces(client, {});
     const parsed = JSON.parse(out);
-    expect(parsed.results[0]).toEqual({ id: 10, user: 4, space: 2, active: true, groups: [1, 2] });
+    expect(parsed.results[0]).toEqual({ id: 10, user: 4, space: 2, active: true, groups: [1, 2], household: { id: 4, name: 'Home' } });
   });
 
   it('handleGetUserSpace slims by default', async () => {
     const getUserSpace = vi.fn(async () => ({
-      id: 10, user: { id: 4 }, space: { id: 2 }, active: false, groups: [], invite_link: 'x',
+      id: 10, user: { id: 4 }, space: { id: 2 }, active: false, groups: [], invite_link: 'x', household: null,
     }));
     const client = { spaces: { getUserSpace } } as any;
     const out = await handleGetUserSpace(client, { id: 10 });
-    expect(JSON.parse(out)).toEqual({ id: 10, user: 4, space: 2, active: false, groups: [] });
+    expect(JSON.parse(out)).toEqual({ id: 10, user: 4, space: 2, active: false, groups: [], household: null });
   });
 
   it('handleUpdateUserSpace throws when no fields supplied', async () => {
@@ -207,9 +222,44 @@ describe('space handlers', () => {
 
   it('handleUpdateUserSpace PATCHes with supplied fields', async () => {
     const patchUserSpace = vi.fn(async (id, b) => ({ id, ...b }));
-    const client = { spaces: { patchUserSpace } } as any;
+    const listGroups = vi.fn(async () => [{ id: 1, name: 'guest' }, { id: 2, name: 'user' }, { id: 3, name: 'admin' }]);
+    const client = { spaces: { patchUserSpace }, housekeeping: { listGroups } } as any;
     await handleUpdateUserSpace(client, { id: 10, active: true, groups: [1, 2] });
     expect(patchUserSpace).toHaveBeenCalledWith(10, { active: true, groups: [1, 2] }, { signal: undefined });
+  });
+
+  it('handleUpdateUserSpace sends the current group ids when groups is omitted', async () => {
+    const getUserSpace = vi.fn(async () => ({ id: 10, groups: [{ id: 2, name: 'user' }, { id: 3, name: 'admin' }] }));
+    const patchUserSpace = vi.fn(async (id, b) => ({ id, ...b }));
+    const client = { spaces: { getUserSpace, patchUserSpace } } as any;
+    await handleUpdateUserSpace(client, { id: 10, internal_note: 'x' });
+    expect(patchUserSpace).toHaveBeenCalledWith(10, { internal_note: 'x', groups: [2, 3] }, { signal: undefined });
+  });
+
+  it('handleUpdateUserSpace rejects group ids the space does not have, naming them, and sends no PATCH', async () => {
+    const patchUserSpace = vi.fn();
+    const listGroups = vi.fn(async () => [{ id: 1, name: 'guest' }, { id: 2, name: 'user' }, { id: 3, name: 'admin' }]);
+    const client = { spaces: { patchUserSpace }, housekeeping: { listGroups } } as any;
+    await expect(handleUpdateUserSpace(client, { id: 10, groups: [2, 98, 99] })).rejects.toThrow(
+      'Unknown group ids: 98, 99. Use list_groups to see the groups in this space.',
+    );
+    expect(patchUserSpace).not.toHaveBeenCalled();
+  });
+
+  it('update_user_space rejects an empty groups list at the schema', () => {
+    const schema = z.object(updateUserSpaceShape);
+    expect(schema.safeParse({ id: 10, groups: [] }).success).toBe(false);
+    expect(schema.safeParse({ id: 10, groups: [2] }).success).toBe(true);
+  });
+
+  it('handleUpdateUserSpace refuses when groups is omitted and the user-space has none, sending no PATCH', async () => {
+    const getUserSpace = vi.fn(async () => ({ id: 10, groups: [] }));
+    const patchUserSpace = vi.fn();
+    const client = { spaces: { getUserSpace, patchUserSpace } } as any;
+    await expect(handleUpdateUserSpace(client, { id: 10, active: true })).rejects.toThrow(
+      /^User-space 10 has no groups; set them with update_user_space first\.$/,
+    );
+    expect(patchUserSpace).not.toHaveBeenCalled();
   });
 
   it('handleDeleteUserSpace calls DELETE and returns confirmation', async () => {

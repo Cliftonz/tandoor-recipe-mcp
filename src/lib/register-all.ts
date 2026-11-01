@@ -30,6 +30,7 @@ import { registerSyncTools } from '../tools/sync.js';
 import { registerSpaceTools } from '../tools/space.js';
 import { registerHousekeepingTools } from '../tools/housekeeping.js';
 import { registerInventoryTools } from '../tools/inventory.js';
+import { registerHouseholdTools } from '../tools/household.js';
 import { applySectionModes, registerToolGroupTools } from '../tools/tool-groups.js';
 import { registerResources } from '../resources/index.js';
 import { registerPrompts } from '../prompts/index.js';
@@ -86,6 +87,7 @@ export function registerAllTools(
   registerSpaceTools(server, client);
   registerHousekeepingTools(server, client);
   registerInventoryTools(server, client);
+  registerHouseholdTools(server, client);
 
   applySectionModes(server, opts.sections);
 }
