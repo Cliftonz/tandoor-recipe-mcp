@@ -51,4 +51,10 @@ describe('section settings at boot', () => {
     );
     expect(result.stderr).toContain('on stdio');
   }, 15_000);
+
+  it.each(['', '   '])('does not warn when TANDOOR_MCP_PROFILE is %j', async (value) => {
+    const result = await boot({ TANDOOR_MCP_PROFILE: value }, /on stdio/);
+    expect(result.stderr).toContain('on stdio');
+    expect(result.stderr).not.toContain('TANDOOR_MCP_PROFILE');
+  }, 15_000);
 });

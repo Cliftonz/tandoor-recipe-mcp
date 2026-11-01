@@ -40,7 +40,7 @@ if (!TANDOOR_URL || !TANDOOR_TOKEN) {
   process.exit(1);
 }
 
-if (process.env.TANDOOR_MCP_PROFILE !== undefined) {
+if (process.env.TANDOOR_MCP_PROFILE?.trim()) {
   console.error(
     `[tandoor-mcp] WARNING: TANDOOR_MCP_PROFILE is ignored. Choose tools with the section settings: ${SECTION_ENV_VARS}.`,
   );
