@@ -82,7 +82,7 @@ function buildServer(): McpServer {
       version: pkg.version,
     },
     {
-      instructions: buildInstructions(versionCheck, stashCfgAtBoot, {
+      instructions: buildInstructions(versionCheck, stashCfgAtBoot, sections, {
         mode: transportMode,
         bind: httpCfg ? `${httpCfg.host}:${httpCfg.port}` : undefined,
         requireAuth: httpCfg?.requireAuth ?? false,
