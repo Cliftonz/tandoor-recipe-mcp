@@ -3,6 +3,10 @@
 exports[`tool description snapshot > descriptions match the recorded snapshot 1`] = `
 [
   {
+    "description": "Add food to inventory. Required: food_id, unit_id, amount (> 0), location_id. Optional: expires (YYYY-MM-DD), sub_location, note, code. Always creates a new entry, even when the same food already has an entry at that location.",
+    "name": "add_inventory_item",
+  },
+  {
     "description": "Add a recipe to a recipe book. Required: book (id), recipe (id).",
     "name": "add_recipe_to_book",
   },
@@ -33,6 +37,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
   {
     "description": "Append many shopping entries to an existing shopping-list-recipe in one call.",
     "name": "bulk_create_shopping_list_recipe_entries",
+  },
+  {
+    "description": "Use up some or all of an inventory entry. Identify it by entry_id, or by food_id with optional location_id (errors listing the candidates when several entries match). Give exactly one of amount (> 0) or all: true. Optional unit_id must match the entry unit; there is no unit conversion. The amount never goes below 0: consuming more than is on hand sets it to 0, keeps the entry and returns a warning. Reads the entry, then writes the new amount; two consumes of the same entry at the same moment can lose one update, because Tandoor has no atomic decrement.",
+    "name": "consume_inventory_item",
   },
   {
     "description": "Mint a new Tandoor access token. Required: scope, expires (UTC ISO 8601 datetime with seconds and Z suffix, e.g. 2026-12-01T10:00:00Z). ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user.",
@@ -77,6 +85,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
   {
     "description": "Create ingredient. Required: food_id. Optional: unit_id, amount, note, order, is_header, no_amount, original_text",
     "name": "create_ingredient",
+  },
+  {
+    "description": "Create an inventory location in your household. Required: name. Optional: is_freezer. Fails if you are not in a household in this space; assign one in Tandoor first.",
+    "name": "create_inventory_location",
   },
   {
     "description": "DESTRUCTIVE: Creating an invite link allows a new user to join your space. Required: email, group (Group id), valid_until (YYYY-MM-DD). Optional: reusable, internal_note. Response uuid is the shareable token; treat it as sensitive.",
@@ -201,6 +213,14 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
   {
     "description": "Delete ingredient by ID",
     "name": "delete_ingredient",
+  },
+  {
+    "description": "Delete an inventory entry by ID. This also deletes its log rows.",
+    "name": "delete_inventory_entry",
+  },
+  {
+    "description": "Delete an inventory location by ID. This also deletes every inventory entry in it and the log rows of every entry that ever passed through it, including entries since moved elsewhere. Use preview_inventory_location_delete_cascading to see the full cascade first.",
+    "name": "delete_inventory_location",
   },
   {
     "description": "Delete a space invite link by ID. Revokes the invite so the uuid can no longer be redeemed.",
@@ -393,6 +413,18 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
   {
     "description": "Get ingredient by ID",
     "name": "get_ingredient",
+  },
+  {
+    "description": "Get an inventory entry by ID.",
+    "name": "get_inventory_entry",
+  },
+  {
+    "description": "Get an inventory location by ID.",
+    "name": "get_inventory_location",
+  },
+  {
+    "description": "Get an inventory log row by ID.",
+    "name": "get_inventory_log",
   },
   {
     "description": "Get a space invite link by ID. The uuid field is the shareable invite token.",
@@ -611,6 +643,18 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_ingredients",
   },
   {
+    "description": "List inventory entries (what is on hand, where). Optional: location_id, food_id, code, include_empty (entries with amount 0 or less are hidden unless true), page, page_size.",
+    "name": "list_inventory_entries",
+  },
+  {
+    "description": "List inventory locations (pantry, fridge, freezer and so on). Optional: page, page_size.",
+    "name": "list_inventory_locations",
+  },
+  {
+    "description": "List inventory log rows (read-only history of amount and location changes). Optional: entry_id, food_id, page, page_size. booking_type is move when the location changed; an amount change at the same location is logged as remove, even when the amount goes up.",
+    "name": "list_inventory_logs",
+  },
+  {
     "description": "List space invite links. Optional: page, page_size, limit, query, unused, internal_note, updated_at. The returned uuid is the shareable invite token.",
     "name": "list_invite_links",
   },
@@ -759,6 +803,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "move_food",
   },
   {
+    "description": "Move a whole inventory entry to another location. Required: entry_id, to_location_id. Optional: sub_location (null clears it). To move only part of an entry, consume_inventory_item the part and add_inventory_item it at the new location.",
+    "name": "move_inventory_item",
+  },
+  {
     "description": "Move keyword \`id\` under parent (parent=0 for root).",
     "name": "move_keyword",
   },
@@ -777,6 +825,30 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
   {
     "description": "Preview which related objects would be protecting if you delete this food. Read-only, use before delete_food.",
     "name": "preview_food_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this inventory entry. Read-only, use before delete_inventory_entry.",
+    "name": "preview_inventory_entry_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this inventory entry. Read-only, use before delete_inventory_entry.",
+    "name": "preview_inventory_entry_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this inventory entry. Read-only, use before delete_inventory_entry.",
+    "name": "preview_inventory_entry_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this inventory location. Read-only, use before delete_inventory_location.",
+    "name": "preview_inventory_location_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this inventory location. Read-only, use before delete_inventory_location.",
+    "name": "preview_inventory_location_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this inventory location. Read-only, use before delete_inventory_location.",
+    "name": "preview_inventory_location_delete_protecting",
   },
   {
     "description": "Preview which related objects would be cascading if you delete this keyword. Read-only, use before delete_keyword.",
@@ -975,6 +1047,14 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "update_ingredient",
   },
   {
+    "description": "Update an inventory entry (PATCH). Required: id. Optional: food_id, unit_id, amount (>= 0), location_id, expires (YYYY-MM-DD; null clears it), sub_location (null clears it), note (null clears it), code.",
+    "name": "update_inventory_entry",
+  },
+  {
+    "description": "Update an inventory location (PATCH). Required: id. Optional: name, is_freezer.",
+    "name": "update_inventory_location",
+  },
+  {
     "description": "Update a space invite link (PATCH). Required: id. Changing valid_until or reusable alters who can still join your space.",
     "name": "update_invite_link",
   },
@@ -1091,6 +1171,56 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
 
 exports[`tool description snapshot > input schemas match the recorded snapshot 1`] = `
 [
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "exclusiveMinimum": 0,
+          "type": "number",
+        },
+        "code": {
+          "type": "string",
+        },
+        "expires": {
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "type": "string",
+        },
+        "food_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "location_id": {
+          "type": "number",
+        },
+        "note": {
+          "type": "string",
+        },
+        "sub_location": {
+          "type": "string",
+        },
+        "unit_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "food_id",
+        "unit_id",
+        "amount",
+        "location_id",
+      ],
+      "type": "object",
+    },
+    "name": "add_inventory_item",
+  },
   {
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -1364,6 +1494,43 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "bulk_create_shopping_list_recipe_entries",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "all": {
+          "const": true,
+          "type": "boolean",
+        },
+        "amount": {
+          "exclusiveMinimum": 0,
+          "type": "number",
+        },
+        "entry_id": {
+          "type": "number",
+        },
+        "food_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "location_id": {
+          "type": "number",
+        },
+        "unit_id": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "consume_inventory_item",
   },
   {
     "inputSchema": {
@@ -1808,6 +1975,32 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "create_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "is_freezer": {
+          "type": "boolean",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_inventory_location",
   },
   {
     "inputSchema": {
@@ -2906,6 +3099,38 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       ],
       "type": "object",
     },
+    "name": "delete_inventory_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_inventory_location",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "delete_invite_link",
   },
   {
@@ -3943,6 +4168,75 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "get_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_inventory_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_inventory_location",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_inventory_log",
   },
   {
     "inputSchema": {
@@ -5153,6 +5447,93 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "code": {
+          "type": "string",
+        },
+        "food_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "include_empty": {
+          "type": "boolean",
+        },
+        "location_id": {
+          "type": "number",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_inventory_entries",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_inventory_locations",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "entry_id": {
+          "type": "number",
+        },
+        "food_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_inventory_logs",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "format": {
           "enum": [
             "slim",
@@ -6216,6 +6597,39 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "entry_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "sub_location": {
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "to_location_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "entry_id",
+        "to_location_id",
+      ],
+      "type": "object",
+    },
+    "name": "move_inventory_item",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "id": {
           "type": "number",
         },
@@ -6294,6 +6708,102 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "preview_food_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_inventory_entry_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_inventory_entry_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_inventory_entry_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_inventory_location_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_inventory_location_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_inventory_location_delete_protecting",
   },
   {
     "inputSchema": {
@@ -7617,6 +8127,98 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "update_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "minimum": 0,
+          "type": "number",
+        },
+        "code": {
+          "type": "string",
+        },
+        "expires": {
+          "anyOf": [
+            {
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "food_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "location_id": {
+          "type": "number",
+        },
+        "note": {
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "sub_location": {
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "unit_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_inventory_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "is_freezer": {
+          "type": "boolean",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_inventory_location",
   },
   {
     "inputSchema": {

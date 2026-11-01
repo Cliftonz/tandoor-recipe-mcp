@@ -143,7 +143,7 @@ describe('packed tarball smoke', () => {
       const tools = await client.listTools();
       // Default sections: always-on tools plus the simple tier of each
       // tiered section, no enable_tool_group call needed.
-      expect(tools.tools.length).toBe(39);
+      expect(tools.tools.length).toBe(44);
       expect(tools.tools.some((t) => t.name === 'list_recipes')).toBe(true);
       expect(tools.tools.some((t) => t.name === 'jq_query')).toBe(true);
       // Meta gating tool is reachable so the LLM can discover the rest.

@@ -136,7 +136,7 @@ describe('registerTreeSafetyTools', () => {
     registerTreeSafetyTools(server, client);
     const names = registeredToolNames(server).filter((n) => n.startsWith('preview_'));
     expect(names.length).toBe(RESOURCES.length * 3);
-    expect(names.length).toBe(33);
+    expect(names.length).toBe(39);
   });
 
   it('names follow preview_{resource_snake}_delete_{action} pattern', () => {
