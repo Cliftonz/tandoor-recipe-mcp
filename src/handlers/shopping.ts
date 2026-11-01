@@ -177,6 +177,7 @@ export async function handleUpdateShoppingEntry(
     body.shopping_lists = args.shopping_list_ids;
   }
   assertNonEmptyBody(body);
+  if (args.checked === undefined) body.checked = (await client.shopping.getEntry(args.id)).checked;
 
   const updated = await client.shopping.patchEntry(args.id, body);
   return `Shopping entry updated.\n\n${emit(args.format === 'full' ? updated : slimEntry(updated))}`;

@@ -205,7 +205,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   }, handleCreateShoppingEntry);
 
   registerStringTool(server, client, 'update_shopping_entry', {
-    description: `Update a shopping entry (PATCH). Required: id. Other fields optional. shopping_list_ids replaces the entry's lists; [] clears them; omit it to keep them. ${LIST_IDS_CHECKED}`,
+    description: `Update a shopping entry (PATCH). Required: id. Other fields optional. When checked is omitted, the tool reads the entry and sends its current checked value, so a checked entry keeps its completed_at. shopping_list_ids replaces the entry's lists; [] clears them; omit it to keep them. ${LIST_IDS_CHECKED}`,
     inputSchema: updateShoppingEntryShape,
   }, handleUpdateShoppingEntry);
 

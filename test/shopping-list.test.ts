@@ -153,3 +153,23 @@ describe('shopping entry list ids', () => {
     expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
   });
 });
+
+describe('update_shopping_entry without checked', () => {
+  it('sends the entry\'s current checked so Tandoor keeps completed_at', async () => {
+    const checkedEntry = entry({ checked: true, completed_at: '2026-11-01T16:39:53Z' });
+    const sent = stubTandoor({
+      'GET /api/shopping-list-entry/7/': checkedEntry,
+      'PATCH /api/shopping-list-entry/7/': { ...checkedEntry, amount: 3 },
+    });
+    await handleUpdateShoppingEntry(client(), { id: 7, amount: 3 });
+    expect(sent.filter((s) => s.method === 'PATCH')).toEqual([
+      { method: 'PATCH', path: '/api/shopping-list-entry/7/', body: { amount: 3, checked: true } },
+    ]);
+  });
+
+  it('still refuses an id-only update without reading the entry', async () => {
+    const sent = stubTandoor({});
+    await expect(handleUpdateShoppingEntry(client(), { id: 7 })).rejects.toThrow('At least one field required');
+    expect(sent).toEqual([]);
+  });
+});
