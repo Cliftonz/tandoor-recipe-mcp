@@ -211,9 +211,10 @@ export function modesOf(section: Section): readonly SectionMode[] {
 
 function parseMode(section: Section, raw: string | undefined): SectionMode {
   const modes = modesOf(section);
-  if (!raw) return DEFAULT_MODE[section.kind];
-  const mode = modes.find((m) => m === raw.toLowerCase());
-  if (!mode) throw new Error(`${section.envVar}=${raw} is not valid. Valid values: ${modes.join(', ')}.`);
+  const value = (raw ?? '').trim();
+  if (!value) return DEFAULT_MODE[section.kind];
+  const mode = modes.find((m) => m === value.toLowerCase());
+  if (!mode) throw new Error(`${section.envVar}=${value} is not valid. Valid values: ${modes.join(', ')}.`);
   return mode;
 }
 

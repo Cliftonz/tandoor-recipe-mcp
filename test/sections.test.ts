@@ -24,6 +24,17 @@ describe('parseSectionModes', () => {
     expect(modes.get('ai')).toBe('off');
   });
 
+  it('trims values and treats whitespace-only as the default', () => {
+    const modes = parseSectionModes({ TANDOOR_MCP_RECIPES: '  full\t', TANDOOR_MCP_COOKLOG: ' on ', TANDOOR_MCP_FOODS: '   ' });
+    expect(modes.get('recipes')).toBe('full');
+    expect(modes.get('cooklog')).toBe('on');
+    expect(modes.get('foods')).toBe('simple');
+  });
+
+  it('shows the trimmed value in the error', () => {
+    expect(() => parseSectionModes({ TANDOOR_MCP_ADMIN: '  yes ' })).toThrow('TANDOOR_MCP_ADMIN=yes is not valid. Valid values: off, on.');
+  });
+
   it('reads every section variable case-insensitively', () => {
     const modes = parseSectionModes({
       TANDOOR_MCP_RECIPES: 'FULL',
