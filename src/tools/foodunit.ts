@@ -23,11 +23,12 @@ import {
   handleMergeUnit,
   handleFoodBatchUpdate,
 } from '../handlers/foodunit.js';
-import { LIST_IDS_CHECKED, LIST_OPERATIONS, listOperationsShape } from './shopping.js';
+import { LIST_IDS_CHECKED, LISTS_APPLIED, LIST_OPERATIONS, listOperationsShape } from './shopping.js';
 
-const FOOD_LISTS = 'Changing a food\'s lists does not change its existing shopping entries. New entries copy the food\'s lists when added through add_recipe_to_shopping_list, '
-  + 'through bulk_create_shopping_list_recipe_entries without shopping_list_ids (or with []) whatever the user preference, '
-  + `or through create_shopping_entry without shopping_list_ids while the user preference shopping_update_food_lists is on. ${LIST_IDS_CHECKED}`;
+const FOOD_LISTS = 'Changing a food\'s lists does not change its existing shopping entries. '
+  + 'add_recipe_to_shopping_list copies the food\'s lists onto new entries. '
+  + 'create_shopping_entry without shopping_list_ids copies them when the user preference shopping_update_food_lists is on. '
+  + `${LIST_IDS_CHECKED} ${LISTS_APPLIED}`;
 
 
 export const listFoodsShape = {
@@ -179,7 +180,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleGetFood);
 
   registerStringTool(server, client, 'create_food', {
-    description: `Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). If a food with this name exists, Tandoor returns it instead of creating one. With shopping_list_ids the tool then refuses and changes nothing, so use update_food. If setting the lists fails, the error gives the new food's id. ${FOOD_LISTS}`,
+    description: `Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). If a food with this name exists, Tandoor returns it instead of creating one. With shopping_list_ids the tool checks for that first and refuses, changing nothing; use update_food. Tandoor cannot set lists while creating a food, so the tool creates the food first and then sets its lists. If setting the lists fails, the error gives the new food's id. ${FOOD_LISTS}`,
     inputSchema: createFoodShape,
   }, handleCreateFood);
 

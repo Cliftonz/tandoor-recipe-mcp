@@ -26,13 +26,15 @@ import {
   handleBulkUpdateShoppingEntries,
 } from '../handlers/shopping.js';
 
-export const LIST_IDS_CHECKED = 'Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written. If Tandoor leaves out a requested list, the tool errors after the write and names the list.';
+export const LIST_IDS_CHECKED = 'Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written.';
+
+export const LISTS_APPLIED = 'If Tandoor leaves out a requested list, the tool errors after the write and names the list.';
 
 const ENTRY_LISTS = 'shopping_list_ids (ids from list_shopping_lists) puts the entry on exactly those lists; the food\'s lists are not added. '
   + 'When shopping_list_ids is omitted, Tandoor copies the food\'s lists onto the new entry if the user preference shopping_update_food_lists is on. '
   + 'With [], the tool clears any lists Tandoor copied, so the entry is on no list. '
   + 'add_recipe_to_shopping_list always copies each food\'s lists; food_shopping_update never does. '
-  + `Changing a food's lists later does not change existing entries. ${LIST_IDS_CHECKED}`;
+  + `Changing a food's lists later does not change existing entries. ${LIST_IDS_CHECKED} ${LISTS_APPLIED}`;
 
 export const listShoppingListsShape = {
   page: z.number().optional(),
@@ -73,7 +75,7 @@ export const listOperationsShape = {
 
 export const LIST_OPERATIONS = 'shopping_lists_add and shopping_lists_remove (may be combined), shopping_lists_set (replaces the lists; must not be empty) '
   + 'or shopping_lists_remove_all: true (takes every list off). set and remove_all must be used alone. '
-  + 'An empty shopping_lists_add or shopping_lists_remove changes nothing. An id may not appear in both shopping_lists_add and shopping_lists_remove. '
+  + 'An empty shopping_lists_add or shopping_lists_remove counts as no change. An id may not appear in both shopping_lists_add and shopping_lists_remove. '
   + LIST_IDS_CHECKED;
 
 export const listShoppingEntriesShape = {
@@ -228,7 +230,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   }, handleCreateShoppingEntry);
 
   registerStringTool(server, client, 'update_shopping_entry', {
-    description: `Update a shopping entry (PATCH). Required: id. Other fields optional. When checked is omitted, the tool reads the entry and sends its current checked value again, so a checked entry keeps its completed_at. A check made elsewhere between that read and the write is undone (last write wins). shopping_list_ids puts the entry on exactly those lists; the food's lists are not added. [] clears them; omit it to keep them. ${LIST_IDS_CHECKED}`,
+    description: `Update a shopping entry (PATCH). Required: id. Other fields optional. When checked is omitted, the tool reads the entry and sends its current checked value again, so a checked entry keeps its completed_at. A check made elsewhere between that read and the write is undone (last write wins). shopping_list_ids puts the entry on exactly those lists; [] clears them; omit it to keep them. ${LIST_IDS_CHECKED} ${LISTS_APPLIED}`,
     inputSchema: updateShoppingEntryShape,
   }, handleUpdateShoppingEntry);
 

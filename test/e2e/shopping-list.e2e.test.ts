@@ -56,7 +56,7 @@ const ids = (lists: { id: number }[]) => lists.map((l) => l.id).sort((a, b) => a
     const a = await call(server, 'create_shopping_list', { name: `${tag}-a`, color: '#ff0000' });
     listA = a.id;
     expect(a).toEqual({ id: expect.any(Number), name: `${tag}-a`, description: '', color: '#ff0000' });
-    const again = await call(server, 'create_shopping_list', { name: `${tag}-A`.toUpperCase(), description: 'ignored' });
+    const again = await call(server, 'create_shopping_list', { name: `${tag}-A`.toUpperCase(), description: 'ignored', color: '#00ff00' });
     expect(again).toEqual(a);
     listB = (await call(server, 'create_shopping_list', { name: `${tag}-b` })).id;
     expect(await raw(server, 'update_shopping_list', { id: listB, name: `${tag}-A` })).toEqual({
