@@ -152,6 +152,10 @@ export async function handleCreateShoppingEntry(
   if (args.order !== undefined) body.order = args.order;
   if (args.delay_until !== undefined) body.delay_until = args.delay_until;
   if (args.mealplan_id !== undefined) body.mealplan_id = args.mealplan_id;
+  if (args.shopping_list_ids !== undefined) {
+    await client.shopping.assertShoppingListsExist(args.shopping_list_ids);
+    body.shopping_lists = args.shopping_list_ids;
+  }
 
   const created = await client.shopping.createEntry(body);
   return `Shopping entry created.\n\n${emit(args.format === 'full' ? created : slimEntry(created))}`;
@@ -168,6 +172,10 @@ export async function handleUpdateShoppingEntry(
   if (args.checked !== undefined) body.checked = args.checked;
   if (args.order !== undefined) body.order = args.order;
   if (args.delay_until !== undefined) body.delay_until = args.delay_until;
+  if (args.shopping_list_ids !== undefined) {
+    await client.shopping.assertShoppingListsExist(args.shopping_list_ids);
+    body.shopping_lists = args.shopping_list_ids;
+  }
   assertNonEmptyBody(body);
 
   const updated = await client.shopping.patchEntry(args.id, body);

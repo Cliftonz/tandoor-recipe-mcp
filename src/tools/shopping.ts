@@ -25,6 +25,13 @@ import {
   handleDeleteShoppingList,
 } from '../handlers/shopping.js';
 
+const LIST_IDS_CHECKED = 'Every list id is checked against list_shopping_lists first; unknown ids are rejected and nothing is written.';
+
+const ENTRY_LISTS = 'shopping_list_ids (ids from list_shopping_lists) puts the entry on those lists, and only those ids are sent. '
+  + 'When shopping_list_ids is omitted or [], Tandoor copies the food\'s lists onto the new entry if the user preference shopping_update_food_lists is on. '
+  + 'add_recipe_to_shopping_list always copies each food\'s lists; food_shopping_update never does. '
+  + `Changing a food's lists later does not change existing entries. ${LIST_IDS_CHECKED}`;
+
 export const listShoppingListsShape = {
   page: z.number().optional(),
   page_size: z.number().optional(),
@@ -53,6 +60,8 @@ export const updateShoppingListShape = {
 
 export const deleteShoppingListShape = { id: z.number() } as const;
 
+const shoppingListIds = z.array(z.number());
+
 export const listShoppingEntriesShape = {
   mealplan: z.number().optional(),
   updated_after: z.string().optional(),
@@ -73,6 +82,7 @@ export const createShoppingEntryShape = {
   order: z.number().optional(),
   delay_until: z.string().optional(),
   mealplan_id: z.number().optional(),
+  shopping_list_ids: shoppingListIds.optional(),
   format: formatEnum,
 } as const;
 
@@ -84,6 +94,7 @@ export const updateShoppingEntryShape = {
   checked: z.boolean().optional(),
   order: z.number().optional(),
   delay_until: z.string().optional(),
+  shopping_list_ids: shoppingListIds.optional(),
   format: formatEnum,
 } as const;
 
@@ -189,12 +200,12 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   }, handleGetShoppingEntry);
 
   registerStringTool(server, client, 'create_shopping_entry', {
-    description: 'Create a shopping list entry. Required: amount, food_id. Optional: unit_id, checked, list_recipe, ingredient, order, delay_until, mealplan_id (links to existing/new ShoppingListRecipe for that mealplan).',
+    description: `Create a shopping list entry. Required: amount, food_id. Optional: unit_id, checked, list_recipe, ingredient, order, delay_until, mealplan_id (links to existing/new ShoppingListRecipe for that mealplan), shopping_list_ids. ${ENTRY_LISTS}`,
     inputSchema: createShoppingEntryShape,
   }, handleCreateShoppingEntry);
 
   registerStringTool(server, client, 'update_shopping_entry', {
-    description: 'Update a shopping entry (PATCH). Required: id. Other fields optional.',
+    description: `Update a shopping entry (PATCH). Required: id. Other fields optional. shopping_list_ids replaces the entry's lists; [] clears them; omit it to keep them. ${LIST_IDS_CHECKED}`,
     inputSchema: updateShoppingEntryShape,
   }, handleUpdateShoppingEntry);
 

@@ -9,6 +9,8 @@ import {
   handleUpdateShoppingList,
   handleDeleteShoppingList,
   handleGetShoppingEntry,
+  handleCreateShoppingEntry,
+  handleUpdateShoppingEntry,
 } from '../src/handlers/shopping.js';
 
 type Sent = { method: string; path: string; body?: unknown };
@@ -44,6 +46,15 @@ function entry(overrides: Record<string, unknown> = {}) {
     ...overrides,
   };
 }
+
+const page = (results: unknown[], next: string | null = null) => ({ count: results.length, next, previous: null, results });
+
+const listPages = {
+  'GET /api/shopping-list/?page=1': page([costco], 'more'),
+  'GET /api/shopping-list/?page=2': page([aldi]),
+};
+
+const unknownListError = 'These shopping list ids do not exist in this space: 999, 1000. Nothing was changed. Use list_shopping_lists to see the lists.';
 
 const body = (out: string) => JSON.parse(out.slice(out.search(/[[{]/)));
 
@@ -107,5 +118,38 @@ describe('shopping entry lists', () => {
     stubTandoor({ 'GET /api/shopping-list-entry/7/': entry({ shopping_lists: [costco, aldi] }) });
     const out = JSON.parse(await handleGetShoppingEntry(client(), { id: 7 }));
     expect(out.shopping_lists).toEqual([{ id: 2, name: 'Costco' }, { id: 3, name: 'Aldi' }]);
+  });
+});
+
+describe('shopping entry list ids', () => {
+  it('creates an entry on the given lists after finding every id across the list pages', async () => {
+    const sent = stubTandoor({ ...listPages, 'POST /api/shopping-list-entry/': entry({ shopping_lists: [costco, aldi] }) });
+    const out = await handleCreateShoppingEntry(client(), { amount: 1, food_id: 1, shopping_list_ids: [3, 2] });
+    expect(sent.at(-1)).toEqual({
+      method: 'POST', path: '/api/shopping-list-entry/',
+      body: { amount: 1, food: 1, unit: null, checked: false, shopping_lists: [3, 2] },
+    });
+    expect(body(out).shopping_lists).toEqual([{ id: 2, name: 'Costco' }, { id: 3, name: 'Aldi' }]);
+  });
+
+  it('rejects unknown list ids by name and creates nothing', async () => {
+    const sent = stubTandoor(listPages);
+    await expect(handleCreateShoppingEntry(client(), { amount: 1, food_id: 1, shopping_list_ids: [2, 999, 1000] }))
+      .rejects.toThrow(unknownListError);
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
+  });
+
+  it('replaces the lists of an entry, and [] clears them', async () => {
+    const sent = stubTandoor({ 'PATCH /api/shopping-list-entry/7/': entry({ shopping_lists: [] }) });
+    const out = await handleUpdateShoppingEntry(client(), { id: 7, checked: false, shopping_list_ids: [] });
+    expect(sent).toEqual([{ method: 'PATCH', path: '/api/shopping-list-entry/7/', body: { checked: false, shopping_lists: [] } }]);
+    expect(body(out).shopping_lists).toEqual([]);
+  });
+
+  it('rejects unknown list ids on update and patches nothing', async () => {
+    const sent = stubTandoor(listPages);
+    await expect(handleUpdateShoppingEntry(client(), { id: 7, checked: true, shopping_list_ids: [999, 1000] }))
+      .rejects.toThrow(unknownListError);
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
   });
 });
