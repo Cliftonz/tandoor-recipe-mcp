@@ -299,11 +299,22 @@ describe('consume_inventory_item', () => {
     );
   });
 
-  it('errors when the food has no entry', async () => {
+  it('errors when the food has nothing on hand', async () => {
     stubTandoor({ 'GET /api/inventory-entry/?food_id=5&inventory_location_id=2': { count: 0, next: null, previous: null, results: [] } });
     await expect(handleConsumeInventoryItem(client(), { food_id: 5, location_id: 2, amount: 1 })).rejects.toThrow(
-      'Food 5 has no inventory entry at location 2.',
+      'Food 5 has nothing on hand at location 2.',
     );
+  });
+
+  it.each([0, -2])('writes nothing and says so when the entry amount is %s', async (amount) => {
+    const sent = stubTandoor({ 'GET /api/inventory-entry/11/': entry({ amount }) });
+    expect(await handleConsumeInventoryItem(client(), { entry_id: 11, amount: 1 })).toBe(
+      `Inventory item 11 has nothing on hand (amount ${amount}); nothing consumed.`,
+    );
+    expect(await handleConsumeInventoryItem(client(), { entry_id: 11, all: true })).toBe(
+      `Inventory item 11 has nothing on hand (amount ${amount}); nothing consumed.`,
+    );
+    expect(patches(sent)).toEqual([]);
   });
 
   it('rejects a unit that differs from the entry unit and names the entry unit', async () => {

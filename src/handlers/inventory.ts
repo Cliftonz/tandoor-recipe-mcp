@@ -183,7 +183,7 @@ export async function handleDeleteInventoryEntry(
 async function findEntryForFood(client: TandoorClient, foodId: number, locationId: number | undefined, signal?: AbortSignal) {
   const page = await client.inventory.listEntries({ food_id: foodId, inventory_location_id: locationId }, { signal });
   const where = locationId === undefined ? '' : ` at location ${locationId}`;
-  if (page.count === 0) throw new Error(`Food ${foodId} has no inventory entry${where}.`);
+  if (page.count === 0) throw new Error(`Food ${foodId} has nothing on hand${where}.`);
   if (page.count > 1) {
     const shown = page.results.length < page.count ? ` (showing ${page.results.length} of ${page.count})` : '';
     throw new Error(`Food ${foodId} has ${page.count} inventory entries${where}; pass entry_id. Candidates${shown}: ${emit(page.results.map(slimEntry))}`);
@@ -205,6 +205,7 @@ export async function handleConsumeInventoryItem(
   if (args.unit_id !== undefined && args.unit_id !== e.unit.id) {
     throw new Error(`Entry ${e.id} is stored in ${e.unit.name} (unit_id ${e.unit.id}); consume in that unit. Unit conversion is not supported.`);
   }
+  if (e.amount <= 0) return `Inventory item ${e.id} has nothing on hand (amount ${e.amount}); nothing consumed.`;
   const requested = args.amount ?? e.amount;
   const amount = Math.max(0, Number((e.amount - requested).toFixed(AMOUNT_DECIMAL_PLACES)));
   const r = await client.inventory.patchEntry(e.id, { amount }, { signal: ctx?.signal });
