@@ -132,7 +132,7 @@ mig_last_log_t=$MIG_START
 while [ "$(date +%s)" -lt "$MIG_DEADLINE" ]; do
   mig_attempt=$(( mig_attempt + 1 ))
   pending=$(docker exec "$WEB" sh -c \
-    'cd /opt/recipes && source venv/bin/activate && python manage.py showmigrations --plan 2>/dev/null | grep -c "\[ \]"' \
+    'cd /opt/recipes && source venv/bin/activate && python manage.py showmigrations --plan 2>/dev/null | grep -c "\[ \]" || true' \
     2>/dev/null || echo "?")
   last_pending="$pending"
   mig_now=$(date +%s)
