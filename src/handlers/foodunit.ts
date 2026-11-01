@@ -23,7 +23,7 @@ import type {
 import type { HandlerContext } from '../lib/register.js';
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
 import { allPages } from '../lib/paging.js';
-import { slimListRefs, validateListOperations, checkShoppingListIds } from './shopping.js';
+import { slimListRefs, validateListOperations, checkShoppingListIds, assertListsApplied } from './shopping.js';
 
 function slimFood(f: any) {
   if (!f) return f;
@@ -99,6 +99,7 @@ export async function handleCreateFood(
       throw new Error(`Food ${created.id} was created without shopping lists; setting its lists failed: ${e.message}`);
     });
   }
+  assertListsApplied(`Food ${created.id} was created`, args.shopping_list_ids, created.shopping_lists);
   return `Food created.\n\n${emit(args.format === 'full' ? created : slimFood(created))}`;
 }
 
@@ -165,6 +166,7 @@ export async function handleUpdateFood(
   if (failedDeletes.length > 0) {
     throw new Error(`Food updated, but these property rows could not be deleted:\n${failedDeletes.join('\n')}`);
   }
+  assertListsApplied(`Food ${args.id} was updated`, args.shopping_list_ids, updated.shopping_lists);
   return `Food updated.\n\n${emit(args.format === 'full' ? updated : slimFood(updated))}`;
 }
 

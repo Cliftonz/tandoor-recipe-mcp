@@ -469,3 +469,22 @@ describe('create_shopping_entry with shopping_list_ids []', () => {
     );
   });
 });
+
+describe('lists Tandoor did not apply', () => {
+  const milk = { id: 1, name: 'Milk', properties: [], shopping_lists: [costco] };
+  const noSuchFood = { 'GET /api/food/?query=Milk&page=1&page_size=100': page([]) };
+
+  it.each([
+    ['create_food', 'Food 1 was created', { ...noSuchFood, 'POST /api/food/': { ...milk, shopping_lists: [] }, 'PATCH /api/food/1/': milk },
+      () => handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [2, 3] })],
+    ['update_food', 'Food 1 was updated', { 'PATCH /api/food/1/': milk },
+      () => handleUpdateFood(client(), { id: 1, shopping_list_ids: [2, 3] })],
+    ['create_shopping_entry', 'Shopping entry 7 was created', { 'POST /api/shopping-list-entry/': entry() },
+      () => handleCreateShoppingEntry(client(), { amount: 1, food_id: 1, shopping_list_ids: [2, 3] })],
+    ['update_shopping_entry', 'Shopping entry 7 was updated', { 'PATCH /api/shopping-list-entry/7/': entry() },
+      () => handleUpdateShoppingEntry(client(), { id: 7, checked: false, shopping_list_ids: [2, 3] })],
+  ])('%s names the requested lists missing after the write', async (_tool, done, routes, run) => {
+    stubTandoor({ ...listPages, ...routes });
+    await expect(run()).rejects.toThrow(new Error(`${done}, but Tandoor did not put it on these shopping lists: 3.`));
+  });
+});

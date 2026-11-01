@@ -35,6 +35,11 @@ export async function checkShoppingListIds(client: TandoorClient, ids: number[],
   await client.shopping.assertShoppingListsExist(ids, { signal });
 }
 
+export function assertListsApplied(done: string, requested: number[] | undefined, lists: { id: number }[]): void {
+  const missing = (requested ?? []).filter((id) => !lists.some((l) => l.id === id));
+  if (missing.length > 0) throw new Error(`${done}, but Tandoor did not put it on these shopping lists: ${missing.join(', ')}.`);
+}
+
 export function slimListRefs(lists: any[]) {
   return lists.map((l) => ({ id: l.id, name: l.name }));
 }
@@ -176,6 +181,7 @@ export async function handleCreateShoppingEntry(
       throw new Error(`Shopping entry ${created.id} was created, possibly with its food's shopping lists; clearing its lists failed: ${e.message}`);
     });
   }
+  assertListsApplied(`Shopping entry ${created.id} was created`, args.shopping_list_ids, created.shopping_lists);
   return `Shopping entry created.\n\n${emit(args.format === 'full' ? created : slimEntry(created))}`;
 }
 
@@ -199,6 +205,7 @@ export async function handleUpdateShoppingEntry(
   if (args.checked === undefined) body.checked = (await client.shopping.getEntry(args.id)).checked;
 
   const updated = await client.shopping.patchEntry(args.id, body);
+  assertListsApplied(`Shopping entry ${args.id} was updated`, args.shopping_list_ids, updated.shopping_lists);
   return `Shopping entry updated.\n\n${emit(args.format === 'full' ? updated : slimEntry(updated))}`;
 }
 
