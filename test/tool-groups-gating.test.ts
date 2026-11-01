@@ -48,7 +48,7 @@ describe('startup visibility', () => {
       'get_food', 'get_guard_stats', 'get_keyword', 'get_meal_plan', 'get_meal_type', 'get_recipe',
       'get_shopping_entry', 'get_version', 'import_recipe_from_url', 'jq_query', 'jq_stash_stats',
       'list_foods', 'list_inventory_entries', 'list_inventory_locations', 'list_keywords', 'list_meal_plans',
-      'list_meal_types', 'list_recipes', 'list_recipes_flat', 'list_shopping_entries', 'list_tool_groups',
+      'list_meal_types', 'list_recipes', 'list_recipes_flat', 'list_shopping_entries', 'list_shopping_lists', 'list_tool_groups',
       'list_units', 'move_inventory_item', 'parse_ingredient',
       'related_recipes', 'search_recipes', 'update_food', 'update_meal_plan', 'update_recipe',
       'update_shopping_entry',

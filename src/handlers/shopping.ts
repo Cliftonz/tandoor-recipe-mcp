@@ -14,9 +14,67 @@ import type {
   UpdateShoppingListRecipeArgs,
   DeleteShoppingListRecipeArgs,
   BulkCreateShoppingListRecipeEntriesArgs,
+  ListShoppingListsArgs,
+  GetShoppingListArgs,
+  CreateShoppingListArgs,
+  UpdateShoppingListArgs,
+  DeleteShoppingListArgs,
 } from '../tools/shopping.js';
+import type { HandlerContext } from '../lib/register.js';
+import { emit, assertNonEmptyBody, slimPaginated } from '../lib/slim.js';
 
-import { emit, assertNonEmptyBody } from '../lib/slim.js';
+function slimShoppingList(l: any) {
+  return { id: l.id, name: l.name, description: l.description, color: l.color };
+}
+
+export async function handleListShoppingLists(
+  client: TandoorClient,
+  args: ListShoppingListsArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const { format, ...params } = args;
+  const r = await client.shopping.listShoppingLists(params, { signal: ctx?.signal });
+  return format === 'full' ? emit(r) : emit(slimPaginated(r, slimShoppingList));
+}
+
+export async function handleGetShoppingList(
+  client: TandoorClient,
+  args: GetShoppingListArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const r = await client.shopping.getShoppingList(args.id, { signal: ctx?.signal });
+  return emit(args.format === 'full' ? r : slimShoppingList(r));
+}
+
+export async function handleCreateShoppingList(
+  client: TandoorClient,
+  args: CreateShoppingListArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const { format, ...body } = args;
+  const r = await client.shopping.createShoppingList(body, { signal: ctx?.signal });
+  return `Shopping list created.\n\n${emit(format === 'full' ? r : slimShoppingList(r))}`;
+}
+
+export async function handleUpdateShoppingList(
+  client: TandoorClient,
+  args: UpdateShoppingListArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const { id, format, ...body } = args;
+  assertNonEmptyBody(body);
+  const r = await client.shopping.patchShoppingList(id, body, { signal: ctx?.signal });
+  return `Shopping list updated.\n\n${emit(format === 'full' ? r : slimShoppingList(r))}`;
+}
+
+export async function handleDeleteShoppingList(
+  client: TandoorClient,
+  args: DeleteShoppingListArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  await client.shopping.deleteShoppingList(args.id, { signal: ctx?.signal });
+  return `Shopping list ${args.id} deleted.`;
+}
 
 function slimEntry(e: any) {
   if (!e) return e;

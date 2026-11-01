@@ -1,8 +1,34 @@
 // Shopping list API client.
 
-import { BaseClient } from './base.js';
+import { BaseClient, qs } from './base.js';
+
+type Opts = { signal?: AbortSignal };
+
+export type ShoppingListBody = { name?: string; description?: string; color?: string | null };
 
 export class ShoppingClient extends BaseClient {
+  // ---------- Shopping lists ----------
+
+  async listShoppingLists(params?: { page?: number; page_size?: number }, opts?: Opts): Promise<any> {
+    return this.request(`/api/shopping-list/${qs(params)}`, { signal: opts?.signal });
+  }
+
+  async getShoppingList(id: number, opts?: Opts): Promise<any> {
+    return this.request(`/api/shopping-list/${id}/`, { signal: opts?.signal });
+  }
+
+  async createShoppingList(body: ShoppingListBody, opts?: Opts): Promise<any> {
+    return this.request('/api/shopping-list/', { method: 'POST', body: JSON.stringify(body), signal: opts?.signal });
+  }
+
+  async patchShoppingList(id: number, body: ShoppingListBody, opts?: Opts): Promise<any> {
+    return this.request(`/api/shopping-list/${id}/`, { method: 'PATCH', body: JSON.stringify(body), signal: opts?.signal });
+  }
+
+  async deleteShoppingList(id: number, opts?: Opts): Promise<void> {
+    return this.request(`/api/shopping-list/${id}/`, { method: 'DELETE', signal: opts?.signal });
+  }
+
   // ---------- Shopping list entries ----------
 
   async listEntries(params?: {

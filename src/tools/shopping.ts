@@ -18,8 +18,40 @@ import {
   handleUpdateShoppingListRecipe,
   handleDeleteShoppingListRecipe,
   handleBulkCreateShoppingListRecipeEntries,
+  handleListShoppingLists,
+  handleGetShoppingList,
+  handleCreateShoppingList,
+  handleUpdateShoppingList,
+  handleDeleteShoppingList,
 } from '../handlers/shopping.js';
 
+export const listShoppingListsShape = {
+  page: z.number().optional(),
+  page_size: z.number().optional(),
+  format: formatEnum,
+} as const;
+
+export const getShoppingListShape = { id: z.number(), format: formatEnum } as const;
+
+const shoppingListName = z.string().min(1).max(32);
+const shoppingListColor = z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable();
+
+export const createShoppingListShape = {
+  name: shoppingListName,
+  description: z.string().optional(),
+  color: shoppingListColor.optional(),
+  format: formatEnum,
+} as const;
+
+export const updateShoppingListShape = {
+  id: z.number(),
+  name: shoppingListName.optional(),
+  description: z.string().optional(),
+  color: shoppingListColor.optional(),
+  format: formatEnum,
+} as const;
+
+export const deleteShoppingListShape = { id: z.number() } as const;
 
 export const listShoppingEntriesShape = {
   mealplan: z.number().optional(),
@@ -102,6 +134,11 @@ export const bulkCreateShoppingListRecipeEntriesShape = {
   ),
 } as const;
 
+export type ListShoppingListsArgs = z.infer<z.ZodObject<typeof listShoppingListsShape>>;
+export type GetShoppingListArgs = z.infer<z.ZodObject<typeof getShoppingListShape>>;
+export type CreateShoppingListArgs = z.infer<z.ZodObject<typeof createShoppingListShape>>;
+export type UpdateShoppingListArgs = z.infer<z.ZodObject<typeof updateShoppingListShape>>;
+export type DeleteShoppingListArgs = z.infer<z.ZodObject<typeof deleteShoppingListShape>>;
 export type ListShoppingEntriesArgs = z.infer<z.ZodObject<typeof listShoppingEntriesShape>>;
 export type GetShoppingEntryArgs = z.infer<z.ZodObject<typeof getShoppingEntryShape>>;
 export type CreateShoppingEntryArgs = z.infer<z.ZodObject<typeof createShoppingEntryShape>>;
@@ -116,6 +153,31 @@ export type DeleteShoppingListRecipeArgs = z.infer<z.ZodObject<typeof deleteShop
 export type BulkCreateShoppingListRecipeEntriesArgs = z.infer<z.ZodObject<typeof bulkCreateShoppingListRecipeEntriesShape>>;
 
 export function registerShoppingTools(server: McpServer, client: TandoorClient): void {
+  registerStringTool(server, client, 'list_shopping_lists', {
+    description: 'List the named shopping lists of this space (for example one per store), as {id, name, description, color}. Every member of the space sees the same lists. Optional: page, page_size.',
+    inputSchema: listShoppingListsShape,
+  }, handleListShoppingLists);
+
+  registerStringTool(server, client, 'get_shopping_list', {
+    description: 'Get a named shopping list by ID.',
+    inputSchema: getShoppingListShape,
+  }, handleGetShoppingList);
+
+  registerStringTool(server, client, 'create_shopping_list', {
+    description: 'Create a named shopping list. Required: name (1 to 32 characters). Optional: description, color (#rrggbb or null). If a list with the same name already exists (case-insensitive), Tandoor returns that list instead of creating a new one, and does not change its description or color.',
+    inputSchema: createShoppingListShape,
+  }, handleCreateShoppingList);
+
+  registerStringTool(server, client, 'update_shopping_list', {
+    description: 'Update a named shopping list (PATCH). Required: id and at least one of name (1 to 32 characters), description, color (#rrggbb, or null to clear it).',
+    inputSchema: updateShoppingListShape,
+  }, handleUpdateShoppingList);
+
+  registerStringTool(server, client, 'delete_shopping_list', {
+    description: 'Delete a named shopping list by ID. This only removes the links to the list: foods, shopping entries and supermarkets that used it keep existing. To see the links first, use preview_shopping_list_delete_cascading.',
+    inputSchema: deleteShoppingListShape,
+  }, handleDeleteShoppingList);
+
   registerStringTool(server, client, 'list_shopping_entries', {
     description: 'List shopping list entries (auto-filtered to unchecked + recent by Tandoor). Optional: mealplan, updated_after (ISO), page, page_size, format.',
     inputSchema: listShoppingEntriesShape,
