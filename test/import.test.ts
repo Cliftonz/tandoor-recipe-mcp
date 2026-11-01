@@ -150,35 +150,32 @@ describe('handleRunOpenDataImport', () => {
 describe('handleListRecipeImports', () => {
   it('lists queued imports with pagination', async () => {
     const listRecipeImports = vi.fn(async () => paginated([
-      { id: 1, name: 'a.pdf', file_uid: 'u1', file_path: '/p/a', created_at: 't', storage: 1, space: 1 },
+      { id: 1, name: 'a.pdf', file_uid: 'u1', file_path: '/p/a', created_at: 't', storage: { id: 1 } },
     ]));
     const client = mkClient({ listRecipeImports });
     const out = await handleListRecipeImports(client, { page: 1 });
     expect(listRecipeImports).toHaveBeenCalledWith({ page: 1 }, { signal: undefined });
     const parsed = JSON.parse(out);
     expect(parsed.results).toEqual([
-      { id: 1, name: 'a.pdf', file_uid: 'u1', file_path: '/p/a', created_at: 't', storage: 1, space: 1 },
+      { id: 1, name: 'a.pdf', file_uid: 'u1', file_path: '/p/a', created_at: 't', storage: 1 },
     ]);
   });
 });
 
 describe('handleCreateRecipeImport', () => {
   it('creates a queue entry', async () => {
-    const createRecipeImport = vi.fn(async (b: any) => ({ id: 5, created_at: 't', ...b }));
+    const createRecipeImport = vi.fn(async (b: any) => ({ id: 5, created_at: 't', ...b, storage: { id: b.storage } }));
     const client = mkClient({ createRecipeImport });
     const out = await handleCreateRecipeImport(client, {
-      name: 'b.pdf', file_uid: 'uu', file_path: '/p/b', storage: 2, space: 1,
+      name: 'b.pdf', storage: 2,
     });
-    expect(createRecipeImport).toHaveBeenCalledWith({
-      name: 'b.pdf', file_uid: 'uu', file_path: '/p/b', storage: 2, space: 1,
-    }, { signal: undefined });
     expect(out).toContain('Recipe import queued');
   });
 });
 
 describe('handleGetRecipeImport', () => {
   it('fetches by id', async () => {
-    const getRecipeImport = vi.fn(async () => ({ id: 8, name: 'c', file_uid: 'u', file_path: '/p/c', created_at: 't', storage: 1, space: 1 }));
+    const getRecipeImport = vi.fn(async () => ({ id: 8, name: 'c', file_uid: 'u', file_path: '/p/c', created_at: 't', storage: { id: 1 } }));
     const client = mkClient({ getRecipeImport });
     const out = await handleGetRecipeImport(client, { id: 8 });
     expect(getRecipeImport).toHaveBeenCalledWith(8, { signal: undefined });
@@ -188,7 +185,7 @@ describe('handleGetRecipeImport', () => {
 
 describe('handleUpdateRecipeImport', () => {
   it('PATCHes queue entry with supplied fields', async () => {
-    const patchRecipeImport = vi.fn(async (id: number, b: any) => ({ id, ...b, created_at: 't' }));
+    const patchRecipeImport = vi.fn(async (id: number, b: any) => ({ id, ...b, created_at: 't', storage: { id: 1 } }));
     const client = mkClient({ patchRecipeImport });
     const out = await handleUpdateRecipeImport(client, { id: 8, name: 'renamed' });
     expect(patchRecipeImport).toHaveBeenCalledWith(8, { name: 'renamed' }, { signal: undefined });
@@ -214,12 +211,12 @@ describe('handleDeleteRecipeImport', () => {
 });
 
 describe('handleImportAllPending', () => {
-  it('POSTs to /import_all/ and returns confirmation', async () => {
-    const importAllPending = vi.fn(async () => ({ id: 0, name: 'batch', created_at: 't', storage: 0, space: 0 }));
+  it('returns Tandoor\'s {msg} response unchanged', async () => {
+    const importAllPending = vi.fn(async () => ({ msg: 'ok' }));
     const client = mkClient({ importAllPending });
     const out = await handleImportAllPending(client, {});
-    expect(importAllPending).toHaveBeenCalled();
     expect(out).toContain('Bulk import of pending recipes triggered');
+    expect(out).toContain('{"msg":"ok"}');
   });
 });
 

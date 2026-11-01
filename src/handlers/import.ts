@@ -50,15 +50,13 @@ function slimOpenDataMeta(m: any) {
 }
 
 function slimRecipeImport(r: any) {
-  if (!r) return r;
   return {
     id: r.id,
     name: r.name,
     file_uid: r.file_uid,
     file_path: r.file_path,
     created_at: r.created_at,
-    storage: r.storage,
-    space: r.space,
+    storage: r.storage.id,
   };
 }
 
@@ -198,10 +196,7 @@ export async function handleCreateRecipeImport(
   ctx?: HandlerContext,
 ): Promise<string> {
   // Body shape follows this endpoint's spec verbatim; sibling endpoints use different envelopes.
-  const body: any = { name: args.name, storage: args.storage, space: args.space };
-  if (args.file_uid !== undefined) body.file_uid = args.file_uid;
-  if (args.file_path !== undefined) body.file_path = args.file_path;
-  const r = await client.imports.createRecipeImport(body, { signal: ctx?.signal });
+  const r = await client.imports.createRecipeImport({ name: args.name, storage: args.storage }, { signal: ctx?.signal });
   return `Recipe import queued.\n\n${emit(args.format === 'full' ? r : slimRecipeImport(r))}`;
 }
 
@@ -221,10 +216,7 @@ export async function handleUpdateRecipeImport(
 ): Promise<string> {
   const body: any = {};
   if (args.name !== undefined) body.name = args.name;
-  if (args.file_uid !== undefined) body.file_uid = args.file_uid;
-  if (args.file_path !== undefined) body.file_path = args.file_path;
   if (args.storage !== undefined) body.storage = args.storage;
-  if (args.space !== undefined) body.space = args.space;
   assertNonEmptyBody(body);
   const r = await client.imports.patchRecipeImport(args.id, body, { signal: ctx?.signal });
   return `Recipe import updated.\n\n${emit(args.format === 'full' ? r : slimRecipeImport(r))}`;
@@ -241,11 +233,11 @@ export async function handleDeleteRecipeImport(
 
 export async function handleImportAllPending(
   client: TandoorClient,
-  args: ImportAllPendingArgs,
+  _args: ImportAllPendingArgs,
   ctx?: HandlerContext,
 ): Promise<string> {
   const r = await client.imports.importAllPending({ signal: ctx?.signal });
-  return `Bulk import of pending recipes triggered.\n\n${emit(args.format === 'full' ? r : slimRecipeImport(r))}`;
+  return `Bulk import of pending recipes triggered.\n\n${emit(r)}`;
 }
 
 export async function handleImportPendingRecipe(
