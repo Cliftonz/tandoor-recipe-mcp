@@ -217,10 +217,10 @@ async function withClient<T>(env: Record<string, string>, fn: (c: Client, stderr
       // wanted this; setting it in the default keeps every test on equal
       // footing.
       TANDOOR_MAX_RETRIES: '0',
-      // Every section open so existing e2e tests exercise every tool
-      // without needing to enable_tool_group first. Gating behavior is
-      // covered by test/tool-groups-gating.test.ts (unit) and one dedicated
-      // e2e at the bottom of this file. Individual tests can override.
+      // Existing e2e tests exercise every tool without needing to
+      // enable_tool_group first. Gating behavior is covered by
+      // test/tool-groups-gating.test.ts (unit) and one dedicated e2e at the
+      // bottom of this file. Individual tests can override.
       ...ALL_SECTIONS_OPEN,
       ...env,
     } as Record<string, string>,
@@ -607,9 +607,9 @@ d('MCP stdio protocol e2e (strict SDK client)', () => {
 
   // ---- section gating, end-to-end through stdio ----
   // The unit tests in test/tool-groups-gating.test.ts already cover the
-  // enable/disable semantics. This one is the load-bearing protocol check:
-  // does the SDK actually emit tools/list_changed when we flip .enable()
-  // through the built binary and a real stdio client?
+  // enable/disable semantics. This one checks that tools/list reflects
+  // enable_tool_group / disable_tool_group through the built binary over a
+  // real stdio client.
   it('default sections hide the full tier and enable_tool_group reveals it', async () => {
     await withClient(DEFAULT_SECTIONS, async (c) => {
       const names = new Set((await c.listTools()).tools.map((t) => t.name));
