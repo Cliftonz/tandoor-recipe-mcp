@@ -24,8 +24,7 @@ import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
-import { CORE_TOOLS, TOOL_GROUPS } from '../lib/tool-groups.js';
-import { ALWAYS_ON_GROUP, SECTIONS, modesOf, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
+import { ALWAYS_ON_GROUP, ALWAYS_ON_TOOLS, SECTIONS, modesOf, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
 
 interface RegisteredToolEntry {
   enabled: boolean;
@@ -87,8 +86,6 @@ function widen(section: Section, current: SectionMode, tier: 'simple' | 'full' |
   return order.indexOf(target) > order.indexOf(current) ? target : current;
 }
 
-const SYNTHETIC_CORE_GROUP = 'core';
-
 const HTTP_GATING_DISABLED_MSG =
   'Dynamic tool gating is disabled in HTTP transport mode. Set TANDOOR_MCP_PROFILE=core|basic|full to lock the surface at boot.';
 
@@ -126,50 +123,36 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
     'list_tool_groups',
     {
       description: [
-        'List every tool group exposed by this MCP server and whether each is currently enabled.',
-        'The "core" group is permanent and always enabled; non-core groups start disabled (with profile=core) and can be turned on by calling enable_tool_group with the group name.',
-        'When a group is enabled, its tools become visible via tools/list and the SDK emits tools/list_changed so the client refreshes mid-conversation.',
+        'List every tool section with its current mode and the modes it accepts.',
+        'Tiered sections (off / simple / full) and on/off sections can be widened with enable_tool_group and turned off with disable_tool_group.',
+        'The "always" group is permanent.',
+        'When a section changes, its tools appear in or leave tools/list and the SDK emits tools/list_changed so the client refreshes mid-conversation.',
         'Use this first to discover what is available before reaching for enable_tool_group.',
       ].join(' '),
       inputSchema: listToolGroupsShape,
     },
     async () => {
       const reg = getRegistry(server);
-      const groups: Array<{
-        name: string;
-        description: string;
-        permanent: boolean;
-        enabled: boolean;
-        tools: string[];
-      }> = [];
-
-      const coreTools = [...CORE_TOOLS];
-      groups.push({
-        name: SYNTHETIC_CORE_GROUP,
-        description: 'Always-on tools — diagnostics, reads, and the meta-gating tools themselves.',
-        permanent: true,
-        enabled: true,
-        tools: coreTools,
-      });
-
-      for (const g of TOOL_GROUPS) {
-        // A group counts as "enabled" iff every registered tool it owns is
-        // enabled. A tool that's missing from the registry (filtered out via
-        // TANDOOR_MCP_EXCLUDE, or not yet wired up) is excluded from the
-        // calculation rather than treated as disabled — otherwise an operator
-        // who excludes one tool from a group can never see "enabled: true"
-        // even after calling enable_tool_group.
-        const present = g.tools.filter((t) => reg[t] !== undefined);
-        const enabled = present.length > 0 && present.every((t) => reg[t]!.enabled);
+      const registered = (names: readonly string[]) => names.filter((n) => reg[n] !== undefined);
+      const groups: object[] = [{
+        name: ALWAYS_ON_GROUP,
+        description: 'Always-on tools: diagnostics, jq, current space, and these gating tools.',
+        mode: 'on',
+        modes: ['on'],
+        tools: registered(ALWAYS_ON_TOOLS),
+      }];
+      for (const section of SECTIONS) {
+        if (registered(sectionTools(section)).length === 0) continue;
         groups.push({
-          name: g.name,
-          description: g.description,
-          permanent: false,
-          enabled,
-          tools: [...g.tools],
+          name: section.name,
+          description: section.description,
+          mode: modes.get(section.name),
+          modes: modesOf(section),
+          tools: section.kind === 'tiered'
+            ? { simple: registered(section.simple), full: registered(section.full) }
+            : registered(section.tools),
         });
       }
-
       return JSON.stringify({ groups });
     },
   );

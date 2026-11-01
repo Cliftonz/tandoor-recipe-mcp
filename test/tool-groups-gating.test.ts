@@ -159,3 +159,58 @@ describe('disable_tool_group', () => {
     expect(result.text).toContain("unknown tool group 'shopping-write'");
   });
 });
+
+describe('list_tool_groups', () => {
+  it('reports each section with tools, its current mode, and its available modes', async () => {
+    const { groups } = await callOk(await connect(), 'list_tool_groups', {});
+    expect(groups.map((g: { name: string }) => g.name)).toEqual([
+      'always', 'recipes', 'meal-plan', 'shopping', 'foods',
+      'cooklog', 'recipe-books', 'ai', 'import-export', 'household-space', 'admin',
+    ]);
+    expect(groups[0]).toEqual({
+      name: 'always',
+      description: expect.any(String),
+      mode: 'on',
+      modes: ['on'],
+      tools: [
+        'list_tool_groups', 'enable_tool_group', 'disable_tool_group', 'get_version',
+        'jq_query', 'jq_stash_stats', 'get_guard_stats', 'get_current_space',
+      ],
+    });
+    const mealPlan = groups.find((g: { name: string }) => g.name === 'meal-plan');
+    expect(mealPlan).toEqual({
+      name: 'meal-plan',
+      description: expect.any(String),
+      mode: 'simple',
+      modes: ['off', 'simple', 'full'],
+      tools: {
+        simple: [
+          'list_meal_plans', 'get_meal_plan', 'list_meal_types', 'get_meal_type',
+          'create_meal_plan', 'update_meal_plan', 'delete_meal_plan',
+        ],
+        full: [
+          'auto_meal_plan', 'bulk_create_meal_plans', 'create_meal_type', 'update_meal_type',
+          'delete_meal_type', 'export_meal_plan_ical', 'preview_meal_type_delete_cascading',
+          'preview_meal_type_delete_nulling', 'preview_meal_type_delete_protecting',
+        ],
+      },
+    });
+    expect(groups.find((g: { name: string }) => g.name === 'cooklog')).toEqual({
+      name: 'cooklog',
+      description: expect.any(String),
+      mode: 'off',
+      modes: ['off', 'on'],
+      tools: ['list_cook_logs', 'get_cook_log', 'create_cook_log', 'update_cook_log', 'delete_cook_log'],
+    });
+  });
+
+  it('reflects modes changed by enable and disable', async () => {
+    const client = await connect();
+    await callOk(client, 'enable_tool_group', { group: 'cooklog' });
+    await callOk(client, 'disable_tool_group', { group: 'foods' });
+    const { groups } = await callOk(client, 'list_tool_groups', {});
+    const modeOf = (name: string) => groups.find((g: { name: string }) => g.name === name).mode;
+    expect(modeOf('cooklog')).toBe('on');
+    expect(modeOf('foods')).toBe('off');
+  });
+});
