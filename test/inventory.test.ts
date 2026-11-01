@@ -389,6 +389,13 @@ describe('move_inventory_item', () => {
     expect(writes(sent)).toEqual([]);
   });
 
+  it('is the same no-op when sub_location equals the current one', async () => {
+    const sent = stubTandoor({ 'GET /api/inventory-entry/11/': entry() });
+    const out = await handleMoveInventoryItem(client(), { entry_id: 11, to_location_id: 2, sub_location: 'top drawer' });
+    expect(out).toBe('Inventory item 11 is already in Freezer.');
+    expect(writes(sent)).toEqual([]);
+  });
+
   it('PATCHes only sub_location when the location is unchanged', async () => {
     const sent = stubTandoor({
       'GET /api/inventory-entry/11/': entry(),
