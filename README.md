@@ -186,7 +186,7 @@ Tiered sections take `off`, `simple`, or `full` and default to `simple`. `full` 
 | `recipes` | `TANDOOR_MCP_RECIPES` | Browse, search, get, related recipes, create, update, import from URL, read keywords. | Delete, steps, ingredients, images, batch update, keyword writes, custom filters, file links, share links. |
 | `meal-plan` | `TANDOOR_MCP_MEAL_PLAN` | Meal plan create, read, update, and delete. Read meal types. | Auto-plan, bulk create, meal type writes, iCal export. |
 | `shopping` | `TANDOOR_MCP_SHOPPING` | Shopping entry create, read, update, delete, and check. Add a recipe or food to the list. | Shopping-list-recipe create, read, update, and delete. Supermarkets, categories, and category relations. |
-| `inventory` | `TANDOOR_MCP_INVENTORY` | No tools yet; `list_tool_groups` omits it, as it omits any section with no registered tools. | No tools yet. |
+| `inventory` | `TANDOOR_MCP_INVENTORY` | List locations, list entries, add, consume, and move. `add_inventory_item` always creates a new entry. `consume_inventory_item` stops at 0 and warns when you consume more than the entry holds. `move_inventory_item` moves a whole entry. | Location create, get, update, and delete. Entry get, update, and delete. The read-only inventory log. Delete previews. Deleting a location also deletes its entries and their log history. |
 | `foods` | `TANDOOR_MCP_FOODS` | List, get, create, and update foods. Parse an ingredient. List units. | Delete, merge, move, FDC lookup and search, batch update, unit CRUD, unit merge, food inherit fields, unit conversions, properties, and property types. |
 
 Toggle sections take `off` or `on` and default to `off`.
@@ -215,7 +215,7 @@ In stdio mode the LLM can change sections during a session:
 - `disable_tool_group({group})` sets a section to `off`. It cannot disable `always`.
 - `enable_tool_group({group: "always"})` succeeds and changes nothing.
 
-A section with no registered tools does not count as a section at runtime. That covers `inventory` today and any section that `INCLUDE_ONLY` or `EXCLUDE` empties. `enable_tool_group` and `disable_tool_group` reject it as unknown, and `list_tool_groups` and the server instructions leave it out.
+A section with no registered tools does not count as a section at runtime. That covers any section that `INCLUDE_ONLY` or `EXCLUDE` empties. `enable_tool_group` and `disable_tool_group` reject it as unknown, and `list_tool_groups` and the server instructions leave it out.
 
 From an active session, call `list_tool_groups` for a live listing of sections and their tools.
 
@@ -287,7 +287,7 @@ If FDC returns 404 for a food, the `fdc_id` you passed doesn't exist in USDA's d
 | URI | Purpose |
 |---|---|
 | `tandoor://meal-plan/this-week` | Monday to Sunday meal plan entries, slimmed to `{id, date, meal_type, recipe_name, servings, note}` |
-| `tandoor://pantry/on-hand` | Foods flagged `food_onhand=true` |
+| `tandoor://pantry/on-hand` | What is available. Inventory entries with an amount above 0, grouped by location with freezers marked, each with amount, unit, and expiry. Also foods flagged on hand that have no inventory entry, listed with no quantity. It shows at most 500 entries and 500 foods, and `truncated` reports when it hits a limit. Use `list_inventory_entries` for the full list. The inventory section setting does not change this resource. |
 | `tandoor://shopping-list/active` | Unchecked, recent shopping entries |
 | `tandoor://meal-types` | Breakfast/Lunch/Dinner/etc. with IDs |
 
