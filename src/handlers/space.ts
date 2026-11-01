@@ -98,6 +98,10 @@ export async function handleUpdateUserSpace(client: TandoorClient, args: UpdateU
   if (body.groups === undefined) {
     const current = await client.spaces.getUserSpace(id, { signal: ctx?.signal });
     cleaned.groups = current.groups.map((g: any) => g.id);
+  } else {
+    const known = new Set((await client.housekeeping.listGroups({ signal: ctx?.signal })).map((g: any) => g.id));
+    const unknown = body.groups.filter((g) => !known.has(g));
+    if (unknown.length > 0) throw new Error(`Unknown group ids: ${unknown.join(', ')}. Use list_groups to see the groups in this space.`);
   }
   const r = await client.spaces.patchUserSpace(id, cleaned, { signal: ctx?.signal });
   return `User-space membership updated.\n\n${emit(format === 'full' ? r : slimUserSpace(r))}`;

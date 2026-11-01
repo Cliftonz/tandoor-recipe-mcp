@@ -207,7 +207,8 @@ describe('space handlers', () => {
 
   it('handleUpdateUserSpace PATCHes with supplied fields', async () => {
     const patchUserSpace = vi.fn(async (id, b) => ({ id, ...b }));
-    const client = { spaces: { patchUserSpace } } as any;
+    const listGroups = vi.fn(async () => [{ id: 1, name: 'guest' }, { id: 2, name: 'user' }, { id: 3, name: 'admin' }]);
+    const client = { spaces: { patchUserSpace }, housekeeping: { listGroups } } as any;
     await handleUpdateUserSpace(client, { id: 10, active: true, groups: [1, 2] });
     expect(patchUserSpace).toHaveBeenCalledWith(10, { active: true, groups: [1, 2] }, { signal: undefined });
   });
@@ -218,6 +219,16 @@ describe('space handlers', () => {
     const client = { spaces: { getUserSpace, patchUserSpace } } as any;
     await handleUpdateUserSpace(client, { id: 10, internal_note: 'x' });
     expect(patchUserSpace).toHaveBeenCalledWith(10, { internal_note: 'x', groups: [2, 3] }, { signal: undefined });
+  });
+
+  it('handleUpdateUserSpace rejects group ids the space does not have, naming them, and sends no PATCH', async () => {
+    const patchUserSpace = vi.fn();
+    const listGroups = vi.fn(async () => [{ id: 1, name: 'guest' }, { id: 2, name: 'user' }, { id: 3, name: 'admin' }]);
+    const client = { spaces: { patchUserSpace }, housekeeping: { listGroups } } as any;
+    await expect(handleUpdateUserSpace(client, { id: 10, groups: [2, 98, 99] })).rejects.toThrow(
+      'Unknown group ids: 98, 99. Use list_groups to see the groups in this space.',
+    );
+    expect(patchUserSpace).not.toHaveBeenCalled();
   });
 
   it('handleDeleteUserSpace calls DELETE and returns confirmation', async () => {
