@@ -21,7 +21,7 @@ import type {
 } from '../tools/foodunit.js';
 
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
-import { slimListRefs } from './shopping.js';
+import { slimListRefs, listOperationIds } from './shopping.js';
 
 function slimFood(f: any) {
   if (!f) return f;
@@ -275,6 +275,8 @@ export async function handleFoodBatchUpdate(
   if (!args.foods || args.foods.length === 0) {
     throw new Error('foods must be a non-empty array of food IDs');
   }
+  const listIds = listOperationIds(args);
+  if (listIds !== null) await client.shopping.assertShoppingListsExist(listIds);
   const r = await client.foodUnits.foodBatchUpdate(args);
   return `Batch-updated ${args.foods.length} food(s).\n\n${emit(r)}`;
 }

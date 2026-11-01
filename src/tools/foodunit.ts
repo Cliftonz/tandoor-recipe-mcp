@@ -23,7 +23,7 @@ import {
   handleMergeUnit,
   handleFoodBatchUpdate,
 } from '../handlers/foodunit.js';
-import { LIST_IDS_CHECKED } from './shopping.js';
+import { LIST_IDS_CHECKED, LIST_OPERATIONS, listOperationsShape } from './shopping.js';
 
 const FOOD_LISTS = 'Changing a food\'s lists does not change its existing shopping entries. New entries copy the food\'s lists when added through add_recipe_to_shopping_list, '
   + `or through create_shopping_entry without shopping_list_ids while the user preference shopping_update_food_lists is on. ${LIST_IDS_CHECKED}`;
@@ -146,6 +146,7 @@ export const foodBatchUpdateShape = {
   on_hand: z.boolean().nullable().optional(),
   parent_remove: z.boolean().nullable().optional(),
   parent_set: z.number().nullable().optional(),
+  ...listOperationsShape,
 } as const;
 
 export type ListFoodsArgs = z.infer<z.ZodObject<typeof listFoodsShape>>;
@@ -242,7 +243,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleMergeUnit);
 
   registerStringTool(server, client, 'food_batch_update', {
-    description: 'Apply a narrow set of bulk mutations across many foods in one call via Tandoor\'s /api/food/batch_update/ endpoint. Required: foods[]. Optional (all apply to every food in foods[]): category (set supermarket_category, null clears), substitute_add/remove/set/remove_all, inherit_fields_add/remove/set/remove_all, child_inherit_fields_* (same pattern), substitute_children/siblings (boolean), ignore_shopping, on_hand, parent_set/parent_remove. Does NOT support bulk name/plural/description/fdc_id edits — those still need update_food per-item. Use for: pantry on-hand toggle across a set, retagging supermarket category, configuring substitute groups.',
+    description: `Apply a narrow set of bulk mutations across many foods in one call via Tandoor's /api/food/batch_update/ endpoint. Required: foods[]. Optional (all apply to every food in foods[]): category (set supermarket_category, null clears), substitute_add/remove/set/remove_all, inherit_fields_add/remove/set/remove_all, child_inherit_fields_* (same pattern), substitute_children/siblings (boolean), ignore_shopping, on_hand, parent_set/parent_remove. Does NOT support bulk name/plural/description/fdc_id edits — those still need update_food per-item. Use for: pantry on-hand toggle across a set, retagging supermarket category, configuring substitute groups, moving foods between shopping lists. Shopping list changes: ${LIST_OPERATIONS} Existing shopping entries keep their lists.`,
     inputSchema: foodBatchUpdateShape,
   }, handleFoodBatchUpdate);
 }

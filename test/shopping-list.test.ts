@@ -14,7 +14,7 @@ import {
   handleBulkUpdateShoppingEntries,
   handleBulkCreateShoppingListRecipeEntries,
 } from '../src/handlers/shopping.js';
-import { handleGetFood, handleCreateFood, handleUpdateFood } from '../src/handlers/foodunit.js';
+import { handleGetFood, handleCreateFood, handleUpdateFood, handleFoodBatchUpdate } from '../src/handlers/foodunit.js';
 
 type Sent = { method: string; path: string; body?: unknown };
 type Reply = { status: number; body?: unknown };
@@ -319,5 +319,37 @@ describe('food shopping lists', () => {
     const sent = stubTandoor(listPages);
     await expect(handleUpdateFood(client(), { id: 1, name: 'Oat milk', shopping_list_ids: [2, 999, 1000] })).rejects.toThrow(unknownListError);
     expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
+  });
+});
+
+describe('food_batch_update lists', () => {
+  it('adds lists to many foods after checking the ids', async () => {
+    const sent = stubTandoor({ ...listPages, 'PUT /api/food/batch_update/': {} });
+    await handleFoodBatchUpdate(client(), { foods: [1, 2], shopping_lists_add: [3] });
+    expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual([
+      'GET /api/shopping-list/?page=1', 'GET /api/shopping-list/?page=2', 'PUT /api/food/batch_update/',
+    ]);
+    expect(sent.at(-1)).toEqual({ method: 'PUT', path: '/api/food/batch_update/', body: { foods: [1, 2], shopping_lists_add: [3] } });
+  });
+
+  it('rejects unknown list ids and sends no batch update', async () => {
+    const sent = stubTandoor(listPages);
+    await expect(handleFoodBatchUpdate(client(), { foods: [1], shopping_lists_remove: [999, 1000] })).rejects.toThrow(unknownListError);
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
+  });
+
+  it.each([
+    [{ shopping_lists_set: [2], shopping_lists_remove: [3] }, 'Only shopping_lists_add and shopping_lists_remove can be combined'],
+    [{ shopping_lists_set: [] }, 'shopping_lists_set: [] does nothing in Tandoor'],
+  ])('rejects %o and sends nothing', async (ops, message) => {
+    const sent = stubTandoor({});
+    await expect(handleFoodBatchUpdate(client(), { foods: [1], ...ops })).rejects.toThrow(message);
+    expect(sent).toEqual([]);
+  });
+
+  it('leaves a batch update without list changes unchecked against the lists', async () => {
+    const sent = stubTandoor({ 'PUT /api/food/batch_update/': {} });
+    await handleFoodBatchUpdate(client(), { foods: [1], on_hand: true });
+    expect(sent).toEqual([{ method: 'PUT', path: '/api/food/batch_update/', body: { foods: [1], on_hand: true } }]);
   });
 });
