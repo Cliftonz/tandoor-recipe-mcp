@@ -591,3 +591,15 @@ describe('post-write errors on create tools', () => {
     await expect(run()).rejects.toThrow(new RegExp(`${advice.replace(/[.]/g, '\\.')}$`));
   });
 });
+
+describe('food_batch_update with nothing to change', () => {
+  it.each([
+    [{ shopping_lists_add: [] }],
+    [{ shopping_lists_add: [], shopping_lists_remove: [] }],
+    [{ shopping_lists_remove_all: false }],
+  ])('rejects %o and sends nothing', async (ops) => {
+    const sent = stubTandoor({});
+    await expect(handleFoodBatchUpdate(client(), { foods: [1], ...ops })).rejects.toThrow('Give a field to change, a list change, or both.');
+    expect(sent).toEqual([]);
+  });
+});

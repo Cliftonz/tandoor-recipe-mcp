@@ -294,6 +294,8 @@ export async function handleFoodBatchUpdate(
     throw new Error('foods must be a non-empty array of food IDs');
   }
   const { request, listIds } = parseListOperations(args);
+  const otherChange = Object.entries(request).some(([k, v]) => k !== 'foods' && !k.startsWith('shopping_lists_') && v !== undefined);
+  if (listIds === null && !otherChange) throw new Error('Give a field to change, a list change, or both.');
   if (listIds !== null) await client.shopping.assertShoppingListsExist(listIds, { signal: ctx?.signal });
   const r = await client.foodUnits.foodBatchUpdate(request);
   return `Batch-updated ${args.foods.length} food(s).\n\n${emit(r)}`;
