@@ -97,7 +97,7 @@ export function redactToken(text: string, token: string): string {
 export function explainOwnerOnly403<T>(call: Promise<T>): Promise<T> {
   return call.catch((e: Error) => {
     if (!e.message.startsWith('Tandoor API error: 403')) throw e;
-    throw new Error(`${e.message}\n\nThis call requires the space owner; space admins and members get 403.`);
+    throw new Error(`${e.message}\n\nThis call requires the space owner and a read-write token; space admins and members get 403.`);
   });
 }
 

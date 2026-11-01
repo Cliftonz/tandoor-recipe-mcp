@@ -90,7 +90,7 @@ describe('household tools', () => {
   it('reports that a 403 means the call needs the space owner', async () => {
     stubTandoor({ 'POST /api/household/': forbidden });
     await expect(handleCreateHousehold(client(), { name: 'Home' })).rejects.toThrow(
-      'This call requires the space owner; space admins and members get 403.',
+      'This call requires the space owner and a read-write token; space admins and members get 403.',
     );
   });
 
@@ -167,7 +167,7 @@ describe('household tools', () => {
       'PATCH /api/user-space/1/': forbidden,
     });
     await expect(handleAssignHousehold(client(), { user_space_ids: [1], household_id: null })).rejects.toThrow(
-      /^No user-space was updated\. .*This call requires the space owner; space admins and members get 403\./s,
+      /^No user-space was updated\. .*This call requires the space owner and a read-write token; space admins and members get 403\./s,
     );
   });
 
@@ -190,14 +190,14 @@ describe('household tools', () => {
   it('reports that a 403 on reading a household means the call needs the space owner', async () => {
     stubTandoor({ 'GET /api/household/4/': forbidden });
     await expect(handleGetHousehold(client(), { id: 4 })).rejects.toThrow(
-      'This call requires the space owner; space admins and members get 403.',
+      'This call requires the space owner and a read-write token; space admins and members get 403.',
     );
   });
 
   it('rejects assign_household with the original error when the household lookup is forbidden, touching no user-space', async () => {
     const sent = stubTandoor({ 'GET /api/household/4/': forbidden });
     await expect(handleAssignHousehold(client(), { user_space_ids: [1], household_id: 4 })).rejects.toThrow(
-      /^Tandoor API error: 403.*\n\nThis call requires the space owner; space admins and members get 403\.$/s,
+      /^Tandoor API error: 403.*\n\nThis call requires the space owner and a read-write token; space admins and members get 403\.$/s,
     );
     expect(sent.map((s) => s.path)).toEqual(['/api/household/4/']);
   });

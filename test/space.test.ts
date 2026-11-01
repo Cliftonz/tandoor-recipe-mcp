@@ -95,7 +95,7 @@ describe('SpaceClient URL construction', () => {
       { status: 403, headers: { 'Content-Type': 'application/json' } },
     ));
     await expect(c.patchUserSpace(9, { groups: [2] })).rejects.toThrow(
-      'This call requires the space owner; space admins and members get 403.',
+      'This call requires the space owner and a read-write token; space admins and members get 403.',
     );
     vi.restoreAllMocks();
   });
