@@ -93,7 +93,7 @@ export function registerResources(server: McpServer, client: TandoorClient): voi
     {
       title: 'Pantry — On Hand',
       description:
-        'What is available: inventory entries with amount > 0 grouped by location (freezers marked by is_freezer), each with amount, unit, expires, sub_location, note; plus foods flagged on hand that have no inventory entry, listed under on_hand_no_quantity. Capped at 500 entries and 500 foods; when truncated.entries is true, use list_inventory_entries for the full list.',
+        `What is available. locations holds inventory entries with amount > 0, grouped by location. is_freezer marks freezers. Each entry has amount, unit, expires, sub_location, and note. on_hand_no_quantity holds foods flagged on hand that have no inventory entry. Shows at most ${PANTRY_CAP} entries and ${PANTRY_CAP} foods. When truncated.entries is true, use list_inventory_entries for the full list.`,
       mimeType: 'application/json',
     },
     async (uri): Promise<ReadResourceResult> => {
@@ -109,8 +109,12 @@ export function registerResources(server: McpServer, client: TandoorClient): voi
       const locations = new Map<number, { id: number; name: string; is_freezer: boolean; entries: unknown[] }>();
       for (const e of entries.items) {
         const loc = e.inventory_location;
-        if (!locations.has(loc.id)) locations.set(loc.id, { id: loc.id, name: loc.name, is_freezer: loc.is_freezer, entries: [] });
-        locations.get(loc.id)!.entries.push({
+        let group = locations.get(loc.id);
+        if (!group) {
+          group = { id: loc.id, name: loc.name, is_freezer: loc.is_freezer, entries: [] };
+          locations.set(loc.id, group);
+        }
+        group.entries.push({
           id: e.id,
           food: e.food.name,
           food_id: e.food.id,

@@ -7,14 +7,17 @@ const URI = 'tandoor://pantry/on-hand';
 
 type Page = { results: unknown[]; next: string | null };
 
-function stubPages(pages: { entries: Page[]; foods: Page[] }): void {
+function stubPages(pages: { entries: Page[]; foods: Page[] }): URL[] {
+  const sent: URL[] = [];
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
     const u = new URL(String(url));
+    sent.push(u);
     const page = Number(u.searchParams.get('page') ?? '1');
     const list = u.pathname === '/api/inventory-entry/' ? pages.entries : u.pathname === '/api/food/' ? pages.foods : undefined;
     if (!list || !list[page - 1]) throw new Error(`unstubbed request ${u.pathname}${u.search}`);
     return new Response(JSON.stringify(list[page - 1]), { status: 200, headers: { 'Content-Type': 'application/json' } });
   });
+  return sent;
 }
 
 async function readPantry(): Promise<any> {
@@ -95,6 +98,22 @@ describe('tandoor://pantry/on-hand', () => {
       counts: { entries: 3, foods_on_hand_only: 1 },
       truncated: { entries: false, foods: false },
     });
+  });
+
+  it('lists an on-hand food with no supermarket category without the category key', async () => {
+    stubPages({ entries: [{ next: null, results: [] }], foods: [{ next: null, results: [food(8, 'salt', true)] }] });
+
+    expect((await readPantry()).on_hand_no_quantity).toStrictEqual([{ id: 8, name: 'salt' }]);
+  });
+
+  it('requests inventory entries without the empty filter', async () => {
+    const sent = stubPages({ entries: [{ next: null, results: [] }], foods: [{ next: null, results: [] }] });
+
+    await readPantry();
+
+    const entryRequests = sent.filter((u) => u.pathname === '/api/inventory-entry/');
+    expect(entryRequests).toHaveLength(1);
+    expect(entryRequests[0].searchParams.has('empty')).toBe(false);
   });
 
   it('stops at 500 entries and 500 on-hand foods and flags each truncation', async () => {
