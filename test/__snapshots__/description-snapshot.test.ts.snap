@@ -1968,6 +1968,8 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "maxLength": 128,
+          "minLength": 1,
           "type": "string",
         },
       },
@@ -8196,6 +8198,8 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "name": {
+          "maxLength": 128,
+          "minLength": 1,
           "type": "string",
         },
       },
@@ -9554,6 +9558,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "items": {
             "type": "number",
           },
+          "minItems": 1,
           "type": "array",
         },
         "id": {
