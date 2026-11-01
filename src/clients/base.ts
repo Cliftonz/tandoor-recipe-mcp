@@ -176,7 +176,7 @@ export class BaseClient {
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${this.token}`,
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      ...((options.headers as Record<string, string>) || {}),
+      ...(options.headers as Record<string, string>),
     };
     const isReplayableBody = !isFormData;
     const bodyPreview = typeof options.body === 'string'
@@ -300,7 +300,7 @@ export class BaseClient {
       'Authorization': `Bearer ${this.token}`,
       'Accept': options.accept || '*/*',
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      ...((options.headers as Record<string, string>) || {}),
+      ...(options.headers as Record<string, string>),
     };
     const isReplayableBody = !isFormData;
     const bodyPreview = typeof options.body === 'string'
