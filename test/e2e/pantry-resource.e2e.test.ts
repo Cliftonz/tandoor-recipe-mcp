@@ -2,6 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../../src/clients/index.js';
 import { registerResources } from '../../src/resources/index.js';
+import { registerInventoryTools } from '../../src/tools/inventory.js';
+import { invokeTool } from '../helpers/mcp.js';
 
 const url = process.env.TANDOOR_URL;
 const token = process.env.TANDOOR_TOKEN;
@@ -14,6 +16,14 @@ async function api(method: string, path: string, body?: unknown): Promise<any> {
   });
   if (!res.ok) throw new Error(`${method} ${path} -> ${res.status}`);
   return res.status === 204 ? undefined : res.json();
+}
+
+async function readPantry(client: TandoorClient): Promise<any> {
+  const server = new McpServer({ name: 'e2e', version: 'e2e' });
+  registerResources(server, client);
+  const uri = 'tandoor://pantry/on-hand';
+  const result = await (server as any)._registeredResources[uri].readCallback(new URL(uri), {});
+  return JSON.parse(result.contents[0].text);
 }
 
 (url && token ? describe : describe.skip)('tandoor://pantry/on-hand against live Tandoor', () => {
@@ -63,11 +73,7 @@ async function api(method: string, path: string, body?: unknown): Promise<any> {
   });
 
   it('lists stocked entries by location and on-hand foods that have no entry', async () => {
-    const server = new McpServer({ name: 'e2e', version: 'e2e' });
-    registerResources(server, client);
-    const uri = 'tandoor://pantry/on-hand';
-    const result = await (server as any)._registeredResources[uri].readCallback(new URL(uri), {});
-    const pantry = JSON.parse(result.contents[0].text);
+    const pantry = await readPantry(client);
 
     expect(pantry.locations).toEqual(expect.arrayContaining([
       {
@@ -86,5 +92,21 @@ async function api(method: string, path: string, body?: unknown): Promise<any> {
     const onHandOnly = pantry.on_hand_no_quantity.filter((f: any) => f.name.startsWith(tag));
     expect(onHandOnly).toEqual([{ id: foods.salt, name: `${tag}-salt`, supermarket_category: null }]);
     expect(pantry.truncated).toEqual({ entries: false, on_hand_no_quantity: false });
+  });
+
+  it('leaves out an entry consumed to 0', async () => {
+    foods.stock = (await client.foodUnits.createFood({ name: `${tag}-stock` })).id;
+    const stock = await client.inventory.createEntry({ food: foods.stock, unit: unitId, amount: 300, inventory_location: freezerId });
+    const tools = new McpServer({ name: 'e2e', version: 'e2e' });
+    registerInventoryTools(tools, client);
+    const consumed = await invokeTool(tools, 'consume_inventory_item', { entry_id: stock.id, all: true });
+    expect(consumed.isError).toBeFalsy();
+    expect((await client.inventory.getEntry(stock.id)).amount).toBe(0);
+
+    const pantry = await readPantry(client);
+
+    const entryIds = pantry.locations.flatMap((l: any) => l.entries.map((e: any) => e.id));
+    expect(entryIds).not.toContain(stock.id);
+    expect(pantry.locations.find((l: any) => l.id === freezerId).entries.map((e: any) => e.food)).toEqual([`${tag}-peas`]);
   });
 });
