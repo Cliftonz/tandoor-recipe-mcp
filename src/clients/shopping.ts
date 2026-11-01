@@ -1,10 +1,11 @@
 // Shopping list API client.
 
 import { BaseClient, qs } from './base.js';
+import { allPages } from '../lib/paging.js';
 
 type Opts = { signal?: AbortSignal };
 
-export type ShoppingListBody = { name?: string; description?: string; color?: string | null };
+type ShoppingListBody = { name?: string; description?: string; color?: string | null };
 
 export class ShoppingClient extends BaseClient {
   // ---------- Shopping lists ----------
@@ -31,12 +32,7 @@ export class ShoppingClient extends BaseClient {
 
   async assertShoppingListsExist(ids: number[], opts?: Opts): Promise<void> {
     if (ids.length === 0) return;
-    const known = new Set<number>();
-    for (let page = 1; ; page++) {
-      const r = await this.listShoppingLists({ page }, opts);
-      for (const l of r.results) known.add(l.id);
-      if (!r.next) break;
-    }
+    const known = new Set((await allPages((page) => this.listShoppingLists({ page }, opts))).map((l) => l.id));
     const unknown = ids.filter((id) => !known.has(id));
     if (unknown.length > 0) {
       throw new Error(`These shopping list ids do not exist in this space: ${unknown.join(', ')}. Nothing was changed. Use list_shopping_lists to see the lists.`);
