@@ -20,7 +20,7 @@ import { checkTandoorVersion } from './lib/version-check.js';
 import { buildInstructions } from './lib/instructions.js';
 import { registerAllTools } from './lib/register-all.js';
 import { createHttpTransport, resolveHttpConfig } from './lib/http-transport.js';
-import { SECTION_ENV_VARS, formatSectionModes, parseSectionModes, type SectionModes } from './lib/sections.js';
+import { SECTION_ENV_VARS, SectionSettingsError, formatSectionModes, parseSectionModes, type SectionModes } from './lib/sections.js';
 
 // dotenv is a dev convenience — only load it if it's available (it's a
 // devDependency, not a production dep). Real deployments inject env via the
@@ -50,7 +50,8 @@ function readSections(): SectionModes {
   try {
     return parseSectionModes(process.env);
   } catch (error) {
-    console.error(`Error: ${(error as Error).message}`);
+    if (!(error instanceof SectionSettingsError)) throw error;
+    console.error(`Error: ${error.message}`);
     process.exit(1);
   }
 }

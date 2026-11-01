@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseSectionModes } from '../src/lib/sections.js';
+import { SectionSettingsError, parseSectionModes } from '../src/lib/sections.js';
 
 describe('parseSectionModes', () => {
   it('uses simple for tiered sections and off for toggle sections when nothing is set', () => {
@@ -82,5 +82,15 @@ describe('parseSectionModes', () => {
       'TANDOOR_MCP_RECIPES=on is not valid. Valid values: off, simple, full.\n' +
         'TANDOOR_MCP_AI=full is not valid. Valid values: off, on.',
     );
+  });
+
+  it('throws a SectionSettingsError so startup can tell it from other failures', () => {
+    let caught: unknown;
+    try {
+      parseSectionModes({ TANDOOR_MCP_AI: 'maybe' });
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(SectionSettingsError);
   });
 });

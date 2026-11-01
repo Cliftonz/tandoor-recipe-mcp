@@ -209,6 +209,8 @@ export function modesOf(section: Section): readonly SectionMode[] {
   return section.kind === 'tiered' ? TIERED_MODES : TOGGLE_MODES;
 }
 
+export class SectionSettingsError extends Error {}
+
 export function parseSectionModes(env: Record<string, string | undefined>): SectionModes {
   const modes: SectionModes = new Map();
   const problems: string[] = [];
@@ -219,7 +221,7 @@ export function parseSectionModes(env: Record<string, string | undefined>): Sect
     if (mode) modes.set(section.name, mode);
     else problems.push(`${section.envVar}=${value} is not valid. Valid values: ${valid.join(', ')}.`);
   }
-  if (problems.length > 0) throw new Error(problems.join('\n'));
+  if (problems.length > 0) throw new SectionSettingsError(problems.join('\n'));
   return modes;
 }
 
