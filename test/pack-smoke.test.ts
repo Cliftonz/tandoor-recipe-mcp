@@ -186,12 +186,12 @@ describe('packed tarball smoke', () => {
       expect(mt.structuredContent).toBeUndefined();
     } finally {
       await client.close();
-      const serverStderr = stderrBuf.join('');
-      // Widened net beyond the rc.2 specific markers — any stderr indicating
-      // module-resolution failure or unhandled crash counts.
-      if (/Cannot find module|MODULE_NOT_FOUND|Aborted\(\)|UnhandledRejection|throw\b/i.test(serverStderr)) {
-        throw new Error(`server stderr surfaced a module-resolution failure:\n${serverStderr}`);
-      }
+    }
+    const serverStderr = stderrBuf.join('');
+    // Widened net beyond the rc.2 specific markers; any stderr indicating
+    // module-resolution failure or unhandled crash counts.
+    if (/Cannot find module|MODULE_NOT_FOUND|Aborted\(\)|UnhandledRejection|throw\b/i.test(serverStderr)) {
+      throw new Error(`server stderr surfaced a module-resolution failure:\n${serverStderr}`);
     }
   }, 60_000);
 });
