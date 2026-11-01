@@ -16,6 +16,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
+    "lint": "oxlint --deny-warnings src test scripts vitest.config.ts vitest.e2e.config.ts",
     "test": "vitest run",
     "test:ci": "cross-env CI=1 vitest run",
     "test:watch": "vitest",
@@ -62,6 +63,7 @@
     "@types/node": "^26.6.5",
     "cross-env": "^10.1.0",
     "dotenv": "^18.0.8",
+    "oxlint": "1.90.0",
     "typescript": "7.0.2",
     "vitest": "^5.0.5",
     "yaml": "^2.9.1"
