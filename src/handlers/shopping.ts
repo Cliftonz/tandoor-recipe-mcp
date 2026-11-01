@@ -35,13 +35,21 @@ export async function checkShoppingListIds(client: TandoorClient, ids: number[],
   await client.shopping.assertShoppingListsExist(ids, { signal });
 }
 
-export function missingListIds(requested: number[] | undefined, lists: { id: number }[]): number[] {
-  return (requested ?? []).filter((id) => !lists.some((l) => l.id === id));
+export function listMismatch(requested: number[] | undefined, lists: { id: number }[]): string | null {
+  if (requested === undefined) return null;
+  const got = lists.map((l) => l.id);
+  const missing = requested.filter((id) => !got.includes(id));
+  const extra = got.filter((id) => !requested.includes(id)).sort((a, b) => a - b);
+  const parts = [
+    missing.length > 0 ? `Tandoor did not put it on these shopping lists: ${missing.join(', ')}` : null,
+    extra.length > 0 ? `Tandoor also put it on these shopping lists: ${extra.join(', ')}` : null,
+  ].filter((p) => p !== null);
+  return parts.length > 0 ? parts.join('; ') : null;
 }
 
 export function assertListsApplied(outcome: string, requested: number[] | undefined, lists: { id: number }[]): void {
-  const missing = missingListIds(requested, lists);
-  if (missing.length > 0) throw new Error(`${outcome}, but Tandoor did not put it on these shopping lists: ${missing.join(', ')}.`);
+  const mismatch = listMismatch(requested, lists);
+  if (mismatch) throw new Error(`${outcome}, but ${mismatch}.`);
 }
 
 export function slimListRefs(lists: any[]) {

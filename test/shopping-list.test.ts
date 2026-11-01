@@ -531,6 +531,27 @@ describe('lists Tandoor did not apply', () => {
     stubTandoor({ ...listPages, ...routes });
     await expect(run()).rejects.toThrow(new Error(`${done}, but Tandoor did not put it on these shopping lists: 3.`));
   });
+
+  it.each([
+    ['update_food', 'Food 1 was updated', { 'PATCH /api/food/1/': { ...milk, shopping_lists: [costco, aldi] } },
+      () => handleUpdateFood(client(), { id: 1, shopping_list_ids: [] })],
+    ['create_shopping_entry', 'Shopping entry 7 was created', {
+      'POST /api/shopping-list-entry/': entry({ shopping_lists: [costco] }),
+      'PATCH /api/shopping-list-entry/7/': entry({ shopping_lists: [costco, aldi] }),
+    }, () => handleCreateShoppingEntry(client(), { amount: 1, food_id: 1, shopping_list_ids: [] })],
+    ['update_shopping_entry', 'Shopping entry 7 was updated', { 'PATCH /api/shopping-list-entry/7/': entry({ shopping_lists: [costco, aldi] }) },
+      () => handleUpdateShoppingEntry(client(), { id: 7, checked: false, shopping_list_ids: [] })],
+  ])('%s names lists Tandoor added that were not requested', async (_tool, done, routes, run) => {
+    stubTandoor({ ...listPages, ...routes });
+    await expect(run()).rejects.toThrow(new Error(`${done}, but Tandoor also put it on these shopping lists: 2, 3.`));
+  });
+
+  it('names both the missing and the extra lists', async () => {
+    stubTandoor({ ...listPages, 'PATCH /api/shopping-list-entry/7/': entry({ shopping_lists: [costco] }) });
+    await expect(handleUpdateShoppingEntry(client(), { id: 7, checked: false, shopping_list_ids: [3] })).rejects.toThrow(
+      new Error('Shopping entry 7 was updated, but Tandoor did not put it on these shopping lists: 3; Tandoor also put it on these shopping lists: 2.'),
+    );
+  });
 });
 
 describe('update_food with failed property deletes and missing lists', () => {
@@ -543,7 +564,7 @@ describe('update_food with failed property deletes and missing lists', () => {
       'DELETE /api/property/11/': { status: 400, body: { detail: 'locked' } },
     });
     await expect(handleUpdateFood(client(), { id: 1, remove_property_type_ids: [1], shopping_list_ids: [2, 3] })).rejects.toThrow(
-      /^Food updated, but these property rows could not be deleted:\nproperty row 11: Tandoor API error: 400[^]*\nTandoor also did not put it on these shopping lists: 3\.$/,
+      /^Food updated, but these property rows could not be deleted:\nproperty row 11: Tandoor API error: 400[^]*\nAlso, Tandoor did not put it on these shopping lists: 3\.$/,
     );
   });
 });
