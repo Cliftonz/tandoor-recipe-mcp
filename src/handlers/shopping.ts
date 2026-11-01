@@ -141,7 +141,8 @@ export async function handleGetShoppingEntry(
 
 export async function handleCreateShoppingEntry(
   client: TandoorClient,
-  args: CreateShoppingEntryArgs
+  args: CreateShoppingEntryArgs,
+  ctx?: HandlerContext,
 ): Promise<string> {
   const body: any = {
     amount: args.amount,
@@ -155,7 +156,7 @@ export async function handleCreateShoppingEntry(
   if (args.delay_until !== undefined) body.delay_until = args.delay_until;
   if (args.mealplan_id !== undefined) body.mealplan_id = args.mealplan_id;
   if (args.shopping_list_ids !== undefined) {
-    await client.shopping.assertShoppingListsExist(args.shopping_list_ids);
+    await client.shopping.assertShoppingListsExist(args.shopping_list_ids, { signal: ctx?.signal });
     body.shopping_lists = args.shopping_list_ids;
   }
 
@@ -165,7 +166,8 @@ export async function handleCreateShoppingEntry(
 
 export async function handleUpdateShoppingEntry(
   client: TandoorClient,
-  args: UpdateShoppingEntryArgs
+  args: UpdateShoppingEntryArgs,
+  ctx?: HandlerContext,
 ): Promise<string> {
   const body: any = {};
   if (args.amount !== undefined) body.amount = args.amount;
@@ -175,7 +177,7 @@ export async function handleUpdateShoppingEntry(
   if (args.order !== undefined) body.order = args.order;
   if (args.delay_until !== undefined) body.delay_until = args.delay_until;
   if (args.shopping_list_ids !== undefined) {
-    await client.shopping.assertShoppingListsExist(args.shopping_list_ids);
+    await client.shopping.assertShoppingListsExist(args.shopping_list_ids, { signal: ctx?.signal });
     body.shopping_lists = args.shopping_list_ids;
   }
   assertNonEmptyBody(body);
@@ -202,7 +204,7 @@ export async function handleBulkCheckShoppingEntries(
   return emit(r);
 }
 
-export function listOperationIds(ops: ListOperations): number[] | null {
+export function validateListOperations(ops: ListOperations): number[] | null {
   const { shopping_lists_add: add, shopping_lists_remove: remove, shopping_lists_set: set, shopping_lists_remove_all: removeAll } = ops;
   if (set?.length === 0) {
     throw new Error('shopping_lists_set: [] does nothing in Tandoor. To take every list off, use shopping_lists_remove_all: true.');
@@ -223,7 +225,7 @@ export async function handleBulkUpdateShoppingEntries(
   args: BulkUpdateShoppingEntriesArgs,
   ctx?: HandlerContext,
 ): Promise<string> {
-  const listIds = listOperationIds(args);
+  const listIds = validateListOperations(args);
   if (listIds === null && args.checked === undefined) throw new Error('Give checked, a list change, or both.');
   await client.shopping.assertShoppingListsExist(listIds ?? [], { signal: ctx?.signal });
   return emit(await client.shopping.bulkUpdateEntries(args, { signal: ctx?.signal }));
@@ -288,11 +290,12 @@ export async function handleDeleteShoppingListRecipe(
 
 export async function handleBulkCreateShoppingListRecipeEntries(
   client: TandoorClient,
-  args: BulkCreateShoppingListRecipeEntriesArgs
+  args: BulkCreateShoppingListRecipeEntriesArgs,
+  ctx?: HandlerContext,
 ): Promise<string> {
   if (args.entries.length === 0) throw new Error('entries must be a non-empty array');
   const listIds = args.shopping_list_ids ?? [];
-  await client.shopping.assertShoppingListsExist(listIds);
+  await client.shopping.assertShoppingListsExist(listIds, { signal: ctx?.signal });
   const r = await client.shopping.bulkCreateRecipeEntries(args.id, args.entries, listIds);
   return emit(r);
 }

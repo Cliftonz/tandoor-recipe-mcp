@@ -20,8 +20,9 @@ import type {
   FoodBatchUpdateArgs,
 } from '../tools/foodunit.js';
 
+import type { HandlerContext } from '../lib/register.js';
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
-import { slimListRefs, listOperationIds } from './shopping.js';
+import { slimListRefs, validateListOperations } from './shopping.js';
 
 function slimFood(f: any) {
   if (!f) return f;
@@ -73,7 +74,8 @@ export async function handleGetFood(
 
 export async function handleCreateFood(
   client: TandoorClient,
-  args: CreateFoodArgs
+  args: CreateFoodArgs,
+  ctx?: HandlerContext,
 ): Promise<string> {
   const body: any = { name: args.name };
   if (args.plural_name !== undefined) body.plural_name = args.plural_name;
@@ -84,7 +86,7 @@ export async function handleCreateFood(
     body.supermarket_category = args.supermarket_category_id;
   }
   const listIds = args.shopping_list_ids;
-  if (listIds !== undefined) await client.shopping.assertShoppingListsExist(listIds);
+  if (listIds !== undefined) await client.shopping.assertShoppingListsExist(listIds, { signal: ctx?.signal });
   let created = await client.foodUnits.createFood(body);
   if (listIds !== undefined) {
     created = await client.foodUnits.patchFood(created.id, { shopping_lists: listIds }).catch((e: Error) => {
@@ -96,7 +98,8 @@ export async function handleCreateFood(
 
 export async function handleUpdateFood(
   client: TandoorClient,
-  args: UpdateFoodArgs
+  args: UpdateFoodArgs,
+  ctx?: HandlerContext,
 ): Promise<string> {
   const body: any = {};
   if (args.name !== undefined) body.name = args.name;
@@ -110,7 +113,7 @@ export async function handleUpdateFood(
   if (args.properties_food_amount !== undefined) body.properties_food_amount = args.properties_food_amount;
   if (args.properties_food_unit_id !== undefined) body.properties_food_unit = args.properties_food_unit_id;
   if (args.shopping_list_ids !== undefined) {
-    await client.shopping.assertShoppingListsExist(args.shopping_list_ids);
+    await client.shopping.assertShoppingListsExist(args.shopping_list_ids, { signal: ctx?.signal });
     body.shopping_lists = args.shopping_list_ids;
   }
   const set = args.properties ?? [];
@@ -270,13 +273,14 @@ export async function handleMergeUnit(
 
 export async function handleFoodBatchUpdate(
   client: TandoorClient,
-  args: FoodBatchUpdateArgs
+  args: FoodBatchUpdateArgs,
+  ctx?: HandlerContext,
 ): Promise<string> {
   if (!args.foods || args.foods.length === 0) {
     throw new Error('foods must be a non-empty array of food IDs');
   }
-  const listIds = listOperationIds(args);
-  if (listIds !== null) await client.shopping.assertShoppingListsExist(listIds);
+  const listIds = validateListOperations(args);
+  if (listIds !== null) await client.shopping.assertShoppingListsExist(listIds, { signal: ctx?.signal });
   const r = await client.foodUnits.foodBatchUpdate(args);
   return `Batch-updated ${args.foods.length} food(s).\n\n${emit(r)}`;
 }
