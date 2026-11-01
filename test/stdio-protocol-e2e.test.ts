@@ -130,6 +130,7 @@ beforeAll(async () => {
         recipe: null,
         url: '',
         properties: [],
+        shopping_lists: [],
         properties_food_amount: 100,
         properties_food_unit: null,
         fdc_id: null,

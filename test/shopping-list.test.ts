@@ -14,7 +14,7 @@ import {
   handleBulkUpdateShoppingEntries,
   handleBulkCreateShoppingListRecipeEntries,
 } from '../src/handlers/shopping.js';
-import { handleGetFood, handleCreateFood, handleUpdateFood, handleFoodBatchUpdate } from '../src/handlers/foodunit.js';
+import { handleGetFood, handleCreateFood, handleUpdateFood, handleFoodBatchUpdate, handleMoveFood, handleMergeFood } from '../src/handlers/foodunit.js';
 
 type Sent = { method: string; path: string; body?: unknown };
 type Reply = { status: number; body?: unknown };
@@ -351,5 +351,19 @@ describe('food_batch_update lists', () => {
     const sent = stubTandoor({ 'PUT /api/food/batch_update/': {} });
     await handleFoodBatchUpdate(client(), { foods: [1], on_hand: true });
     expect(sent).toEqual([{ method: 'PUT', path: '/api/food/batch_update/', body: { foods: [1], on_hand: true } }]);
+  });
+});
+
+describe('move_food and merge_food replies', () => {
+  it('returns Tandoor\'s move message as is', async () => {
+    const msg = { msg: 'Eggs was moved successfully to parent Dairy' };
+    stubTandoor({ 'PUT /api/food/5/move/4/': msg });
+    expect(await handleMoveFood(client(), { id: 5, parent: 4 })).toBe(`Food 5 moved under parent 4.\n\n${JSON.stringify(msg)}`);
+  });
+
+  it('returns Tandoor\'s merge message as is', async () => {
+    const msg = { msg: 'Eggs was merged successfully with Egg' };
+    stubTandoor({ 'PUT /api/food/7/merge/3/': msg });
+    expect(await handleMergeFood(client(), { id: 7, target: 3 })).toBe(`Food 7 merged into 3.\n\n${JSON.stringify(msg)}`);
   });
 });

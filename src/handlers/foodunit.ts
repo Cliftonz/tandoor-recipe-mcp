@@ -38,7 +38,7 @@ function slimFood(f: any) {
     parent: f.parent,
     numchild: f.numchild,
     fdc_id: f.fdc_id,
-    shopping_lists: f.shopping_lists && slimListRefs(f.shopping_lists),
+    shopping_lists: slimListRefs(f.shopping_lists),
   };
 }
 
@@ -175,7 +175,7 @@ export async function handleMergeFood(
   args: MergeFoodArgs
 ): Promise<string> {
   const r = await client.foodUnits.mergeFood(args.id, args.target);
-  return `Food ${args.id} merged into ${args.target}.\n\n${emit(slimFood(r))}`;
+  return `Food ${args.id} merged into ${args.target}.\n\n${emit(r)}`;
 }
 
 export async function handleMoveFood(
@@ -183,7 +183,7 @@ export async function handleMoveFood(
   args: MoveFoodArgs
 ): Promise<string> {
   const r = await client.foodUnits.moveFood(args.id, args.parent);
-  return `Food ${args.id} moved under parent ${args.parent}.\n\n${emit(slimFood(r))}`;
+  return `Food ${args.id} moved under parent ${args.parent}.\n\n${emit(r)}`;
 }
 
 export async function handleFoodFdcLookup(

@@ -36,6 +36,7 @@ All notable changes to this project are documented in this file.
 - **`update_user_space` returned a 500 on Tandoor 2.6.15 when `groups` was omitted.** Tandoor requires `groups` in every PATCH. The tool now reads the membership and sends its current group ids, so `active` and `internal_note` can be set alone. When `groups` is given, the tool checks each id against `list_groups`, rejects unknown ids and lists them. Tandoor silently drops unknown ids, and answers a list of only unknown ids with 'You must select at least one group.'
 - The `create_inventory_location` error for a user with no household now points to `create_household` and `assign_household`.
 - **`update_shopping_entry` cleared `completed_at` when `checked` was omitted.** Tandoor sets `completed_at` to null on any PATCH without `checked`. The tool now reads the entry and sends its current `checked` value.
+- **`move_food` and `merge_food` returned empty food fields.** Tandoor answers both with a `{msg}` reply, not a food. The tools now return that reply as is.
 - **`bulk_create_shopping_list_recipe_entries` returned a 500 on Tandoor 2.6 after saving the entries.** Tandoor requires `shopping_lists_ids`. The tool now always sends it.
 
 ### Notes
