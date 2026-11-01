@@ -87,7 +87,7 @@ function widen(section: Section, current: SectionMode, tier: 'simple' | 'full' |
 }
 
 const HTTP_GATING_DISABLED_MSG =
-  'Dynamic tool gating is disabled in HTTP transport mode. Set TANDOOR_MCP_PROFILE=core|basic|full to lock the surface at boot.';
+  `Dynamic tool gating is disabled in HTTP transport mode. Set the section settings (${SECTIONS.map((s) => s.envVar).join(', ')}) to lock the surface at boot.`;
 
 function isHttpMode(): boolean {
   return (process.env.TANDOOR_MCP_TRANSPORT || '').toLowerCase() === 'http';
