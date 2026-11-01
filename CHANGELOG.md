@@ -10,7 +10,7 @@ All notable changes to this project are documented in this file.
 - **`enable_tool_group` and `disable_tool_group` results changed.** They no longer include the `already_enabled` and `skipped` lists.
 - **Default startup tools change.** The old `core` profile started with about 23 tools, mostly reads. The new defaults start with 44 tools, including create, update, and delete tools from the simple tiers, such as `create_recipe`, `delete_meal_plan`, and `delete_shopping_entry`.
 - **Claude Code plugin default changes.** The plugin used to default to `full` (every tool). It now starts with the section defaults.
-- **`tandoor://pantry/on-hand` output changed.** It used to return `{count, results}` with foods flagged on hand. It now returns `{locations, on_hand_no_quantity, counts, truncated}`. `locations` holds inventory entries with an amount above 0, grouped by location. `on_hand_no_quantity` holds foods flagged on hand that have no entry.
+- **`tandoor://pantry/on-hand` output changed, with no alias for the old shape.** The `count` and `results` keys are removed, and the food items no longer carry `plural_name`. It now returns `{locations, on_hand_no_quantity, counts, truncated}`. `locations` holds inventory entries with an amount above 0, grouped by location. `on_hand_no_quantity` holds foods flagged on hand that have no entry, as `{id, name, supermarket_category}`. `counts` and `truncated` each have an `entries` key and an `on_hand_no_quantity` key.
 
 ### Migration
 - `TANDOOR_MCP_PROFILE=full`: set every tiered section to `full` and every toggle section to `on`.
