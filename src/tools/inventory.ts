@@ -46,7 +46,6 @@ export const deleteInventoryLocationShape = { id: z.number() } as const;
 export const listInventoryEntriesShape = {
   location_id: z.number().optional(),
   food_id: z.number().optional(),
-  code: z.string().optional(),
   include_empty: z.boolean().optional(),
   page: z.number().optional(),
   page_size: z.number().optional(),
@@ -152,7 +151,7 @@ export function registerInventoryTools(server: McpServer, client: TandoorClient)
   }, handleDeleteInventoryLocation);
 
   registerStringTool(server, client, 'list_inventory_entries', {
-    description: 'List inventory entries (what is on hand, where). Optional: location_id, food_id, code, include_empty (entries with amount 0 or less are hidden unless true), page, page_size.',
+    description: 'List inventory entries (what is on hand, where). Optional: location_id, food_id, include_empty (entries with amount 0 or less are hidden unless true), page, page_size.',
     inputSchema: listInventoryEntriesShape,
   }, handleListInventoryEntries);
 

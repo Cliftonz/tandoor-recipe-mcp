@@ -643,7 +643,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_ingredients",
   },
   {
-    "description": "List inventory entries (what is on hand, where). Optional: location_id, food_id, code, include_empty (entries with amount 0 or less are hidden unless true), page, page_size.",
+    "description": "List inventory entries (what is on hand, where). Optional: location_id, food_id, include_empty (entries with amount 0 or less are hidden unless true), page, page_size.",
     "name": "list_inventory_entries",
   },
   {
@@ -5447,9 +5447,6 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
-        "code": {
-          "type": "string",
-        },
         "food_id": {
           "type": "number",
         },

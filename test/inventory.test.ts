@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { z } from 'zod';
 import { TandoorClient } from '../src/clients/index.js';
-import { addInventoryItemShape, updateInventoryEntryShape, consumeInventoryItemShape } from '../src/tools/inventory.js';
+import { addInventoryItemShape, updateInventoryEntryShape, consumeInventoryItemShape, listInventoryEntriesShape } from '../src/tools/inventory.js';
 import {
   handleListInventoryLocations,
   handleGetInventoryLocation,
@@ -141,15 +141,19 @@ describe('inventory locations', () => {
 });
 
 describe('inventory entries', () => {
-  it('lists entries filtered by location, food and code, slimmed, without the empty key by default', async () => {
+  it('lists entries filtered by location and food, slimmed, without the empty key by default', async () => {
     const sent = stubTandoor({
-      'GET /api/inventory-entry/?inventory_location_id=2&food_id=5&code=11&page=1&page_size=20': {
+      'GET /api/inventory-entry/?inventory_location_id=2&food_id=5&page=1&page_size=20': {
         count: 1, next: null, previous: null, results: [entry()],
       },
     });
-    const out = await handleListInventoryEntries(client(), { location_id: 2, food_id: 5, code: '11', page: 1, page_size: 20 });
+    const out = await handleListInventoryEntries(client(), { location_id: 2, food_id: 5, page: 1, page_size: 20 });
     expect(JSON.parse(out)).toEqual({ count: 1, next: null, previous: null, results: [slimEntry] });
     expect(sent).toHaveLength(1);
+  });
+
+  it('does not accept a code filter, which Tandoor applies by food rather than by code', () => {
+    expect(z.object(listInventoryEntriesShape).parse({ code: '11' })).toEqual({});
   });
 
   it('sends empty=true only when include_empty is true, and omits the key when it is false', async () => {

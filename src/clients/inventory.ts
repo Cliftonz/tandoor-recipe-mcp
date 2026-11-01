@@ -24,7 +24,7 @@ export class InventoryClient extends BaseClient {
     return this.request(`/api/inventory-location/${id}/`, { method: 'DELETE', signal: opts?.signal });
   }
 
-  async listEntries(params?: Paging & { inventory_location_id?: number; food_id?: number; code?: string; empty?: true }, opts?: Opts): Promise<any> {
+  async listEntries(params?: Paging & { inventory_location_id?: number; food_id?: number; empty?: true }, opts?: Opts): Promise<any> {
     return this.request(`/api/inventory-entry/${qs(params)}`, { signal: opts?.signal });
   }
 
