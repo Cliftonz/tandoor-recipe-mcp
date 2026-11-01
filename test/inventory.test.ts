@@ -233,6 +233,15 @@ describe('consume_inventory_item', () => {
     expect(out).toBe(`Inventory item consumed.\n\n${JSON.stringify({ ...slimEntry, amount: 150 })}`);
   });
 
+  it('rounds the new amount to the 16 decimal places Tandoor stores', async () => {
+    const sent = stubTandoor({
+      'GET /api/inventory-entry/11/': entry({ amount: 0.3 }),
+      'PATCH /api/inventory-entry/11/': entry({ amount: 0.2 }),
+    });
+    await handleConsumeInventoryItem(client(), { entry_id: 11, amount: 0.1 });
+    expect(patches(sent)).toEqual([{ method: 'PATCH', path: '/api/inventory-entry/11/', body: { amount: 0.2 } }]);
+  });
+
   it('clamps at zero, keeps the entry, and warns with requested and consumed amounts', async () => {
     const sent = stubTandoor({
       'GET /api/inventory-entry/11/': entry({ amount: 3 }),

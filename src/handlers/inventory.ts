@@ -18,6 +18,8 @@ import type {
 import type { HandlerContext } from '../lib/register.js';
 import { emit, assertNonEmptyBody, slimPaginated } from '../lib/slim.js';
 
+const AMOUNT_DECIMAL_PLACES = 16;
+
 function slimLocation(l: any) {
   return { id: l.id, name: l.name, is_freezer: l.is_freezer, household: l.household.name };
 }
@@ -204,7 +206,7 @@ export async function handleConsumeInventoryItem(
     throw new Error(`Entry ${e.id} is stored in ${e.unit.name} (unit_id ${e.unit.id}); consume in that unit. Unit conversion is not supported.`);
   }
   const requested = args.amount ?? e.amount;
-  const amount = Math.max(0, e.amount - requested);
+  const amount = Math.max(0, Number((e.amount - requested).toFixed(AMOUNT_DECIMAL_PLACES)));
   const r = await client.inventory.patchEntry(e.id, { amount }, { signal: ctx?.signal });
   const out = args.format === 'full' ? r : slimEntry(r);
   if (requested <= e.amount) return `Inventory item consumed.\n\n${emit(out)}`;
