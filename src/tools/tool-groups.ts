@@ -46,7 +46,7 @@ function findSection(group: string): Section {
   const section = SECTIONS_WITH_TOOLS.find((s) => s.name === group);
   if (!section) {
     throw new Error(
-      `unknown tool group '${group}'. Known groups: ${[ALWAYS_ON_GROUP, ...SECTIONS_WITH_TOOLS.map((s) => s.name)].join(', ')}. Call list_tool_groups for descriptions.`,
+      `unknown section '${group}'. Known sections: ${[ALWAYS_ON_GROUP, ...SECTIONS_WITH_TOOLS.map((s) => s.name)].join(', ')}. Call list_tool_groups for descriptions.`,
     );
   }
   return section;
@@ -85,7 +85,7 @@ export const disableToolGroupShape = {
   group: z
     .string()
     .min(1)
-    .describe('Name of the section to turn off. The "always" group cannot be disabled.'),
+    .describe('Name of the section to turn off. The "always" section cannot be disabled.'),
 } as const;
 
 export type EnableToolGroupArgs = z.infer<z.ZodObject<typeof enableToolGroupShape>>;
@@ -100,7 +100,7 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
       description: [
         'List every tool section with its current mode and the modes it accepts.',
         'Tiered sections (off / simple / full) and on/off sections can be widened with enable_tool_group and turned off with disable_tool_group.',
-        'The "always" group is permanent.',
+        'The "always" section is permanent.',
         'When a section changes, its tools appear in or leave tools/list and the SDK emits tools/list_changed so the client refreshes mid-conversation.',
         'Use this first to discover what is available before reaching for enable_tool_group.',
       ].join(' '),
@@ -164,14 +164,14 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
       description: [
         'Turn a section off so all its tools disappear from tools/list.',
         'The SDK emits tools/list_changed automatically.',
-        'The "always" group cannot be disabled.',
+        'The "always" section cannot be disabled.',
         'Use this to free context budget once a workflow no longer needs a section.',
       ].join(' '),
       inputSchema: disableToolGroupShape,
     },
     async (_client, args) => {
       if (isHttpMode()) throw new Error(HTTP_GATING_DISABLED_MSG);
-      if (args.group === ALWAYS_ON_GROUP) throw new Error(`cannot disable '${ALWAYS_ON_GROUP}'; its tools are always on.`);
+      if (args.group === ALWAYS_ON_GROUP) throw new Error(`cannot disable the '${ALWAYS_ON_GROUP}' section; its tools are always on.`);
       const section = findSection(args.group);
       modes.set(section.name, 'off');
       const { disabled } = applyMode(getRegistry(server), section, 'off');

@@ -295,7 +295,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "delete_view_log",
   },
   {
-    "description": "Turn a section off so all its tools disappear from tools/list. The SDK emits tools/list_changed automatically. The "always" group cannot be disabled. Use this to free context budget once a workflow no longer needs a section.",
+    "description": "Turn a section off so all its tools disappear from tools/list. The SDK emits tools/list_changed automatically. The "always" section cannot be disabled. Use this to free context budget once a workflow no longer needs a section.",
     "name": "disable_tool_group",
   },
   {
@@ -707,7 +707,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_syncs",
   },
   {
-    "description": "List every tool section with its current mode and the modes it accepts. Tiered sections (off / simple / full) and on/off sections can be widened with enable_tool_group and turned off with disable_tool_group. The "always" group is permanent. When a section changes, its tools appear in or leave tools/list and the SDK emits tools/list_changed so the client refreshes mid-conversation. Use this first to discover what is available before reaching for enable_tool_group.",
+    "description": "List every tool section with its current mode and the modes it accepts. Tiered sections (off / simple / full) and on/off sections can be widened with enable_tool_group and turned off with disable_tool_group. The "always" section is permanent. When a section changes, its tools appear in or leave tools/list and the SDK emits tools/list_changed so the client refreshes mid-conversation. Use this first to discover what is available before reaching for enable_tool_group.",
     "name": "list_tool_groups",
   },
   {
@@ -3268,7 +3268,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "group": {
-          "description": "Name of the section to turn off. The "always" group cannot be disabled.",
+          "description": "Name of the section to turn off. The "always" section cannot be disabled.",
           "minLength": 1,
           "type": "string",
         },

@@ -122,14 +122,14 @@ describe('enable_tool_group', () => {
   it('rejects old group names, listing the section names', async () => {
     const result = await call(await connect(), 'enable_tool_group', { group: 'recipe-write' });
     expect(result.isError).toBe(true);
-    expect(result.text).toContain("unknown tool group 'recipe-write'");
-    expect(result.text).toContain(': always, recipes, meal-plan, shopping, foods, cooklog, recipe-books, ai, import-export, household-space, admin.');
+    expect(result.text).toContain("unknown section 'recipe-write'");
+    expect(result.text).toContain('Known sections: always, recipes, meal-plan, shopping, foods, cooklog, recipe-books, ai, import-export, household-space, admin.');
   });
 
   it.each(['enable_tool_group', 'disable_tool_group'])('%s rejects inventory, which has no tools', async (tool) => {
     const result = await call(await connect(), tool, { group: 'inventory' });
     expect(result.isError).toBe(true);
-    expect(result.text).toContain("unknown tool group 'inventory'");
+    expect(result.text).toContain("unknown section 'inventory'");
   });
 
   it('treats the always group as a no-op', async () => {
@@ -163,14 +163,14 @@ describe('disable_tool_group', () => {
     const client = await connect();
     const result = await call(client, 'disable_tool_group', { group: 'always' });
     expect(result.isError).toBe(true);
-    expect(result.text).toContain("cannot disable 'always'");
+    expect(result.text).toContain("cannot disable the 'always' section");
     expect(await visible(client)).toContain('get_version');
   });
 
   it('rejects old group names', async () => {
     const result = await call(await connect(), 'disable_tool_group', { group: 'shopping-write' });
     expect(result.isError).toBe(true);
-    expect(result.text).toContain("unknown tool group 'shopping-write'");
+    expect(result.text).toContain("unknown section 'shopping-write'");
   });
 });
 

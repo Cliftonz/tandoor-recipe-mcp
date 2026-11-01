@@ -47,7 +47,7 @@ describe('sections over INCLUDE_ONLY / EXCLUDE filtered tools', () => {
   it('rejects a section emptied by the filters, leaving it out of the known list', async () => {
     const res = (await client.callTool({ name: 'enable_tool_group', arguments: { group: 'cooklog' } })) as { isError?: boolean; content: Array<{ text: string }> };
     expect(res.isError).toBe(true);
-    expect(res.content[0]!.text).toContain("unknown tool group 'cooklog'. Known groups: always, recipes.");
+    expect(res.content[0]!.text).toContain("unknown section 'cooklog'. Known sections: always, recipes.");
   });
 
   it('leaves emptied sections out of the instructions line', async () => {
