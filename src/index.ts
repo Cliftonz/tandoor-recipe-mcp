@@ -20,7 +20,7 @@ import { checkTandoorVersion } from './lib/version-check.js';
 import { buildInstructions } from './lib/instructions.js';
 import { registerAllTools } from './lib/register-all.js';
 import { createHttpTransport, resolveHttpConfig } from './lib/http-transport.js';
-import { parseSectionModes, type SectionModes } from './lib/sections.js';
+import { SECTIONS, parseSectionModes, type SectionModes } from './lib/sections.js';
 
 // dotenv is a dev convenience — only load it if it's available (it's a
 // devDependency, not a production dep). Real deployments inject env via the
@@ -49,6 +49,11 @@ function readSections(): SectionModes {
   }
 }
 const sections = readSections();
+if (process.env.TANDOOR_MCP_PROFILE !== undefined) {
+  console.error(
+    `[tandoor-mcp] WARNING: TANDOOR_MCP_PROFILE is ignored. Choose tools with the section settings: ${SECTIONS.map((s) => s.envVar).join(', ')}.`,
+  );
+}
 const sectionsLine = [...sections].map(([name, mode]) => `${name}=${mode}`).join(',');
 
 const tandoorClient = new TandoorClient({
