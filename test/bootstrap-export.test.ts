@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -67,5 +67,33 @@ describe('tandoor-bootstrap.sh output', () => {
         `TANDOOR_BOOTSTRAP_LOG=${path.join(root, 'tandoor test', 'bootstrap-django.log')}`,
       ]),
     );
+  });
+});
+
+describe('tandoor-bootstrap.sh migration wait', () => {
+  it('reports migrations settled when the container has none pending', () => {
+    const bin = path.join(root, 'bin-container');
+    const clock = path.join(root, 'clock');
+    mkdirSync(bin);
+    writeFileSync(clock, '1000');
+    stub(bin, 'curl', 'echo 200');
+    stub(bin, 'date', `cat "${clock}"`);
+    stub(bin, 'sleep', `echo $(( $(cat "${clock}") + $1 )) > "${clock}"`);
+    stub(bin, 'python', 'printf " [X]  cookbook.0001_initial\\n [X]  cookbook.0002_more\\n"');
+    stub(bin, 'docker', `case "$*" in
+  *"manage.py shell"*) echo "__TOKEN__:${TOKEN}" ;;
+  exec*) bash -c 'cd() { :; }; source() { :; }; '"\${@: -1}" ;;
+esac`);
+    const result = spawnSync(SCRIPT, [], {
+      env: {
+        PATH: `${bin}:/usr/bin:/bin`,
+        TANDOOR_TEST_DIR: path.join(root, 'tandoor migrations'),
+        TANDOOR_TEST_PORT: '8124',
+      },
+      encoding: 'utf8',
+      timeout: 20_000,
+    });
+    expect(result.stderr).toContain('migrations settled after 0s');
+    expect(result.stderr).not.toContain('did not settle');
   });
 });
