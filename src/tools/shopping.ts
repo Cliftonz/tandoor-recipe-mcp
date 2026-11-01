@@ -275,7 +275,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   }, handleDeleteShoppingListRecipe);
 
   registerStringTool(server, client, 'bulk_create_shopping_list_recipe_entries', {
-    description: `Append many shopping entries to an existing shopping-list-recipe in one call. Tandoor answers 404 when the shopping-list-recipe has no entries yet. Optional: shopping_list_ids puts every new entry on those lists. When shopping_list_ids is omitted or [], each new entry gets its food's lists, whatever the user preference. ${LIST_IDS_CHECKED}`,
+    description: `Append many shopping entries to an existing shopping-list-recipe in one call. Tandoor answers 404 when the shopping-list-recipe has no entries yet. Optional: shopping_list_ids puts every new entry on those lists. When shopping_list_ids is omitted, each new entry gets its food's lists, whatever the user preference. An empty shopping_list_ids is rejected. ${LIST_IDS_CHECKED}`,
     inputSchema: bulkCreateShoppingListRecipeEntriesShape,
   }, handleBulkCreateShoppingListRecipeEntries);
 }

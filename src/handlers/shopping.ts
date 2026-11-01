@@ -352,6 +352,9 @@ export async function handleBulkCreateShoppingListRecipeEntries(
   ctx?: HandlerContext,
 ): Promise<string> {
   if (args.entries.length === 0) throw new Error('entries must be a non-empty array');
+  if (args.shopping_list_ids?.length === 0) {
+    throw new Error("[] is not supported here; Tandoor would copy each food's lists. Omit shopping_list_ids for that.");
+  }
   const listIds = args.shopping_list_ids ?? [];
   await checkShoppingListIds(client, listIds, ctx?.signal);
   const r = await client.shopping.bulkCreateRecipeEntries(args.id, args.entries, listIds);

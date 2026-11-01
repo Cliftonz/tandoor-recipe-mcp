@@ -287,6 +287,14 @@ describe('bulk_create_shopping_list_recipe_entries lists', () => {
     expect(sent).toEqual([{ method: 'POST', path: '/api/shopping-list-recipe/4/bulk_create_entries/', body: { entries, shopping_lists_ids: [] } }]);
   });
 
+  it('rejects an explicit shopping_list_ids [] and creates nothing', async () => {
+    const sent = stubTandoor({});
+    await expect(handleBulkCreateShoppingListRecipeEntries(client(), { id: 4, entries, shopping_list_ids: [] })).rejects.toThrow(
+      new Error("[] is not supported here; Tandoor would copy each food's lists. Omit shopping_list_ids for that."),
+    );
+    expect(sent).toEqual([]);
+  });
+
   it('sends the given lists after checking them', async () => {
     const sent = stubTandoor({ ...listPages, ...echo({ entries, shopping_lists_ids: [3] }) });
     await handleBulkCreateShoppingListRecipeEntries(client(), { id: 4, entries, shopping_list_ids: [3] });
