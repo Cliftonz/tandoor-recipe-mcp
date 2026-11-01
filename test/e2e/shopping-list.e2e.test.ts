@@ -85,6 +85,14 @@ const ids = (lists: { id: number }[]) => lists.map((l) => l.id).sort((a, b) => a
     expect(ids((await client.foodUnits.getFood(foodId)).shopping_lists)).toEqual([listA]);
   });
 
+  it('refuses to set lists on an existing food through create_food', async () => {
+    expect(await raw(server, 'create_food', { name: `${tag}-MILK`, shopping_list_ids: [listB] })).toEqual({
+      isError: true,
+      text: expect.stringContaining(`A food named ${tag}-milk already exists (id ${foodId}); use update_food to change its lists.`),
+    });
+    expect(ids((await client.foodUnits.getFood(foodId)).shopping_lists)).toEqual([listA]);
+  });
+
   it('creates an entry on the given lists', async () => {
     const e = await call(server, 'create_shopping_entry', { amount: 1, food_id: foodId, shopping_list_ids: [listB] });
     entryId = e.id;
@@ -94,6 +102,7 @@ const ids = (lists: { id: number }[]) => lists.map((l) => l.id).sort((a, b) => a
 
   it('keeps a checked entry checked, with its completed_at, when update_shopping_entry omits checked', async () => {
     const e = await call(server, 'create_shopping_entry', { amount: 1, food_id: foodId, shopping_list_ids: [] });
+    expect(e.shopping_lists).toEqual([]);
     checkedEntryId = e.id;
     entries.push(checkedEntryId);
     const checked = await call(server, 'update_shopping_entry', { id: checkedEntryId, checked: true });
