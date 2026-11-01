@@ -198,6 +198,7 @@ export async function handleConsumeInventoryItem(
 ): Promise<string> {
   if ((args.entry_id === undefined) === (args.food_id === undefined)) throw new Error('Give exactly one of entry_id or food_id.');
   if ((args.amount === undefined) === (args.all === undefined)) throw new Error('Give exactly one of amount or all: true.');
+  if (args.entry_id !== undefined && args.location_id !== undefined) throw new Error('location_id narrows food_id; omit it with entry_id.');
   const e = args.entry_id !== undefined
     ? await client.inventory.getEntry(args.entry_id, { signal: ctx?.signal })
     : await findEntryForFood(client, args.food_id!, args.location_id, ctx?.signal);

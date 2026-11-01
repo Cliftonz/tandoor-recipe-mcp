@@ -309,6 +309,14 @@ describe('consume_inventory_item', () => {
     expect(sent).toEqual([]);
   });
 
+  it('rejects location_id together with entry_id without sending a request', async () => {
+    const sent = stubTandoor({});
+    await expect(handleConsumeInventoryItem(client(), { entry_id: 11, location_id: 2, amount: 1 })).rejects.toThrow(
+      'location_id narrows food_id; omit it with entry_id.',
+    );
+    expect(sent).toEqual([]);
+  });
+
   it('rejects amounts at or below zero at the schema', () => {
     const consume = z.object(consumeInventoryItemShape);
     expect(consume.safeParse({ entry_id: 11, amount: 0.5 }).success).toBe(true);
