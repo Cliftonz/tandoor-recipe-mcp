@@ -26,16 +26,20 @@ export async function handleExportRecipes(
   ctx?: HandlerContext,
 ): Promise<string> {
   const hasIds = Array.isArray(args.recipes) && args.recipes.length > 0;
-  if (!hasIds && args.all !== true) {
-    throw new Error('Provide either recipes[] with at least one id, or all=true');
+  if (!hasIds && args.all !== true && args.custom_filter == null) {
+    throw new Error('Provide recipes[] with at least one id, all=true, or custom_filter');
+  }
+  if (hasIds && args.custom_filter != null) {
+    throw new Error('recipes[] and custom_filter cannot be combined; provide one');
   }
   const body: any = {
     recipes: Array.isArray(args.recipes) ? args.recipes.map((id: number) => ({ id })) : [],
     type: args.type,
     all: args.all ?? false,
   };
-  if (args.custom_filter !== undefined) {
-    body.custom_filter = args.custom_filter == null ? null : { id: args.custom_filter };
+  if (args.custom_filter != null) {
+    const { id, name } = await client.customFilters.getFilter(args.custom_filter, { signal: ctx?.signal });
+    body.custom_filter = { id, name };
   }
   const r = await client.exports.exportRecipes(body, { signal: ctx?.signal });
   return `Export started.\n\n${emit(args.format === 'full' ? r : slimExportLog(r))}`;

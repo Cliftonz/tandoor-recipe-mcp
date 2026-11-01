@@ -17,7 +17,7 @@ export const exportRecipesShape = {
   type: z.string(),
   recipes: z.array(z.number()).optional(),
   all: z.boolean().optional(),
-  custom_filter: z.number().nullable().optional(),
+  custom_filter: z.number().int().positive().optional(),
   format: formatEnum,
 } as const;
 
@@ -61,7 +61,7 @@ export type DeleteExportLogArgs = z.infer<z.ZodObject<typeof deleteExportLogShap
 
 export function registerExportTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'export_recipes', {
-    description: 'Trigger a recipe export job. Required: type (e.g. json, zip, pdf; depends on Tandoor build). Provide recipes[] (ids) or all=true. Returns the ExportLog for the queued job.',
+    description: 'Trigger a recipe export job. Required: type (e.g. json, zip, pdf; depends on Tandoor build). Provide recipes[] (ids), all=true, or custom_filter (saved filter id); recipes[] cannot be combined with custom_filter. all=true overrides custom_filter. Filters reachable only via a shared recipe book return 404. A deleted or empty filter exports every recipe. Returns the ExportLog for the queued job.',
     inputSchema: exportRecipesShape,
   }, handleExportRecipes);
 

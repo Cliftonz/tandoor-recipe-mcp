@@ -52,7 +52,7 @@ beforeAll(async () => {
   try {
     installDir = mkdtempSync(path.join(tmpdir(), 'tandoor-mcp-pack-'));
 
-    execSync(`npm pack --pack-destination "${installDir}"`, {
+    execSync(`npm pack --ignore-scripts --pack-destination "${installDir}"`, {
       cwd: REPO,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
