@@ -24,6 +24,7 @@ import type {
 } from '../tools/shopping.js';
 import type { HandlerContext } from '../lib/register.js';
 import { emit, assertNonEmptyBody, slimPaginated } from '../lib/slim.js';
+import { allPages } from '../lib/paging.js';
 
 function assertNoRepeatedIds(field: string, ids: number[]): void {
   const repeated = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))].sort((a, b) => a - b);
@@ -84,6 +85,12 @@ export async function handleUpdateShoppingList(
 ): Promise<string> {
   const { id, format, ...body } = args;
   assertNonEmptyBody(body);
+  if (body.name !== undefined) {
+    const name = body.name.toLowerCase();
+    const taken = (await allPages((page) => client.shopping.listShoppingLists({ page, page_size: 100 }, { signal: ctx?.signal })))
+      .find((l) => l.id !== id && l.name.toLowerCase() === name);
+    if (taken) throw new Error(`A shopping list named ${taken.name} already exists (id ${taken.id}); choose another name.`);
+  }
   const r = await client.shopping.patchShoppingList(id, body, { signal: ctx?.signal });
   return `Shopping list updated.\n\n${emit(format === 'full' ? r : slimShoppingList(r))}`;
 }

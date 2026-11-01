@@ -59,6 +59,10 @@ const ids = (lists: { id: number }[]) => lists.map((l) => l.id).sort((a, b) => a
     const again = await call(server, 'create_shopping_list', { name: `${tag}-A`.toUpperCase(), description: 'ignored' });
     expect(again).toEqual(a);
     listB = (await call(server, 'create_shopping_list', { name: `${tag}-b` })).id;
+    expect(await raw(server, 'update_shopping_list', { id: listB, name: `${tag}-A` })).toEqual({
+      isError: true,
+      text: expect.stringContaining(`A shopping list named ${tag}-a already exists (id ${listA}); choose another name.`),
+    });
     const all = await call(server, 'list_shopping_lists', { page_size: 100 });
     expect(all.results.filter((l: any) => l.name.startsWith(tag)).map((l: any) => l.id).sort()).toEqual([listA, listB].sort());
   });

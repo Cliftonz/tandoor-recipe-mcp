@@ -89,6 +89,20 @@ describe('shopping list tools', () => {
     expect(body(out)).toEqual({ ...costco, color: null });
   });
 
+  it('refuses a rename to the name of another list, in any case, and sends nothing', async () => {
+    const sent = stubTandoor(listPages);
+    await expect(handleUpdateShoppingList(client(), { id: 2, name: 'aLDI' })).rejects.toThrow(
+      new Error('A shopping list named Aldi already exists (id 3); choose another name.'),
+    );
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
+  });
+
+  it('renames a list to a case variant of its own name', async () => {
+    const sent = stubTandoor({ ...listPages, 'PATCH /api/shopping-list/2/': { ...costco, name: 'COSTCO' } });
+    await handleUpdateShoppingList(client(), { id: 2, name: 'COSTCO' });
+    expect(sent.at(-1)).toEqual({ method: 'PATCH', path: '/api/shopping-list/2/', body: { name: 'COSTCO' } });
+  });
+
   it('refuses an update with no field to change and sends nothing', async () => {
     const sent = stubTandoor({});
     await expect(handleUpdateShoppingList(client(), { id: 2 })).rejects.toThrow('At least one field required');
