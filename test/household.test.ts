@@ -1,5 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
+import { z } from 'zod';
 import { TandoorClient } from '../src/clients/index.js';
+import { assignHouseholdShape } from '../src/tools/household.js';
 import {
   handleListHouseholds,
   handleGetHousehold,
@@ -221,5 +223,10 @@ describe('household tools', () => {
     );
     expect(sent.map((s) => s.path)).toEqual(['/api/user-space/1/']);
   });
-});
 
+  it('rejects repeated user-space ids in assign_household', () => {
+    const schema = z.object(assignHouseholdShape);
+    expect(schema.safeParse({ user_space_ids: [1, 2, 1], household_id: 4 }).success).toBe(false);
+    expect(schema.safeParse({ user_space_ids: [1, 2], household_id: 4 }).success).toBe(true);
+  });
+});

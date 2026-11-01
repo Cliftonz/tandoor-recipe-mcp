@@ -29,7 +29,7 @@ export const updateHouseholdShape = { id: z.number(), name: z.string(), format: 
 export const deleteHouseholdShape = { id: z.number() } as const;
 
 export const assignHouseholdShape = {
-  user_space_ids: z.array(z.number()).min(1),
+  user_space_ids: z.array(z.number()).min(1).refine((ids) => new Set(ids).size === ids.length, 'user_space_ids must not repeat an id'),
   household_id: z.number().nullable(),
 } as const;
 
