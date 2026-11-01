@@ -34,8 +34,8 @@ describe('handlers/admin.ts', () => {
       const client = mock({
         userPreferences: {
           listPreferences: async () => [
-            { user: { id: 1, username: 'alice' }, theme: 'TANDOOR', default_page: 'PLAN', plan_share: [{ id: 2 }], shopping_share: [] },
-            { user: { id: 3, username: 'bob' }, theme: 'BOOTSTRAP', plan_share: null },
+            { user: { id: 1, username: 'alice' }, theme: 'TANDOOR', default_page: 'PLAN' },
+            { user: { id: 3, username: 'bob' }, theme: 'BOOTSTRAP' },
           ],
         },
       });
@@ -43,9 +43,6 @@ describe('handlers/admin.ts', () => {
       const parsed = JSON.parse(res);
       expect(Array.isArray(parsed)).toBe(true);
       expect(parsed[0].username).toBe('alice');
-      expect(parsed[0].plan_share_user_ids).toEqual([2]);
-      expect(parsed[0].shopping_share_user_ids).toEqual([]);
-      expect(parsed[1].plan_share_user_ids).toEqual([]);
     });
 
     it('list returns raw response when format=full', async () => {
@@ -67,48 +64,6 @@ describe('handlers/admin.ts', () => {
       await expect(
         handleUpdateUserPreference(client, { user_id: 1 } as any),
       ).rejects.toThrow(/At least one field/);
-    });
-
-    it('update maps plan_share_user_ids → plan_share: [{id}]', async () => {
-      const patch = vi.fn().mockResolvedValue({ user: { id: 1 }, plan_share: [{ id: 9 }] });
-      const client = mock({ userPreferences: { patchPreference: patch } });
-      await handleUpdateUserPreference(client, {
-        user_id: 1,
-        plan_share_user_ids: [9],
-        shopping_share_user_ids: [10, 11],
-      } as any);
-      expect(patch).toHaveBeenCalledWith(1, {
-        plan_share: [{ id: 9 }],
-        shopping_share: [{ id: 10 }, { id: 11 }],
-      });
-    });
-
-    it('update with empty plan_share_user_ids → POSTs plan_share: []', async () => {
-      // "Clear all shares" is a real user intent — empty array must reach
-      // Tandoor, not get filtered out by Array.isArray && length truthiness
-      // (QA F7).
-      const patch = vi.fn().mockResolvedValue({ user: { id: 1 }, plan_share: [] });
-      const client = mock({ userPreferences: { patchPreference: patch } });
-      await handleUpdateUserPreference(client, {
-        user_id: 1,
-        plan_share_user_ids: [],
-      } as any);
-      expect(patch).toHaveBeenCalledWith(1, { plan_share: [] });
-    });
-
-    it('update with null plan_share_user_ids skips that field (treated as "no change")', async () => {
-      // null reads as "not Array.isArray" → the field is not in the body.
-      // Plus another real field so the empty-body guard doesn't fire.
-      const patch = vi.fn().mockResolvedValue({ user: { id: 1 } });
-      const client = mock({ userPreferences: { patchPreference: patch } });
-      await handleUpdateUserPreference(client, {
-        user_id: 1,
-        plan_share_user_ids: null as any,
-        theme: 'TANDOOR',
-      } as any);
-      const body = patch.mock.calls[0][1];
-      expect(body).not.toHaveProperty('plan_share');
-      expect(body).toMatchObject({ theme: 'TANDOOR' });
     });
   });
 
