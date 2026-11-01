@@ -214,8 +214,12 @@ export async function handleBulkCheckShoppingEntries(
   return emit(r);
 }
 
-export function validateListOperations(ops: ListOperations): number[] | null {
-  const { shopping_lists_add: add, shopping_lists_remove: remove, shopping_lists_set: set, shopping_lists_remove_all: removeAll } = ops;
+const nonEmpty = (ids?: number[]) => (ids?.length ? ids : undefined);
+
+export function validateListOperations<T extends ListOperations>(args: T): { request: T; listIds: number[] | null } {
+  const add = nonEmpty(args.shopping_lists_add);
+  const remove = nonEmpty(args.shopping_lists_remove);
+  const { shopping_lists_set: set, shopping_lists_remove_all: removeAll } = args;
   if (set?.length === 0) {
     throw new Error('shopping_lists_set: [] does nothing in Tandoor. To take every list off, use shopping_lists_remove_all: true.');
   }
@@ -234,7 +238,10 @@ export function validateListOperations(ops: ListOperations): number[] | null {
   if (given.length > 1) {
     throw new Error(`Only shopping_lists_add and shopping_lists_remove can be combined; shopping_lists_set and shopping_lists_remove_all must be used alone. Got: ${given.join(', ')}.`);
   }
-  return given.length === 0 ? null : [...(add ?? []), ...(remove ?? []), ...(set ?? [])];
+  return {
+    request: { ...args, shopping_lists_add: add, shopping_lists_remove: remove },
+    listIds: given.length === 0 ? null : [...(add ?? []), ...(remove ?? []), ...(set ?? [])],
+  };
 }
 
 export async function handleBulkUpdateShoppingEntries(
@@ -242,10 +249,10 @@ export async function handleBulkUpdateShoppingEntries(
   args: BulkUpdateShoppingEntriesArgs,
   ctx?: HandlerContext,
 ): Promise<string> {
-  const listIds = validateListOperations(args);
+  const { request, listIds } = validateListOperations(args);
   if (listIds === null && args.checked === undefined) throw new Error('Give checked, a list change, or both.');
   await client.shopping.assertShoppingListsExist(listIds ?? [], { signal: ctx?.signal });
-  return emit(await client.shopping.bulkUpdateEntries(args, { signal: ctx?.signal }));
+  return emit(await client.shopping.bulkUpdateEntries(request, { signal: ctx?.signal }));
 }
 
 export async function handleListShoppingListRecipes(

@@ -233,7 +233,7 @@ describe('bulk_update_shopping_entries', () => {
     expect(sent).toEqual([]);
   });
 
-  it.each([[{}], [{ shopping_lists_remove_all: false }]])('rejects %o, which has neither checked nor a list change', async (ops) => {
+  it.each([[{}], [{ shopping_lists_remove_all: false }], [{ shopping_lists_add: [] }], [{ shopping_lists_add: [], shopping_lists_remove: [] }]])('rejects %o, which has neither checked nor a list change', async (ops) => {
     const sent = stubTandoor({});
     await expect(handleBulkUpdateShoppingEntries(client(), { ids: [7], ...ops })).rejects.toThrow(
       'Give checked, a list change, or both.',
@@ -406,5 +406,19 @@ describe('ids in both shopping_lists_add and shopping_lists_remove', () => {
     await expect(handleBulkUpdateShoppingEntries(client(), { ids: [7], shopping_lists_add: [3, 2, 4], shopping_lists_remove: [2, 3] })).rejects.toThrow(message);
     await expect(handleFoodBatchUpdate(client(), { foods: [1], shopping_lists_add: [2, 3], shopping_lists_remove: [5, 3, 2] })).rejects.toThrow(message);
     expect(sent).toEqual([]);
+  });
+});
+
+describe('empty shopping_lists_add and shopping_lists_remove', () => {
+  it('are not sent and do not count as a list change', async () => {
+    const sent = stubTandoor({ ...listPages, 'POST /api/shopping-list-entry/bulk/': {}, 'PUT /api/food/batch_update/': {} });
+    await handleBulkUpdateShoppingEntries(client(), { ids: [7], checked: true, shopping_lists_add: [] });
+    await handleBulkUpdateShoppingEntries(client(), { ids: [7], shopping_lists_remove: [], shopping_lists_set: [2] });
+    await handleFoodBatchUpdate(client(), { foods: [1], on_hand: true, shopping_lists_add: [], shopping_lists_remove: [] });
+    expect(sent.filter((s) => s.method !== 'GET').map((s) => s.body)).toEqual([
+      { ids: [7], checked: true },
+      { ids: [7], shopping_lists_set: [2] },
+      { foods: [1], on_hand: true },
+    ]);
   });
 });

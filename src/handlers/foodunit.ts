@@ -279,8 +279,8 @@ export async function handleFoodBatchUpdate(
   if (!args.foods || args.foods.length === 0) {
     throw new Error('foods must be a non-empty array of food IDs');
   }
-  const listIds = validateListOperations(args);
+  const { request, listIds } = validateListOperations(args);
   if (listIds !== null) await client.shopping.assertShoppingListsExist(listIds, { signal: ctx?.signal });
-  const r = await client.foodUnits.foodBatchUpdate(args);
+  const r = await client.foodUnits.foodBatchUpdate(request);
   return `Batch-updated ${args.foods.length} food(s).\n\n${emit(r)}`;
 }
