@@ -28,7 +28,7 @@ import {
 
 export const LIST_IDS_CHECKED = 'Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written.';
 
-export const LISTS_APPLIED = 'If Tandoor leaves out a requested list, the tool errors after the write and names the list.';
+export const LISTS_APPLIED = 'If the lists after the write differ from the request, the tool errors and names the missing and the extra lists.';
 
 const ENTRY_LISTS = 'shopping_list_ids (ids from list_shopping_lists) puts the entry on exactly those lists; the food\'s lists are not added. '
   + 'When shopping_list_ids is omitted, Tandoor copies the food\'s lists onto the new entry if the user preference shopping_update_food_lists is on. '
