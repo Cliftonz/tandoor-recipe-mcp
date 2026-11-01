@@ -37,8 +37,6 @@ export function buildInstructions(
     'Where to start:',
     '- Current state (read-only): `tandoor://meal-plan/this-week`, `tandoor://pantry/on-hand`,',
     '  `tandoor://shopping-list/active`, `tandoor://meal-types`.',
-    '- `tandoor://pantry/on-hand` is what is available: inventory entries by location, plus foods',
-    '  flagged on hand that have no inventory entry.',
     '- Common workflows: use the `plan_week`, `grocery_list_for_plan`,',
     '  `what_can_i_make_tonight`, or `import_and_plan` prompts.',
     '- Recipe search: use `search_recipes` with food/keyword *names* (it resolves IDs',

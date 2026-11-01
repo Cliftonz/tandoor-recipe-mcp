@@ -17,7 +17,7 @@ export function registerPrompts(server: McpServer, _client: TandoorClient): void
     {
       title: 'Plan the week',
       description:
-        'Plan dinners for the next 7 days, optionally biased toward available pantry foods (inventory entries and foods flagged on hand), a set of keyword tags, or a saved custom filter.',
+        'Plan dinners for the next 7 days, optionally biased toward on-hand pantry foods, a set of keyword tags, or a saved custom filter.',
       argsSchema: {
         start_date: z
           .string()
@@ -34,7 +34,7 @@ export function registerPrompts(server: McpServer, _client: TandoorClient): void
         use_pantry: z
           .string()
           .optional()
-          .describe('"true" to prefer recipes using foods that are in inventory or flagged on hand.'),
+          .describe('"true" to prefer recipes using foods currently on-hand.'),
       },
     },
     ({ start_date, days, keywords, use_pantry }): GetPromptResult => {
@@ -42,7 +42,7 @@ export function registerPrompts(server: McpServer, _client: TandoorClient): void
       const dayCount = days || '7';
       const kwLine = keywords ? `Favor these keywords: ${keywords}` : 'No keyword preference — mix it up.';
       const pantryLine = use_pantry === 'true'
-        ? 'First, read the `tandoor://pantry/on-hand` resource and bias recipe choices toward what it lists: inventory entries by location and foods flagged on hand with no quantity.'
+        ? 'First, read the `tandoor://pantry/on-hand` resource and bias recipe choices toward what\'s already in the pantry.'
         : 'Ignore pantry on-hand state unless the user asks.';
 
       return {
@@ -102,7 +102,7 @@ export function registerPrompts(server: McpServer, _client: TandoorClient): void
               '2. For each plan with a recipe_id, call `add_recipe_to_shopping_list` with {id: recipe_id, servings: <plan servings>} so Tandoor merges ingredients.',
               '3. Read `tandoor://shopping-list/active` to show the current pending entries.',
               '4. Group the entries by food.supermarket_category (call `get_food` if the category is missing) and present as a checklist grouped by aisle.',
-              '5. Flag any ingredient whose food appears in `tandoor://pantry/on-hand`, as an inventory entry or as on hand with no quantity. The user may want to skip it.',
+              '5. Flag any ingredient whose food is in `tandoor://pantry/on-hand`, in its inventory entries or its on-hand foods with no quantity. The user may want to skip it.',
             ].join('\n')
           ),
         ],
@@ -115,7 +115,7 @@ export function registerPrompts(server: McpServer, _client: TandoorClient): void
     {
       title: 'What can I make tonight?',
       description:
-        'Find recipes that can be made right now with available pantry foods (inventory entries and foods flagged on hand), sorted by rating.',
+        'Find recipes that can be made with on-hand pantry foods right now, sorted by rating.',
       argsSchema: {
         max_time_minutes: z
           .string()
@@ -134,7 +134,7 @@ export function registerPrompts(server: McpServer, _client: TandoorClient): void
               `What can I make tonight? Give me up to 5 options, each under ${timeBound} minutes total time.`,
               '',
               'Workflow:',
-              '1. Read `tandoor://pantry/on-hand` so you know what\'s available: inventory entries with amounts and expiry by location, and foods flagged on hand with no quantity.',
+              '1. Read `tandoor://pantry/on-hand` so you know what\'s available. Check both its inventory entries and its on-hand foods with no quantity.',
               '2. Call `list_recipes` with makenow=true, sort_order=-rating, page_size=10 to get candidates Tandoor thinks are makeable.',
               `3. Filter candidates where working_time + waiting_time <= ${timeBound}.`,
               '4. For the top 5, call `get_recipe` (format=slim) to show ingredient names and step count.',
