@@ -35,7 +35,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "bulk_create_shopping_list_recipe_entries",
   },
   {
-    "description": "Mint a new Tandoor access token. Required: scope, expires (ISO datetime). ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user.",
+    "description": "Mint a new Tandoor access token. Required: scope, expires (UTC ISO 8601 datetime with seconds and Z suffix, e.g. 2026-12-01T10:00:00Z). ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user.",
     "name": "create_access_token",
   },
   {
@@ -931,7 +931,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "switch_active_space",
   },
   {
-    "description": "Update an access token (PATCH). Required: id. Token strings redacted in slim; use format='full' to reveal.",
+    "description": "Update an access token (PATCH). Required: id. Optional: scope, expires (UTC ISO 8601 datetime with seconds and Z suffix, e.g. 2026-12-01T10:00:00Z). ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user. Token strings redacted in slim; use format='full' to reveal.",
     "name": "update_access_token",
   },
   {
@@ -1135,15 +1135,11 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "list_recipe": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
-          ],
           "description": "Existing shopping-list-recipe id to update",
+          "type": [
+            "number",
+            "null",
+          ],
         },
         "servings": {
           "description": "Default 1. Use 0 with list_recipe to delete.",
@@ -1319,33 +1315,21 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
                 "type": "number",
               },
               "food_id": {
-                "anyOf": [
-                  {
-                    "type": "number",
-                  },
-                  {
-                    "type": "null",
-                  },
+                "type": [
+                  "number",
+                  "null",
                 ],
               },
               "ingredient_id": {
-                "anyOf": [
-                  {
-                    "type": "number",
-                  },
-                  {
-                    "type": "null",
-                  },
+                "type": [
+                  "number",
+                  "null",
                 ],
               },
               "unit_id": {
-                "anyOf": [
-                  {
-                    "type": "number",
-                  },
-                  {
-                    "type": "null",
-                  },
+                "type": [
+                  "number",
+                  "null",
                 ],
               },
             },
@@ -1378,7 +1362,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "properties": {
         "expires": {
           "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
           "type": "string",
         },
         "format": {
@@ -1555,23 +1539,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "todo_entity": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "token": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "type": {
@@ -1581,13 +1557,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "url": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -1605,13 +1577,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "created_at": {
@@ -1625,26 +1593,18 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "rating": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "recipe": {
           "type": "number",
         },
         "servings": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -1754,13 +1714,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "supermarket_category_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -1868,13 +1824,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "internal_note": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "reusable": {
@@ -1964,13 +1916,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "color": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "default": {
@@ -2030,23 +1978,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "description": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "fdc_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -2060,26 +2000,18 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "open_data_slug": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "order": {
           "type": "number",
         },
         "unit": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -2244,13 +2176,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "filter_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -2342,23 +2270,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "ingredient": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "list_recipe": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "mealplan_id": {
@@ -2368,13 +2288,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "unit_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -2522,13 +2438,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "step_recipe": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "time": {
@@ -2566,46 +2478,30 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "password": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "path": {
           "type": "string",
         },
         "token": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "url": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "username": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -2624,13 +2520,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "description": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "format": {
@@ -2644,13 +2536,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "open_data_slug": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -2733,13 +2621,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "last_checked": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "path": {
@@ -2807,13 +2691,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "food_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -3449,13 +3329,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "custom_filter": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -3550,13 +3426,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "category": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "child_inherit_fields_add": {
@@ -3587,13 +3459,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "ignore_shopping": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "inherit_fields_add": {
@@ -3618,33 +3486,21 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "on_hand": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "parent_remove": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "parent_set": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "substitute_add": {
@@ -3654,13 +3510,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "substitute_children": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "substitute_remove": {
@@ -3679,13 +3531,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "substitute_siblings": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
       },
@@ -3728,13 +3576,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "amount": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "delete": {
@@ -3744,13 +3588,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "unit_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -6989,13 +6829,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "clear_description": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "keywords_add": {
@@ -7020,13 +6856,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "private": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "recipes": {
@@ -7036,23 +6868,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "servings": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "servings_text": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "shared_add": {
@@ -7077,33 +6901,21 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "show_ingredient_overview": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "waiting_time": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "working_time": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -7299,7 +7111,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "properties": {
         "expires": {
           "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
           "type": "string",
         },
         "format": {
@@ -7489,23 +7301,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "todo_entity": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "token": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "type": {
@@ -7515,13 +7319,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "url": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -7538,13 +7338,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "created_at": {
@@ -7561,26 +7357,18 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "rating": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "recipe": {
           "type": "number",
         },
         "servings": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -7743,13 +7531,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "supermarket_category_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -7834,13 +7618,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "unit_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -7873,13 +7653,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "internal_note": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "reusable": {
@@ -7943,13 +7719,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "recipe_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "servings": {
@@ -7975,13 +7747,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "color": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "default": {
@@ -8046,23 +7814,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "description": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "fdc_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -8079,26 +7839,18 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "open_data_slug": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "order": {
           "type": "number",
         },
         "unit": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -8266,13 +8018,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "filter_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -8427,13 +8175,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "food_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -8450,13 +8194,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "unit_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -8618,13 +8358,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "step_recipe": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "time": {
@@ -8665,46 +8401,30 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "password": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "path": {
           "type": "string",
         },
         "token": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "url": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "username": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -8721,13 +8441,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "description": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "format": {
@@ -8744,13 +8460,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "open_data_slug": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -8841,13 +8553,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "last_checked": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "path": {
@@ -8917,13 +8625,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "food_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
