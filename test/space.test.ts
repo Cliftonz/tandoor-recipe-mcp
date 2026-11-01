@@ -181,21 +181,22 @@ describe('space handlers', () => {
       results: [{
         id: 10, user: { id: 4 }, space: { id: 2 }, active: true,
         groups: [{ id: 1 }, { id: 2 }], invite_link: 'x', created_at: 'y',
+        household: { id: 4, name: 'Home', created_at: 't', updated_at: 't' },
       }],
     }));
     const client = { spaces: { listUserSpaces } } as any;
     const out = await handleListUserSpaces(client, {});
     const parsed = JSON.parse(out);
-    expect(parsed.results[0]).toEqual({ id: 10, user: 4, space: 2, active: true, groups: [1, 2] });
+    expect(parsed.results[0]).toEqual({ id: 10, user: 4, space: 2, active: true, groups: [1, 2], household: { id: 4, name: 'Home' } });
   });
 
   it('handleGetUserSpace slims by default', async () => {
     const getUserSpace = vi.fn(async () => ({
-      id: 10, user: { id: 4 }, space: { id: 2 }, active: false, groups: [], invite_link: 'x',
+      id: 10, user: { id: 4 }, space: { id: 2 }, active: false, groups: [], invite_link: 'x', household: null,
     }));
     const client = { spaces: { getUserSpace } } as any;
     const out = await handleGetUserSpace(client, { id: 10 });
-    expect(JSON.parse(out)).toEqual({ id: 10, user: 4, space: 2, active: false, groups: [] });
+    expect(JSON.parse(out)).toEqual({ id: 10, user: 4, space: 2, active: false, groups: [], household: null });
   });
 
   it('handleUpdateUserSpace throws when no fields supplied', async () => {

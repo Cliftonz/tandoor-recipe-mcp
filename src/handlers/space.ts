@@ -37,6 +37,7 @@ function slimUserSpace(u: any) {
     space: typeof u.space === 'object' && u.space !== null ? u.space.id : u.space,
     active: u.active,
     groups: Array.isArray(u.groups) ? u.groups.map((g: any) => (typeof g === 'object' && g !== null ? g.id : g)) : [],
+    household: u.household && { id: u.household.id, name: u.household.name },
   };
 }
 
