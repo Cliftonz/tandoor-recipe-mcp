@@ -86,6 +86,18 @@ describe('SpaceClient URL construction', () => {
     });
   });
 
+  it('patchUserSpace reports that a 403 means the call needs the space owner', async () => {
+    const c = new SpaceClient({ url: 'https://tandoor.example.com', token: 'test-token' });
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(
+      JSON.stringify({ detail: 'You do not have permission to perform this action.' }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } },
+    ));
+    await expect(c.patchUserSpace(9, { groups: [2] })).rejects.toThrow(
+      'This call requires the space owner; space admins and members get 403.',
+    );
+    vi.restoreAllMocks();
+  });
+
   it('deleteUserSpace DELETEs /api/user-space/{id}/', async () => {
     const { c, spy } = makeClient();
     await c.deleteUserSpace(9);

@@ -128,7 +128,7 @@ export function registerSpaceTools(server: McpServer, client: TandoorClient): vo
   }, handleGetUserSpace);
 
   registerStringTool(server, client, 'update_user_space', {
-    description: 'Update a user-space membership (PATCH). Required: id, plus at least one field (active, groups, internal_note).',
+    description: 'Update a user-space membership (PATCH). Space owner only (admins get 403). Required: id, plus at least one of active, groups, internal_note. Omitted groups keep their current value. groups replaces the membership\'s groups and must be ids from list_groups. ESCALATION SURFACE: groups can grant space admin rights. Only change groups when explicitly asked by the user. To set the household, use assign_household.',
     inputSchema: updateUserSpaceShape,
   }, handleUpdateUserSpace);
 
