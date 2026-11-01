@@ -136,7 +136,7 @@ export function registerInventoryTools(server: McpServer, client: TandoorClient)
   }, handleGetInventoryLocation);
 
   registerStringTool(server, client, 'create_inventory_location', {
-    description: 'Create an inventory location in your household. Required: name. Optional: is_freezer. Fails if you are not in a household in this space; assign yourself to a household in Tandoor first.',
+    description: 'Create an inventory location in your household. Required: name. Optional: is_freezer. Fails if you are not in a household in this space; create one with create_household and assign yourself with assign_household (household-space section, space owner only), or ask the space owner.',
     inputSchema: createInventoryLocationShape,
   }, handleCreateInventoryLocation);
 

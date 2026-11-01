@@ -120,7 +120,7 @@ describe('inventory locations', () => {
       'GET /api/user-space/all_personal/': [userSpace({ active: true, household: null })],
     });
     await expect(handleCreateInventoryLocation(client(), { name: 'Pantry' })).rejects.toThrow(
-      'You are not in a household in this space. Assign yourself to a household in Tandoor, then retry.',
+      'You are not in a household in this space. Create one with create_household and assign yourself with assign_household (household-space section, space owner only), or ask the space owner.',
     );
     expect(sent.filter((s) => s.method === 'POST')).toEqual([]);
   });
