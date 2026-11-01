@@ -25,7 +25,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
 import { CORE_TOOLS, TOOL_GROUPS } from '../lib/tool-groups.js';
-import { SECTIONS, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
+import { SECTIONS, modesOf, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
 
 interface RegisteredToolEntry {
   enabled: boolean;
@@ -41,19 +41,50 @@ function getRegistry(server: McpServer): Record<string, RegisteredToolEntry> {
   return ((server as unknown as { _registeredTools?: Record<string, RegisteredToolEntry> })._registeredTools) ?? {};
 }
 
-function applyMode(reg: Record<string, RegisteredToolEntry>, section: Section, mode: SectionMode): void {
+interface ModeChange {
+  enabled: string[];
+  disabled: string[];
+}
+
+function applyMode(reg: Record<string, RegisteredToolEntry>, section: Section, mode: SectionMode): ModeChange {
   const on = new Set(visibleTools(section, mode));
+  const change: ModeChange = { enabled: [], disabled: [] };
   for (const name of sectionTools(section)) {
     const tool = reg[name];
-    if (!tool) continue;
-    if (on.has(name)) tool.enable();
-    else tool.disable();
+    if (!tool || tool.enabled === on.has(name)) continue;
+    if (on.has(name)) {
+      tool.enable();
+      change.enabled.push(name);
+    } else {
+      tool.disable();
+      change.disabled.push(name);
+    }
   }
+  return change;
 }
 
 export function applySectionModes(server: McpServer, modes: SectionModes): void {
   const reg = getRegistry(server);
   for (const section of SECTIONS) applyMode(reg, section, modes.get(section.name)!);
+}
+
+function findSection(group: string): Section {
+  const section = SECTIONS.find((s) => s.name === group);
+  if (!section) {
+    throw new Error(
+      `unknown tool group '${group}'. Known groups: ${SECTIONS.map((s) => s.name).join(', ')}. Call list_tool_groups for descriptions.`,
+    );
+  }
+  return section;
+}
+
+function widen(section: Section, current: SectionMode, tier: 'simple' | 'full' | undefined): SectionMode {
+  if (section.kind === 'toggle' && tier) {
+    throw new Error(`'${section.name}' is an on/off section and takes no tier.`);
+  }
+  const target: SectionMode = section.kind === 'tiered' ? (tier ?? 'full') : 'on';
+  const order = modesOf(section);
+  return order.indexOf(target) > order.indexOf(current) ? target : current;
 }
 
 const SYNTHETIC_CORE_GROUP = 'core';
@@ -71,9 +102,11 @@ export const enableToolGroupShape = {
   group: z
     .string()
     .min(1)
-    .describe(
-      'Name of the group to enable. Run list_tool_groups to see available group names. The synthetic "core" group is permanent — calling enable on it is a no-op.',
-    ),
+    .describe('Name of the section to enable. Run list_tool_groups to see available sections.'),
+  tier: z
+    .enum(['simple', 'full'])
+    .optional()
+    .describe('Tier for a tiered section (default full). Not accepted for on/off sections.'),
 } as const;
 
 export const disableToolGroupShape = {
@@ -88,7 +121,7 @@ export const disableToolGroupShape = {
 export type EnableToolGroupArgs = z.infer<z.ZodObject<typeof enableToolGroupShape>>;
 export type DisableToolGroupArgs = z.infer<z.ZodObject<typeof disableToolGroupShape>>;
 
-export function registerToolGroupTools(server: McpServer, client: TandoorClient): void {
+export function registerToolGroupTools(server: McpServer, client: TandoorClient, modes: SectionModes): void {
   registerStringTool(
     server,
     client,
@@ -159,51 +192,11 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient)
     },
     async (_client, args) => {
       if (isHttpMode()) throw new Error(HTTP_GATING_DISABLED_MSG);
-      const group = args.group;
-      if (group === SYNTHETIC_CORE_GROUP) {
-        return JSON.stringify({
-          ok: true,
-          group,
-          note: 'core is permanent and always enabled.',
-          enabled: [],
-          already_enabled: [...CORE_TOOLS],
-          skipped: [],
-        });
-      }
-      const g = TOOL_GROUPS.find((x) => x.name === group);
-      if (!g) {
-        const known = [SYNTHETIC_CORE_GROUP, ...TOOL_GROUPS.map((x) => x.name)];
-        throw new Error(
-          `unknown tool group '${group}'. Known groups: ${known.join(', ')}. Call list_tool_groups for descriptions.`,
-        );
-      }
-      const reg = getRegistry(server);
-      const enabled: string[] = [];
-      const alreadyEnabled: string[] = [];
-      const skipped: string[] = [];
-      for (const t of g.tools) {
-        const r = reg[t];
-        if (!r) {
-          // Tool wasn't registered (filtered out via TANDOOR_MCP_EXCLUDE, or
-          // not yet wired in). Report so the operator can see *why* enabling
-          // the group didn't expose what they expected.
-          skipped.push(t);
-          continue;
-        }
-        if (r.enabled) {
-          alreadyEnabled.push(t);
-        } else {
-          r.enable();
-          enabled.push(t);
-        }
-      }
-      return JSON.stringify({
-        ok: true,
-        group,
-        enabled,
-        already_enabled: alreadyEnabled,
-        skipped,
-      });
+      const section = findSection(args.group);
+      const mode = widen(section, modes.get(section.name)!, args.tier);
+      modes.set(section.name, mode);
+      const { enabled } = applyMode(getRegistry(server), section, mode);
+      return JSON.stringify({ ok: true, group: section.name, mode, enabled });
     },
   );
 

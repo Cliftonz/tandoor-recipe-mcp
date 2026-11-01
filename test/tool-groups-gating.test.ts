@@ -22,6 +22,17 @@ async function connect(env: Record<string, string> = {}): Promise<Client> {
   return client;
 }
 
+async function call(client: Client, name: string, args: Record<string, unknown>): Promise<{ isError: boolean; text: string }> {
+  const res = (await client.callTool({ name, arguments: args })) as { isError?: boolean; content: Array<{ text: string }> };
+  return { isError: !!res.isError, text: res.content[0]!.text };
+}
+
+async function callOk(client: Client, name: string, args: Record<string, unknown>): Promise<any> {
+  const res = await call(client, name, args);
+  expect(res.isError, res.text).toBe(false);
+  return JSON.parse(res.text);
+}
+
 async function visible(client: Client): Promise<string[]> {
   return (await client.listTools()).tools.map((t) => t.name).sort();
 }
@@ -64,5 +75,54 @@ describe('startup visibility', () => {
       'disable_tool_group', 'enable_tool_group', 'get_current_space', 'get_guard_stats',
       'get_version', 'jq_query', 'jq_stash_stats', 'list_tool_groups',
     ]);
+  });
+});
+
+describe('enable_tool_group', () => {
+  it('widens a tiered section to full when no tier is given', async () => {
+    const client = await connect();
+    const result = await callOk(client, 'enable_tool_group', { group: 'recipes' });
+    expect(result).toMatchObject({ ok: true, group: 'recipes', mode: 'full' });
+    expect(result.enabled).toContain('delete_step');
+    expect(result.enabled).not.toContain('list_recipes');
+    expect(await visible(client)).toEqual(expect.arrayContaining(['delete_step', 'list_recipes']));
+  });
+
+  it('enables only the simple tier when tier is simple', async () => {
+    const client = await connect({ TANDOOR_MCP_MEAL_PLAN: 'off' });
+    const result = await callOk(client, 'enable_tool_group', { group: 'meal-plan', tier: 'simple' });
+    expect(result.mode).toBe('simple');
+    const names = await visible(client);
+    expect(names).toContain('list_meal_plans');
+    expect(names).not.toContain('auto_meal_plan');
+  });
+
+  it('never narrows: tier simple on a full section leaves it full', async () => {
+    const client = await connect({ TANDOOR_MCP_RECIPES: 'full' });
+    const result = await callOk(client, 'enable_tool_group', { group: 'recipes', tier: 'simple' });
+    expect(result).toMatchObject({ mode: 'full', enabled: [] });
+    expect(await visible(client)).toContain('delete_step');
+  });
+
+  it('turns a toggle section on', async () => {
+    const client = await connect();
+    const result = await callOk(client, 'enable_tool_group', { group: 'cooklog' });
+    expect(result).toMatchObject({ ok: true, group: 'cooklog', mode: 'on' });
+    expect(await visible(client)).toContain('list_cook_logs');
+  });
+
+  it('rejects a tier for a toggle section', async () => {
+    const client = await connect();
+    const result = await call(client, 'enable_tool_group', { group: 'cooklog', tier: 'full' });
+    expect(result.isError).toBe(true);
+    expect(result.text).toContain("'cooklog' is an on/off section and takes no tier");
+    expect(await visible(client)).not.toContain('list_cook_logs');
+  });
+
+  it('rejects old group names, listing the section names', async () => {
+    const result = await call(await connect(), 'enable_tool_group', { group: 'recipe-write' });
+    expect(result.isError).toBe(true);
+    expect(result.text).toContain("unknown tool group 'recipe-write'");
+    expect(result.text).toContain('recipes, meal-plan, shopping, inventory, foods, cooklog, recipe-books, ai, import-export, household-space, admin');
   });
 });

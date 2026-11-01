@@ -58,8 +58,9 @@ export function registerAllTools(
   opts: RegisterAllToolsOptions,
 ): void {
   const { pkg, versionCheck } = opts;
+  const modes = new Map(opts.sections);
 
-  registerToolGroupTools(server, client);
+  registerToolGroupTools(server, client, modes);
   registerRecipeTools(server, client);
   registerMealPlanTools(server, client);
   registerIngredientTools(server, client);
@@ -87,5 +88,5 @@ export function registerAllTools(
   registerSpaceTools(server, client);
   registerHousekeepingTools(server, client);
 
-  applySectionModes(server, opts.sections);
+  applySectionModes(server, modes);
 }
