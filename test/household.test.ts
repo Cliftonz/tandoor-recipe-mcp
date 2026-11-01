@@ -238,4 +238,20 @@ describe('household tools', () => {
       expect(schema.safeParse({ id: 4, name: 'x'.repeat(128) }).success).toBe(true);
     }
   });
+
+  it('reports a user-space with no groups as failed in assign_household and sends no PATCH', async () => {
+    const sent = stubTandoor({
+      'GET /api/user-space/1/': { ...userSpace(1, 'ann', null), groups: [] },
+      'GET /api/user-space/2/': userSpace(2, 'bob', null),
+      'PATCH /api/user-space/2/': userSpace(2, 'bob', home),
+      'GET /api/household/4/': home,
+    });
+    const out = await handleAssignHousehold(client(), { user_space_ids: [1, 2], household_id: 4 });
+    expect(JSON.parse(out.slice(out.indexOf('{'))).results).toEqual([
+      { user_space_id: 1, status: 'failed', error: 'User-space 1 has no groups; set them with update_user_space first.' },
+      { user_space_id: 2, status: 'updated' },
+    ]);
+    expect(sent.filter((s) => s.method === 'PATCH').map((s) => s.path)).toEqual(['/api/user-space/2/']);
+  });
 });
+

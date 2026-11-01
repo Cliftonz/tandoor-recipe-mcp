@@ -9,6 +9,7 @@ import type {
 } from '../tools/household.js';
 import type { HandlerContext } from '../lib/register.js';
 import { emit, slimPaginated } from '../lib/slim.js';
+import { noGroupsMessage } from './space.js';
 
 type Page = { results: any[]; next: string | null };
 
@@ -97,6 +98,7 @@ async function assignOne(client: TandoorClient, id: number, householdId: number 
   try {
     const us = await client.spaces.getUserSpace(id, { signal });
     if ((us.household?.id ?? null) === householdId) return { user_space_id: id, status: 'unchanged' };
+    if (us.groups.length === 0) return { user_space_id: id, status: 'failed', error: noGroupsMessage(id) };
     const groups = us.groups.map((g: any) => g.id);
     await client.spaces.patchUserSpace(id, { groups, household: householdId }, { signal });
     return { user_space_id: id, status: 'updated' };

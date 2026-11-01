@@ -252,6 +252,16 @@ describe('space handlers', () => {
     expect(schema.safeParse({ id: 10, groups: [2] }).success).toBe(true);
   });
 
+  it('handleUpdateUserSpace refuses when groups is omitted and the user-space has none, sending no PATCH', async () => {
+    const getUserSpace = vi.fn(async () => ({ id: 10, groups: [] }));
+    const patchUserSpace = vi.fn();
+    const client = { spaces: { getUserSpace, patchUserSpace } } as any;
+    await expect(handleUpdateUserSpace(client, { id: 10, active: true })).rejects.toThrow(
+      /^User-space 10 has no groups; set them with update_user_space first\.$/,
+    );
+    expect(patchUserSpace).not.toHaveBeenCalled();
+  });
+
   it('handleDeleteUserSpace calls DELETE and returns confirmation', async () => {
     const deleteUserSpace = vi.fn(async () => undefined);
     const client = { spaces: { deleteUserSpace } } as any;

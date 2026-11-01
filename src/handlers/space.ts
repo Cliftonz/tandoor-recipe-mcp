@@ -41,6 +41,9 @@ function slimUserSpace(u: any) {
   };
 }
 
+export const noGroupsMessage = (userSpaceId: number): string =>
+  `User-space ${userSpaceId} has no groups; set them with update_user_space first.`;
+
 // ---------- Spaces ----------
 
 export async function handleListSpaces(client: TandoorClient, args: ListSpacesArgs, ctx?: HandlerContext): Promise<string> {
@@ -98,6 +101,7 @@ export async function handleUpdateUserSpace(client: TandoorClient, args: UpdateU
   assertNonEmptyBody(cleaned);
   if (body.groups === undefined) {
     const current = await client.spaces.getUserSpace(id, { signal: ctx?.signal });
+    if (current.groups.length === 0) throw new Error(noGroupsMessage(id));
     cleaned.groups = current.groups.map((g: any) => g.id);
   } else {
     const known = new Set((await client.housekeeping.listGroups({ signal: ctx?.signal })).map((g: any) => g.id));
