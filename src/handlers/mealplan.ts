@@ -238,9 +238,6 @@ export async function handleAutoMealPlan(
   client: TandoorClient,
   args: AutoMealPlanArgs
 ): Promise<string> {
-  if (args.keyword_ids.length === 0) {
-    throw new Error('keyword_ids must be a non-empty array of keyword IDs');
-  }
   const startDate = new Date(args.start_date);
   const endDate = new Date(args.end_date);
   if (startDate > endDate) {
@@ -251,7 +248,8 @@ export async function handleAutoMealPlan(
     start_date: args.start_date,
     end_date: args.end_date,
     meal_type_id: args.meal_type_id,
-    keyword_ids: args.keyword_ids,
+    keywords: args.keyword_ids,
+    keyword_mode: args.keyword_mode,
     servings: args.servings,
     addshopping: args.addshopping,
   });

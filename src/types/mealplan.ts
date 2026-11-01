@@ -42,9 +42,9 @@ export interface AutoMealPlan {
   start_date: string;
   end_date: string;
   meal_type_id: number;
-  keyword_ids: number[];
+  keywords?: number[];
+  keyword_mode?: 'or' | 'and';
   servings: number;
-  shared?: User[] | null;
   addshopping: boolean;
 }
 

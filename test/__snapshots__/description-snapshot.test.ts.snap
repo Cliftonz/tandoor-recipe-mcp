@@ -19,7 +19,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "authenticate",
   },
   {
-    "description": "Auto-generate meal plans. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, keyword_ids[], servings, addshopping",
+    "description": "Auto-generate meal plans from internal recipes the user can see. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, servings, addshopping. Optional: keyword_ids[] (if omitted or empty, plans from all recipes), keyword_mode ("and" default: recipes must carry every keyword; "or": any keyword). Tandoor plans at most 14 days and ignores shared. When no recipe matches, Tandoor returns 400 "No recipes found."",
     "name": "auto_meal_plan",
   },
   {
@@ -1198,6 +1198,8 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "end_date": {
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
           "type": "string",
         },
         "keyword_ids": {
@@ -1206,6 +1208,13 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           },
           "type": "array",
         },
+        "keyword_mode": {
+          "enum": [
+            "or",
+            "and",
+          ],
+          "type": "string",
+        },
         "meal_type_id": {
           "type": "number",
         },
@@ -1213,6 +1222,8 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "start_date": {
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
           "type": "string",
         },
       },
@@ -1220,7 +1231,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "start_date",
         "end_date",
         "meal_type_id",
-        "keyword_ids",
         "servings",
         "addshopping",
       ],
