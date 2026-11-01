@@ -193,7 +193,7 @@ describe('household tools', () => {
   it('rejects assign_household with the original error when the household lookup is forbidden, touching no user-space', async () => {
     const sent = stubTandoor({ 'GET /api/household/4/': forbidden });
     await expect(handleAssignHousehold(client(), { user_space_ids: [1], household_id: 4 })).rejects.toThrow(
-      /This call requires the space owner; space admins and members get 403\.\n\nTandoor API error: 403/,
+      /^Tandoor API error: 403.*\n\nThis call requires the space owner; space admins and members get 403\.$/s,
     );
     expect(sent.map((s) => s.path)).toEqual(['/api/household/4/']);
   });
@@ -205,4 +205,21 @@ describe('household tools', () => {
     );
     expect(sent.map((s) => s.path)).toEqual(['/api/household/4/']);
   });
+
+  it('stops assign_household when the call is aborted instead of reporting a failed id', async () => {
+    stubTandoor({});
+    const aborted = new AbortController();
+    aborted.abort(new Error('caller aborted'));
+    await expect(handleAssignHousehold(client(), { user_space_ids: [1, 2], household_id: null }, { signal: aborted.signal }))
+      .rejects.toThrow(/^caller aborted$/);
+  });
+
+  it('stops assign_household on an error that did not come from Tandoor', async () => {
+    const sent = stubTandoor({ 'GET /api/user-space/2/': userSpace(2, 'bob', home) });
+    await expect(handleAssignHousehold(client(), { user_space_ids: [1, 2], household_id: null })).rejects.toThrow(
+      /^Failed to connect to Tandoor/,
+    );
+    expect(sent.map((s) => s.path)).toEqual(['/api/user-space/1/']);
+  });
 });
+

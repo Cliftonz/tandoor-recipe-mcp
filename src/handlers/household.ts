@@ -101,7 +101,9 @@ async function assignOne(client: TandoorClient, id: number, householdId: number 
     await client.spaces.patchUserSpace(id, { groups, household: householdId }, { signal });
     return { user_space_id: id, status: 'updated' };
   } catch (e) {
-    return { user_space_id: id, status: 'failed', error: (e as Error).message };
+    const message = (e as Error).message;
+    if (!message.startsWith('Tandoor API error')) throw e;
+    return { user_space_id: id, status: 'failed', error: message };
   }
 }
 
