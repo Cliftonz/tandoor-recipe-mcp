@@ -62,12 +62,12 @@ export function registerHouseholdTools(server: McpServer, client: TandoorClient)
   }, handleUpdateHousehold);
 
   registerStringTool(server, client, 'delete_household', {
-    description: `Delete a household by ID. ${OWNER_ONLY} Refuses, and deletes nothing, while any user-space or inventory location still belongs to the household; the error lists them. Unassign user-spaces with assign_household (household_id null) and delete the locations first.`,
+    description: `Delete a household by ID. ${OWNER_ONLY} Refuses, and deletes nothing, while any user-space or inventory location still belongs to the household; the error lists them and how to clear them.`,
     inputSchema: deleteHouseholdShape,
   }, handleDeleteHousehold);
 
   registerStringTool(server, client, 'assign_household', {
-    description: `Put user-spaces into a household, or take them out with household_id null. ${OWNER_ONLY} Required: user_space_ids (ids from list_user_spaces), household_id (an id from list_households, or null). Each user-space keeps its groups. Reports each id as updated, unchanged (already in that household), or failed with Tandoor's error; errors only when every id failed.`,
+    description: `Put user-spaces into a household, or take them out with household_id null. ${OWNER_ONLY} Required: user_space_ids (ids from list_user_spaces), household_id (an id from list_households, or null). Each user-space keeps its groups. Errors if household_id does not exist. Reports each id as updated, unchanged (already in that household), or failed with Tandoor's error; errors only when every id failed.`,
     inputSchema: assignHouseholdShape,
   }, handleAssignHousehold);
 }
