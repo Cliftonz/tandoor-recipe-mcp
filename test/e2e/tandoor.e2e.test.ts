@@ -106,9 +106,6 @@ describeE2E('Tandoor E2E workflow', () => {
     // into the SSRF bypass that url-import unit tests use so DNS lookup does
     // not reject the payload before it ever reaches Tandoor.
     process.env.TANDOOR_MCP_TEST_SKIP_URL_CHECK = '1';
-    // Force full profile so every tool the suite invokes is registered and
-    // enabled; core-mode gating would hide non-core tools from tools/list.
-    process.env.TANDOOR_MCP_PROFILE = 'full';
     client = new TandoorClient({ url: url!, token: token! });
     mcp = new McpServer({ name: 'e2e', version: 'e2e' });
     registerRecipeTools(mcp, client);
@@ -125,7 +122,6 @@ describeE2E('Tandoor E2E workflow', () => {
 
   afterAll(async () => {
     delete process.env.TANDOOR_MCP_TEST_SKIP_URL_CHECK;
-    delete process.env.TANDOOR_MCP_PROFILE;
     if (process.env.TANDOOR_E2E_KEEP === '1') {
       // eslint-disable-next-line no-console
       console.log(`\n  TANDOOR_E2E_KEEP=1 — leaving ${cleanup.length} resource(s) behind for inspection.`);

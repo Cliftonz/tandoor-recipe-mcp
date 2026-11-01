@@ -1,3 +1,4 @@
+import { SECTION_ENV_VARS, formatSectionModes, type SectionModes } from './sections.js';
 import type { StashConfig } from './stash.js';
 import type { VersionCheckResult } from './version-check.js';
 
@@ -16,6 +17,7 @@ export interface TransportInfo {
 export function buildInstructions(
   versionCheck: VersionCheckResult,
   stashCfg: StashConfig,
+  sections: SectionModes,
   transport?: TransportInfo,
 ): string {
   const lines: string[] = [];
@@ -49,13 +51,15 @@ export function buildInstructions(
     'Operators can set TANDOOR_MCP_STASH_ENABLED=0 to disable this behavior.',
     '',
     'Pass ids (`food_id`, `unit_id`, ...), not objects; the tools build the request shape.',
+    '',
+    `Tool sections: ${formatSectionModes(sections)}. Call list_tool_groups to see them.`,
   );
   if (transport) {
     const bind = transport.bind ? ` bind=${transport.bind}` : '';
     const authRequired = transport.requireAuth ? 'yes' : 'no';
     lines.push('', `Transport: ${transport.mode}.${bind} auth-required: ${authRequired}`);
     if (transport.mode === 'http') {
-      lines.push('Dynamic tool gating (enable_tool_group / disable_tool_group) is disabled in HTTP mode; set TANDOOR_MCP_PROFILE to lock the surface at boot.');
+      lines.push(`Dynamic tool gating (enable_tool_group / disable_tool_group) is disabled in HTTP mode; set the section settings (${SECTION_ENV_VARS}) to lock the surface at boot.`);
     }
   }
   return lines.join('\n');

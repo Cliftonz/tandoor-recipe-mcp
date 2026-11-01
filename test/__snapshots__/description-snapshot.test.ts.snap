@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`tool description snapshot (full profile) > descriptions match the recorded snapshot 1`] = `
+exports[`tool description snapshot > descriptions match the recorded snapshot 1`] = `
 [
   {
     "description": "Add a recipe to a recipe book. Required: book (id), recipe (id).",
@@ -295,11 +295,11 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "delete_view_log",
   },
   {
-    "description": "Disable every tool in the named group so they disappear from tools/list. The SDK emits tools/list_changed automatically. Idempotent: disabling an already-disabled group is a no-op. The synthetic "core" group cannot be disabled. Use this to free context budget once a workflow no longer needs a group of tools.",
+    "description": "Turn a section off so all its tools disappear from tools/list. The SDK emits tools/list_changed automatically. The "always" section cannot be disabled. Use this to free context budget once a workflow no longer needs a section.",
     "name": "disable_tool_group",
   },
   {
-    "description": "Enable every tool in the named group so they become visible in tools/list. The SDK emits tools/list_changed automatically; the client refreshes its tool list mid-conversation. Idempotent: enabling an already-enabled group is a no-op. Passing "core" is also a no-op (core is always on). Be sparing — every enabled group adds tool schemas to your context budget. Run list_tool_groups first to see what is available.",
+    "description": "Widen a section so its tools become visible in tools/list. For a tiered section, tier "simple" or "full" (default full) picks how much to show; on/off sections take no tier. Enabling never narrows a section: asking for simple on a section already at full leaves it at full. The SDK emits tools/list_changed automatically; the client refreshes its tool list mid-conversation. Be sparing: every enabled tool adds its schema to your context budget. Run list_tool_groups first to see what is available.",
     "name": "enable_tool_group",
   },
   {
@@ -707,7 +707,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "list_syncs",
   },
   {
-    "description": "List every tool group exposed by this MCP server and whether each is currently enabled. The "core" group is permanent and always enabled; non-core groups start disabled (with profile=core) and can be turned on by calling enable_tool_group with the group name. When a group is enabled, its tools become visible via tools/list and the SDK emits tools/list_changed so the client refreshes mid-conversation. Use this first to discover what is available before reaching for enable_tool_group.",
+    "description": "List every tool section with its current mode and the modes it accepts. Tiered sections (off / simple / full) and on/off sections can be widened with enable_tool_group and turned off with disable_tool_group. The "always" section is permanent. When a section changes, its tools appear in or leave tools/list and the SDK emits tools/list_changed so the client refreshes mid-conversation. Use this first to discover what is available before reaching for enable_tool_group.",
     "name": "list_tool_groups",
   },
   {
@@ -1089,7 +1089,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
 ]
 `;
 
-exports[`tool description snapshot (full profile) > input schemas match the recorded snapshot 1`] = `
+exports[`tool description snapshot > input schemas match the recorded snapshot 1`] = `
 [
   {
     "inputSchema": {
@@ -3268,7 +3268,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "group": {
-          "description": "Name of the group to disable. The synthetic "core" group cannot be disabled.",
+          "description": "Name of the section to turn off. The "always" section cannot be disabled.",
           "minLength": 1,
           "type": "string",
         },
@@ -3286,8 +3286,16 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "group": {
-          "description": "Name of the group to enable. Run list_tool_groups to see available group names. The synthetic "core" group is permanent — calling enable on it is a no-op.",
+          "description": "Name of the section to enable. Run list_tool_groups to see available sections.",
           "minLength": 1,
+          "type": "string",
+        },
+        "tier": {
+          "description": "Tier for a tiered section (default full). Not accepted for on/off sections.",
+          "enum": [
+            "simple",
+            "full",
+          ],
           "type": "string",
         },
       },

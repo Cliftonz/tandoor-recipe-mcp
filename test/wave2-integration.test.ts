@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../src/clients/index.js';
 import { registerAllTools } from '../src/lib/register-all.js';
+import { parseSectionModes } from '../src/lib/sections.js';
 import {
   _resetRegisteredNames,
   _resetArraySkipLog,
@@ -78,20 +79,25 @@ describe('registerAllTools + new client wiring', () => {
       const server = new McpServer({ name: 'integration-stdio', version: 'integration-stdio' });
       const client = new TandoorClient({ url: 'https://x.test', token: 't' });
       registerAllTools(server, client, {
-        profile: 'full',
+        sections: parseSectionModes({}),
         pkg: { name: 'tandoor-mcp-test', version: '0.0.0-test' },
         versionCheck: { status: 'ok', level: 'note', detail: 'integration stub' },
       });
       registered = new Set(registeredToolNames(server));
     });
 
-    it('every new tool from Wave 1 is registered on a full-profile server', () => {
+    it('every new tool from Wave 1 is registered', () => {
       const missing = NEW_TOOLS.filter((n) => !registered.has(n));
       expect(missing, `missing: ${missing.join(', ')}`).toEqual([]);
     });
   });
 
   describe('HTTP transport gates', () => {
+    const SECTION_ENV_VARS =
+      'TANDOOR_MCP_RECIPES, TANDOOR_MCP_MEAL_PLAN, TANDOOR_MCP_SHOPPING, TANDOOR_MCP_INVENTORY, TANDOOR_MCP_FOODS, ' +
+      'TANDOOR_MCP_COOKLOG, TANDOOR_MCP_RECIPE_BOOKS, TANDOOR_MCP_AI, TANDOOR_MCP_IMPORT_EXPORT, ' +
+      'TANDOOR_MCP_HOUSEHOLD_SPACE, TANDOOR_MCP_ADMIN';
+
     const prior = process.env.TANDOOR_MCP_TRANSPORT;
 
     beforeEach(() => {
@@ -109,7 +115,7 @@ describe('registerAllTools + new client wiring', () => {
       const server = new McpServer({ name: 'integration-http', version: 'integration-http' });
       const client = new TandoorClient({ url: 'https://x.test', token: 't' });
       registerAllTools(server, client, {
-        profile: 'full',
+        sections: parseSectionModes({}),
         pkg: { name: 'tandoor-mcp-test', version: '0.0.0-test' },
         versionCheck: { status: 'ok', level: 'note', detail: 'integration http stub' },
       });
@@ -118,7 +124,7 @@ describe('registerAllTools + new client wiring', () => {
       expect(result.isError).toBe(true);
       const text = result.content?.[0]?.text ?? '';
       expect(text).toContain('Dynamic tool gating is disabled in HTTP transport mode');
-      expect(text).toContain('TANDOOR_MCP_PROFILE=core|basic|full');
+      expect(text).toContain(SECTION_ENV_VARS);
     });
 
     it('disable_tool_group throws with the expected message in HTTP mode', async () => {
@@ -127,7 +133,7 @@ describe('registerAllTools + new client wiring', () => {
       const server = new McpServer({ name: 'integration-http', version: 'integration-http' });
       const client = new TandoorClient({ url: 'https://x.test', token: 't' });
       registerAllTools(server, client, {
-        profile: 'full',
+        sections: parseSectionModes({}),
         pkg: { name: 'tandoor-mcp-test', version: '0.0.0-test' },
         versionCheck: { status: 'ok', level: 'note', detail: 'integration http stub' },
       });
@@ -136,7 +142,7 @@ describe('registerAllTools + new client wiring', () => {
       expect(result.isError).toBe(true);
       const text = result.content?.[0]?.text ?? '';
       expect(text).toContain('Dynamic tool gating is disabled in HTTP transport mode');
-      expect(text).toContain('TANDOOR_MCP_PROFILE=core|basic|full');
+      expect(text).toContain(SECTION_ENV_VARS);
     });
 
     it('shouldStash returns false unconditionally in HTTP mode', () => {

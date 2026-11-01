@@ -10,7 +10,7 @@ const TMP_ENV = join(tmpdir(), `.env-dotenv-smoke-${randomUUID()}`);
 const VARS = {
   TANDOOR_URL: 'https://tandoor.example.com',
   TANDOOR_TOKEN: 'fake-token-for-testing',
-  TANDOOR_MCP_PROFILE: 'full',
+  TANDOOR_MCP_RECIPES: 'full',
 };
 
 describe('dotenv v18 smoke — env vars populate process.env', () => {
@@ -43,7 +43,7 @@ describe('dotenv v18 smoke — env vars populate process.env', () => {
     }
   });
 
-  it('TANDOOR_URL, TANDOOR_TOKEN, and TANDOOR_MCP_PROFILE are non-empty strings after load', () => {
+  it('TANDOOR_URL, TANDOOR_TOKEN, and TANDOOR_MCP_RECIPES are non-empty strings after load', () => {
     config({ path: TMP_ENV, quiet: true });
 
     expect(typeof process.env.TANDOOR_URL).toBe('string');
@@ -52,8 +52,8 @@ describe('dotenv v18 smoke — env vars populate process.env', () => {
     expect(typeof process.env.TANDOOR_TOKEN).toBe('string');
     expect(process.env.TANDOOR_TOKEN!.length).toBeGreaterThan(0);
 
-    expect(typeof process.env.TANDOOR_MCP_PROFILE).toBe('string');
-    expect(process.env.TANDOOR_MCP_PROFILE!.length).toBeGreaterThan(0);
+    expect(typeof process.env.TANDOOR_MCP_RECIPES).toBe('string');
+    expect(process.env.TANDOOR_MCP_RECIPES!.length).toBeGreaterThan(0);
   });
 
   it('does not overwrite an already-set env var (dotenv default behavior)', () => {
@@ -74,7 +74,7 @@ describe('dotenv v18 smoke — env vars populate process.env', () => {
     expect(result.parsed).toBeDefined();
     expect(result.parsed!['TANDOOR_URL']).toBe(VARS.TANDOOR_URL);
     expect(result.parsed!['TANDOOR_TOKEN']).toBe(VARS.TANDOOR_TOKEN);
-    expect(result.parsed!['TANDOOR_MCP_PROFILE']).toBe(VARS.TANDOOR_MCP_PROFILE);
+    expect(result.parsed!['TANDOOR_MCP_RECIPES']).toBe(VARS.TANDOOR_MCP_RECIPES);
   });
 
   it('sets result.error when the target file does not exist', () => {

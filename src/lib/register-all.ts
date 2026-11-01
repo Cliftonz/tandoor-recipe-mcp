@@ -29,36 +29,16 @@ import { registerStorageTools } from '../tools/storage.js';
 import { registerSyncTools } from '../tools/sync.js';
 import { registerSpaceTools } from '../tools/space.js';
 import { registerHousekeepingTools } from '../tools/housekeeping.js';
-import { registerToolGroupTools } from '../tools/tool-groups.js';
+import { applySectionModes, registerToolGroupTools } from '../tools/tool-groups.js';
 import { registerResources } from '../resources/index.js';
 import { registerPrompts } from '../prompts/index.js';
-import { CORE_TOOLS } from './tool-groups.js';
+import type { SectionModes } from './sections.js';
 import type { VersionCheckResult } from './version-check.js';
 
-export type RegisterProfile = 'core' | 'basic' | 'full';
-
 export interface RegisterAllToolsOptions {
-  /**
-   * TANDOOR_MCP_PROFILE — controls how many tools are visible in tools/list.
-   *   - "core"  (default): every tool is REGISTERED but only CORE_TOOLS stays
-   *     enabled. Non-core tools are disabled at boot and revealed on demand
-   *     via `enable_tool_group`. Keeps the LLM's tool-list context small.
-   *   - "basic": skip admin/misc tool families entirely (legacy profile —
-   *     retained so anyone pinned to it doesn't break, but `core` is the
-   *     better lever now).
-   *   - "full":  every tool registered AND enabled at boot. No gating.
-   */
-  profile?: RegisterProfile;
-  /** Package metadata threaded into registerVersionTools. Required. */
+  sections: SectionModes;
   pkg: { name: string; version: string };
-  /** Version probe result threaded into registerVersionTools. Required. */
   versionCheck: VersionCheckResult;
-}
-
-interface RegisteredToolEntry {
-  enabled: boolean;
-  enable(): void;
-  disable(): void;
 }
 
 /**
@@ -75,14 +55,9 @@ export function registerAllTools(
   client: TandoorClient,
   opts: RegisterAllToolsOptions,
 ): void {
-  const profile: RegisterProfile = opts.profile ?? 'core';
   const { pkg, versionCheck } = opts;
 
-  // Meta gating tools — must register before the rest so they're in
-  // CORE_TOOLS and visible at boot regardless of profile.
-  registerToolGroupTools(server, client);
-
-  // Always-on groups — the core "use the app" surface.
+  registerToolGroupTools(server, client, opts.sections);
   registerRecipeTools(server, client);
   registerMealPlanTools(server, client);
   registerIngredientTools(server, client);
@@ -93,36 +68,22 @@ export function registerAllTools(
   registerTreeSafetyTools(server, client);
   registerResources(server, client);
   registerPrompts(server, client);
+  registerAiTools(server, client);
+  registerCookLogTools(server, client);
+  registerRecipeBookTools(server, client);
+  registerMiscTools(server, client);
+  registerStepTools(server, client);
+  registerAdminTools(server, client);
+  registerMealTypeTools(server, client);
+  registerSupermarketTools(server, client);
+  registerInviteLinkTools(server, client);
+  registerAccessTokenTools(server, client);
+  registerExportTools(server, client);
+  registerImportTools(server, client);
+  registerStorageTools(server, client);
+  registerSyncTools(server, client);
+  registerSpaceTools(server, client);
+  registerHousekeepingTools(server, client);
 
-  // Optional groups. The "basic" profile keeps the historical behavior of
-  // not registering admin/misc at all; "core" and "full" register everything
-  // and rely on enable/disable for visibility.
-  if (profile !== 'basic') {
-    registerAiTools(server, client);
-    registerCookLogTools(server, client);
-    registerRecipeBookTools(server, client);
-    registerMiscTools(server, client);
-    registerStepTools(server, client);
-    registerAdminTools(server, client);
-    registerMealTypeTools(server, client);
-    registerSupermarketTools(server, client);
-    registerInviteLinkTools(server, client);
-    registerAccessTokenTools(server, client);
-    registerExportTools(server, client);
-    registerImportTools(server, client);
-    registerStorageTools(server, client);
-    registerSyncTools(server, client);
-    registerSpaceTools(server, client);
-    registerHousekeepingTools(server, client);
-  }
-
-  // Apply the core gate: disable every registered tool that isn't in
-  // CORE_TOOLS. The SDK will emit tools/list_changed on the first connect;
-  // tools/list responses then exclude disabled tools.
-  if (profile === 'core') {
-    const reg = (server as unknown as { _registeredTools?: Record<string, RegisteredToolEntry> })._registeredTools ?? {};
-    for (const name of Object.keys(reg)) {
-      if (!CORE_TOOLS.has(name)) reg[name]!.disable();
-    }
-  }
+  applySectionModes(server, opts.sections);
 }

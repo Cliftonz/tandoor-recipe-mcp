@@ -30,6 +30,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { startStub, Stub } from './helpers/stub-http.js';
 import { paginated } from './helpers/factories.js';
+import { ALL_SECTIONS_OPEN, DEFAULT_SECTIONS } from './helpers/mcp.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BUILT_INDEX = path.join(REPO, 'build', 'index.js');
@@ -216,11 +217,11 @@ async function withClient<T>(env: Record<string, string>, fn: (c: Client, stderr
       // wanted this; setting it in the default keeps every test on equal
       // footing.
       TANDOOR_MAX_RETRIES: '0',
-      // Default to profile=full so existing e2e tests exercise every tool
-      // without needing to enable_tool_group first. Gating behavior is
-      // covered by test/tool-groups-gating.test.ts (unit) and one dedicated
-      // e2e at the bottom of this file. Individual tests can override.
-      TANDOOR_MCP_PROFILE: 'full',
+      // Existing e2e tests exercise every tool without needing to
+      // enable_tool_group first. Gating behavior is covered by
+      // test/tool-groups-gating.test.ts (unit) and one dedicated e2e at the
+      // bottom of this file. Individual tests can override.
+      ...ALL_SECTIONS_OPEN,
       ...env,
     } as Record<string, string>,
     stderr: 'pipe',
@@ -604,45 +605,32 @@ d('MCP stdio protocol e2e (strict SDK client)', () => {
     }
   }, 30_000);
 
-  // ---- profile=core dynamic tool-gating, end-to-end through stdio ----
+  // ---- section gating, end-to-end through stdio ----
   // The unit tests in test/tool-groups-gating.test.ts already cover the
-  // enable/disable semantics. This one is the load-bearing protocol check:
-  // does the SDK actually emit tools/list_changed when we flip .enable()?
-  // If a future SDK version stops emitting it on enable/disable, the unit
-  // tests still pass (they poke `_registeredTools.enabled` directly) but
-  // the real client never refreshes — silent breakage.
-  it('profile=core hides non-core tools and enable_tool_group reveals them', async () => {
-    await withClient({ TANDOOR_MCP_PROFILE: 'core' }, async (c) => {
-      const initial = await c.listTools();
-      const names = new Set(initial.tools.map((t) => t.name));
-      // Core sentinels present.
-      expect(names.has('list_recipes')).toBe(true);
+  // enable/disable semantics. This one checks that tools/list reflects
+  // enable_tool_group / disable_tool_group through the built binary over a
+  // real stdio client.
+  it('default sections hide the full tier and enable_tool_group reveals it', async () => {
+    await withClient(DEFAULT_SECTIONS, async (c) => {
+      const names = new Set((await c.listTools()).tools.map((t) => t.name));
       expect(names.has('list_tool_groups')).toBe(true);
-      expect(names.has('enable_tool_group')).toBe(true);
-      // Non-core sentinels hidden.
-      expect(names.has('create_recipe')).toBe(false);
+      expect(names.has('create_recipe')).toBe(true);
+      expect(names.has('delete_step')).toBe(false);
       expect(names.has('list_user_preferences')).toBe(false);
 
-      const enabled = await call(c, 'enable_tool_group', { group: 'recipe-write' });
+      const enabled = await call(c, 'enable_tool_group', { group: 'recipes' });
       expect(enabled.isError).toBe(false);
-      const payload = enabled.parsed as { ok: boolean; enabled: string[] };
-      expect(payload.ok).toBe(true);
-      expect(payload.enabled).toContain('create_recipe');
+      expect((enabled.parsed as { enabled: string[] }).enabled).toContain('delete_step');
 
-      // After enable, the SDK must have emitted tools/list_changed; the
-      // client's next listTools call should see create_recipe.
-      const afterEnable = await c.listTools();
-      const afterNames = new Set(afterEnable.tools.map((t) => t.name));
-      expect(afterNames.has('create_recipe')).toBe(true);
-      // admin group still hidden — we only enabled recipe-write.
-      expect(afterNames.has('list_user_preferences')).toBe(false);
+      const afterEnable = new Set((await c.listTools()).tools.map((t) => t.name));
+      expect(afterEnable.has('delete_step')).toBe(true);
+      expect(afterEnable.has('list_user_preferences')).toBe(false);
 
-      // Symmetric: disable hides them again.
-      const disabled = await call(c, 'disable_tool_group', { group: 'recipe-write' });
+      const disabled = await call(c, 'disable_tool_group', { group: 'recipes' });
       expect(disabled.isError).toBe(false);
-      const afterDisable = await c.listTools();
-      const afterDisableNames = new Set(afterDisable.tools.map((t) => t.name));
-      expect(afterDisableNames.has('create_recipe')).toBe(false);
+      const afterDisable = new Set((await c.listTools()).tools.map((t) => t.name));
+      expect(afterDisable.has('delete_step')).toBe(false);
+      expect(afterDisable.has('list_recipes')).toBe(false);
     });
   }, 30_000);
 });

@@ -1,10 +1,15 @@
-// Shared test helper for invoking a registered tool the way `callTool`
-// would, without spinning up a stdio transport. Reaches into McpServer's
-// private registry — confining that to one file means the next SDK rename
-// is a one-line fix, not a four-file grep.
+// Shared test helpers for invoking registered tools without a transport.
+// They read McpServer's private `_registeredTools` registry.
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { toJSONSchema } from 'zod';
+import { SECTIONS } from '../../src/lib/sections.js';
+
+export const ALL_SECTIONS_OPEN: Record<string, string> = Object.fromEntries(
+  SECTIONS.map((s) => [s.envVar, s.kind === 'tiered' ? 'full' : 'on']),
+);
+
+export const DEFAULT_SECTIONS: Record<string, string> = Object.fromEntries(SECTIONS.map((s) => [s.envVar, '']));
 
 export async function invokeTool(
   server: McpServer,
@@ -41,10 +46,7 @@ function safeSerializeSchema(raw: unknown): unknown {
   }
 }
 
-/**
- * Read every tool registered on the server. Keeps SDK-private field access in
- * this one file so the next rename of `_registeredTools` is a one-line fix.
- */
+/** Read every tool registered on the server. */
 export function listRegisteredTools(server: McpServer): RegisteredToolInfo[] {
   const reg = (server as any)._registeredTools as Record<string, { description?: string; inputSchema?: unknown }> | undefined;
   if (!reg) return [];
@@ -66,8 +68,6 @@ export function registeredToolNames(server: McpServer): string[] {
  * Direct access to the internal registered-tool record. The shape is
  * `{ handler: (args, extra) => CallToolResult, description, inputSchema, ... }`
  * but callers should treat the return as opaque and just call `.handler`.
- * This (plus `invokeTool` above) is the only file in the repo that pokes the
- * SDK-private `_registeredTools` map — same rationale as the file header.
  */
 export function getRegisteredTool(server: McpServer, name: string): { handler: (args: unknown, extra: { signal: AbortSignal }) => Promise<any> } {
   const reg = (server as any)._registeredTools as Record<string, any> | undefined;
