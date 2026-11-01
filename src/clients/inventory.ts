@@ -1,0 +1,26 @@
+import { BaseClient, qs } from './base.js';
+
+type Opts = { signal?: AbortSignal };
+type Paging = { page?: number; page_size?: number };
+
+export class InventoryClient extends BaseClient {
+  async listLocations(params?: Paging, opts?: Opts): Promise<any> {
+    return this.request(`/api/inventory-location/${qs(params)}`, { signal: opts?.signal });
+  }
+
+  async getLocation(id: number, opts?: Opts): Promise<any> {
+    return this.request(`/api/inventory-location/${id}/`, { signal: opts?.signal });
+  }
+
+  async createLocation(body: any, opts?: Opts): Promise<any> {
+    return this.request('/api/inventory-location/', { method: 'POST', body: JSON.stringify(body), signal: opts?.signal });
+  }
+
+  async patchLocation(id: number, body: any, opts?: Opts): Promise<any> {
+    return this.request(`/api/inventory-location/${id}/`, { method: 'PATCH', body: JSON.stringify(body), signal: opts?.signal });
+  }
+
+  async deleteLocation(id: number, opts?: Opts): Promise<void> {
+    return this.request(`/api/inventory-location/${id}/`, { method: 'DELETE', signal: opts?.signal });
+  }
+}

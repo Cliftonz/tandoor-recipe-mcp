@@ -38,6 +38,7 @@ import { StorageClient } from './storage.js';
 import { SyncClient } from './sync.js';
 import { SpaceClient } from './space.js';
 import { HousekeepingClient } from './housekeeping.js';
+import { InventoryClient } from './inventory.js';
 
 export class TandoorClient {
   private _config: TandoorConfig;
@@ -74,6 +75,7 @@ export class TandoorClient {
   private _syncs?: SyncClient;
   private _spaces?: SpaceClient;
   private _housekeeping?: HousekeepingClient;
+  private _inventory?: InventoryClient;
 
   constructor(config: TandoorConfig) {
     this._config = config;
@@ -181,6 +183,9 @@ export class TandoorClient {
   get housekeeping(): HousekeepingClient {
     return (this._housekeeping ??= new HousekeepingClient(this._config));
   }
+  get inventory(): InventoryClient {
+    return (this._inventory ??= new InventoryClient(this._config));
+  }
 
   /** Resolved Tandoor API origin (no path/query/fragment). For startup logs. */
   public getBaseUrl(): string {
@@ -245,3 +250,4 @@ export * from './storage.js';
 export * from './sync.js';
 export * from './space.js';
 export * from './housekeeping.js';
+export * from './inventory.js';
