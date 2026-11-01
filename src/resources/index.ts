@@ -93,7 +93,7 @@ export function registerResources(server: McpServer, client: TandoorClient): voi
     {
       title: 'Pantry — On Hand',
       description:
-        `What is available. locations holds inventory entries with amount > 0, grouped by location. is_freezer marks freezers. Each entry has amount, unit, expires, sub_location, and note. on_hand_no_quantity holds foods flagged on hand that have no inventory entry. Shows at most ${PANTRY_CAP} entries and ${PANTRY_CAP} foods. When truncated.entries is true, use list_inventory_entries for the full list.`,
+        `What is available. locations holds inventory entries with amount > 0, grouped by location. is_freezer marks freezers. Each entry has amount, unit, expires, sub_location, and note. on_hand_no_quantity holds foods flagged on hand that have no inventory entry. Shows at most ${PANTRY_CAP} entries and ${PANTRY_CAP} foods. on_hand_no_quantity is exact only when truncated.entries is false. When truncated.entries is true, use list_inventory_entries (inventory section) for the full list of entries. When truncated.on_hand_no_quantity is true, use list_foods for the full list of foods.`,
       mimeType: 'application/json',
     },
     async (uri): Promise<ReadResourceResult> => {

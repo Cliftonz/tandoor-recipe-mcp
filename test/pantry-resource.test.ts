@@ -20,10 +20,14 @@ function stubPages(pages: { entries: Page[]; foods: Page[] }): URL[] {
   return sent;
 }
 
-async function readPantry(): Promise<any> {
+function pantryResource(): any {
   const server = new McpServer({ name: 't', version: 't' });
   registerResources(server, new TandoorClient({ url: 'https://tandoor.test', token: 't' }));
-  const resource = (server as any)._registeredResources[URI];
+  return (server as any)._registeredResources[URI];
+}
+
+async function readPantry(): Promise<any> {
+  const resource = pantryResource();
   const result = await resource.readCallback(new URL(URI), {});
   return JSON.parse(result.contents[0].text);
 }
@@ -53,6 +57,13 @@ function food(id: number, name: string, onhand: boolean, category: string | null
 afterEach(() => vi.restoreAllMocks());
 
 describe('tandoor://pantry/on-hand', () => {
+  it('tells the model when on_hand_no_quantity is exact and where to get each full list', () => {
+    const { description } = pantryResource().metadata;
+    expect(description).toContain('on_hand_no_quantity is exact only when truncated.entries is false.');
+    expect(description).toContain('When truncated.entries is true, use list_inventory_entries (inventory section) for the full list of entries.');
+    expect(description).toContain('When truncated.on_hand_no_quantity is true, use list_foods for the full list of foods.');
+  });
+
   it('groups stocked entries by location and lists on-hand foods that have no entry', async () => {
     stubPages({
       entries: [{
