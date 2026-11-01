@@ -285,9 +285,24 @@ describe('food shopping lists', () => {
     expect(JSON.parse(await handleGetFood(client(), { id: 1 })).shopping_lists).toEqual([{ id: 2, name: 'Costco' }, { id: 3, name: 'Aldi' }]);
   });
 
+  const noSuchFood = { 'GET /api/food/?query=Milk&page=1&page_size=100': page([{ ...milk, id: 8, name: 'Milk chocolate' }]) };
+
+  it('refuses to set lists on a food that already has the name, in any case, and writes nothing', async () => {
+    const sent = stubTandoor({
+      ...listPages,
+      'GET /api/food/?query=mILK&page=1&page_size=100': page([{ ...milk, id: 8, name: 'Milk chocolate' }], 'more'),
+      'GET /api/food/?query=mILK&page=2&page_size=100': page([{ ...milk, id: 9, name: 'milk' }]),
+    });
+    await expect(handleCreateFood(client(), { name: 'mILK', shopping_list_ids: [2] })).rejects.toThrow(
+      new Error('A food named milk already exists (id 9); use update_food to change its lists.'),
+    );
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
+  });
+
   it('creates a food without lists, then sets its lists with a PATCH', async () => {
     const sent = stubTandoor({
       ...listPages,
+      ...noSuchFood,
       'POST /api/food/': milk,
       'PATCH /api/food/1/': { ...milk, shopping_lists: [costco] },
     });
@@ -308,6 +323,7 @@ describe('food shopping lists', () => {
   it('reports a food created without lists when the list PATCH fails', async () => {
     stubTandoor({
       ...listPages,
+      ...noSuchFood,
       'POST /api/food/': milk,
       'PATCH /api/food/1/': { status: 400, body: { shopping_lists: ['bad'] } },
     });

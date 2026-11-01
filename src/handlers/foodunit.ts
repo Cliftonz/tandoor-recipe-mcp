@@ -22,6 +22,7 @@ import type {
 
 import type { HandlerContext } from '../lib/register.js';
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
+import { allPages } from '../lib/paging.js';
 import { slimListRefs, validateListOperations, checkShoppingListIds } from './shopping.js';
 
 function slimFood(f: any) {
@@ -87,6 +88,11 @@ export async function handleCreateFood(
   }
   const listIds = args.shopping_list_ids;
   if (listIds !== undefined) await checkShoppingListIds(client, listIds, ctx?.signal);
+  if (listIds?.length) {
+    const sameName = (await allPages((page) => client.foodUnits.listFoods({ query: args.name, page, page_size: 100 })))
+      .find((f) => f.name.toLowerCase() === args.name.toLowerCase());
+    if (sameName) throw new Error(`A food named ${sameName.name} already exists (id ${sameName.id}); use update_food to change its lists.`);
+  }
   let created = await client.foodUnits.createFood(body);
   if (listIds?.length) {
     created = await client.foodUnits.patchFood(created.id, { shopping_lists: listIds }).catch((e: Error) => {

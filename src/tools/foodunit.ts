@@ -179,7 +179,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleGetFood);
 
   registerStringTool(server, client, 'create_food', {
-    description: `Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). If setting the lists fails, the error gives the new food's id. ${FOOD_LISTS}`,
+    description: `Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). If a food with the same name already exists (case-insensitive), Tandoor returns that food instead of creating one; with shopping_list_ids the tool then refuses and changes nothing, so use update_food. If setting the lists fails, the error gives the new food's id. ${FOOD_LISTS}`,
     inputSchema: createFoodShape,
   }, handleCreateFood);
 
