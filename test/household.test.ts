@@ -6,6 +6,7 @@ import {
   handleCreateHousehold,
   handleUpdateHousehold,
   handleDeleteHousehold,
+  handleAssignHousehold,
 } from '../src/handlers/household.js';
 
 type Sent = { method: string; path: string; body?: unknown };
@@ -30,7 +31,7 @@ function stubTandoor(routes: Record<string, unknown>): Sent[] {
   return sent;
 }
 
-const client = () => new TandoorClient({ url: 'https://tandoor.test', token: 't' });
+const client = () => new TandoorClient({ url: 'https://tandoor.test', token: 'test-token' });
 
 const home = { id: 4, name: 'Home', created_at: 't', updated_at: 't' };
 
@@ -116,5 +117,53 @@ describe('household tools', () => {
       }),
     );
     expect(sent.filter((s) => s.method === 'DELETE')).toEqual([]);
+  });
+
+  it('assigns each user-space with its current groups and reports updated, unchanged and failed per id', async () => {
+    const notFound: Reply = { status: 404, body: { detail: 'No UserSpace matches the given query.' } };
+    const sent = stubTandoor({
+      'GET /api/household/4/': home,
+      'GET /api/user-space/1/': userSpace(1, 'ann', home),
+      'GET /api/user-space/2/': { ...userSpace(2, 'bob', null), groups: [{ id: 2, name: 'user' }, { id: 3, name: 'admin' }] },
+      'PATCH /api/user-space/2/': userSpace(2, 'bob', home),
+      'GET /api/user-space/3/': notFound,
+    });
+    const out = await handleAssignHousehold(client(), { user_space_ids: [1, 2, 3], household_id: 4 });
+    expect(sent.filter((s) => s.method === 'PATCH')).toEqual([
+      { method: 'PATCH', path: '/api/user-space/2/', body: { groups: [2, 3], household: 4 } },
+    ]);
+    const results = JSON.parse(out.slice(out.indexOf('[')));
+    expect(results).toEqual([
+      { user_space_id: 1, status: 'unchanged' },
+      { user_space_id: 2, status: 'updated' },
+      { user_space_id: 3, status: 'failed', error: expect.stringContaining('No UserSpace matches the given query.') },
+    ]);
+  });
+
+  it('unassigns with household_id null without looking up a household', async () => {
+    const sent = stubTandoor({
+      'GET /api/user-space/1/': userSpace(1, 'ann', home),
+      'PATCH /api/user-space/1/': userSpace(1, 'ann', null),
+    });
+    const out = await handleAssignHousehold(client(), { user_space_ids: [1], household_id: null });
+    expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual(['GET /api/user-space/1/', 'PATCH /api/user-space/1/']);
+    expect(sent[1].body).toEqual({ groups: [2], household: null });
+    expect(JSON.parse(out.slice(out.indexOf('[')))).toEqual([{ user_space_id: 1, status: 'updated' }]);
+  });
+
+  it('rejects an unknown household before touching any user-space', async () => {
+    const sent = stubTandoor({ 'GET /api/household/99/': { status: 404, body: { detail: 'No Household matches the given query.' } } });
+    await expect(handleAssignHousehold(client(), { user_space_ids: [1], household_id: 99 })).rejects.toThrow(/^Household 99 not found\.$/);
+    expect(sent).toHaveLength(1);
+  });
+
+  it('errors when every user-space failed, carrying the space-owner hint', async () => {
+    stubTandoor({
+      'GET /api/user-space/1/': userSpace(1, 'ann', home),
+      'PATCH /api/user-space/1/': forbidden,
+    });
+    await expect(handleAssignHousehold(client(), { user_space_ids: [1], household_id: null })).rejects.toThrow(
+      /^No user-space was updated\. .*This call requires the space owner; space admins and members get 403\./s,
+    );
   });
 });

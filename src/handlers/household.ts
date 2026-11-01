@@ -5,6 +5,7 @@ import type {
   CreateHouseholdArgs,
   UpdateHouseholdArgs,
   DeleteHouseholdArgs,
+  AssignHouseholdArgs,
 } from '../tools/household.js';
 import type { HandlerContext } from '../lib/register.js';
 import { emit, slimPaginated } from '../lib/slim.js';
@@ -87,4 +88,37 @@ export async function handleDeleteHousehold(
   }
   await client.households.deleteHousehold(args.id, { signal });
   return `Household ${args.id} deleted.`;
+}
+
+type Assignment =
+  | { user_space_id: number; status: 'updated' | 'unchanged' }
+  | { user_space_id: number; status: 'failed'; error: string };
+
+async function assignOne(client: TandoorClient, id: number, householdId: number | null, signal?: AbortSignal): Promise<Assignment> {
+  try {
+    const us = await client.spaces.getUserSpace(id, { signal });
+    if ((us.household?.id ?? null) === householdId) return { user_space_id: id, status: 'unchanged' };
+    const groups = us.groups.map((g: any) => g.id);
+    await client.spaces.patchUserSpace(id, { groups, household: householdId }, { signal });
+    return { user_space_id: id, status: 'updated' };
+  } catch (e) {
+    return { user_space_id: id, status: 'failed', error: (e as Error).message };
+  }
+}
+
+export async function handleAssignHousehold(
+  client: TandoorClient,
+  args: AssignHouseholdArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const signal = ctx?.signal;
+  if (args.household_id !== null) {
+    await client.households.getHousehold(args.household_id, { signal }).catch((e: Error) => {
+      throw e.message.startsWith('Tandoor API error: 404') ? new Error(`Household ${args.household_id} not found.`) : e;
+    });
+  }
+  const results: Assignment[] = [];
+  for (const id of args.user_space_ids) results.push(await assignOne(client, id, args.household_id, signal));
+  if (results.every((r) => r.status === 'failed')) throw new Error(`No user-space was updated. ${emit(results)}`);
+  return `Household assignment finished.\n\n${emit(results)}`;
 }
