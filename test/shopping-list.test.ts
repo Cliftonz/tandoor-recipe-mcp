@@ -105,6 +105,15 @@ describe('shopping list tools', () => {
     expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
   });
 
+  it('renames a list to a variant of its own name even when another list already shares that name', async () => {
+    const sent = stubTandoor({
+      'GET /api/shopping-list/?page=1&page_size=100': page([costco, { ...costco, id: 5, name: 'costco' }]),
+      'PATCH /api/shopping-list/2/': { ...costco, name: 'COSTCO' },
+    });
+    await handleUpdateShoppingList(client(), { id: 2, name: ' COSTCO ' });
+    expect(sent.at(-1)).toEqual({ method: 'PATCH', path: '/api/shopping-list/2/', body: { name: ' COSTCO ' } });
+  });
+
   it('renames a list to a case variant of its own name', async () => {
     const sent = stubTandoor({ ...listPages, 'PATCH /api/shopping-list/2/': { ...costco, name: 'COSTCO' } });
     await handleUpdateShoppingList(client(), { id: 2, name: 'COSTCO' });
