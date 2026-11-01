@@ -123,7 +123,15 @@ describe('enable_tool_group', () => {
     const result = await call(await connect(), 'enable_tool_group', { group: 'recipe-write' });
     expect(result.isError).toBe(true);
     expect(result.text).toContain("unknown tool group 'recipe-write'");
-    expect(result.text).toContain('recipes, meal-plan, shopping, inventory, foods, cooklog, recipe-books, ai, import-export, household-space, admin');
+    expect(result.text).toContain(': always, recipes, meal-plan, shopping, inventory, foods, cooklog, recipe-books, ai, import-export, household-space, admin.');
+  });
+
+  it('treats the always group as a no-op', async () => {
+    const client = await connect();
+    const before = await visible(client);
+    const result = await callOk(client, 'enable_tool_group', { group: 'always' });
+    expect(result).toEqual({ ok: true, group: 'always', mode: 'on', enabled: [] });
+    expect(await visible(client)).toEqual(before);
   });
 });
 

@@ -46,7 +46,7 @@ function findSection(group: string): Section {
   const section = SECTIONS.find((s) => s.name === group);
   if (!section) {
     throw new Error(
-      `unknown tool group '${group}'. Known groups: ${SECTIONS.map((s) => s.name).join(', ')}. Call list_tool_groups for descriptions.`,
+      `unknown tool group '${group}'. Known groups: ${[ALWAYS_ON_GROUP, ...SECTIONS.map((s) => s.name)].join(', ')}. Call list_tool_groups for descriptions.`,
     );
   }
   return section;
@@ -148,6 +148,7 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
     },
     async (_client, args) => {
       if (isHttpMode()) throw new Error(HTTP_GATING_DISABLED_MSG);
+      if (args.group === ALWAYS_ON_GROUP) return JSON.stringify({ ok: true, group: ALWAYS_ON_GROUP, mode: 'on', enabled: [] });
       const section = findSection(args.group);
       const mode = widen(section, modes.get(section.name)!, args.tier);
       modes.set(section.name, mode);
