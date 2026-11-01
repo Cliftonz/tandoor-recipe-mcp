@@ -1,16 +1,8 @@
-// Meta tools that let the model see and change which sections are visible.
-// Every tool is registered at boot; a section's mode decides which of its
-// tools are enabled. Disabled tools leave tools/list, and the SDK emits
-// tools/list_changed when enable()/disable() flips them.
-//
-// The SDK keeps registered tools on a private field; this file and
-// test/helpers/mcp.ts are the only places that read it.
-
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
-import { ALWAYS_ON_GROUP, ALWAYS_ON_TOOLS, SECTIONS, modesOf, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
+import { ALWAYS_ON_GROUP, ALWAYS_ON_TOOLS, SECTIONS, SECTION_ENV_VARS, modesOf, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
 
 interface RegisteredToolEntry {
   enabled: boolean;
@@ -19,11 +11,8 @@ interface RegisteredToolEntry {
 }
 
 function getRegistry(server: McpServer): Record<string, RegisteredToolEntry> {
-  // The SDK keeps registered tools on a private field. We access it the same
-  // way test/helpers/mcp.ts does, so any future SDK rename is a single
-  // grep+fix across two files. Returning the live map (not a copy) is
-  // intentional: the meta tools mutate it.
-  return ((server as unknown as { _registeredTools?: Record<string, RegisteredToolEntry> })._registeredTools) ?? {};
+  // The SDK exposes no public way to enumerate or toggle registered tools.
+  return (server as unknown as { _registeredTools: Record<string, RegisteredToolEntry> })._registeredTools;
 }
 
 interface ModeChange {
@@ -73,7 +62,7 @@ function widen(section: Section, current: SectionMode, tier: 'simple' | 'full' |
 }
 
 const HTTP_GATING_DISABLED_MSG =
-  `Dynamic tool gating is disabled in HTTP transport mode. Set the section settings (${SECTIONS.map((s) => s.envVar).join(', ')}) to lock the surface at boot.`;
+  `Dynamic tool gating is disabled in HTTP transport mode. Set the section settings (${SECTION_ENV_VARS}) to lock the surface at boot.`;
 
 function isHttpMode(): boolean {
   return (process.env.TANDOOR_MCP_TRANSPORT || '').toLowerCase() === 'http';

@@ -20,7 +20,7 @@ import { checkTandoorVersion } from './lib/version-check.js';
 import { buildInstructions } from './lib/instructions.js';
 import { registerAllTools } from './lib/register-all.js';
 import { createHttpTransport, resolveHttpConfig } from './lib/http-transport.js';
-import { SECTIONS, parseSectionModes, type SectionModes } from './lib/sections.js';
+import { SECTION_ENV_VARS, formatSectionModes, parseSectionModes, type SectionModes } from './lib/sections.js';
 
 // dotenv is a dev convenience — only load it if it's available (it's a
 // devDependency, not a production dep). Real deployments inject env via the
@@ -51,10 +51,9 @@ function readSections(): SectionModes {
 const sections = readSections();
 if (process.env.TANDOOR_MCP_PROFILE !== undefined) {
   console.error(
-    `[tandoor-mcp] WARNING: TANDOOR_MCP_PROFILE is ignored. Choose tools with the section settings: ${SECTIONS.map((s) => s.envVar).join(', ')}.`,
+    `[tandoor-mcp] WARNING: TANDOOR_MCP_PROFILE is ignored. Choose tools with the section settings: ${SECTION_ENV_VARS}.`,
   );
 }
-const sectionsLine = [...sections].map(([name, mode]) => `${name}=${mode}`).join(',');
 
 const tandoorClient = new TandoorClient({
   url: TANDOOR_URL,
@@ -107,7 +106,7 @@ async function main() {
     const handle = createHttpTransport(buildServer);
     await handle.start();
     console.error(
-      `[tandoor-mcp] ${pkg.name}@${pkg.version} on http://${httpCfg.host}:${httpCfg.port}${httpCfg.path} | auth=${httpCfg.requireAuth ? 'required' : 'disabled'} | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${sectionsLine} | ${stashLine} | max_body=${httpCfg.maxBodyBytes}B | max_conns=${httpCfg.maxConnections} | drain=${httpCfg.drainMs}ms | dynamic-gating=disabled`,
+      `[tandoor-mcp] ${pkg.name}@${pkg.version} on http://${httpCfg.host}:${httpCfg.port}${httpCfg.path} | auth=${httpCfg.requireAuth ? 'required' : 'disabled'} | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${formatSectionModes(sections)} | ${stashLine} | max_body=${httpCfg.maxBodyBytes}B | max_conns=${httpCfg.maxConnections} | drain=${httpCfg.drainMs}ms | dynamic-gating=disabled`,
     );
     const shutdown = (signal: string) => {
       console.error(`[tandoor-mcp] ${signal} received, draining`);
@@ -121,7 +120,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await buildServer().connect(transport);
   console.error(
-    `[tandoor-mcp] ${pkg.name}@${pkg.version} on stdio | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${sectionsLine} | ${stashLine}`,
+    `[tandoor-mcp] ${pkg.name}@${pkg.version} on stdio | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${formatSectionModes(sections)} | ${stashLine}`,
   );
 }
 

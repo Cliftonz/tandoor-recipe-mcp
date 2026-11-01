@@ -11,11 +11,9 @@ export const ALWAYS_ON_TOOLS: readonly string[] = [
   'get_current_space',
 ];
 
-export const TIERED_MODES = ['off', 'simple', 'full'] as const;
-export const TOGGLE_MODES = ['off', 'on'] as const;
-export type TieredMode = (typeof TIERED_MODES)[number];
-export type ToggleMode = (typeof TOGGLE_MODES)[number];
-export type SectionMode = TieredMode | ToggleMode;
+const TIERED_MODES = ['off', 'simple', 'full'] as const;
+const TOGGLE_MODES = ['off', 'on'] as const;
+export type SectionMode = (typeof TIERED_MODES)[number] | (typeof TOGGLE_MODES)[number];
 
 interface SectionBase {
   name: string;
@@ -23,13 +21,13 @@ interface SectionBase {
   description: string;
 }
 
-export interface TieredSection extends SectionBase {
+interface TieredSection extends SectionBase {
   kind: 'tiered';
   simple: readonly string[];
   full: readonly string[];
 }
 
-export interface ToggleSection extends SectionBase {
+interface ToggleSection extends SectionBase {
   kind: 'toggle';
   tools: readonly string[];
 }
@@ -231,4 +229,10 @@ export function visibleTools(section: Section, mode: SectionMode): readonly stri
   if (mode === 'off') return [];
   if (section.kind === 'toggle') return section.tools;
   return mode === 'simple' ? section.simple : sectionTools(section);
+}
+
+export const SECTION_ENV_VARS = SECTIONS.map((s) => s.envVar).join(', ');
+
+export function formatSectionModes(modes: SectionModes): string {
+  return [...modes].map(([name, mode]) => `${name}=${mode}`).join(', ');
 }

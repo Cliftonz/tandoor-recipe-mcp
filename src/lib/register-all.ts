@@ -37,9 +37,7 @@ import type { VersionCheckResult } from './version-check.js';
 
 export interface RegisterAllToolsOptions {
   sections: SectionModes;
-  /** Package metadata threaded into registerVersionTools. Required. */
   pkg: { name: string; version: string };
-  /** Version probe result threaded into registerVersionTools. Required. */
   versionCheck: VersionCheckResult;
 }
 
@@ -58,9 +56,8 @@ export function registerAllTools(
   opts: RegisterAllToolsOptions,
 ): void {
   const { pkg, versionCheck } = opts;
-  const modes = new Map(opts.sections);
 
-  registerToolGroupTools(server, client, modes);
+  registerToolGroupTools(server, client, opts.sections);
   registerRecipeTools(server, client);
   registerMealPlanTools(server, client);
   registerIngredientTools(server, client);
@@ -88,5 +85,5 @@ export function registerAllTools(
   registerSpaceTools(server, client);
   registerHousekeepingTools(server, client);
 
-  applySectionModes(server, modes);
+  applySectionModes(server, opts.sections);
 }

@@ -1,4 +1,4 @@
-import { SECTIONS, type SectionModes } from './sections.js';
+import { SECTION_ENV_VARS, formatSectionModes, type SectionModes } from './sections.js';
 import type { StashConfig } from './stash.js';
 import type { VersionCheckResult } from './version-check.js';
 
@@ -52,14 +52,14 @@ export function buildInstructions(
     '',
     'Pass ids (`food_id`, `unit_id`, ...), not objects; the tools build the request shape.',
     '',
-    `Tool sections: ${[...sections].map(([name, mode]) => `${name}=${mode}`).join(', ')}. Call list_tool_groups to see them.`,
+    `Tool sections: ${formatSectionModes(sections)}. Call list_tool_groups to see them.`,
   );
   if (transport) {
     const bind = transport.bind ? ` bind=${transport.bind}` : '';
     const authRequired = transport.requireAuth ? 'yes' : 'no';
     lines.push('', `Transport: ${transport.mode}.${bind} auth-required: ${authRequired}`);
     if (transport.mode === 'http') {
-      lines.push(`Dynamic tool gating (enable_tool_group / disable_tool_group) is disabled in HTTP mode; set the section settings (${SECTIONS.map((s) => s.envVar).join(', ')}) to lock the surface at boot.`);
+      lines.push(`Dynamic tool gating (enable_tool_group / disable_tool_group) is disabled in HTTP mode; set the section settings (${SECTION_ENV_VARS}) to lock the surface at boot.`);
     }
   }
   return lines.join('\n');
