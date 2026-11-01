@@ -1,4 +1,4 @@
-// MCP resources — read-only context the model can subscribe to. Unlike
+// MCP resources: read-only context the model can subscribe to. Unlike
 // tools, resources don't require a function call to inspect; the client
 // pre-fetches them so the model always has current state.
 
@@ -59,7 +59,7 @@ export function registerResources(server: McpServer, client: TandoorClient): voi
     'meal-plan-this-week',
     'tandoor://meal-plan/this-week',
     {
-      title: 'Meal Plan — This Week',
+      title: 'Meal Plan: This Week',
       description:
         'Your meal plan entries for Monday-Sunday of the current week, trimmed to {id, date, meal_type, recipe_name, servings, note}. Auto-refreshes every read.',
       mimeType: 'application/json',
@@ -91,7 +91,7 @@ export function registerResources(server: McpServer, client: TandoorClient): voi
     'pantry-on-hand',
     'tandoor://pantry/on-hand',
     {
-      title: 'Pantry — On Hand',
+      title: 'Pantry: On Hand',
       description:
         `What is available. locations holds inventory entries with amount > 0, grouped by location. is_freezer marks freezers. Each entry has amount, unit, expires, sub_location, and note. on_hand_no_quantity holds foods flagged on hand that have no inventory entry. Shows at most ${PANTRY_CAP} entries and ${PANTRY_CAP} foods. on_hand_no_quantity is exact only when truncated.entries is false. When truncated.entries is true, use list_inventory_entries (inventory section) for the full list of entries. When truncated.on_hand_no_quantity is true, use list_foods for the full list of foods.`,
       mimeType: 'application/json',
@@ -138,7 +138,7 @@ export function registerResources(server: McpServer, client: TandoorClient): voi
     'shopping-list-active',
     'tandoor://shopping-list/active',
     {
-      title: 'Shopping List — Active',
+      title: 'Shopping List: Active',
       description:
         'Unchecked shopping list entries (Tandoor filters to recent + unchecked by default). Slim fields: food, unit, amount, list_recipe.',
       mimeType: 'application/json',

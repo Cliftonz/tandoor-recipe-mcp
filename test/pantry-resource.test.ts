@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../src/clients/index.js';
 import { registerResources } from '../src/resources/index.js';
+import { registerPrompts } from '../src/prompts/index.js';
 
 const URI = 'tandoor://pantry/on-hand';
 
@@ -166,5 +167,33 @@ describe('tandoor://pantry/on-hand', () => {
     stubPages({ entries: entryPages, foods: foodPages });
 
     expect((await readPantry()).truncated).toEqual({ entries: false, on_hand_no_quantity: false });
+  });
+});
+
+describe('resource titles and prompt text', () => {
+  it('titles the resources without em-dashes', () => {
+    const server = new McpServer({ name: 't', version: 't' });
+    registerResources(server, new TandoorClient({ url: 'https://tandoor.test', token: 't' }));
+    const titles = Object.fromEntries(Object.entries((server as any)._registeredResources).map(([uri, r]: [string, any]) => [uri, r.metadata.title]));
+    expect(titles).toEqual({
+      'tandoor://meal-plan/this-week': 'Meal Plan: This Week',
+      'tandoor://pantry/on-hand': 'Pantry: On Hand',
+      'tandoor://shopping-list/active': 'Shopping List: Active',
+      'tandoor://meal-types': 'Meal Types',
+    });
+  });
+
+  it('writes no em-dash in any prompt description or message', async () => {
+    const server = new McpServer({ name: 't', version: 't' });
+    registerPrompts(server, new TandoorClient({ url: 'https://tandoor.test', token: 't' }));
+    const texts: string[] = [];
+    for (const prompt of Object.values((server as any)._registeredPrompts) as any[]) {
+      texts.push(prompt.description);
+      for (const args of [{}, { use_pantry: 'true', keywords: 'quick', start_date: '2027-01-04' }, { url: 'https://example.test/r' }]) {
+        const result = await prompt.callback(args, {});
+        texts.push(result.description, ...result.messages.map((m: any) => m.content.text));
+      }
+    }
+    expect(texts.filter((t) => t.includes('\u2014'))).toEqual([]);
   });
 });

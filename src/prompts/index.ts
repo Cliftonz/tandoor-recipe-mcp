@@ -1,4 +1,4 @@
-// MCP prompts — user-invokable templates. These are the "/ commands" a user
+// MCP prompts: user-invokable templates. These are the "/ commands" a user
 // runs from an MCP client UI. Each prompt returns a set of messages the model
 // should use as its starting context.
 
@@ -40,7 +40,7 @@ export function registerPrompts(server: McpServer, _client: TandoorClient): void
     ({ start_date, days, keywords, use_pantry }): GetPromptResult => {
       const startLine = start_date ? `Start date: ${start_date}` : 'Start today.';
       const dayCount = days || '7';
-      const kwLine = keywords ? `Favor these keywords: ${keywords}` : 'No keyword preference — mix it up.';
+      const kwLine = keywords ? `Favor these keywords: ${keywords}` : 'No keyword preference; mix it up.';
       const pantryLine = use_pantry === 'true'
         ? 'First, read the `tandoor://pantry/on-hand` resource and bias recipe choices toward what\'s already in the pantry.'
         : 'Ignore pantry on-hand state unless the user asks.';
@@ -138,7 +138,7 @@ export function registerPrompts(server: McpServer, _client: TandoorClient): void
               '2. Call `list_recipes` with makenow=true, sort_order=-rating, page_size=10 to get candidates Tandoor thinks are makeable.',
               `3. Filter candidates where working_time + waiting_time <= ${timeBound}.`,
               '4. For the top 5, call `get_recipe` (format=slim) to show ingredient names and step count.',
-              '5. Present as a numbered list with name, total time, and 1-line description. Do not start cooking anything — wait for user to pick.',
+              '5. Present as a numbered list with name, total time, and 1-line description. Do not start cooking anything. Wait for the user to pick.',
             ].join('\n')
           ),
         ],
