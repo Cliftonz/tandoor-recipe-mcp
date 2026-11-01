@@ -180,7 +180,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleGetFood);
 
   registerStringTool(server, client, 'create_food', {
-    description: `Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). If a food with this name exists, Tandoor returns it instead of creating one. With shopping_list_ids the tool checks for that first and refuses, changing nothing; use update_food. Tandoor cannot set lists while creating a food, so the tool creates the food first and then sets its lists. If setting the lists fails, the error gives the new food's id. ${FOOD_LISTS}`,
+    description: `Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). If a food with this name exists, Tandoor returns it instead of creating one. With shopping_list_ids (including []) the tool checks for that first and refuses, changing nothing; use update_food. Tandoor cannot set lists while creating a food, so the tool creates the food first and then sets its lists. If setting the lists fails, the error gives the new food's id. ${FOOD_LISTS}`,
     inputSchema: createFoodShape,
   }, handleCreateFood);
 

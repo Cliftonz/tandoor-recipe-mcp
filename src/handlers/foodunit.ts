@@ -86,7 +86,7 @@ export async function handleCreateFood(
     body.supermarket_category = args.supermarket_category_id;
   }
   const listIds = args.shopping_list_ids;
-  if (listIds?.length) {
+  if (listIds !== undefined) {
     await checkShoppingListIds(client, listIds, ctx?.signal);
     const name = args.name.trim();
     let sameName: any;

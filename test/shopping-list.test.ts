@@ -367,9 +367,17 @@ describe('food shopping lists', () => {
   });
 
   it('creates a food with shopping_list_ids [] without a list PATCH', async () => {
-    const sent = stubTandoor({ 'POST /api/food/': milk });
+    const sent = stubTandoor({ ...noSuchFood, 'POST /api/food/': milk });
     await handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [] });
-    expect(sent).toEqual([{ method: 'POST', path: '/api/food/', body: { name: 'Milk' } }]);
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([{ method: 'POST', path: '/api/food/', body: { name: 'Milk' } }]);
+  });
+
+  it('refuses shopping_list_ids [] on a food that already has the name, and writes nothing', async () => {
+    const sent = stubTandoor({ 'GET /api/food/?query=Milk&page=1&page_size=100': page([{ ...milk, id: 9, name: 'milk', shopping_lists: [costco] }]) });
+    await expect(handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [] })).rejects.toThrow(
+      new Error('A food named milk already exists (id 9); use update_food to change its lists.'),
+    );
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
   });
 
   it('reports a food created without lists when the list PATCH fails', async () => {
