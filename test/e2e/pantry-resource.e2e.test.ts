@@ -85,6 +85,6 @@ async function api(method: string, path: string, body?: unknown): Promise<any> {
     ]));
     const onHandOnly = pantry.on_hand_no_quantity.filter((f: any) => f.name.startsWith(tag));
     expect(onHandOnly).toEqual([{ id: foods.salt, name: `${tag}-salt`, supermarket_category: null }]);
-    expect(pantry.truncated).toEqual({ entries: false, foods: false });
+    expect(pantry.truncated).toEqual({ entries: false, on_hand_no_quantity: false });
   });
 });

@@ -95,8 +95,8 @@ describe('tandoor://pantry/on-hand', () => {
         },
       ],
       on_hand_no_quantity: [{ id: 8, name: 'salt', supermarket_category: 'Spices' }],
-      counts: { entries: 3, foods_on_hand_only: 1 },
-      truncated: { entries: false, foods: false },
+      counts: { entries: 3, on_hand_no_quantity: 1 },
+      truncated: { entries: false, on_hand_no_quantity: false },
     });
   });
 
@@ -137,10 +137,10 @@ describe('tandoor://pantry/on-hand', () => {
 
     const pantry = await readPantry();
 
-    expect(pantry.counts).toEqual({ entries: 500, foods_on_hand_only: 500 });
+    expect(pantry.counts).toEqual({ entries: 500, on_hand_no_quantity: 500 });
     expect(pantry.locations[0].entries).toHaveLength(500);
     expect(pantry.on_hand_no_quantity).toHaveLength(500);
-    expect(pantry.truncated).toEqual({ entries: true, foods: true });
+    expect(pantry.truncated).toEqual({ entries: true, on_hand_no_quantity: true });
   });
 
   it('does not flag truncation when exactly 500 exist', async () => {
@@ -154,6 +154,6 @@ describe('tandoor://pantry/on-hand', () => {
     }));
     stubPages({ entries: entryPages, foods: foodPages });
 
-    expect((await readPantry()).truncated).toEqual({ entries: false, foods: false });
+    expect((await readPantry()).truncated).toEqual({ entries: false, on_hand_no_quantity: false });
   });
 });

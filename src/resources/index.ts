@@ -128,8 +128,8 @@ export function registerResources(server: McpServer, client: TandoorClient): voi
       return jsonResource(uri.href, {
         locations: [...locations.values()],
         on_hand_no_quantity: foods.items.map((f) => ({ id: f.id, name: f.name, supermarket_category: f.supermarket_category?.name ?? null })),
-        counts: { entries: entries.items.length, foods_on_hand_only: foods.items.length },
-        truncated: { entries: entries.truncated, foods: foods.truncated },
+        counts: { entries: entries.items.length, on_hand_no_quantity: foods.items.length },
+        truncated: { entries: entries.truncated, on_hand_no_quantity: foods.truncated },
       });
     }
   );
