@@ -48,8 +48,7 @@ export async function handleGetHousehold(
   ctx?: HandlerContext,
 ): Promise<string> {
   const r = await client.households.getHousehold(args.id, { signal: ctx?.signal });
-  const found = await members(client, args.id, ctx?.signal);
-  return emit({ ...(args.format === 'full' ? r : slimHousehold(r)), members: found });
+  return emit({ ...(args.format === 'full' ? r : slimHousehold(r)), members: await members(client, args.id, ctx?.signal) });
 }
 
 export async function handleCreateHousehold(

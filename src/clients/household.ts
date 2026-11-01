@@ -1,17 +1,10 @@
-import { BaseClient, qs, TandoorRequestOptions } from './base.js';
+import { BaseClient, qs, TandoorRequestOptions, explainOwnerOnly403 } from './base.js';
 
 type Opts = { signal?: AbortSignal };
 
-export function requireOwner<T>(call: Promise<T>): Promise<T> {
-  return call.catch((e: Error) => {
-    if (!e.message.startsWith('Tandoor API error: 403')) throw e;
-    throw new Error(`This call requires the space owner; space admins and members get 403.\n\n${e.message}`);
-  });
-}
-
 export class HouseholdClient extends BaseClient {
   protected request<T>(endpoint: string, options?: TandoorRequestOptions): Promise<T> {
-    return requireOwner(super.request<T>(endpoint, options));
+    return explainOwnerOnly403(super.request<T>(endpoint, options));
   }
 
   async listHouseholds(params?: { page?: number; page_size?: number }, opts?: Opts): Promise<any> {

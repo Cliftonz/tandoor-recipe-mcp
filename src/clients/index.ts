@@ -232,7 +232,8 @@ export class TandoorClient {
 }
 
 // Re-export for convenience
-export * from './base.js';
+export { BaseClient, qs, redactToken } from './base.js';
+export type { TandoorRequestOptions } from './base.js';
 export * from './recipe.js';
 export * from './mealplan.js';
 export * from './ingredient.js';
