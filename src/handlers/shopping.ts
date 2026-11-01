@@ -23,6 +23,10 @@ import type {
 import type { HandlerContext } from '../lib/register.js';
 import { emit, assertNonEmptyBody, slimPaginated } from '../lib/slim.js';
 
+export function slimListRefs(lists: any[]) {
+  return lists.map((l) => ({ id: l.id, name: l.name }));
+}
+
 function slimShoppingList(l: any) {
   return { id: l.id, name: l.name, description: l.description, color: l.color };
 }
@@ -90,6 +94,7 @@ function slimEntry(e: any) {
     list_recipe: e.list_recipe,
     ingredient: e.ingredient,
     delay_until: e.delay_until,
+    shopping_lists: slimListRefs(e.shopping_lists),
   };
 }
 

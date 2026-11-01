@@ -8,6 +8,7 @@ import {
   handleCreateShoppingList,
   handleUpdateShoppingList,
   handleDeleteShoppingList,
+  handleGetShoppingEntry,
 } from '../src/handlers/shopping.js';
 
 type Sent = { method: string; path: string; body?: unknown };
@@ -33,6 +34,16 @@ function stubTandoor(routes: Record<string, unknown>): Sent[] {
 const client = () => new TandoorClient({ url: 'https://tandoor.test', token: 'test-token' });
 
 const costco = { id: 2, name: 'Costco', description: '', color: '#ff0000' };
+
+const aldi = { id: 3, name: 'Aldi', description: 'cheap', color: null };
+
+function entry(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 7, list_recipe: null, shopping_lists: [costco], food: { id: 1, name: 'Milk', shopping_lists: [aldi] },
+    unit: null, amount: 1, order: 0, checked: false, ingredient: null, completed_at: null, delay_until: null,
+    ...overrides,
+  };
+}
 
 const body = (out: string) => JSON.parse(out.slice(out.search(/[[{]/)));
 
@@ -88,5 +99,13 @@ describe('shopping list tools', () => {
         expect(schema.safeParse({ name: 'A', color }).success).toBe(false);
       }
     }
+  });
+});
+
+describe('shopping entry lists', () => {
+  it('shows the lists of an entry as {id, name}', async () => {
+    stubTandoor({ 'GET /api/shopping-list-entry/7/': entry({ shopping_lists: [costco, aldi] }) });
+    const out = JSON.parse(await handleGetShoppingEntry(client(), { id: 7 }));
+    expect(out.shopping_lists).toEqual([{ id: 2, name: 'Costco' }, { id: 3, name: 'Aldi' }]);
   });
 });

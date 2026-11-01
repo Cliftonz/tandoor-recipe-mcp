@@ -582,7 +582,7 @@ describe('cook log handlers', () => {
 
 describe('shopping handlers', () => {
   it('handleCreateShoppingEntry sends food/unit as bare ids and optional mealplan_id', async () => {
-    const createEntry = vi.fn(async (b) => ({ id: 1, ...b }));
+    const createEntry = vi.fn(async (b) => ({ id: 1, shopping_lists: [], ...b }));
     const client = { shopping: { createEntry } } as any;
     await handleCreateShoppingEntry(client, {
       amount: 2,
@@ -597,28 +597,28 @@ describe('shopping handlers', () => {
   });
 
   it('handleUpdateShoppingEntry sends food/unit as bare ids', async () => {
-    const patchEntry = vi.fn(async (id, b) => ({ id, ...b }));
+    const patchEntry = vi.fn(async (id, b) => ({ id, shopping_lists: [], ...b }));
     const client = { shopping: { patchEntry } } as any;
     await handleUpdateShoppingEntry(client, { id: 7, food_id: 3, unit_id: 4 });
     expect(patchEntry.mock.calls[0][1]).toEqual({ food: 3, unit: 4 });
   });
 
   it('handleUpdateShoppingEntry passes null food/unit through as null', async () => {
-    const patchEntry = vi.fn(async (id, b) => ({ id, ...b }));
+    const patchEntry = vi.fn(async (id, b) => ({ id, shopping_lists: [], ...b }));
     const client = { shopping: { patchEntry } } as any;
     await handleUpdateShoppingEntry(client, { id: 7, food_id: null, unit_id: null });
     expect(patchEntry.mock.calls[0][1]).toEqual({ food: null, unit: null });
   });
 
   it('handleCreateShoppingEntry sends null unit when unit_id is omitted', async () => {
-    const createEntry = vi.fn(async (b) => ({ id: 1, ...b }));
+    const createEntry = vi.fn(async (b) => ({ id: 1, shopping_lists: [], ...b }));
     const client = { shopping: { createEntry } } as any;
     await handleCreateShoppingEntry(client, { amount: 1, food_id: 3 });
     expect(createEntry.mock.calls[0][0].unit).toBeNull();
   });
 
   it('handleCreateShoppingEntry passes null unit when unit_id is null', async () => {
-    const createEntry = vi.fn(async (b) => ({ id: 1, ...b }));
+    const createEntry = vi.fn(async (b) => ({ id: 1, shopping_lists: [], ...b }));
     const client = { shopping: { createEntry } } as any;
     await handleCreateShoppingEntry(client, { amount: 1, food_id: 3, unit_id: null });
     expect(createEntry.mock.calls[0][0].unit).toBeNull();
