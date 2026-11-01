@@ -97,8 +97,7 @@ export async function handleCreateInventoryLocation(
   if (!household) {
     throw new Error('You are not in a household in this space. Assign yourself to a household in Tandoor, then retry.');
   }
-  const body: any = { name: args.name, household: household.id };
-  if (args.is_freezer !== undefined) body.is_freezer = args.is_freezer;
+  const body = { name: args.name, household: household.id, is_freezer: args.is_freezer };
   const r = await client.inventory.createLocation(body, { signal: ctx?.signal });
   return `Inventory location created.\n\n${emit(args.format === 'full' ? r : slimLocation(r))}`;
 }
@@ -134,7 +133,7 @@ export async function handleListInventoryEntries(
   const params = {
     inventory_location_id: location_id,
     ...rest,
-    ...(include_empty ? { empty: true as const } : {}),
+    empty: include_empty || undefined,
   };
   const r = await client.inventory.listEntries(params, { signal: ctx?.signal });
   return format === 'full' ? emit(r) : emit(slimPaginated(r, slimEntry));

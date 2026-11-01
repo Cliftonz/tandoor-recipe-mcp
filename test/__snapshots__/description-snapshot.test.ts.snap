@@ -39,7 +39,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "bulk_create_shopping_list_recipe_entries",
   },
   {
-    "description": "Use up some or all of an inventory entry. Identify it by entry_id, or by food_id with optional location_id (errors listing the candidates when several entries match). Give exactly one of amount (> 0) or all: true. Optional unit_id must match the entry unit; there is no unit conversion. The amount never goes below 0: consuming more than is on hand sets it to 0, keeps the entry and returns a warning. Reads the entry, then writes the new amount; two consumes of the same entry at the same moment can lose one update, because Tandoor has no atomic decrement.",
+    "description": "Use up some or all of an inventory entry. Identify it by entry_id, or by food_id with optional location_id (errors listing the candidates when several entries match). Give exactly one of amount (> 0) or all: true. Optional unit_id must match the entry unit; there is no unit conversion. The amount never goes below 0: consuming more than is on hand sets it to 0 and returns a warning. Never deletes the entry; at 0 (including after all: true) it is hidden from list_inventory_entries unless include_empty is true. Not atomic: two concurrent consumes of one entry can lose an update.",
     "name": "consume_inventory_item",
   },
   {
@@ -87,7 +87,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "create_ingredient",
   },
   {
-    "description": "Create an inventory location in your household. Required: name. Optional: is_freezer. Fails if you are not in a household in this space; assign one in Tandoor first.",
+    "description": "Create an inventory location in your household. Required: name. Optional: is_freezer. Fails if you are not in a household in this space; assign yourself to a household in Tandoor first.",
     "name": "create_inventory_location",
   },
   {
@@ -651,7 +651,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_inventory_locations",
   },
   {
-    "description": "List inventory log rows (read-only history of amount and location changes). Optional: entry_id, food_id, page, page_size. booking_type is move when the location changed; an amount change at the same location is logged as remove, even when the amount goes up.",
+    "description": "List inventory log rows (read-only history of amount and location changes). Optional: entry_id, food_id, page, page_size. booking_type is add on creation, move when the location changed (even if the amount changed too), and remove for any other amount change, even an increase.",
     "name": "list_inventory_logs",
   },
   {

@@ -394,3 +394,50 @@ describe('inventory logs', () => {
     expect(JSON.parse(await handleGetInventoryLog(client(), { id: 30, format: 'full' }))).toEqual(log);
   });
 });
+
+describe('format full returns the raw Tandoor object', () => {
+  const page = (results: unknown[]) => ({ count: results.length, next: null, previous: null, results });
+  const body = (out: string) => JSON.parse(out.slice(out.indexOf('{')));
+  const log = {
+    id: 30, entry: entry(), booking_type: 'add', old_amount: 0, new_amount: 400,
+    old_inventory_location: freezer, new_inventory_location: freezer, note: null, created_at: 't',
+  };
+
+  it('on the list tools', async () => {
+    stubTandoor({
+      'GET /api/inventory-location/': page([freezer]),
+      'GET /api/inventory-entry/': page([entry()]),
+      'GET /api/inventory-log/': page([log]),
+    });
+    expect(JSON.parse(await handleListInventoryLocations(client(), { format: 'full' }))).toEqual(page([freezer]));
+    expect(JSON.parse(await handleListInventoryEntries(client(), { format: 'full' }))).toEqual(page([entry()]));
+    expect(JSON.parse(await handleListInventoryLogs(client(), { format: 'full' }))).toEqual(page([log]));
+  });
+
+  it('on location create and update', async () => {
+    stubTandoor({
+      'GET /api/user-space/all_personal/': [userSpace({ active: true, household })],
+      'POST /api/inventory-location/': freezer,
+      'PATCH /api/inventory-location/2/': freezer,
+    });
+    expect(body(await handleCreateInventoryLocation(client(), { name: 'Freezer', format: 'full' }))).toEqual(freezer);
+    expect(body(await handleUpdateInventoryLocation(client(), { id: 2, name: 'Freezer', format: 'full' }))).toEqual(freezer);
+  });
+
+  it('on add and update_inventory_entry', async () => {
+    stubTandoor({ 'POST /api/inventory-entry/': entry(), 'PATCH /api/inventory-entry/11/': entry() });
+    const add = { food_id: 5, unit_id: 3, amount: 400, location_id: 2, format: 'full' as const };
+    expect(body(await handleAddInventoryItem(client(), add))).toEqual(entry());
+    expect(body(await handleUpdateInventoryEntry(client(), { id: 11, amount: 400, format: 'full' }))).toEqual(entry());
+  });
+
+  it('on consume and move', async () => {
+    const pantry = { id: 7, name: 'Pantry', is_freezer: false, household };
+    stubTandoor({ 'GET /api/inventory-entry/11/': entry(), 'PATCH /api/inventory-entry/11/': entry({ amount: 399 }) });
+    expect(body(await handleConsumeInventoryItem(client(), { entry_id: 11, amount: 1, format: 'full' }))).toEqual(entry({ amount: 399 }));
+    vi.restoreAllMocks();
+    stubTandoor({ 'GET /api/inventory-entry/11/': entry(), 'PATCH /api/inventory-entry/11/': entry({ inventory_location: pantry }) });
+    expect(body(await handleMoveInventoryItem(client(), { entry_id: 11, to_location_id: 7, format: 'full' })))
+      .toEqual({ ...entry({ inventory_location: pantry }), from_location: 'Freezer' });
+  });
+});

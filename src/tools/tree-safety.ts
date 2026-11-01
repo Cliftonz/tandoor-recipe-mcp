@@ -1,5 +1,5 @@
 // Tree-safety delete-preview tools. One BaseClient method + one handler factory
-// drives 39 registrations (13 resources * 3 actions); table stays in sync with
+// drives a registration per resource and action; table stays in sync with
 // Tandoor's uniform /api/{resource}/{id}/{action}/ endpoint shape.
 
 import { z } from 'zod';
