@@ -19,6 +19,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "ai_step_sort",
   },
   {
+    "description": "Put user-spaces into a household, or take them out with household_id null. Space owner only (admins get 403). Required: user_space_ids (ids from list_user_spaces), household_id (an id from list_households, or null). Each user-space keeps its groups. Reports each id as updated, unchanged (already in that household), or failed with Tandoor's error; errors only when every id failed.",
+    "name": "assign_household",
+  },
+  {
     "description": "Trade username + password for a Tandoor bearer token via POST /api-token-auth/. ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user.",
     "name": "authenticate",
   },
@@ -79,6 +83,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "create_food",
   },
   {
+    "description": "Create a household in this space. Space owner only (admins get 403). Required: name. Add members with assign_household.",
+    "name": "create_household",
+  },
+  {
     "description": "Create an import-log entry. Required: type. Optional: msg, running, total_recipes, imported_recipes. Tandoor also writes these automatically during URL/AI/bookmarklet imports.",
     "name": "create_import_log",
   },
@@ -87,7 +95,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "create_ingredient",
   },
   {
-    "description": "Create an inventory location in your household. Required: name. Optional: is_freezer. Fails if you are not in a household in this space; assign yourself to a household in Tandoor first.",
+    "description": "Create an inventory location in your household. Required: name. Optional: is_freezer. Fails if you are not in a household in this space; create one with create_household and assign yourself with assign_household (household-space section, space owner only), or ask the space owner.",
     "name": "create_inventory_location",
   },
   {
@@ -205,6 +213,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
   {
     "description": "Delete food by ID. Destructive + irreversible. Before calling, recommend: (1) check recipe usage via list_recipes({foods: [id]}) — if recipes reference it, they will lose the ingredient link; (2) if the intent is deduplication not removal, use merge_food instead so references follow the merge.",
     "name": "delete_food",
+  },
+  {
+    "description": "Delete a household by ID. Space owner only (admins get 403). Refuses, and deletes nothing, while any user-space or inventory location still belongs to the household; the error lists them. Unassign user-spaces with assign_household (household_id null) and delete the locations first.",
+    "name": "delete_household",
   },
   {
     "description": "Delete an import-log entry by ID.",
@@ -405,6 +417,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
   {
     "description": "Inspect security-guard rejection counters (PathGuardError, SsrfBlockedError) since process start. Useful for dashboards and "is anything probing me?" checks.",
     "name": "get_guard_stats",
+  },
+  {
+    "description": "Get a household by ID, with its members as {user_space_id, user}. Space owner only (admins get 403).",
+    "name": "get_household",
   },
   {
     "description": "Get an import-log entry by ID.",
@@ -633,6 +649,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
   {
     "description": "List permission groups defined on the Tandoor server.",
     "name": "list_groups",
+  },
+  {
+    "description": "List the households in this space. Space owner only (admins get 403). Optional: page, page_size. Use get_household to see a household's members.",
+    "name": "list_households",
   },
   {
     "description": "List import-log entries (URL/AI/bookmarklet import history).",
@@ -1039,6 +1059,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "update_food",
   },
   {
+    "description": "Rename a household. Space owner only (admins get 403). Required: id, name.",
+    "name": "update_household",
+  },
+  {
     "description": "Update an import-log entry (PATCH). Required: id.",
     "name": "update_import_log",
   },
@@ -1151,7 +1175,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "update_user_preference",
   },
   {
-    "description": "Update a user-space membership (PATCH). Required: id, plus at least one field (active, groups, internal_note).",
+    "description": "Update a user-space membership (PATCH). Space owner only (admins get 403). Required: id, plus at least one of active, groups, internal_note. Omitted groups keep their current value. groups replaces the membership's groups and must be ids from list_groups. ESCALATION SURFACE: groups can grant space admin rights. Only change groups when explicitly asked by the user. To set the household, use assign_household.",
     "name": "update_user_space",
   },
   {
@@ -1298,6 +1322,33 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "ai_step_sort",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "household_id": {
+          "type": [
+            "number",
+            "null",
+          ],
+        },
+        "user_space_ids": {
+          "items": {
+            "type": "number",
+          },
+          "minItems": 1,
+          "type": "array",
+        },
+      },
+      "required": [
+        "user_space_ids",
+        "household_id",
+      ],
+      "type": "object",
+    },
+    "name": "assign_household",
   },
   {
     "inputSchema": {
@@ -1903,6 +1954,29 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "create_food",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_household",
   },
   {
     "inputSchema": {
@@ -3067,6 +3141,22 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       ],
       "type": "object",
     },
+    "name": "delete_household",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "delete_import_log",
   },
   {
@@ -4129,6 +4219,29 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "get_guard_stats",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_household",
   },
   {
     "inputSchema": {
@@ -5394,6 +5507,29 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "list_groups",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_households",
   },
   {
     "inputSchema": {
@@ -8043,6 +8179,33 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "update_food",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "update_household",
   },
   {
     "inputSchema": {

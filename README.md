@@ -197,7 +197,7 @@ Toggle sections take `off` or `on` and default to `off`.
 | `recipe-books` | `TANDOOR_MCP_RECIPE_BOOKS` | Recipe books (collections) and their entries. |
 | `ai` | `TANDOOR_MCP_AI` | AI providers, AI recipe import from images, AI step sort and property estimation, AI logs. |
 | `import-export` | `TANDOOR_MCP_IMPORT_EXPORT` | Recipe import and export, import queues, bookmarklet and open-data imports, their logs. |
-| `household-space` | `TANDOOR_MCP_HOUSEHOLD_SPACE` | Spaces, memberships, users, groups, invite links, user preferences. |
+| `household-space` | `TANDOOR_MCP_HOUSEHOLD_SPACE` | Spaces, memberships, households and household assignment, users, groups, invite links, user preferences. Only the space owner can use the household tools and `update_user_space`; Tandoor answers space admins with a 403. |
 | `admin` | `TANDOOR_MCP_ADMIN` | Server settings, access tokens, storages, syncs, connectors, automations, user files, view logs, search settings, localization. |
 
 A delete preview (`preview_*_delete_*`) belongs to the same section and tier as its delete tool.
