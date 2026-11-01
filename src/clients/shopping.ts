@@ -91,6 +91,10 @@ export class ShoppingClient extends BaseClient {
     });
   }
 
+  async bulkUpdateEntries(body: { ids: number[] }, opts?: Opts): Promise<any> {
+    return this.request('/api/shopping-list-entry/bulk/', { method: 'POST', body: JSON.stringify(body), signal: opts?.signal });
+  }
+
   // ---------- Shopping list recipes ----------
 
   async listShoppingListRecipes(params?: {

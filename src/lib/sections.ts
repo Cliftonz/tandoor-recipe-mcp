@@ -88,7 +88,7 @@ export const SECTIONS: readonly Section[] = [
     simple: [
       'list_shopping_lists',
       ...crud('shopping_entry', 'shopping_entries'),
-      'bulk_check_shopping_entries', 'add_recipe_to_shopping_list', 'food_shopping_update',
+      'bulk_check_shopping_entries', 'bulk_update_shopping_entries', 'add_recipe_to_shopping_list', 'food_shopping_update',
     ],
     full: [
       'get_shopping_list', 'create_shopping_list', 'update_shopping_list', 'delete_shopping_list',

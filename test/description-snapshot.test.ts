@@ -38,7 +38,7 @@ beforeAll(() => {
 describe('tool description snapshot', () => {
   it('tool count is stable', () => {
     // Update deliberately on tool additions or removals. Range guards mask silent tool loss.
-    expect(tools.length).toBe(305);
+    expect(tools.length).toBe(306);
   });
 
   it('every tool has at least one character of description', () => {

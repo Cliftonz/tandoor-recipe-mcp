@@ -41,7 +41,7 @@ describe('startup visibility', () => {
   it('shows always-on tools plus the simple tier of every tiered section by default', async () => {
     const client = await connect();
     expect(await visible(client)).toEqual([
-      'add_inventory_item', 'add_recipe_to_shopping_list', 'bulk_check_shopping_entries',
+      'add_inventory_item', 'add_recipe_to_shopping_list', 'bulk_check_shopping_entries', 'bulk_update_shopping_entries',
       'consume_inventory_item', 'create_food', 'create_meal_plan',
       'create_recipe', 'create_shopping_entry', 'delete_meal_plan', 'delete_shopping_entry',
       'disable_tool_group', 'enable_tool_group', 'food_shopping_update', 'get_current_space',

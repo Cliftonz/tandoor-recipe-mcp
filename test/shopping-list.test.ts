@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { z } from 'zod';
 import { TandoorClient } from '../src/clients/index.js';
-import { createShoppingListShape, updateShoppingListShape } from '../src/tools/shopping.js';
+import { createShoppingListShape, updateShoppingListShape, bulkUpdateShoppingEntriesShape } from '../src/tools/shopping.js';
 import {
   handleListShoppingLists,
   handleGetShoppingList,
@@ -11,6 +11,7 @@ import {
   handleGetShoppingEntry,
   handleCreateShoppingEntry,
   handleUpdateShoppingEntry,
+  handleBulkUpdateShoppingEntries,
 } from '../src/handlers/shopping.js';
 
 type Sent = { method: string; path: string; body?: unknown };
@@ -171,5 +172,74 @@ describe('update_shopping_entry without checked', () => {
     const sent = stubTandoor({});
     await expect(handleUpdateShoppingEntry(client(), { id: 7 })).rejects.toThrow('At least one field required');
     expect(sent).toEqual([]);
+  });
+});
+
+describe('bulk_update_shopping_entries', () => {
+  const bulkEcho = (b: object) => ({ 'POST /api/shopping-list-entry/bulk/': { ...b, shopping_lists_remove_all: false } });
+
+  it('adds and removes lists in one call after checking the ids', async () => {
+    const req = { ids: [7, 8], shopping_lists_add: [2], shopping_lists_remove: [3] };
+    const sent = stubTandoor({ ...listPages, ...bulkEcho(req) });
+    await handleBulkUpdateShoppingEntries(client(), req);
+    expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual([
+      'GET /api/shopping-list/?page=1', 'GET /api/shopping-list/?page=2', 'POST /api/shopping-list-entry/bulk/',
+    ]);
+    expect(sent.at(-1)?.body).toEqual(req);
+  });
+
+  it('checks entries without any list change and without reading the lists', async () => {
+    const sent = stubTandoor(bulkEcho({ ids: [7], checked: true }));
+    await handleBulkUpdateShoppingEntries(client(), { ids: [7], checked: true });
+    expect(sent).toEqual([{ method: 'POST', path: '/api/shopping-list-entry/bulk/', body: { ids: [7], checked: true } }]);
+  });
+
+  it.each([
+    [{ shopping_lists_set: [2] }],
+    [{ shopping_lists_remove_all: true }],
+    [{ shopping_lists_set: [3], checked: false }],
+  ])('sends %o', async (ops) => {
+    const sent = stubTandoor({ ...listPages, ...bulkEcho({ ids: [7], ...ops }) });
+    await handleBulkUpdateShoppingEntries(client(), { ids: [7], ...ops });
+    expect(sent.at(-1)?.body).toEqual({ ids: [7], ...ops });
+  });
+
+  it.each([
+    [{ shopping_lists_set: [2], shopping_lists_add: [3] }, 'shopping_lists_add or shopping_lists_remove, shopping_lists_set'],
+    [{ shopping_lists_set: [2], shopping_lists_remove_all: true }, 'shopping_lists_set, shopping_lists_remove_all'],
+    [{ shopping_lists_remove: [2], shopping_lists_remove_all: true }, 'shopping_lists_add or shopping_lists_remove, shopping_lists_remove_all'],
+  ])('rejects the combination %o and sends nothing', async (ops, named) => {
+    const sent = stubTandoor({});
+    await expect(handleBulkUpdateShoppingEntries(client(), { ids: [7], ...ops })).rejects.toThrow(
+      `Only shopping_lists_add and shopping_lists_remove can be combined; shopping_lists_set and shopping_lists_remove_all must be used alone. Got: ${named}.`,
+    );
+    expect(sent).toEqual([]);
+  });
+
+  it('rejects shopping_lists_set [] and points to shopping_lists_remove_all', async () => {
+    const sent = stubTandoor({});
+    await expect(handleBulkUpdateShoppingEntries(client(), { ids: [7], shopping_lists_set: [] })).rejects.toThrow(
+      'shopping_lists_set: [] does nothing in Tandoor. To take every list off, use shopping_lists_remove_all: true.',
+    );
+    expect(sent).toEqual([]);
+  });
+
+  it('rejects a call with neither checked nor a list change', async () => {
+    const sent = stubTandoor({});
+    await expect(handleBulkUpdateShoppingEntries(client(), { ids: [7] })).rejects.toThrow(
+      'Give checked, a list change, or both.',
+    );
+    expect(sent).toEqual([]);
+  });
+
+  it('rejects unknown list ids and sends no bulk request', async () => {
+    const sent = stubTandoor(listPages);
+    await expect(handleBulkUpdateShoppingEntries(client(), { ids: [7], shopping_lists_add: [999], shopping_lists_remove: [1000] }))
+      .rejects.toThrow(unknownListError);
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
+  });
+
+  it('requires at least one entry id', () => {
+    expect(z.object(bulkUpdateShoppingEntriesShape).safeParse({ ids: [], checked: true }).success).toBe(false);
   });
 });

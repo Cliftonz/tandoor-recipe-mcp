@@ -19,6 +19,8 @@ import type {
   CreateShoppingListArgs,
   UpdateShoppingListArgs,
   DeleteShoppingListArgs,
+  BulkUpdateShoppingEntriesArgs,
+  ListOperations,
 } from '../tools/shopping.js';
 import type { HandlerContext } from '../lib/register.js';
 import { emit, assertNonEmptyBody, slimPaginated } from '../lib/slim.js';
@@ -198,6 +200,33 @@ export async function handleBulkCheckShoppingEntries(
   if (args.ids.length === 0) throw new Error('ids must be a non-empty array');
   const r = await client.shopping.bulkCheckEntries(args.ids, args.checked);
   return emit(r);
+}
+
+export function listOperationIds(ops: ListOperations): number[] | null {
+  const { shopping_lists_add: add, shopping_lists_remove: remove, shopping_lists_set: set, shopping_lists_remove_all: removeAll } = ops;
+  if (set?.length === 0) {
+    throw new Error('shopping_lists_set: [] does nothing in Tandoor. To take every list off, use shopping_lists_remove_all: true.');
+  }
+  const given = [
+    add || remove ? 'shopping_lists_add or shopping_lists_remove' : null,
+    set ? 'shopping_lists_set' : null,
+    removeAll ? 'shopping_lists_remove_all' : null,
+  ].filter((g) => g !== null);
+  if (given.length > 1) {
+    throw new Error(`Only shopping_lists_add and shopping_lists_remove can be combined; shopping_lists_set and shopping_lists_remove_all must be used alone. Got: ${given.join(', ')}.`);
+  }
+  return given.length === 0 ? null : [...(add ?? []), ...(remove ?? []), ...(set ?? [])];
+}
+
+export async function handleBulkUpdateShoppingEntries(
+  client: TandoorClient,
+  args: BulkUpdateShoppingEntriesArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const listIds = listOperationIds(args);
+  if (listIds === null && args.checked === undefined) throw new Error('Give checked, a list change, or both.');
+  await client.shopping.assertShoppingListsExist(listIds ?? [], { signal: ctx?.signal });
+  return emit(await client.shopping.bulkUpdateEntries(args, { signal: ctx?.signal }));
 }
 
 export async function handleListShoppingListRecipes(

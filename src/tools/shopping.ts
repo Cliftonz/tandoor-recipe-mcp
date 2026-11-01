@@ -23,6 +23,7 @@ import {
   handleCreateShoppingList,
   handleUpdateShoppingList,
   handleDeleteShoppingList,
+  handleBulkUpdateShoppingEntries,
 } from '../handlers/shopping.js';
 
 const LIST_IDS_CHECKED = 'Every list id is checked against list_shopping_lists first; unknown ids are rejected and nothing is written.';
@@ -61,6 +62,17 @@ export const updateShoppingListShape = {
 export const deleteShoppingListShape = { id: z.number() } as const;
 
 const shoppingListIds = z.array(z.number());
+
+export const listOperationsShape = {
+  shopping_lists_add: shoppingListIds.optional(),
+  shopping_lists_remove: shoppingListIds.optional(),
+  shopping_lists_set: shoppingListIds.optional(),
+  shopping_lists_remove_all: z.boolean().optional(),
+} as const;
+
+export const LIST_OPERATIONS = 'shopping_lists_add and shopping_lists_remove (may be combined), shopping_lists_set (replaces the lists; must not be empty) '
+  + 'or shopping_lists_remove_all: true (takes every list off). set and remove_all must be used alone. '
+  + `List changes do not update updated_at. ${LIST_IDS_CHECKED}`;
 
 export const listShoppingEntriesShape = {
   mealplan: z.number().optional(),
@@ -103,6 +115,12 @@ export const deleteShoppingEntryShape = { id: z.number() } as const;
 export const bulkCheckShoppingEntriesShape = {
   ids: z.array(z.number()),
   checked: z.boolean(),
+} as const;
+
+export const bulkUpdateShoppingEntriesShape = {
+  ids: z.array(z.number()).min(1),
+  checked: z.boolean().optional(),
+  ...listOperationsShape,
 } as const;
 
 export const listShoppingListRecipesShape = {
@@ -156,6 +174,8 @@ export type CreateShoppingEntryArgs = z.infer<z.ZodObject<typeof createShoppingE
 export type UpdateShoppingEntryArgs = z.infer<z.ZodObject<typeof updateShoppingEntryShape>>;
 export type DeleteShoppingEntryArgs = z.infer<z.ZodObject<typeof deleteShoppingEntryShape>>;
 export type BulkCheckShoppingEntriesArgs = z.infer<z.ZodObject<typeof bulkCheckShoppingEntriesShape>>;
+export type BulkUpdateShoppingEntriesArgs = z.infer<z.ZodObject<typeof bulkUpdateShoppingEntriesShape>>;
+export type ListOperations = z.infer<z.ZodObject<typeof listOperationsShape>>;
 export type ListShoppingListRecipesArgs = z.infer<z.ZodObject<typeof listShoppingListRecipesShape>>;
 export type GetShoppingListRecipeArgs = z.infer<z.ZodObject<typeof getShoppingListRecipeShape>>;
 export type CreateShoppingListRecipeArgs = z.infer<z.ZodObject<typeof createShoppingListRecipeShape>>;
@@ -218,6 +238,11 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
     description: 'Bulk check or uncheck many shopping entries by ID list.',
     inputSchema: bulkCheckShoppingEntriesShape,
   }, handleBulkCheckShoppingEntries);
+
+  registerStringTool(server, client, 'bulk_update_shopping_entries', {
+    description: `Update many shopping entries in one call. Required: ids (entry ids; ids that do not exist are skipped). Give checked, a list change, or both. checked: true checks every entry and sets completed_at to now, also on entries already checked; without checked, checked and completed_at stay as they are. List changes: ${LIST_OPERATIONS}`,
+    inputSchema: bulkUpdateShoppingEntriesShape,
+  }, handleBulkUpdateShoppingEntries);
 
   registerStringTool(server, client, 'list_shopping_list_recipes', {
     description: 'List shopping-list-recipe groupings (a recipe added to the shopping list).',
