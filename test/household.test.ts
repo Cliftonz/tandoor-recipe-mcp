@@ -96,6 +96,7 @@ describe('household tools', () => {
 
   it('deletes a household that no user-space or inventory location references', async () => {
     const sent = stubTandoor({
+      'GET /api/household/4/': home,
       'GET /api/user-space/?page=1': page([userSpace(1, 'ann', null)]),
       'GET /api/inventory-location/?page=1': page([{ id: 7, name: 'Shed', is_freezer: false, household: { id: 9, name: 'Other' } }]),
       'DELETE /api/household/4/': undefined,
@@ -106,6 +107,7 @@ describe('household tools', () => {
 
   it('refuses to delete a household still referenced, naming the user-spaces and locations, and sends no DELETE', async () => {
     const sent = stubTandoor({
+      'GET /api/household/4/': home,
       'GET /api/user-space/?page=1': page([userSpace(1, 'ann', home), userSpace(2, 'bob', null)], 'more'),
       'GET /api/user-space/?page=2': page([userSpace(5, 'di', home)]),
       'GET /api/inventory-location/?page=1': page([{ id: 7, name: 'Freezer', is_freezer: true, household: home }]),
@@ -252,6 +254,17 @@ describe('household tools', () => {
       { user_space_id: 2, status: 'updated' },
     ]);
     expect(sent.filter((s) => s.method === 'PATCH').map((s) => s.path)).toEqual(['/api/user-space/2/']);
+  });
+
+  it('reports an unknown household as not found on get, update and delete, and delete scans nothing', async () => {
+    const notFound: Reply = { status: 404, body: { detail: 'No Household matches the given query.' } };
+    const sent = stubTandoor({ 'GET /api/household/99/': notFound, 'PATCH /api/household/99/': notFound });
+    await expect(handleGetHousehold(client(), { id: 99 })).rejects.toThrow(/^Household 99 not found\.$/);
+    await expect(handleUpdateHousehold(client(), { id: 99, name: 'x' })).rejects.toThrow(/^Household 99 not found\.$/);
+    await expect(handleDeleteHousehold(client(), { id: 99 })).rejects.toThrow(/^Household 99 not found\.$/);
+    expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual([
+      'GET /api/household/99/', 'PATCH /api/household/99/', 'GET /api/household/99/',
+    ]);
   });
 });
 

@@ -17,6 +17,12 @@ function slimHousehold(h: any) {
   return { id: h.id, name: h.name };
 }
 
+function householdNotFound(id: number) {
+  return (e: Error): never => {
+    throw e.message.startsWith('Tandoor API error: 404') ? new Error(`Household ${id} not found.`) : e;
+  };
+}
+
 async function allPages(fetchPage: (page: number) => Promise<Page>): Promise<any[]> {
   const items: any[] = [];
   for (let page = 1; ; page++) {
@@ -48,7 +54,7 @@ export async function handleGetHousehold(
   args: GetHouseholdArgs,
   ctx?: HandlerContext,
 ): Promise<string> {
-  const r = await client.households.getHousehold(args.id, { signal: ctx?.signal });
+  const r = await client.households.getHousehold(args.id, { signal: ctx?.signal }).catch(householdNotFound(args.id));
   return emit({ ...(args.format === 'full' ? r : slimHousehold(r)), members: await members(client, args.id, ctx?.signal) });
 }
 
@@ -66,7 +72,7 @@ export async function handleUpdateHousehold(
   args: UpdateHouseholdArgs,
   ctx?: HandlerContext,
 ): Promise<string> {
-  const r = await client.households.patchHousehold(args.id, { name: args.name }, { signal: ctx?.signal });
+  const r = await client.households.patchHousehold(args.id, { name: args.name }, { signal: ctx?.signal }).catch(householdNotFound(args.id));
   return `Household updated.\n\n${emit(args.format === 'full' ? r : slimHousehold(r))}`;
 }
 
@@ -76,6 +82,7 @@ export async function handleDeleteHousehold(
   ctx?: HandlerContext,
 ): Promise<string> {
   const signal = ctx?.signal;
+  await client.households.getHousehold(args.id, { signal }).catch(householdNotFound(args.id));
   const userSpaces = await members(client, args.id, signal);
   const locations = (await allPages((page) => client.inventory.listLocations({ page }, { signal })))
     .filter((l) => l.household.id === args.id)
@@ -116,9 +123,7 @@ export async function handleAssignHousehold(
 ): Promise<string> {
   const signal = ctx?.signal;
   if (args.household_id !== null) {
-    await client.households.getHousehold(args.household_id, { signal }).catch((e: Error) => {
-      throw e.message.startsWith('Tandoor API error: 404') ? new Error(`Household ${args.household_id} not found.`) : e;
-    });
+    await client.households.getHousehold(args.household_id, { signal }).catch(householdNotFound(args.household_id));
   }
   const results: Assignment[] = [];
   for (const id of args.user_space_ids) results.push(await assignOne(client, id, args.household_id, signal));
