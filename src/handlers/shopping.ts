@@ -47,10 +47,12 @@ export function listMismatch(requested: number[] | undefined, lists: { id: numbe
   return parts.length > 0 ? parts.join('; ') : null;
 }
 
-export function assertListsApplied(outcome: string, requested: number[] | undefined, lists: { id: number }[]): void {
+export function assertListsApplied(outcome: string, requested: number[] | undefined, lists: { id: number }[], advice = ''): void {
   const mismatch = listMismatch(requested, lists);
-  if (mismatch) throw new Error(`${outcome}, but ${mismatch}.`);
+  if (mismatch) throw new Error(`${outcome}, but ${mismatch}.${advice}`);
 }
+
+export const doNotRetry = (tool: string, id: number) => ` Do not retry; use ${tool} on id ${id}.`;
 
 export function slimListRefs(lists: any[]) {
   return lists.map((l) => ({ id: l.id, name: l.name }));
@@ -198,10 +200,10 @@ export async function handleCreateShoppingEntry(
   let created = await client.shopping.createEntry(body);
   if (args.shopping_list_ids?.length === 0) {
     created = await client.shopping.patchEntry(created.id, { shopping_lists: [], checked: created.checked }).catch((e: Error) => {
-      throw new Error(`Shopping entry ${created.id} was created, possibly with its food's shopping lists; clearing its lists failed: ${e.message}`);
+      throw new Error(`Shopping entry ${created.id} was created, possibly with its food's shopping lists; clearing its lists failed: ${e.message}${doNotRetry('update_shopping_entry', created.id)}`);
     });
   }
-  assertListsApplied(`Shopping entry ${created.id} was created`, args.shopping_list_ids, created.shopping_lists);
+  assertListsApplied(`Shopping entry ${created.id} was created`, args.shopping_list_ids, created.shopping_lists, doNotRetry('update_shopping_entry', created.id));
   return `Shopping entry created.\n\n${emit(args.format === 'full' ? created : slimEntry(created))}`;
 }
 

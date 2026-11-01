@@ -22,7 +22,7 @@ import type {
 
 import type { HandlerContext } from '../lib/register.js';
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
-import { slimListRefs, parseListOperations, checkShoppingListIds, assertListsApplied, listMismatch } from './shopping.js';
+import { slimListRefs, parseListOperations, checkShoppingListIds, assertListsApplied, listMismatch, doNotRetry } from './shopping.js';
 
 function slimFood(f: any) {
   if (!f) return f;
@@ -100,10 +100,10 @@ export async function handleCreateFood(
   let created = await client.foodUnits.createFood(body);
   if (listIds?.length) {
     created = await client.foodUnits.patchFood(created.id, { shopping_lists: listIds }).catch((e: Error) => {
-      throw new Error(`Food ${created.id} was created without shopping lists; setting its lists failed: ${e.message}`);
+      throw new Error(`Food ${created.id} was created without shopping lists; setting its lists failed: ${e.message}${doNotRetry('update_food', created.id)}`);
     });
   }
-  assertListsApplied(`Food ${created.id} was created`, listIds, created.shopping_lists);
+  assertListsApplied(`Food ${created.id} was created`, listIds, created.shopping_lists, doNotRetry('update_food', created.id));
   return `Food created.\n\n${emit(args.format === 'full' ? created : slimFood(created))}`;
 }
 

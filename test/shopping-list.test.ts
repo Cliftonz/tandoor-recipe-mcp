@@ -519,31 +519,31 @@ describe('lists Tandoor did not apply', () => {
   const noSuchFood = { 'GET /api/food/?query=Milk&page=1&page_size=100': page([]) };
 
   it.each([
-    ['create_food', 'Food 1 was created', { ...noSuchFood, 'POST /api/food/': { ...milk, shopping_lists: [] }, 'PATCH /api/food/1/': milk },
+    ['create_food', 'Food 1 was created', ' Do not retry; use update_food on id 1.', { ...noSuchFood, 'POST /api/food/': { ...milk, shopping_lists: [] }, 'PATCH /api/food/1/': milk },
       () => handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [2, 3] })],
-    ['update_food', 'Food 1 was updated', { 'PATCH /api/food/1/': milk },
+    ['update_food', 'Food 1 was updated', '', { 'PATCH /api/food/1/': milk },
       () => handleUpdateFood(client(), { id: 1, shopping_list_ids: [2, 3] })],
-    ['create_shopping_entry', 'Shopping entry 7 was created', { 'POST /api/shopping-list-entry/': entry() },
+    ['create_shopping_entry', 'Shopping entry 7 was created', ' Do not retry; use update_shopping_entry on id 7.', { 'POST /api/shopping-list-entry/': entry() },
       () => handleCreateShoppingEntry(client(), { amount: 1, food_id: 1, shopping_list_ids: [2, 3] })],
-    ['update_shopping_entry', 'Shopping entry 7 was updated', { 'PATCH /api/shopping-list-entry/7/': entry() },
+    ['update_shopping_entry', 'Shopping entry 7 was updated', '', { 'PATCH /api/shopping-list-entry/7/': entry() },
       () => handleUpdateShoppingEntry(client(), { id: 7, checked: false, shopping_list_ids: [2, 3] })],
-  ])('%s names the requested lists missing after the write', async (_tool, done, routes, run) => {
+  ])('%s names the requested lists missing after the write', async (_tool, done, advice, routes, run) => {
     stubTandoor({ ...listPages, ...routes });
-    await expect(run()).rejects.toThrow(new Error(`${done}, but Tandoor did not put it on these shopping lists: 3.`));
+    await expect(run()).rejects.toThrow(new Error(`${done}, but Tandoor did not put it on these shopping lists: 3.${advice}`));
   });
 
   it.each([
-    ['update_food', 'Food 1 was updated', { 'PATCH /api/food/1/': { ...milk, shopping_lists: [costco, aldi] } },
+    ['update_food', 'Food 1 was updated', '', { 'PATCH /api/food/1/': { ...milk, shopping_lists: [costco, aldi] } },
       () => handleUpdateFood(client(), { id: 1, shopping_list_ids: [] })],
-    ['create_shopping_entry', 'Shopping entry 7 was created', {
+    ['create_shopping_entry', 'Shopping entry 7 was created', ' Do not retry; use update_shopping_entry on id 7.', {
       'POST /api/shopping-list-entry/': entry({ shopping_lists: [costco] }),
       'PATCH /api/shopping-list-entry/7/': entry({ shopping_lists: [costco, aldi] }),
     }, () => handleCreateShoppingEntry(client(), { amount: 1, food_id: 1, shopping_list_ids: [] })],
-    ['update_shopping_entry', 'Shopping entry 7 was updated', { 'PATCH /api/shopping-list-entry/7/': entry({ shopping_lists: [costco, aldi] }) },
+    ['update_shopping_entry', 'Shopping entry 7 was updated', '', { 'PATCH /api/shopping-list-entry/7/': entry({ shopping_lists: [costco, aldi] }) },
       () => handleUpdateShoppingEntry(client(), { id: 7, checked: false, shopping_list_ids: [] })],
-  ])('%s names lists Tandoor added that were not requested', async (_tool, done, routes, run) => {
+  ])('%s names lists Tandoor added that were not requested', async (_tool, done, advice, routes, run) => {
     stubTandoor({ ...listPages, ...routes });
-    await expect(run()).rejects.toThrow(new Error(`${done}, but Tandoor also put it on these shopping lists: 2, 3.`));
+    await expect(run()).rejects.toThrow(new Error(`${done}, but Tandoor also put it on these shopping lists: 2, 3.${advice}`));
   });
 
   it('names both the missing and the extra lists', async () => {
@@ -566,5 +566,28 @@ describe('update_food with failed property deletes and missing lists', () => {
     await expect(handleUpdateFood(client(), { id: 1, remove_property_type_ids: [1], shopping_list_ids: [2, 3] })).rejects.toThrow(
       /^Food updated, but these property rows could not be deleted:\nproperty row 11: Tandoor API error: 400[^]*\nAlso, Tandoor did not put it on these shopping lists: 3\.$/,
     );
+  });
+});
+
+describe('post-write errors on create tools', () => {
+  const noSuchFood = { 'GET /api/food/?query=Milk&page=1&page_size=100': page([]) };
+  const milk = { id: 1, name: 'Milk', properties: [], shopping_lists: [] };
+
+  it.each([
+    ['create_food, list PATCH fails', 'Do not retry; use update_food on id 1.',
+      { ...noSuchFood, 'POST /api/food/': milk, 'PATCH /api/food/1/': { status: 400, body: { detail: 'bad' } } },
+      () => handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [2] })],
+    ['create_food, lists do not match', 'Do not retry; use update_food on id 1.',
+      { ...noSuchFood, 'POST /api/food/': milk, 'PATCH /api/food/1/': milk },
+      () => handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [2] })],
+    ['create_shopping_entry, clearing fails', 'Do not retry; use update_shopping_entry on id 7.',
+      { 'POST /api/shopping-list-entry/': entry({ shopping_lists: [aldi] }), 'PATCH /api/shopping-list-entry/7/': { status: 400, body: { detail: 'bad' } } },
+      () => handleCreateShoppingEntry(client(), { amount: 1, food_id: 1, shopping_list_ids: [] })],
+    ['create_shopping_entry, lists do not match', 'Do not retry; use update_shopping_entry on id 7.',
+      { 'POST /api/shopping-list-entry/': entry({ shopping_lists: [] }) },
+      () => handleCreateShoppingEntry(client(), { amount: 1, food_id: 1, shopping_list_ids: [2] })],
+  ])('%s says not to retry', async (_case, advice, routes, run) => {
+    stubTandoor({ ...listPages, ...routes });
+    await expect(run()).rejects.toThrow(new RegExp(`${advice.replace(/[.]/g, '\\.')}$`));
   });
 });
