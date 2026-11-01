@@ -4,11 +4,13 @@
 # user/space and create a fresh token each call.
 #
 # Outputs to stdout when GITHUB_ENV is not set:
-#   TANDOOR_URL=<url>
-#   TANDOOR_TOKEN=<token>
-# When running in GitHub Actions: writes those plus TANDOOR_COMPOSE_FILE to
-# $GITHUB_ENV, and stays silent on stdout for the token (the value is also
-# masked via `::add-mask::` so it never appears verbatim in build logs).
+#   export TANDOOR_URL=<url>
+#   export TANDOOR_TOKEN=<token>
+#   export TANDOOR_COMPOSE_FILE=<path>
+# When GITHUB_ENV is set: writes those vars plus TANDOOR_BOOTSTRAP_LOG to
+# $GITHUB_ENV as plain KEY=value lines and prints no export lines. The only
+# stdout is the `::add-mask::` command, so the token never appears verbatim
+# in build logs.
 #
 # Designed for both local dev (`eval "$(scripts/tandoor-bootstrap.sh)"`) and
 # GitHub Actions (`scripts/tandoor-bootstrap.sh`).
@@ -228,11 +230,9 @@ if [ -n "${GITHUB_ENV:-}" ]; then
     # is ever overridden (Observability F13).
     echo "TANDOOR_BOOTSTRAP_LOG=$DJANGO_LOG"
   } >> "$GITHUB_ENV"
+else
+  printf 'export %s=%q\n' \
+    TANDOOR_URL "$URL" \
+    TANDOOR_TOKEN "$TOKEN" \
+    TANDOOR_COMPOSE_FILE "$COMPOSE_FILE"
 fi
-
-# Local-dev eval pattern still needs the assignments on stdout. Outside CI
-# we accept that the token ends up in the parent shell's scrollback —
-# documented in the script header.
-echo "TANDOOR_URL=$URL"
-echo "TANDOOR_TOKEN=$TOKEN"
-echo "TANDOOR_COMPOSE_FILE=$COMPOSE_FILE"
