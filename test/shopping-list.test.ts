@@ -314,6 +314,15 @@ describe('food shopping lists', () => {
     expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
   });
 
+  it('stops reading food pages at the first food with the name', async () => {
+    const sent = stubTandoor({
+      ...listPages,
+      'GET /api/food/?query=Milk&page=1&page_size=100': page([{ ...milk, id: 9, name: 'MILK' }], 'more'),
+    });
+    await expect(handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [2] })).rejects.toThrow('A food named MILK already exists (id 9)');
+    expect(sent.filter((s) => s.path.startsWith('/api/food/')).map((s) => s.path)).toEqual(['/api/food/?query=Milk&page=1&page_size=100']);
+  });
+
   it('trims the name before looking for an existing food', async () => {
     const sent = stubTandoor({
       ...listPages,
