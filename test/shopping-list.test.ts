@@ -97,6 +97,14 @@ describe('shopping list tools', () => {
     expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
   });
 
+  it('refuses a rename to another list\'s name with surrounding spaces', async () => {
+    const sent = stubTandoor(listPages);
+    await expect(handleUpdateShoppingList(client(), { id: 2, name: ' Aldi ' })).rejects.toThrow(
+      new Error('A shopping list named Aldi already exists (id 3); choose another name.'),
+    );
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
+  });
+
   it('renames a list to a case variant of its own name', async () => {
     const sent = stubTandoor({ ...listPages, 'PATCH /api/shopping-list/2/': { ...costco, name: 'COSTCO' } });
     await handleUpdateShoppingList(client(), { id: 2, name: 'COSTCO' });
@@ -301,6 +309,17 @@ describe('food shopping lists', () => {
       'GET /api/food/?query=mILK&page=2&page_size=100': page([{ ...milk, id: 9, name: 'milk' }]),
     });
     await expect(handleCreateFood(client(), { name: 'mILK', shopping_list_ids: [2] })).rejects.toThrow(
+      new Error('A food named milk already exists (id 9); use update_food to change its lists.'),
+    );
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
+  });
+
+  it('trims the name before looking for an existing food', async () => {
+    const sent = stubTandoor({
+      ...listPages,
+      'GET /api/food/?query=mILK&page=1&page_size=100': page([{ ...milk, id: 9, name: 'milk' }]),
+    });
+    await expect(handleCreateFood(client(), { name: ' mILK ', shopping_list_ids: [2] })).rejects.toThrow(
       new Error('A food named milk already exists (id 9); use update_food to change its lists.'),
     );
     expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);

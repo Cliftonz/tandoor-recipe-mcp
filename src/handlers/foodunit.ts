@@ -89,8 +89,9 @@ export async function handleCreateFood(
   const listIds = args.shopping_list_ids;
   if (listIds?.length) {
     await checkShoppingListIds(client, listIds, ctx?.signal);
-    const sameName = (await allPages((page) => client.foodUnits.listFoods({ query: args.name, page, page_size: 100 })))
-      .find((f) => f.name.toLowerCase() === args.name.toLowerCase());
+    const name = args.name.trim();
+    const sameName = (await allPages((page) => client.foodUnits.listFoods({ query: name, page, page_size: 100 })))
+      .find((f) => f.name.trim().toLowerCase() === name.toLowerCase());
     if (sameName) throw new Error(`A food named ${sameName.name} already exists (id ${sameName.id}); use update_food to change its lists.`);
   }
   let created = await client.foodUnits.createFood(body);

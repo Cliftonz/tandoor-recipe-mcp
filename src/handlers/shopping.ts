@@ -89,9 +89,9 @@ export async function handleUpdateShoppingList(
   const { id, format, ...body } = args;
   assertNonEmptyBody(body);
   if (body.name !== undefined) {
-    const name = body.name.toLowerCase();
+    const name = body.name.trim().toLowerCase();
     const taken = (await client.shopping.listAllShoppingLists({ signal: ctx?.signal }))
-      .find((l) => l.id !== id && l.name.toLowerCase() === name);
+      .find((l) => l.id !== id && l.name.trim().toLowerCase() === name);
     if (taken) throw new Error(`A shopping list named ${taken.name} already exists (id ${taken.id}); choose another name.`);
   }
   const r = await client.shopping.patchShoppingList(id, body, { signal: ctx?.signal });
