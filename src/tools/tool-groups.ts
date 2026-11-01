@@ -1,24 +1,10 @@
-// Meta tools: dynamic tool-group discovery and gating.
+// Meta tools that let the model see and change which sections are visible.
+// Every tool is registered at boot; a section's mode decides which of its
+// tools are enabled. Disabled tools leave tools/list, and the SDK emits
+// tools/list_changed when enable()/disable() flips them.
 //
-// At boot, `registerAllTools` registers every tool with the SDK then — when
-// profile=core — calls `.disable()` on each tool not in CORE_TOOLS. Disabled
-// tools are excluded from `tools/list` so the LLM sees only the small core
-// surface (~25 tools) instead of the full ~135.
-//
-// These three tools are the LLM's escape hatch:
-//   - `list_tool_groups` — what groups exist and which are enabled right now
-//   - `enable_tool_group` — flip a group's tools to enabled (SDK auto-emits
-//     `tools/list_changed`, so Claude refreshes its tool list mid-conversation)
-//   - `disable_tool_group` — symmetric; the LLM can put unused groups back to
-//     sleep to keep its tool-list context small
-//
-// All three are in CORE_TOOLS so they're always reachable. They access the
-// SDK's private `_registeredTools` map — same pattern as test/helpers/mcp.ts.
-// Confining the private access to a single file means the next SDK rename
-// is a one-line fix here, not a four-file grep.
-//
-// CORE_TOOLS itself is exposed as the synthetic group "core" (permanent: true)
-// so the LLM can introspect what it already has.
+// The SDK keeps registered tools on a private field; this file and
+// test/helpers/mcp.ts are the only places that read it.
 
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -163,11 +149,11 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
     'enable_tool_group',
     {
       description: [
-        'Enable every tool in the named group so they become visible in tools/list.',
+        'Widen a section so its tools become visible in tools/list.',
+        'For a tiered section, tier "simple" or "full" (default full) picks how much to show; on/off sections take no tier.',
+        'Enabling never narrows a section: asking for simple on a section already at full leaves it at full.',
         'The SDK emits tools/list_changed automatically; the client refreshes its tool list mid-conversation.',
-        'Idempotent: enabling an already-enabled group is a no-op.',
-        'Passing "core" is also a no-op (core is always on).',
-        'Be sparing — every enabled group adds tool schemas to your context budget. Run list_tool_groups first to see what is available.',
+        'Be sparing: every enabled tool adds its schema to your context budget. Run list_tool_groups first to see what is available.',
       ].join(' '),
       inputSchema: enableToolGroupShape,
     },
@@ -187,11 +173,10 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
     'disable_tool_group',
     {
       description: [
-        'Disable every tool in the named group so they disappear from tools/list.',
+        'Turn a section off so all its tools disappear from tools/list.',
         'The SDK emits tools/list_changed automatically.',
-        'Idempotent: disabling an already-disabled group is a no-op.',
-        'The synthetic "core" group cannot be disabled.',
-        'Use this to free context budget once a workflow no longer needs a group of tools.',
+        'The "always" group cannot be disabled.',
+        'Use this to free context budget once a workflow no longer needs a section.',
       ].join(' '),
       inputSchema: disableToolGroupShape,
     },

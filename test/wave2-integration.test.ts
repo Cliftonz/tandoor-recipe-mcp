@@ -86,7 +86,7 @@ describe('registerAllTools + new client wiring', () => {
       registered = new Set(registeredToolNames(server));
     });
 
-    it('every new tool from Wave 1 is registered on a full-profile server', () => {
+    it('every new tool from Wave 1 is registered', () => {
       const missing = NEW_TOOLS.filter((n) => !registered.has(n));
       expect(missing, `missing: ${missing.join(', ')}`).toEqual([]);
     });

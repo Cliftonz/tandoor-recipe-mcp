@@ -5,6 +5,13 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { toJSONSchema } from 'zod';
+import { SECTIONS } from '../../src/lib/sections.js';
+
+export const ALL_SECTIONS_OPEN: Record<string, string> = Object.fromEntries(
+  SECTIONS.map((s) => [s.envVar, s.kind === 'tiered' ? 'full' : 'on']),
+);
+
+export const DEFAULT_SECTIONS: Record<string, string> = Object.fromEntries(SECTIONS.map((s) => [s.envVar, '']));
 
 export async function invokeTool(
   server: McpServer,

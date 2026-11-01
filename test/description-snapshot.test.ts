@@ -35,7 +35,7 @@ beforeAll(() => {
   tools = listRegisteredTools(server);
 });
 
-describe('tool description snapshot (full profile)', () => {
+describe('tool description snapshot', () => {
   it('tool count is stable', () => {
     // Update deliberately on tool additions or removals. Range guards mask silent tool loss.
     expect(tools.length).toBe(271);

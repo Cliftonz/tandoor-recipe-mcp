@@ -16,7 +16,6 @@ d('export_recipes with custom_filter', () => {
   let filterId: number;
 
   beforeAll(async () => {
-    process.env.TANDOOR_MCP_PROFILE = 'full';
     client = new TandoorClient({ url: url!, token: token! });
     mcp = new McpServer({ name: 'e2e', version: 'e2e' });
     registerExportTools(mcp, client);
@@ -33,7 +32,6 @@ d('export_recipes with custom_filter', () => {
   });
 
   afterAll(async () => {
-    delete process.env.TANDOOR_MCP_PROFILE;
     if (filterId) await client.customFilters.deleteFilter(filterId);
     for (const id of recipeIds) await client.recipes.deleteRecipe(id);
   });
