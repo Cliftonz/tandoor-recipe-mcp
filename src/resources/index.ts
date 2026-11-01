@@ -36,6 +36,24 @@ function weekRange(anchor: Date = new Date()): { from: string; to: string } {
   return { from: isoDate(from), to: isoDate(to) };
 }
 
+const PANTRY_CAP = 500;
+
+async function collectUpTo(
+  fetchPage: (page: number) => Promise<{ results: any[]; next: string | null }>,
+  keep: (item: any) => boolean,
+): Promise<{ items: any[]; truncated: boolean }> {
+  const items: any[] = [];
+  for (let page = 1; ; page++) {
+    const r = await fetchPage(page);
+    for (const item of r.results) {
+      if (!keep(item)) continue;
+      if (items.length === PANTRY_CAP) return { items, truncated: true };
+      items.push(item);
+    }
+    if (!r.next) return { items, truncated: false };
+  }
+}
+
 export function registerResources(server: McpServer, client: TandoorClient): void {
   server.registerResource(
     'meal-plan-this-week',
@@ -75,31 +93,40 @@ export function registerResources(server: McpServer, client: TandoorClient): voi
     {
       title: 'Pantry — On Hand',
       description:
-        'Foods flagged as currently on-hand (food_onhand=true). Useful for "what can I make tonight?" style queries.',
+        'What is available: inventory entries with amount > 0 grouped by location (freezers marked by is_freezer), each with amount, unit, expires, sub_location, note; plus foods flagged on hand that have no inventory entry, listed under on_hand_no_quantity. Capped at 500 entries and 500 foods; when truncated.entries is true, use list_inventory_entries for the full list.',
       mimeType: 'application/json',
     },
     async (uri): Promise<ReadResourceResult> => {
-      // Tandoor lacks an `on_hand=true` filter; walk the paginated list and
-      // filter client-side. Cap at 200 to keep the resource cheap.
-      const results: any[] = [];
-      let page = 1;
-      while (results.length < 500) {
-        const r = await client.foodUnits.listFoods({ page, page_size: 100 });
-        const items = r.results || [];
-        for (const f of items) {
-          if (f.food_onhand) {
-            results.push({
-              id: f.id,
-              name: f.name,
-              plural_name: f.plural_name,
-              supermarket_category: f.supermarket_category?.name,
-            });
-          }
-        }
-        if (!r.next || items.length === 0) break;
-        page++;
+      const entries = await collectUpTo(
+        (page) => client.inventory.listEntries({ page, page_size: 100 }),
+        () => true,
+      );
+      const stockedFoodIds = new Set(entries.items.map((e) => e.food.id));
+      const foods = await collectUpTo(
+        (page) => client.foodUnits.listFoods({ page, page_size: 100 }),
+        (f) => f.food_onhand && !stockedFoodIds.has(f.id),
+      );
+      const locations = new Map<number, { id: number; name: string; is_freezer: boolean; entries: unknown[] }>();
+      for (const e of entries.items) {
+        const loc = e.inventory_location;
+        if (!locations.has(loc.id)) locations.set(loc.id, { id: loc.id, name: loc.name, is_freezer: loc.is_freezer, entries: [] });
+        locations.get(loc.id)!.entries.push({
+          id: e.id,
+          food: e.food.name,
+          food_id: e.food.id,
+          amount: e.amount,
+          unit: e.unit.name,
+          expires: e.expires,
+          sub_location: e.sub_location,
+          note: e.note,
+        });
       }
-      return jsonResource(uri.href, { count: results.length, results });
+      return jsonResource(uri.href, {
+        locations: [...locations.values()],
+        on_hand_no_quantity: foods.items.map((f) => ({ id: f.id, name: f.name, supermarket_category: f.supermarket_category?.name })),
+        counts: { entries: entries.items.length, foods_on_hand_only: foods.items.length },
+        truncated: { entries: entries.truncated, foods: foods.truncated },
+      });
     }
   );
 
