@@ -8,6 +8,7 @@ import {
   handleGetHousehold,
   handleCreateHousehold,
   handleUpdateHousehold,
+  handleDeleteHousehold,
 } from '../handlers/household.js';
 
 const OWNER_ONLY = 'Space owner only (admins get 403).';
@@ -24,10 +25,13 @@ export const createHouseholdShape = { name: z.string(), format: formatEnum } as 
 
 export const updateHouseholdShape = { id: z.number(), name: z.string(), format: formatEnum } as const;
 
+export const deleteHouseholdShape = { id: z.number() } as const;
+
 export type ListHouseholdsArgs = z.infer<z.ZodObject<typeof listHouseholdsShape>>;
 export type GetHouseholdArgs = z.infer<z.ZodObject<typeof getHouseholdShape>>;
 export type CreateHouseholdArgs = z.infer<z.ZodObject<typeof createHouseholdShape>>;
 export type UpdateHouseholdArgs = z.infer<z.ZodObject<typeof updateHouseholdShape>>;
+export type DeleteHouseholdArgs = z.infer<z.ZodObject<typeof deleteHouseholdShape>>;
 
 export function registerHouseholdTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_households', {
@@ -49,4 +53,9 @@ export function registerHouseholdTools(server: McpServer, client: TandoorClient)
     description: `Rename a household. ${OWNER_ONLY} Required: id, name.`,
     inputSchema: updateHouseholdShape,
   }, handleUpdateHousehold);
+
+  registerStringTool(server, client, 'delete_household', {
+    description: `Delete a household by ID. ${OWNER_ONLY} Refuses, and deletes nothing, while any user-space or inventory location still belongs to the household; the error lists them. Unassign user-spaces with assign_household (household_id null) and delete the locations first.`,
+    inputSchema: deleteHouseholdShape,
+  }, handleDeleteHousehold);
 }

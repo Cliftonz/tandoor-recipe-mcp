@@ -4,6 +4,7 @@ import type {
   GetHouseholdArgs,
   CreateHouseholdArgs,
   UpdateHouseholdArgs,
+  DeleteHouseholdArgs,
 } from '../tools/household.js';
 import type { HandlerContext } from '../lib/register.js';
 import { emit, slimPaginated } from '../lib/slim.js';
@@ -66,4 +67,24 @@ export async function handleUpdateHousehold(
 ): Promise<string> {
   const r = await client.households.patchHousehold(args.id, { name: args.name }, { signal: ctx?.signal });
   return `Household updated.\n\n${emit(args.format === 'full' ? r : slimHousehold(r))}`;
+}
+
+export async function handleDeleteHousehold(
+  client: TandoorClient,
+  args: DeleteHouseholdArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const signal = ctx?.signal;
+  const userSpaces = await members(client, args.id, signal);
+  const locations = (await allPages((page) => client.inventory.listLocations({ page }, { signal })))
+    .filter((l) => l.household.id === args.id)
+    .map((l) => ({ id: l.id, name: l.name }));
+  if (userSpaces.length > 0 || locations.length > 0) {
+    throw new Error(
+      `Household ${args.id} is still in use, so it was not deleted. Unassign its user-spaces with assign_household (household_id null) `
+      + `and delete its inventory locations, then retry. ${emit({ user_spaces: userSpaces, inventory_locations: locations })}`,
+    );
+  }
+  await client.households.deleteHousehold(args.id, { signal });
+  return `Household ${args.id} deleted.`;
 }

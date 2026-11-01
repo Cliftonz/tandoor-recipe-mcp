@@ -5,6 +5,7 @@ import {
   handleGetHousehold,
   handleCreateHousehold,
   handleUpdateHousehold,
+  handleDeleteHousehold,
 } from '../src/handlers/household.js';
 
 type Sent = { method: string; path: string; body?: unknown };
@@ -88,5 +89,32 @@ describe('household tools', () => {
     await expect(handleCreateHousehold(client(), { name: 'Home' })).rejects.toThrow(
       'This call requires the space owner; space admins and members get 403.',
     );
+  });
+
+  it('deletes a household that no user-space or inventory location references', async () => {
+    const sent = stubTandoor({
+      'GET /api/user-space/?page=1': page([userSpace(1, 'ann', null)]),
+      'GET /api/inventory-location/?page=1': page([{ id: 7, name: 'Shed', is_freezer: false, household: { id: 9, name: 'Other' } }]),
+      'DELETE /api/household/4/': undefined,
+    });
+    expect(await handleDeleteHousehold(client(), { id: 4 })).toBe('Household 4 deleted.');
+    expect(sent.at(-1)).toEqual({ method: 'DELETE', path: '/api/household/4/' });
+  });
+
+  it('refuses to delete a household still referenced, naming the user-spaces and locations, and sends no DELETE', async () => {
+    const sent = stubTandoor({
+      'GET /api/user-space/?page=1': page([userSpace(1, 'ann', home), userSpace(2, 'bob', null)], 'more'),
+      'GET /api/user-space/?page=2': page([userSpace(5, 'di', home)]),
+      'GET /api/inventory-location/?page=1': page([{ id: 7, name: 'Freezer', is_freezer: true, household: home }]),
+    });
+    await expect(handleDeleteHousehold(client(), { id: 4 })).rejects.toThrow(
+      'Household 4 is still in use, so it was not deleted. Unassign its user-spaces with assign_household (household_id null) '
+      + 'and delete its inventory locations, then retry. '
+      + JSON.stringify({
+        user_spaces: [{ user_space_id: 1, user: 'ann' }, { user_space_id: 5, user: 'di' }],
+        inventory_locations: [{ id: 7, name: 'Freezer' }],
+      }),
+    );
+    expect(sent.filter((s) => s.method === 'DELETE')).toEqual([]);
   });
 });

@@ -29,4 +29,8 @@ export class HouseholdClient extends BaseClient {
   async patchHousehold(id: number, body: { name: string }, opts?: Opts): Promise<any> {
     return this.request(`/api/household/${id}/`, { method: 'PATCH', body: JSON.stringify(body), signal: opts?.signal });
   }
+
+  async deleteHousehold(id: number, opts?: Opts): Promise<void> {
+    return this.request(`/api/household/${id}/`, { method: 'DELETE', signal: opts?.signal });
+  }
 }

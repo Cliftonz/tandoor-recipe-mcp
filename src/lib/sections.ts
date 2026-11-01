@@ -185,7 +185,7 @@ export const SECTIONS: readonly Section[] = [
       'list_spaces', 'get_space', 'create_space', 'update_space',
       'list_user_spaces', 'get_user_space', 'update_user_space', 'delete_user_space',
       'list_all_personal_user_spaces', 'switch_active_space',
-      'list_households', 'get_household', 'create_household', 'update_household',
+      'list_households', 'get_household', 'create_household', 'update_household', 'delete_household',
       'list_users', 'get_user', 'update_user', 'list_groups', 'get_group',
       ...crud('invite_link'),
       'list_user_preferences', 'get_user_preference', 'update_user_preference',
