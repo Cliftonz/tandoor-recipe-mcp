@@ -13,6 +13,7 @@ const ALLOWED_RESOURCES = new Set<string>([
   'food', 'keyword', 'recipe', 'unit', 'storage',
   'meal-type', 'property-type', 'recipe-book',
   'supermarket', 'supermarket-category', 'user-file',
+  'inventory-entry', 'inventory-location',
 ]);
 
 export class TreeSafetyClient extends BaseClient {

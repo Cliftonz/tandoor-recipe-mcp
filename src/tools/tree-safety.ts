@@ -1,5 +1,5 @@
 // Tree-safety delete-preview tools. One BaseClient method + one handler factory
-// drives 33 registrations (11 resources * 3 actions); table stays in sync with
+// drives a registration per resource and action; table stays in sync with
 // Tandoor's uniform /api/{resource}/{id}/{action}/ endpoint shape.
 
 import { z } from 'zod';
@@ -21,6 +21,8 @@ export const RESOURCES: { resource: string; slug: string }[] = [
   { resource: 'supermarket', slug: 'supermarket' },
   { resource: 'supermarket_category', slug: 'supermarket-category' },
   { resource: 'user_file', slug: 'user-file' },
+  { resource: 'inventory_entry', slug: 'inventory-entry' },
+  { resource: 'inventory_location', slug: 'inventory-location' },
 ];
 
 const ACTIONS: TreeSafetyAction[] = ['cascading', 'nulling', 'protecting'];
@@ -39,6 +41,8 @@ const deleteToolNameFor: Record<string, string> = {
   supermarket: 'delete_supermarket',
   supermarket_category: 'delete_supermarket_category',
   user_file: 'delete_user_file',
+  inventory_entry: 'delete_inventory_entry',
+  inventory_location: 'delete_inventory_location',
 };
 
 export function registerTreeSafetyTools(server: McpServer, client: TandoorClient): void {

@@ -104,9 +104,17 @@ export const SECTIONS: readonly Section[] = [
     kind: 'tiered',
     name: 'inventory',
     envVar: 'TANDOOR_MCP_INVENTORY',
-    description: 'Pantry inventory.',
-    simple: [],
-    full: [],
+    description: 'Pantry inventory: locations, entries (add, consume, move) and the inventory log.',
+    simple: [
+      'list_inventory_locations', 'list_inventory_entries', 'add_inventory_item', 'consume_inventory_item', 'move_inventory_item',
+    ],
+    full: [
+      'get_inventory_location', 'create_inventory_location', 'update_inventory_location', 'delete_inventory_location',
+      'get_inventory_entry', 'update_inventory_entry', 'delete_inventory_entry',
+      'list_inventory_logs', 'get_inventory_log',
+      ...preview('inventory_location'),
+      ...preview('inventory_entry'),
+    ],
   },
   {
     kind: 'tiered',

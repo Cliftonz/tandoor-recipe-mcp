@@ -41,13 +41,15 @@ describe('startup visibility', () => {
   it('shows always-on tools plus the simple tier of every tiered section by default', async () => {
     const client = await connect();
     expect(await visible(client)).toEqual([
-      'add_recipe_to_shopping_list', 'bulk_check_shopping_entries', 'create_food', 'create_meal_plan',
+      'add_inventory_item', 'add_recipe_to_shopping_list', 'bulk_check_shopping_entries',
+      'consume_inventory_item', 'create_food', 'create_meal_plan',
       'create_recipe', 'create_shopping_entry', 'delete_meal_plan', 'delete_shopping_entry',
       'disable_tool_group', 'enable_tool_group', 'food_shopping_update', 'get_current_space',
       'get_food', 'get_guard_stats', 'get_keyword', 'get_meal_plan', 'get_meal_type', 'get_recipe',
       'get_shopping_entry', 'get_version', 'import_recipe_from_url', 'jq_query', 'jq_stash_stats',
-      'list_foods', 'list_keywords', 'list_meal_plans', 'list_meal_types', 'list_recipes',
-      'list_recipes_flat', 'list_shopping_entries', 'list_tool_groups', 'list_units', 'parse_ingredient',
+      'list_foods', 'list_inventory_entries', 'list_inventory_locations', 'list_keywords', 'list_meal_plans',
+      'list_meal_types', 'list_recipes', 'list_recipes_flat', 'list_shopping_entries', 'list_tool_groups',
+      'list_units', 'move_inventory_item', 'parse_ingredient',
       'related_recipes', 'search_recipes', 'update_food', 'update_meal_plan', 'update_recipe',
       'update_shopping_entry',
     ]);
@@ -69,6 +71,7 @@ describe('startup visibility', () => {
       TANDOOR_MCP_RECIPES: 'off',
       TANDOOR_MCP_MEAL_PLAN: 'off',
       TANDOOR_MCP_SHOPPING: 'off',
+      TANDOOR_MCP_INVENTORY: 'off',
       TANDOOR_MCP_FOODS: 'off',
     }));
     expect(names).toEqual([
@@ -123,13 +126,20 @@ describe('enable_tool_group', () => {
     const result = await call(await connect(), 'enable_tool_group', { group: 'recipe-write' });
     expect(result.isError).toBe(true);
     expect(result.text).toContain("unknown section 'recipe-write'");
-    expect(result.text).toContain('Known sections: always, recipes, meal-plan, shopping, foods, cooklog, recipe-books, ai, import-export, household-space, admin.');
+    expect(result.text).toContain('Known sections: always, recipes, meal-plan, shopping, inventory, foods, cooklog, recipe-books, ai, import-export, household-space, admin.');
   });
 
-  it.each(['enable_tool_group', 'disable_tool_group'])('%s rejects inventory, which has no tools', async (tool) => {
-    const result = await call(await connect(), tool, { group: 'inventory' });
-    expect(result.isError).toBe(true);
-    expect(result.text).toContain("unknown section 'inventory'");
+  it('shows the inventory simple tier by default and widens it to full', async () => {
+    const client = await connect();
+    expect(await visible(client)).toEqual(expect.arrayContaining([
+      'list_inventory_locations', 'list_inventory_entries', 'add_inventory_item', 'consume_inventory_item', 'move_inventory_item',
+    ]));
+    expect(await visible(client)).not.toContain('delete_inventory_location');
+    const result = await callOk(client, 'enable_tool_group', { group: 'inventory', tier: 'full' });
+    expect(result).toMatchObject({ ok: true, group: 'inventory', mode: 'full' });
+    expect(await visible(client)).toEqual(expect.arrayContaining([
+      'delete_inventory_location', 'list_inventory_logs', 'preview_inventory_entry_delete_cascading',
+    ]));
   });
 
   it('treats the always group as a no-op', async () => {
@@ -178,7 +188,7 @@ describe('list_tool_groups', () => {
   it('reports each section with tools, its current mode, and its available modes', async () => {
     const { groups } = await callOk(await connect(), 'list_tool_groups', {});
     expect(groups.map((g: { name: string }) => g.name)).toEqual([
-      'always', 'recipes', 'meal-plan', 'shopping', 'foods',
+      'always', 'recipes', 'meal-plan', 'shopping', 'inventory', 'foods',
       'cooklog', 'recipe-books', 'ai', 'import-export', 'household-space', 'admin',
     ]);
     expect(groups[0]).toEqual({
