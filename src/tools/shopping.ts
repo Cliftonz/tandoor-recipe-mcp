@@ -75,7 +75,7 @@ export const listOperationsShape = {
 
 export const LIST_OPERATIONS = 'shopping_lists_add and shopping_lists_remove (may be combined), shopping_lists_set (replaces the lists; must not be empty) '
   + 'or shopping_lists_remove_all: true (takes every list off). set and remove_all must be used alone. '
-  + 'An empty shopping_lists_add or shopping_lists_remove counts as no change. An id may not appear in both shopping_lists_add and shopping_lists_remove. '
+  + 'Empty arrays and shopping_lists_remove_all: false count as no change and are not sent. An id may not appear in both shopping_lists_add and shopping_lists_remove. '
   + LIST_IDS_CHECKED;
 
 export const listShoppingEntriesShape = {
