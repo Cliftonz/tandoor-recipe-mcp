@@ -14,6 +14,7 @@ import {
   handleAddInventoryItem,
   handleUpdateInventoryEntry,
   handleDeleteInventoryEntry,
+  handleConsumeInventoryItem,
 } from '../handlers/inventory.js';
 
 export const listInventoryLocationsShape = {
@@ -78,6 +79,16 @@ export const updateInventoryEntryShape = {
 
 export const deleteInventoryEntryShape = { id: z.number() } as const;
 
+export const consumeInventoryItemShape = {
+  entry_id: z.number().optional(),
+  food_id: z.number().optional(),
+  location_id: z.number().optional(),
+  amount: z.number().positive().optional(),
+  all: z.literal(true).optional(),
+  unit_id: z.number().optional(),
+  format: formatEnum,
+} as const;
+
 export type ListInventoryLocationsArgs = z.infer<z.ZodObject<typeof listInventoryLocationsShape>>;
 export type GetInventoryLocationArgs = z.infer<z.ZodObject<typeof getInventoryLocationShape>>;
 export type CreateInventoryLocationArgs = z.infer<z.ZodObject<typeof createInventoryLocationShape>>;
@@ -89,6 +100,7 @@ export type GetInventoryEntryArgs = z.infer<z.ZodObject<typeof getInventoryEntry
 export type AddInventoryItemArgs = z.infer<z.ZodObject<typeof addInventoryItemShape>>;
 export type UpdateInventoryEntryArgs = z.infer<z.ZodObject<typeof updateInventoryEntryShape>>;
 export type DeleteInventoryEntryArgs = z.infer<z.ZodObject<typeof deleteInventoryEntryShape>>;
+export type ConsumeInventoryItemArgs = z.infer<z.ZodObject<typeof consumeInventoryItemShape>>;
 
 export function registerInventoryTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_inventory_locations', {
@@ -140,4 +152,9 @@ export function registerInventoryTools(server: McpServer, client: TandoorClient)
     description: 'Delete an inventory entry by ID. This also deletes its log rows.',
     inputSchema: deleteInventoryEntryShape,
   }, handleDeleteInventoryEntry);
+
+  registerStringTool(server, client, 'consume_inventory_item', {
+    description: 'Use up some or all of an inventory entry. Identify it by entry_id, or by food_id with optional location_id (errors listing the candidates when several entries match). Give exactly one of amount (> 0) or all: true. Optional unit_id must match the entry unit; there is no unit conversion. The amount never goes below 0: consuming more than is on hand sets it to 0, keeps the entry and returns a warning. Reads the entry, then writes the new amount; two consumes of the same entry at the same moment can lose one update, because Tandoor has no atomic decrement.',
+    inputSchema: consumeInventoryItemShape,
+  }, handleConsumeInventoryItem);
 }

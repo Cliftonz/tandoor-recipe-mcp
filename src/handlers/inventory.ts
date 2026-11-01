@@ -10,6 +10,7 @@ import type {
   AddInventoryItemArgs,
   UpdateInventoryEntryArgs,
   DeleteInventoryEntryArgs,
+  ConsumeInventoryItemArgs,
 } from '../tools/inventory.js';
 import type { HandlerContext } from '../lib/register.js';
 import { emit, assertNonEmptyBody, slimPaginated } from '../lib/slim.js';
@@ -158,4 +159,39 @@ export async function handleDeleteInventoryEntry(
 ): Promise<string> {
   await client.inventory.deleteEntry(args.id, { signal: ctx?.signal });
   return `Inventory entry ${args.id} deleted.`;
+}
+
+async function findEntryForFood(client: TandoorClient, foodId: number, locationId: number | undefined, signal?: AbortSignal) {
+  const page = await client.inventory.listEntries({ food_id: foodId, inventory_location_id: locationId }, { signal });
+  const where = locationId === undefined ? '' : ` at location ${locationId}`;
+  if (page.count === 0) throw new Error(`Food ${foodId} has no inventory entry${where}.`);
+  if (page.count > 1) {
+    const candidates = page.results.map((e: any) => ({
+      id: e.id, location: e.inventory_location.name, amount: e.amount, unit: e.unit.name, expires: e.expires,
+    }));
+    throw new Error(`Food ${foodId} has ${page.count} inventory entries${where}; pass entry_id. Candidates: ${emit(candidates)}`);
+  }
+  return page.results[0];
+}
+
+export async function handleConsumeInventoryItem(
+  client: TandoorClient,
+  args: ConsumeInventoryItemArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  if ((args.entry_id === undefined) === (args.food_id === undefined)) throw new Error('Give exactly one of entry_id or food_id.');
+  if ((args.amount === undefined) === (args.all === undefined)) throw new Error('Give exactly one of amount or all: true.');
+  const e = args.entry_id !== undefined
+    ? await client.inventory.getEntry(args.entry_id, { signal: ctx?.signal })
+    : await findEntryForFood(client, args.food_id!, args.location_id, ctx?.signal);
+  if (args.unit_id !== undefined && args.unit_id !== e.unit.id) {
+    throw new Error(`Entry ${e.id} is stored in ${e.unit.name} (unit_id ${e.unit.id}); consume in that unit. Unit conversion is not supported.`);
+  }
+  const requested = args.amount ?? e.amount;
+  const amount = Math.max(0, e.amount - requested);
+  const r = await client.inventory.patchEntry(e.id, { amount }, { signal: ctx?.signal });
+  const out = args.format === 'full' ? r : slimEntry(r);
+  if (requested <= e.amount) return `Inventory item consumed.\n\n${emit(out)}`;
+  const warning = `Warning: requested ${requested} ${e.unit.name} of ${e.food.name} but only ${e.amount} were on hand; consumed ${e.amount}, amount is now 0.`;
+  return `${warning}\n\n${emit({ ...out, warning, requested, consumed: e.amount })}`;
 }

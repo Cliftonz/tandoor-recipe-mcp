@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { z } from 'zod';
 import { TandoorClient } from '../src/clients/index.js';
-import { addInventoryItemShape, updateInventoryEntryShape } from '../src/tools/inventory.js';
+import { addInventoryItemShape, updateInventoryEntryShape, consumeInventoryItemShape } from '../src/tools/inventory.js';
 import {
   handleListInventoryLocations,
   handleGetInventoryLocation,
@@ -13,6 +13,7 @@ import {
   handleAddInventoryItem,
   handleUpdateInventoryEntry,
   handleDeleteInventoryEntry,
+  handleConsumeInventoryItem,
 } from '../src/handlers/inventory.js';
 
 type Sent = { method: string; path: string; body?: unknown };
@@ -213,5 +214,103 @@ describe('inventory entries', () => {
     const sent = stubTandoor({ 'DELETE /api/inventory-entry/11/': undefined });
     expect(await handleDeleteInventoryEntry(client(), { id: 11 })).toBe('Inventory entry 11 deleted.');
     expect(sent).toEqual([{ method: 'DELETE', path: '/api/inventory-entry/11/' }]);
+  });
+});
+
+describe('consume_inventory_item', () => {
+  const patches = (sent: Sent[]) => sent.filter((s) => s.method !== 'GET');
+
+  it('reads the entry by id and PATCHes the reduced amount', async () => {
+    const sent = stubTandoor({
+      'GET /api/inventory-entry/11/': entry(),
+      'PATCH /api/inventory-entry/11/': entry({ amount: 150 }),
+    });
+    const out = await handleConsumeInventoryItem(client(), { entry_id: 11, amount: 250 });
+    expect(patches(sent)).toEqual([{ method: 'PATCH', path: '/api/inventory-entry/11/', body: { amount: 150 } }]);
+    expect(out).toBe(`Inventory item consumed.\n\n${JSON.stringify({ ...slimEntry, amount: 150 })}`);
+  });
+
+  it('clamps at zero, keeps the entry, and warns with requested and consumed amounts', async () => {
+    const sent = stubTandoor({
+      'GET /api/inventory-entry/11/': entry({ amount: 3 }),
+      'PATCH /api/inventory-entry/11/': entry({ amount: 0 }),
+    });
+    const out = await handleConsumeInventoryItem(client(), { entry_id: 11, amount: 5 });
+    expect(patches(sent)).toEqual([{ method: 'PATCH', path: '/api/inventory-entry/11/', body: { amount: 0 } }]);
+    const warning = 'Warning: requested 5 g of peas but only 3 were on hand; consumed 3, amount is now 0.';
+    expect(out).toBe(`${warning}\n\n${JSON.stringify({ ...slimEntry, amount: 0, warning, requested: 5, consumed: 3 })}`);
+  });
+
+  it('all: true consumes the whole amount without a warning', async () => {
+    const sent = stubTandoor({
+      'GET /api/inventory-entry/11/': entry(),
+      'PATCH /api/inventory-entry/11/': entry({ amount: 0 }),
+    });
+    const out = await handleConsumeInventoryItem(client(), { entry_id: 11, all: true });
+    expect(patches(sent)).toEqual([{ method: 'PATCH', path: '/api/inventory-entry/11/', body: { amount: 0 } }]);
+    expect(out).toBe(`Inventory item consumed.\n\n${JSON.stringify({ ...slimEntry, amount: 0 })}`);
+  });
+
+  it('finds the single entry for a food at a location', async () => {
+    const sent = stubTandoor({
+      'GET /api/inventory-entry/?food_id=5&inventory_location_id=2': { count: 1, next: null, previous: null, results: [entry()] },
+      'PATCH /api/inventory-entry/11/': entry({ amount: 399 }),
+    });
+    await handleConsumeInventoryItem(client(), { food_id: 5, location_id: 2, amount: 1 });
+    expect(patches(sent)).toEqual([{ method: 'PATCH', path: '/api/inventory-entry/11/', body: { amount: 399 } }]);
+  });
+
+  it('lists the candidates and changes nothing when the food has several entries', async () => {
+    const pantry = { id: 7, name: 'Pantry', is_freezer: false, household };
+    const sent = stubTandoor({
+      'GET /api/inventory-entry/?food_id=5': {
+        count: 2, next: null, previous: null,
+        results: [entry(), entry({ id: 12, inventory_location: pantry, amount: 50, expires: null })],
+      },
+    });
+    await expect(handleConsumeInventoryItem(client(), { food_id: 5, amount: 1 })).rejects.toThrow(
+      'Food 5 has 2 inventory entries; pass entry_id. Candidates: ' + JSON.stringify([
+        { id: 11, location: 'Freezer', amount: 400, unit: 'g', expires: '2027-01-31' },
+        { id: 12, location: 'Pantry', amount: 50, unit: 'g', expires: null },
+      ]),
+    );
+    expect(patches(sent)).toEqual([]);
+  });
+
+  it('errors when the food has no entry', async () => {
+    stubTandoor({ 'GET /api/inventory-entry/?food_id=5&inventory_location_id=2': { count: 0, next: null, previous: null, results: [] } });
+    await expect(handleConsumeInventoryItem(client(), { food_id: 5, location_id: 2, amount: 1 })).rejects.toThrow(
+      'Food 5 has no inventory entry at location 2.',
+    );
+  });
+
+  it('rejects a unit that differs from the entry unit and names the entry unit', async () => {
+    const sent = stubTandoor({ 'GET /api/inventory-entry/11/': entry() });
+    await expect(handleConsumeInventoryItem(client(), { entry_id: 11, amount: 1, unit_id: 4 })).rejects.toThrow(
+      'Entry 11 is stored in g (unit_id 3); consume in that unit. Unit conversion is not supported.',
+    );
+    expect(patches(sent)).toEqual([]);
+  });
+
+  it('accepts a unit_id equal to the entry unit', async () => {
+    stubTandoor({ 'GET /api/inventory-entry/11/': entry(), 'PATCH /api/inventory-entry/11/': entry({ amount: 399 }) });
+    await expect(handleConsumeInventoryItem(client(), { entry_id: 11, amount: 1, unit_id: 3 })).resolves.toContain('consumed');
+  });
+
+  it('requires exactly one of entry_id or food_id, and exactly one of amount or all', async () => {
+    const sent = stubTandoor({});
+    await expect(handleConsumeInventoryItem(client(), { amount: 1 })).rejects.toThrow('Give exactly one of entry_id or food_id.');
+    await expect(handleConsumeInventoryItem(client(), { entry_id: 11, food_id: 5, amount: 1 })).rejects.toThrow('Give exactly one of entry_id or food_id.');
+    await expect(handleConsumeInventoryItem(client(), { entry_id: 11 })).rejects.toThrow('Give exactly one of amount or all: true.');
+    await expect(handleConsumeInventoryItem(client(), { entry_id: 11, amount: 1, all: true })).rejects.toThrow('Give exactly one of amount or all: true.');
+    expect(sent).toEqual([]);
+  });
+
+  it('rejects amounts at or below zero at the schema', () => {
+    const consume = z.object(consumeInventoryItemShape);
+    expect(consume.safeParse({ entry_id: 11, amount: 0.5 }).success).toBe(true);
+    expect(consume.safeParse({ entry_id: 11, amount: 0 }).success).toBe(false);
+    expect(consume.safeParse({ entry_id: 11, amount: -2 }).success).toBe(false);
+    expect(consume.safeParse({ entry_id: 11, all: false }).success).toBe(false);
   });
 });
