@@ -23,7 +23,7 @@ import type {
 import type { HandlerContext } from '../lib/register.js';
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
 import { allPages } from '../lib/paging.js';
-import { slimListRefs, parseListOperations, checkShoppingListIds, assertListsApplied } from './shopping.js';
+import { slimListRefs, parseListOperations, checkShoppingListIds, assertListsApplied, missingListIds } from './shopping.js';
 
 function slimFood(f: any) {
   if (!f) return f;
@@ -164,7 +164,9 @@ export async function handleUpdateFood(
     });
   }
   if (failedDeletes.length > 0) {
-    throw new Error(`Food updated, but these property rows could not be deleted:\n${failedDeletes.join('\n')}`);
+    const missing = missingListIds(args.shopping_list_ids, updated.shopping_lists);
+    const lists = missing.length > 0 ? `\nTandoor also did not put it on these shopping lists: ${missing.join(', ')}.` : '';
+    throw new Error(`Food updated, but these property rows could not be deleted:\n${failedDeletes.join('\n')}${lists}`);
   }
   assertListsApplied(`Food ${args.id} was updated`, args.shopping_list_ids, updated.shopping_lists);
   return `Food updated.\n\n${emit(args.format === 'full' ? updated : slimFood(updated))}`;

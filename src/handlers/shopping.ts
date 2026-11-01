@@ -35,8 +35,12 @@ export async function checkShoppingListIds(client: TandoorClient, ids: number[],
   await client.shopping.assertShoppingListsExist(ids, { signal });
 }
 
+export function missingListIds(requested: number[] | undefined, lists: { id: number }[]): number[] {
+  return (requested ?? []).filter((id) => !lists.some((l) => l.id === id));
+}
+
 export function assertListsApplied(outcome: string, requested: number[] | undefined, lists: { id: number }[]): void {
-  const missing = (requested ?? []).filter((id) => !lists.some((l) => l.id === id));
+  const missing = missingListIds(requested, lists);
   if (missing.length > 0) throw new Error(`${outcome}, but Tandoor did not put it on these shopping lists: ${missing.join(', ')}.`);
 }
 

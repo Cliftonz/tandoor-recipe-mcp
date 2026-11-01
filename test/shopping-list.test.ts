@@ -502,3 +502,18 @@ describe('lists Tandoor did not apply', () => {
     await expect(run()).rejects.toThrow(new Error(`${done}, but Tandoor did not put it on these shopping lists: 3.`));
   });
 });
+
+describe('update_food with failed property deletes and missing lists', () => {
+  it('reports both in one error', async () => {
+    const withFat = { id: 1, name: 'Milk', properties: [{ id: 11, property_amount: 1, property_type: { id: 1, name: 'fat' } }], shopping_lists: [] };
+    stubTandoor({
+      ...listPages,
+      'GET /api/food/1/': withFat,
+      'PATCH /api/food/1/': { ...withFat, properties: [], shopping_lists: [costco] },
+      'DELETE /api/property/11/': { status: 400, body: { detail: 'locked' } },
+    });
+    await expect(handleUpdateFood(client(), { id: 1, remove_property_type_ids: [1], shopping_list_ids: [2, 3] })).rejects.toThrow(
+      /^Food updated, but these property rows could not be deleted:\nproperty row 11: Tandoor API error: 400[^]*\nTandoor also did not put it on these shopping lists: 3\.$/,
+    );
+  });
+});
