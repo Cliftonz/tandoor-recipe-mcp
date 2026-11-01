@@ -21,7 +21,7 @@ A Model Context Protocol (MCP) server that gives LLM agents full read/write acce
 - **Full Tandoor 2.3.6 API coverage.** 271 typed tools, spanning every domain the Tandoor OpenAPI exposes.
 - **Resources + prompts, not just tools.** Read-only subscribable resources like `tandoor://meal-plan/this-week` and `tandoor://pantry/on-hand`, plus ready-made prompts (`plan_week`, `grocery_list_for_plan`, `what_can_i_make_tonight`). Most Tandoor MCP forks ship tools only.
 - **Slim-by-default responses.** A full recipe GET shrinks from ~20k characters to ~2k by stripping substitute trees, readonly timestamps, image URLs, etc. Pass `format: "full"` anywhere for the raw Tandoor response.
-- **Dynamic tool gating.** ~25 core tools are visible at boot; the LLM enables the rest on demand via `enable_tool_group`. Cuts the boot-time context cost of loading every tool schema.
+- **Per-section tool settings.** One env var per section (recipes, meal plan, shopping, and so on) sets it to `off`, `simple`, or `full`. In stdio mode the LLM can turn a hidden section on mid-session with `enable_tool_group`. See [Tool sections](#tool-sections).
 - **jq stash for large payloads.** Responses larger than 5KB return a stash handle plus a schema summary; the LLM follows up with `jq_query` to project just the fields it needs.
 - **3-stage URL import with a real fallback.** Tries Tandoor's native scraper first, then extracts schema.org JSON-LD from the page directly (works when Tandoor can't reach the URL or doesn't support the site), with an optional stub-on-failure escape hatch.
 - **AI import from images / PDFs.** Multipart upload to Tandoor's `ai-import/` endpoint, saves the parsed recipe.
@@ -122,7 +122,7 @@ The server listens on `http://127.0.0.1:${TANDOOR_MCP_HTTP_PORT:-3737}/mcp` (POS
 
 If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: Bearer <token>`. Missing or wrong tokens get a 401 with `WWW-Authenticate: Bearer`.
 
-**HTTP-mode constraints:** the jq stash and dynamic tool gating both assume a single long-lived session. In HTTP mode both are auto-disabled: `enable_tool_group` and `disable_tool_group` throw, and every tool response is inlined rather than stashed. Use `TANDOOR_MCP_PROFILE=full` in HTTP mode to expose every tool at boot.
+**HTTP-mode constraints:** the jq stash and dynamic tool gating both assume a single long-lived session. In HTTP mode both are auto-disabled: `enable_tool_group` and `disable_tool_group` throw, and every tool response is inlined rather than stashed. The [section settings](#tool-sections) fix the tool list at startup, so set every section you need before you start the server.
 
 ## Environment variables
 
@@ -133,7 +133,17 @@ If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: B
 | `TANDOOR_MCP_TRANSPORT` | no | `stdio` | `stdio` or `http`. |
 | `TANDOOR_MCP_HTTP_PORT` | no | `3737` | HTTP-mode port. |
 | `TANDOOR_MCP_HTTP_TOKEN` | no | none | HTTP-mode bearer token. If unset, HTTP transport runs open (loopback-only, still). |
-| `TANDOOR_MCP_PROFILE` | no | `core` | `core` (default) exposes ~25 always-on tools plus the meta gating tools; `basic` skips admin/misc families entirely (legacy); `full` exposes every tool at boot. |
+| `TANDOOR_MCP_RECIPES` | no | `simple` | `off`, `simple`, or `full`. See [Tool sections](#tool-sections). |
+| `TANDOOR_MCP_MEAL_PLAN` | no | `simple` | `off`, `simple`, or `full`. |
+| `TANDOOR_MCP_SHOPPING` | no | `simple` | `off`, `simple`, or `full`. |
+| `TANDOOR_MCP_INVENTORY` | no | `simple` | `off`, `simple`, or `full`. |
+| `TANDOOR_MCP_FOODS` | no | `simple` | `off`, `simple`, or `full`. |
+| `TANDOOR_MCP_COOKLOG` | no | `off` | `off` or `on`. |
+| `TANDOOR_MCP_RECIPE_BOOKS` | no | `off` | `off` or `on`. |
+| `TANDOOR_MCP_AI` | no | `off` | `off` or `on`. |
+| `TANDOOR_MCP_IMPORT_EXPORT` | no | `off` | `off` or `on`. |
+| `TANDOOR_MCP_HOUSEHOLD_SPACE` | no | `off` | `off` or `on`. |
+| `TANDOOR_MCP_ADMIN` | no | `off` | `off` or `on`. |
 | `TANDOOR_MCP_INCLUDE_ONLY` | no | none | Comma-separated allowlist (glob `*` supported). E.g. `list_*,get_*,create_meal_plan`. |
 | `TANDOOR_MCP_EXCLUDE` | no | none | Comma-separated denylist. E.g. `merge_*,delete_*` to hide destructive tools. |
 | `TANDOOR_MCP_LOG` | no | none | Stderr trace mode. `request`, `response`, `error`, `all`, or comma list. Bearer token redacted. |
@@ -143,7 +153,7 @@ If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: B
 | `TANDOOR_MCP_STASH_MAX_BYTES` | no | `32000000` | Total-bytes cap on the stash; LRU eviction kicks in past this budget. |
 | `TANDOOR_MCP_STASH_TTL_MS` | no | `600000` | Per-entry TTL in milliseconds (default 10 minutes). |
 
-`core` (default) is best for most stdio callers: the LLM sees a small tool list at boot and enables groups on demand. `INCLUDE_ONLY` and `EXCLUDE` compose on top of the profile for finer control ("give me only read tools" or "hide destructive ops from this agent").
+`INCLUDE_ONLY` and `EXCLUDE` run before the section settings and give finer control ("give me only read tools" or "hide destructive ops from this agent"). An excluded tool stays hidden even when its section is on.
 
 ## Tandoor compatibility
 
@@ -161,41 +171,62 @@ To check your instance version from an LLM session:
 
 The server also probes `/api/version/` at boot and writes a WARNING to stderr if the connected instance is older than 2.x.
 
+## Migration from 2.x
+
+3.0.0 removes `TANDOOR_MCP_PROFILE` and the old tool-group names. The per-section settings in [Tool sections](#tool-sections) replace both.
+
+- **`TANDOOR_MCP_PROFILE` is ignored.** If it is set, the server writes a warning to stderr that says it is ignored.
+- **`TANDOOR_MCP_PROFILE=full`:** set every tiered section to `full` and every toggle section to `on`.
+- **Claude Code plugin users:** the plugin used to default to `full` (every tool). It now starts with the section defaults. Set each section in the plugin settings to get more tools back.
+- **Old group names are gone, with no aliases.** `enable_tool_group` no longer accepts `recipe-write`, `mealplan-write`, `shopping-write`, `foods-write`, `ingredients-write`, `keywords`, `steps`, `units`, `unit-conversions`, `properties`, `custom-filters`, `supermarket-write`, `multi-space`, `tree-safety`, `housekeeping-read`, or `recipebook`. Use the section names. The `cooklog`, `ai`, `admin`, and `import-export` names now refer to the new sections, so check [Tool sections](#tool-sections) for what each one contains. The always-on group is now `always` (was `core`).
+
 ## Migration from 1.4.0
 
 - **Stdio users:** nothing required. No breaking changes, no config edits.
 - **HTTP users:** opt in with `TANDOOR_MCP_TRANSPORT=http`. Set `TANDOOR_MCP_HTTP_TOKEN` and expect the jq stash + dynamic gating to be off (both are stdio-session assumptions).
-- **Anyone pinning `TANDOOR_MCP_PROFILE=basic`:** unchanged. `basic` still skips admin/misc entirely and now also skips every 1.5.0 group by definition; `core` is the better lever if you want smaller boot context but keep-on-demand access.
 
-## Tool matrix
+## Tool sections
 
-271 tools across 21 groups (including the synthetic `core` always-on group).
+Each section has one env var. Values are case-insensitive. An empty or unset variable means the default. An invalid value stops the server at startup with an error that names the variable and its valid values.
 
-| Group | Tools | Purpose |
-|---|---:|---|
-| `core` | 23 | Always-on: recipe/meal-plan/shopping/foods reads, `jq_query`, `get_version`, gating meta tools. |
-| `recipe-write` | 8 | Create / update / delete recipes, URL import, image upload, batch update. |
-| `mealplan-write` | 9 | Meal-plan writes + meal-type CRUD + auto-plan + bulk week create. |
-| `shopping-write` | 11 | Shopping entry CRUD + bulk check + shopping-list-recipe CRUD. |
-| `foods-write` | 8 | Food CRUD, merge/move, FDC lookup, batch update. |
-| `ingredients-write` | 4 | Ingredient CRUD (usually managed via recipes). |
-| `keywords` | 5 | Keyword CRUD + merge/move. |
-| `cooklog` | 5 | Cook-log entries: when and how often you made a recipe. |
-| `recipebook` | 9 | Recipe books (collections / cookbooks). |
-| `ai` | 7 | AI recipe import from image/PDF/text; AI provider CRUD; AI step sort. |
-| `steps` | 5 | Step-level CRUD inside a recipe. |
-| `units` | 17 | Unit CRUD + supermarket-category entities. |
-| `unit-conversions` | 5 | Unit conversion rules (cup to ml, etc). |
-| `properties` | 10 | Property types + values (nutrition labels, allergens). |
-| `custom-filters` | 5 | Saved custom recipe filters (Tandoor filter DSL). |
-| `admin` | 51 | Server settings, user prefs, automations, user files, view/import/AI logs, share/invite links, access tokens, storages, connectors, groups, users, syncs. |
-| `supermarket-write` | 5 | **New in 1.5.0.** Physical-store CRUD for aisle-ordering. |
-| `import-export` | 28 | **New in 1.5.0.** Export recipes, import queue (recipe-import, bookmarklet, open-data, FDC search, food-inherit), export logs. |
-| `multi-space` | 10 | **New in 1.5.0.** Space CRUD, user-space memberships, `switch_active_space` (DESTRUCTIVE). |
-| `tree-safety` | 33 | **New in 1.5.0.** Delete-preview tools (cascading / nulling / protecting) for tree-shaped resources. Call before `delete_*`. |
-| `housekeeping-read` | 13 | **New in 1.5.0.** Read-only: localization, groups, users, view-log CRUD (skip write), search prefs, recipe file metadata, meal-plan iCal. |
+Tiered sections take `off`, `simple`, or `full` and default to `simple`. `full` includes everything in `simple`.
 
-Full tool lists per group are in `src/lib/tool-groups.ts`. From an active session, call `list_tool_groups` for a live listing.
+| Section | Env var | `simple` | `full` adds |
+|---|---|---|---|
+| `recipes` | `TANDOOR_MCP_RECIPES` | Browse, search, get, related recipes, create, update, import from URL, read keywords. | Delete, steps, ingredients, images, batch update, keyword writes, custom filters, file links, share links. |
+| `meal-plan` | `TANDOOR_MCP_MEAL_PLAN` | Meal plan create, read, update, and delete. Read meal types. | Auto-plan, bulk create, meal type writes, iCal export. |
+| `shopping` | `TANDOOR_MCP_SHOPPING` | Shopping entry create, read, update, delete, and check. Add a recipe or food to the list. | Shopping-list-recipe create, read, update, and delete. Supermarkets, categories, and category relations. |
+| `inventory` | `TANDOOR_MCP_INVENTORY` | No tools yet. The setting is accepted now. | No tools yet. |
+| `foods` | `TANDOOR_MCP_FOODS` | List, get, create, and update foods. Parse an ingredient. List units. | Delete, merge, move, FDC lookup and search, batch update, unit CRUD, unit conversions, properties, and property types. |
+
+Toggle sections take `off` or `on` and default to `off`.
+
+| Section | Env var | Contents |
+|---|---|---|
+| `cooklog` | `TANDOOR_MCP_COOKLOG` | Cook-log entries. |
+| `recipe-books` | `TANDOOR_MCP_RECIPE_BOOKS` | Recipe books. |
+| `ai` | `TANDOOR_MCP_AI` | AI tools. |
+| `import-export` | `TANDOOR_MCP_IMPORT_EXPORT` | Import and export tools. |
+| `household-space` | `TANDOOR_MCP_HOUSEHOLD_SPACE` | Spaces, memberships, users, groups, invite links, user preferences. |
+| `admin` | `TANDOOR_MCP_ADMIN` | Server settings, access tokens, storages, syncs, connectors, automations, user files, view logs, search settings, localization. |
+
+A delete preview (`preview_*_delete_*`) belongs to the same section and tier as its delete tool.
+
+These tools are always on, whatever the section settings: `list_tool_groups`, `enable_tool_group`, `disable_tool_group`, `get_version`, `jq_query`, `jq_stash_stats`, `get_guard_stats`, and `get_current_space`. Every `tandoor://` resource and every prompt is also always available. `list_tool_groups` reports them as the `always` group.
+
+The server applies the settings in this order:
+
+1. `TANDOOR_MCP_INCLUDE_ONLY` and `TANDOOR_MCP_EXCLUDE` filter the tool list. `EXCLUDE` is a hard block: nothing can enable an excluded tool.
+2. The section settings decide which of the remaining tools are visible at startup. An `off` section is hidden.
+
+In stdio mode the LLM can change sections during a session:
+
+- `enable_tool_group({group, tier?})` turns a section on. For a tiered section, `tier` is `simple` or `full` and defaults to `full`.
+- `disable_tool_group({group})` turns a section off.
+
+In HTTP mode there is no runtime enabling. The section settings fix the tool list at startup.
+
+From an active session, call `list_tool_groups` for a live listing of sections and their tools.
 
 ## Example conversations
 
