@@ -53,8 +53,8 @@ function entry(overrides: Record<string, unknown> = {}) {
 const page = (results: unknown[], next: string | null = null) => ({ count: results.length, next, previous: null, results });
 
 const listPages = {
-  'GET /api/shopping-list/?page=1': page([costco], 'more'),
-  'GET /api/shopping-list/?page=2': page([aldi]),
+  'GET /api/shopping-list/?page=1&page_size=100': page([costco], 'more'),
+  'GET /api/shopping-list/?page=2&page_size=100': page([aldi]),
 };
 
 const unknownListError = 'These shopping list ids do not exist in this space: 999, 1000. Nothing was changed. Use list_shopping_lists to see the lists.';
@@ -185,7 +185,7 @@ describe('bulk_update_shopping_entries', () => {
     const sent = stubTandoor({ ...listPages, ...bulkEcho(req) });
     await handleBulkUpdateShoppingEntries(client(), req);
     expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual([
-      'GET /api/shopping-list/?page=1', 'GET /api/shopping-list/?page=2', 'POST /api/shopping-list-entry/bulk/',
+      'GET /api/shopping-list/?page=1&page_size=100', 'GET /api/shopping-list/?page=2&page_size=100', 'POST /api/shopping-list-entry/bulk/',
     ]);
     expect(sent.at(-1)?.body).toEqual(req);
   });
@@ -327,7 +327,7 @@ describe('food_batch_update lists', () => {
     const sent = stubTandoor({ ...listPages, 'PUT /api/food/batch_update/': {} });
     await handleFoodBatchUpdate(client(), { foods: [1, 2], shopping_lists_add: [3] });
     expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual([
-      'GET /api/shopping-list/?page=1', 'GET /api/shopping-list/?page=2', 'PUT /api/food/batch_update/',
+      'GET /api/shopping-list/?page=1&page_size=100', 'GET /api/shopping-list/?page=2&page_size=100', 'PUT /api/food/batch_update/',
     ]);
     expect(sent.at(-1)).toEqual({ method: 'PUT', path: '/api/food/batch_update/', body: { foods: [1, 2], shopping_lists_add: [3] } });
   });
