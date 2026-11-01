@@ -299,6 +299,12 @@ describe('food shopping lists', () => {
     expect(body(out).shopping_lists).toEqual([{ id: 2, name: 'Costco' }]);
   });
 
+  it('creates a food with shopping_list_ids [] without a list PATCH', async () => {
+    const sent = stubTandoor({ 'POST /api/food/': milk });
+    await handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [] });
+    expect(sent).toEqual([{ method: 'POST', path: '/api/food/', body: { name: 'Milk' } }]);
+  });
+
   it('reports a food created without lists when the list PATCH fails', async () => {
     stubTandoor({
       ...listPages,

@@ -88,7 +88,7 @@ export async function handleCreateFood(
   const listIds = args.shopping_list_ids;
   if (listIds !== undefined) await checkShoppingListIds(client, listIds, ctx?.signal);
   let created = await client.foodUnits.createFood(body);
-  if (listIds !== undefined) {
+  if (listIds?.length) {
     created = await client.foodUnits.patchFood(created.id, { shopping_lists: listIds }).catch((e: Error) => {
       throw new Error(`Food ${created.id} was created without shopping lists; setting its lists failed: ${e.message}`);
     });
