@@ -15,6 +15,7 @@ import {
   handleUpdateInventoryEntry,
   handleDeleteInventoryEntry,
   handleConsumeInventoryItem,
+  handleMoveInventoryItem,
 } from '../handlers/inventory.js';
 
 export const listInventoryLocationsShape = {
@@ -89,6 +90,13 @@ export const consumeInventoryItemShape = {
   format: formatEnum,
 } as const;
 
+export const moveInventoryItemShape = {
+  entry_id: z.number(),
+  to_location_id: z.number(),
+  sub_location: z.string().nullable().optional(),
+  format: formatEnum,
+} as const;
+
 export type ListInventoryLocationsArgs = z.infer<z.ZodObject<typeof listInventoryLocationsShape>>;
 export type GetInventoryLocationArgs = z.infer<z.ZodObject<typeof getInventoryLocationShape>>;
 export type CreateInventoryLocationArgs = z.infer<z.ZodObject<typeof createInventoryLocationShape>>;
@@ -101,6 +109,7 @@ export type AddInventoryItemArgs = z.infer<z.ZodObject<typeof addInventoryItemSh
 export type UpdateInventoryEntryArgs = z.infer<z.ZodObject<typeof updateInventoryEntryShape>>;
 export type DeleteInventoryEntryArgs = z.infer<z.ZodObject<typeof deleteInventoryEntryShape>>;
 export type ConsumeInventoryItemArgs = z.infer<z.ZodObject<typeof consumeInventoryItemShape>>;
+export type MoveInventoryItemArgs = z.infer<z.ZodObject<typeof moveInventoryItemShape>>;
 
 export function registerInventoryTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_inventory_locations', {
@@ -157,4 +166,9 @@ export function registerInventoryTools(server: McpServer, client: TandoorClient)
     description: 'Use up some or all of an inventory entry. Identify it by entry_id, or by food_id with optional location_id (errors listing the candidates when several entries match). Give exactly one of amount (> 0) or all: true. Optional unit_id must match the entry unit; there is no unit conversion. The amount never goes below 0: consuming more than is on hand sets it to 0, keeps the entry and returns a warning. Reads the entry, then writes the new amount; two consumes of the same entry at the same moment can lose one update, because Tandoor has no atomic decrement.',
     inputSchema: consumeInventoryItemShape,
   }, handleConsumeInventoryItem);
+
+  registerStringTool(server, client, 'move_inventory_item', {
+    description: 'Move a whole inventory entry to another location. Required: entry_id, to_location_id. Optional: sub_location (null clears it). To move only part of an entry, consume_inventory_item the part and add_inventory_item it at the new location.',
+    inputSchema: moveInventoryItemShape,
+  }, handleMoveInventoryItem);
 }

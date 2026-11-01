@@ -11,6 +11,7 @@ import type {
   UpdateInventoryEntryArgs,
   DeleteInventoryEntryArgs,
   ConsumeInventoryItemArgs,
+  MoveInventoryItemArgs,
 } from '../tools/inventory.js';
 import type { HandlerContext } from '../lib/register.js';
 import { emit, assertNonEmptyBody, slimPaginated } from '../lib/slim.js';
@@ -194,4 +195,19 @@ export async function handleConsumeInventoryItem(
   if (requested <= e.amount) return `Inventory item consumed.\n\n${emit(out)}`;
   const warning = `Warning: requested ${requested} ${e.unit.name} of ${e.food.name} but only ${e.amount} were on hand; consumed ${e.amount}, amount is now 0.`;
   return `${warning}\n\n${emit({ ...out, warning, requested, consumed: e.amount })}`;
+}
+
+export async function handleMoveInventoryItem(
+  client: TandoorClient,
+  args: MoveInventoryItemArgs,
+  ctx?: HandlerContext,
+): Promise<string> {
+  const e = await client.inventory.getEntry(args.entry_id, { signal: ctx?.signal });
+  const from = e.inventory_location;
+  const body: any = {};
+  if (args.to_location_id !== from.id) body.inventory_location = args.to_location_id;
+  if (args.sub_location !== undefined) body.sub_location = args.sub_location;
+  if (Object.keys(body).length === 0) return `Inventory item ${e.id} is already in ${from.name}.`;
+  const r = await client.inventory.patchEntry(e.id, body, { signal: ctx?.signal });
+  return `Inventory item moved.\n\n${emit({ ...(args.format === 'full' ? r : slimEntry(r)), from_location: from.name })}`;
 }

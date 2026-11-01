@@ -14,6 +14,7 @@ import {
   handleUpdateInventoryEntry,
   handleDeleteInventoryEntry,
   handleConsumeInventoryItem,
+  handleMoveInventoryItem,
 } from '../src/handlers/inventory.js';
 
 type Sent = { method: string; path: string; body?: unknown };
@@ -312,5 +313,49 @@ describe('consume_inventory_item', () => {
     expect(consume.safeParse({ entry_id: 11, amount: 0 }).success).toBe(false);
     expect(consume.safeParse({ entry_id: 11, amount: -2 }).success).toBe(false);
     expect(consume.safeParse({ entry_id: 11, all: false }).success).toBe(false);
+  });
+});
+
+describe('move_inventory_item', () => {
+  const pantry = { id: 7, name: 'Pantry', is_freezer: false, household };
+  const writes = (sent: Sent[]) => sent.filter((s) => s.method !== 'GET');
+
+  it('PATCHes the new location and reports where the entry came from', async () => {
+    const sent = stubTandoor({
+      'GET /api/inventory-entry/11/': entry(),
+      'PATCH /api/inventory-entry/11/': entry({ inventory_location: pantry }),
+    });
+    const out = await handleMoveInventoryItem(client(), { entry_id: 11, to_location_id: 7 });
+    expect(writes(sent)).toEqual([{ method: 'PATCH', path: '/api/inventory-entry/11/', body: { inventory_location: 7 } }]);
+    const moved = { ...slimEntry, location: 'Pantry', location_id: 7, is_freezer: false, from_location: 'Freezer' };
+    expect(out).toBe(`Inventory item moved.\n\n${JSON.stringify(moved)}`);
+  });
+
+  it('sends sub_location with the move, and null clears it', async () => {
+    const sent = stubTandoor({
+      'GET /api/inventory-entry/11/': entry(),
+      'PATCH /api/inventory-entry/11/': entry({ inventory_location: pantry, sub_location: null }),
+    });
+    await handleMoveInventoryItem(client(), { entry_id: 11, to_location_id: 7, sub_location: null });
+    expect(writes(sent)).toEqual([{
+      method: 'PATCH', path: '/api/inventory-entry/11/', body: { inventory_location: 7, sub_location: null },
+    }]);
+  });
+
+  it('succeeds without writing when the entry is already in the target location and no sub_location is given', async () => {
+    const sent = stubTandoor({ 'GET /api/inventory-entry/11/': entry() });
+    const out = await handleMoveInventoryItem(client(), { entry_id: 11, to_location_id: 2 });
+    expect(out).toBe('Inventory item 11 is already in Freezer.');
+    expect(writes(sent)).toEqual([]);
+  });
+
+  it('PATCHes only sub_location when the location is unchanged', async () => {
+    const sent = stubTandoor({
+      'GET /api/inventory-entry/11/': entry(),
+      'PATCH /api/inventory-entry/11/': entry({ sub_location: 'door' }),
+    });
+    const out = await handleMoveInventoryItem(client(), { entry_id: 11, to_location_id: 2, sub_location: 'door' });
+    expect(writes(sent)).toEqual([{ method: 'PATCH', path: '/api/inventory-entry/11/', body: { sub_location: 'door' } }]);
+    expect(JSON.parse(out.split('\n\n')[1])).toMatchObject({ sub_location: 'door', from_location: 'Freezer' });
   });
 });
