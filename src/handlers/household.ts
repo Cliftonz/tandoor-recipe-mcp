@@ -118,6 +118,6 @@ export async function handleAssignHousehold(
   }
   const results: Assignment[] = [];
   for (const id of args.user_space_ids) results.push(await assignOne(client, id, args.household_id, signal));
-  if (results.every((r) => r.status === 'failed')) throw new Error(`No user-space was updated. ${emit(results)}`);
-  return `Household assignment finished.\n\n${emit(results)}`;
+  if (results.every((r) => r.status === 'failed')) throw new Error(`No user-space was updated. ${emit({ results })}`);
+  return `Household assignment finished.\n\n${emit({ results })}`;
 }

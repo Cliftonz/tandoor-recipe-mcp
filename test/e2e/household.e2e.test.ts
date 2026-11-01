@@ -56,7 +56,7 @@ async function call(server: McpServer, name: string, args: Record<string, unknow
 
   it('assigns the user-space and get_household shows it as a member', async () => {
     const res = await call(server, 'assign_household', { user_space_ids: [userSpaceId], household_id: householdId });
-    expect(res).toEqual([{ user_space_id: userSpaceId, status: 'updated' }]);
+    expect(res).toEqual({ results: [{ user_space_id: userSpaceId, status: 'updated' }] });
     expect((await call(server, 'get_household', { id: householdId })).members).toEqual([{ user_space_id: userSpaceId, user: username }]);
     expect((await call(server, 'get_user_space', { id: userSpaceId })).household).toEqual({ id: householdId, name: `${tag}-renamed` });
   });
@@ -69,7 +69,7 @@ async function call(server: McpServer, name: string, args: Record<string, unknow
 
   it('unassigns the user-space', async () => {
     const res = await call(server, 'assign_household', { user_space_ids: [userSpaceId], household_id: null });
-    expect(res).toEqual([{ user_space_id: userSpaceId, status: 'updated' }]);
+    expect(res).toEqual({ results: [{ user_space_id: userSpaceId, status: 'updated' }] });
     expect((await client.spaces.getUserSpace(userSpaceId)).household).toBeNull();
   });
 

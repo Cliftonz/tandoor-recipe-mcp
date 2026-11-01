@@ -132,7 +132,7 @@ describe('household tools', () => {
     expect(sent.filter((s) => s.method === 'PATCH')).toEqual([
       { method: 'PATCH', path: '/api/user-space/2/', body: { groups: [2, 3], household: 4 } },
     ]);
-    const results = JSON.parse(out.slice(out.indexOf('[')));
+    const { results } = JSON.parse(out.slice(out.indexOf('{')));
     expect(results).toEqual([
       { user_space_id: 1, status: 'unchanged' },
       { user_space_id: 2, status: 'updated' },
@@ -148,7 +148,7 @@ describe('household tools', () => {
     const out = await handleAssignHousehold(client(), { user_space_ids: [1], household_id: null });
     expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual(['GET /api/user-space/1/', 'PATCH /api/user-space/1/']);
     expect(sent[1].body).toEqual({ groups: [2], household: null });
-    expect(JSON.parse(out.slice(out.indexOf('[')))).toEqual([{ user_space_id: 1, status: 'updated' }]);
+    expect(JSON.parse(out.slice(out.indexOf('{')))).toEqual({ results: [{ user_space_id: 1, status: 'updated' }] });
   });
 
   it('rejects an unknown household before touching any user-space', async () => {
