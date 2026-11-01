@@ -64,7 +64,7 @@ export const getUserSpaceShape = { id: z.number(), format: formatEnum } as const
 export const updateUserSpaceShape = {
   id: z.number(),
   active: z.boolean().optional(),
-  groups: z.array(z.number()).optional(),
+  groups: z.array(z.number()).min(1).optional(),
   internal_note: z.string().optional(),
   format: formatEnum,
 } as const;

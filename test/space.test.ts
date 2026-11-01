@@ -16,6 +16,8 @@ import {
   handleSwitchActiveSpace,
 } from '../src/handlers/space.js';
 import { SpaceClient } from '../src/clients/space.js';
+import { z } from 'zod';
+import { updateUserSpaceShape } from '../src/tools/space.js';
 
 // ---------- Client URL construction ----------
 
@@ -242,6 +244,12 @@ describe('space handlers', () => {
       'Unknown group ids: 98, 99. Use list_groups to see the groups in this space.',
     );
     expect(patchUserSpace).not.toHaveBeenCalled();
+  });
+
+  it('update_user_space rejects an empty groups list at the schema', () => {
+    const schema = z.object(updateUserSpaceShape);
+    expect(schema.safeParse({ id: 10, groups: [] }).success).toBe(false);
+    expect(schema.safeParse({ id: 10, groups: [2] }).success).toBe(true);
   });
 
   it('handleDeleteUserSpace calls DELETE and returns confirmation', async () => {
