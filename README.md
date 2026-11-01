@@ -165,9 +165,9 @@ The server also probes `/api/version/` at boot and writes a WARNING to stderr if
 
 3.0.0 removes `TANDOOR_MCP_PROFILE` and the old tool-group names. The per-section settings in [Tool sections](#tool-sections) replace both.
 
-- **`TANDOOR_MCP_PROFILE` is ignored.** Setting it prints one stderr warning.
+- **`TANDOOR_MCP_PROFILE` is ignored.** When it has a value, the server prints one stderr warning.
 - **`TANDOOR_MCP_PROFILE=full`:** set every tiered section to `full` and every toggle section to `on`.
-- **Claude Code plugin users:** the plugin used to default to `full` (every tool). It now starts with the section defaults. Set each section in the plugin settings to get more tools back.
+- **Claude Code plugin users:** the plugin used to default to `full` (every tool). It now starts with the section defaults. To get more tools back, set `recipes`, `meal_plan`, `shopping`, `inventory`, `foods`, `cooklog`, `recipe_books`, `ai`, `import_export`, `household_space`, and `admin` in the plugin settings.
 - **Old group names are gone, with no aliases.** Use the section names in `enable_tool_group`. The always-on group is now `always` (was `core`). The [CHANGELOG](CHANGELOG.md) lists every removed name.
 
 ## Migration from 1.4.0
@@ -177,7 +177,7 @@ The server also probes `/api/version/` at boot and writes a WARNING to stderr if
 
 ## Tool sections
 
-Each section has one env var. Values are case-insensitive. An empty or unset variable means the default. An invalid value stops the server at startup with an error that names the variable and its valid values.
+Each section has one env var. The server trims each value and ignores case. An unset, empty, or whitespace-only variable means the default. If any section variable is invalid, the server stops at startup with one error that names every invalid variable and its valid values.
 
 Tiered sections take `off`, `simple`, or `full` and default to `simple`. `full` includes everything in `simple`.
 
@@ -213,6 +213,9 @@ In stdio mode the LLM can change sections during a session:
 
 - `enable_tool_group({group, tier?})` widens a section: `off` to `simple` or `full`, or `simple` to `full`. It never narrows a section. For a tiered section, `tier` is `simple` or `full` and defaults to `full`. Passing `tier` for an on/off section is an error.
 - `disable_tool_group({group})` sets a section to `off`. It cannot disable `always`.
+- `enable_tool_group({group: "always"})` succeeds and changes nothing.
+
+A section with no registered tools does not count as a section at runtime. That covers `inventory` today and any section that `INCLUDE_ONLY` or `EXCLUDE` empties. `enable_tool_group` and `disable_tool_group` reject it as unknown, and `list_tool_groups` and the server instructions leave it out.
 
 From an active session, call `list_tool_groups` for a live listing of sections and their tools.
 
