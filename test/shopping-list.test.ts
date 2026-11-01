@@ -70,8 +70,8 @@ describe('shopping list tools', () => {
     expect(JSON.parse(out)).toEqual({ count: 6, next: null, previous: 'p', results: [costco] });
   });
 
-  it('gets a shopping list by id', async () => {
-    stubTandoor({ 'GET /api/shopping-list/2/': costco });
+  it('gets a shopping list by id, keeping only id, name, description and color', async () => {
+    stubTandoor({ 'GET /api/shopping-list/2/': { ...costco, created_by: { id: 1, username: 'e2e' } } });
     expect(JSON.parse(await handleGetShoppingList(client(), { id: 2 }))).toEqual(costco);
   });
 
@@ -226,9 +226,9 @@ describe('bulk_update_shopping_entries', () => {
     expect(sent).toEqual([]);
   });
 
-  it('rejects a call with neither checked nor a list change', async () => {
+  it.each([[{}], [{ shopping_lists_remove_all: false }]])('rejects %o, which has neither checked nor a list change', async (ops) => {
     const sent = stubTandoor({});
-    await expect(handleBulkUpdateShoppingEntries(client(), { ids: [7] })).rejects.toThrow(
+    await expect(handleBulkUpdateShoppingEntries(client(), { ids: [7], ...ops })).rejects.toThrow(
       'Give checked, a list change, or both.',
     );
     expect(sent).toEqual([]);
