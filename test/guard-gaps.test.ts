@@ -9,7 +9,6 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
 import { TandoorClient } from '../src/clients/index.js';
 import {
   registerStringTool,

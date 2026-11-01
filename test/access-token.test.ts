@@ -106,7 +106,7 @@ describe('access token handlers', () => {
     expect(trimmed.startsWith('{')).toBe(false);
     expect(trimmed.startsWith('[')).toBe(false);
     // The `\n\n` + JSON header-split path must not fire either.
-    expect(/\n\n[\[{]/.test(res)).toBe(false);
+    expect(/\n\n[[{]/.test(res)).toBe(false);
   });
 });
 

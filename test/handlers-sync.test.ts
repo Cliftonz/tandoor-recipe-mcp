@@ -85,7 +85,7 @@ describe('sync handlers', () => {
   });
 
   it('handleUpdateSync sends storage as a bare id', async () => {
-    const patchSync = vi.fn(async (id, b) => ({ ...rawSync, id }));
+    const patchSync = vi.fn(async (id) => ({ ...rawSync, id }));
     const client = { syncs: { patchSync } } as any;
     await handleUpdateSync(client, { id: 3, storage_id: 4 });
     expect(patchSync).toHaveBeenCalledWith(3, { storage: 4 }, { signal: undefined });

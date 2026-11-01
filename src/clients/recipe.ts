@@ -1,7 +1,7 @@
 // Recipe-related API client
 
 import { BaseClient, TandoorRequestOptions } from './base.js';
-import { Recipe, PaginatedRecipeList, Keyword, Food, Unit } from '../types/index.js';
+import { Recipe, PaginatedRecipeList } from '../types/index.js';
 
 export class RecipeClient extends BaseClient {
   /**

@@ -23,7 +23,6 @@
 // skipped with a clear message rather than failing silently.
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll, onTestFailed } from 'vitest';
-import http from 'node:http';
 import path from 'node:path';
 import { existsSync, statSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
