@@ -374,3 +374,27 @@ describe('move_food and merge_food replies', () => {
     expect(await handleMergeFood(client(), { id: 7, target: 3 })).toBe(`Food 7 merged into 3.\n\n${JSON.stringify(msg)}`);
   });
 });
+
+describe('repeated shopping list ids', () => {
+  const entries = [{ amount: 1, food_id: 1, unit_id: null, ingredient_id: null }];
+  const repeated = (field: string) => `These shopping list ids appear more than once in ${field}: 2, 3.`;
+
+  it.each([
+    ['create_shopping_entry', () => handleCreateShoppingEntry(client(), { amount: 1, food_id: 1, shopping_list_ids: [2, 3, 2, 3, 2] })],
+    ['update_shopping_entry', () => handleUpdateShoppingEntry(client(), { id: 7, shopping_list_ids: [2, 3, 2, 3] })],
+    ['create_food', () => handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [3, 2, 3, 2] })],
+    ['update_food', () => handleUpdateFood(client(), { id: 1, shopping_list_ids: [2, 2, 3, 3] })],
+    ['bulk_create_shopping_list_recipe_entries', () => handleBulkCreateShoppingListRecipeEntries(client(), { id: 4, entries, shopping_list_ids: [2, 3, 3, 2] })],
+  ])('%s rejects repeated shopping_list_ids and sends nothing', async (_tool, run) => {
+    const sent = stubTandoor({});
+    await expect(run()).rejects.toThrow(repeated('shopping_list_ids'));
+    expect(sent).toEqual([]);
+  });
+
+  it.each(['shopping_lists_add', 'shopping_lists_remove', 'shopping_lists_set'])('rejects repeated ids in %s and sends nothing', async (field) => {
+    const sent = stubTandoor({});
+    await expect(handleBulkUpdateShoppingEntries(client(), { ids: [7], [field]: [2, 3, 2, 3] })).rejects.toThrow(repeated(field));
+    await expect(handleFoodBatchUpdate(client(), { foods: [1], [field]: [2, 3, 2, 3] })).rejects.toThrow(repeated(field));
+    expect(sent).toEqual([]);
+  });
+});

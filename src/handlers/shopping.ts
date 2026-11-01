@@ -25,6 +25,16 @@ import type {
 import type { HandlerContext } from '../lib/register.js';
 import { emit, assertNonEmptyBody, slimPaginated } from '../lib/slim.js';
 
+function assertNoRepeatedIds(field: string, ids: number[]): void {
+  const repeated = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))].sort((a, b) => a - b);
+  if (repeated.length > 0) throw new Error(`These shopping list ids appear more than once in ${field}: ${repeated.join(', ')}.`);
+}
+
+export async function checkShoppingListIds(client: TandoorClient, ids: number[], signal?: AbortSignal): Promise<void> {
+  assertNoRepeatedIds('shopping_list_ids', ids);
+  await client.shopping.assertShoppingListsExist(ids, { signal });
+}
+
 export function slimListRefs(lists: any[]) {
   return lists.map((l) => ({ id: l.id, name: l.name }));
 }
@@ -156,7 +166,7 @@ export async function handleCreateShoppingEntry(
   if (args.delay_until !== undefined) body.delay_until = args.delay_until;
   if (args.mealplan_id !== undefined) body.mealplan_id = args.mealplan_id;
   if (args.shopping_list_ids !== undefined) {
-    await client.shopping.assertShoppingListsExist(args.shopping_list_ids, { signal: ctx?.signal });
+    await checkShoppingListIds(client, args.shopping_list_ids, ctx?.signal);
     body.shopping_lists = args.shopping_list_ids;
   }
 
@@ -177,7 +187,7 @@ export async function handleUpdateShoppingEntry(
   if (args.order !== undefined) body.order = args.order;
   if (args.delay_until !== undefined) body.delay_until = args.delay_until;
   if (args.shopping_list_ids !== undefined) {
-    await client.shopping.assertShoppingListsExist(args.shopping_list_ids, { signal: ctx?.signal });
+    await checkShoppingListIds(client, args.shopping_list_ids, ctx?.signal);
     body.shopping_lists = args.shopping_list_ids;
   }
   assertNonEmptyBody(body);
@@ -214,6 +224,9 @@ export function validateListOperations(ops: ListOperations): number[] | null {
     set ? 'shopping_lists_set' : null,
     removeAll ? 'shopping_lists_remove_all' : null,
   ].filter((g) => g !== null);
+  for (const [field, ids] of [['shopping_lists_add', add], ['shopping_lists_remove', remove], ['shopping_lists_set', set]] as const) {
+    if (ids) assertNoRepeatedIds(field, ids);
+  }
   if (given.length > 1) {
     throw new Error(`Only shopping_lists_add and shopping_lists_remove can be combined; shopping_lists_set and shopping_lists_remove_all must be used alone. Got: ${given.join(', ')}.`);
   }
@@ -295,7 +308,7 @@ export async function handleBulkCreateShoppingListRecipeEntries(
 ): Promise<string> {
   if (args.entries.length === 0) throw new Error('entries must be a non-empty array');
   const listIds = args.shopping_list_ids ?? [];
-  await client.shopping.assertShoppingListsExist(listIds, { signal: ctx?.signal });
+  await checkShoppingListIds(client, listIds, ctx?.signal);
   const r = await client.shopping.bulkCreateRecipeEntries(args.id, args.entries, listIds);
   return emit(r);
 }

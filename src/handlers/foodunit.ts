@@ -22,7 +22,7 @@ import type {
 
 import type { HandlerContext } from '../lib/register.js';
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
-import { slimListRefs, validateListOperations } from './shopping.js';
+import { slimListRefs, validateListOperations, checkShoppingListIds } from './shopping.js';
 
 function slimFood(f: any) {
   if (!f) return f;
@@ -86,7 +86,7 @@ export async function handleCreateFood(
     body.supermarket_category = args.supermarket_category_id;
   }
   const listIds = args.shopping_list_ids;
-  if (listIds !== undefined) await client.shopping.assertShoppingListsExist(listIds, { signal: ctx?.signal });
+  if (listIds !== undefined) await checkShoppingListIds(client, listIds, ctx?.signal);
   let created = await client.foodUnits.createFood(body);
   if (listIds !== undefined) {
     created = await client.foodUnits.patchFood(created.id, { shopping_lists: listIds }).catch((e: Error) => {
@@ -113,7 +113,7 @@ export async function handleUpdateFood(
   if (args.properties_food_amount !== undefined) body.properties_food_amount = args.properties_food_amount;
   if (args.properties_food_unit_id !== undefined) body.properties_food_unit = args.properties_food_unit_id;
   if (args.shopping_list_ids !== undefined) {
-    await client.shopping.assertShoppingListsExist(args.shopping_list_ids, { signal: ctx?.signal });
+    await checkShoppingListIds(client, args.shopping_list_ids, ctx?.signal);
     body.shopping_lists = args.shopping_list_ids;
   }
   const set = args.properties ?? [];
