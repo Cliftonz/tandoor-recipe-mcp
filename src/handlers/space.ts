@@ -95,6 +95,10 @@ export async function handleUpdateUserSpace(client: TandoorClient, args: UpdateU
     if (v !== undefined) cleaned[k] = v;
   }
   assertNonEmptyBody(cleaned);
+  if (body.groups === undefined) {
+    const current = await client.spaces.getUserSpace(id, { signal: ctx?.signal });
+    cleaned.groups = current.groups.map((g: any) => g.id);
+  }
   const r = await client.spaces.patchUserSpace(id, cleaned, { signal: ctx?.signal });
   return `User-space membership updated.\n\n${emit(format === 'full' ? r : slimUserSpace(r))}`;
 }

@@ -212,6 +212,14 @@ describe('space handlers', () => {
     expect(patchUserSpace).toHaveBeenCalledWith(10, { active: true, groups: [1, 2] }, { signal: undefined });
   });
 
+  it('handleUpdateUserSpace sends the current group ids when groups is omitted', async () => {
+    const getUserSpace = vi.fn(async () => ({ id: 10, groups: [{ id: 2, name: 'user' }, { id: 3, name: 'admin' }] }));
+    const patchUserSpace = vi.fn(async (id, b) => ({ id, ...b }));
+    const client = { spaces: { getUserSpace, patchUserSpace } } as any;
+    await handleUpdateUserSpace(client, { id: 10, internal_note: 'x' });
+    expect(patchUserSpace).toHaveBeenCalledWith(10, { internal_note: 'x', groups: [2, 3] }, { signal: undefined });
+  });
+
   it('handleDeleteUserSpace calls DELETE and returns confirmation', async () => {
     const deleteUserSpace = vi.fn(async () => undefined);
     const client = { spaces: { deleteUserSpace } } as any;
