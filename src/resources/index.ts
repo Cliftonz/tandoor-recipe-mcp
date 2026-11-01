@@ -119,7 +119,7 @@ export function registerResources(server: McpServer, client: TandoorClient): voi
           food: e.food.name,
           food_id: e.food.id,
           amount: e.amount,
-          unit: e.unit.name,
+          unit: e.unit?.name ?? null,
           expires: e.expires,
           sub_location: e.sub_location,
           note: e.note,

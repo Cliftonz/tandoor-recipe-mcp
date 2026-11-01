@@ -106,6 +106,14 @@ describe('tandoor://pantry/on-hand', () => {
     expect((await readPantry()).on_hand_no_quantity).toStrictEqual([{ id: 8, name: 'salt', supermarket_category: null }]);
   });
 
+  it('shows unit null for an entry whose unit was deleted', async () => {
+    stubPages({ entries: [{ next: null, results: [entry(11, shelf, { id: 6, name: 'rice' }, { unit: null })] }], foods: [{ next: null, results: [] }] });
+
+    expect((await readPantry()).locations[0].entries[0]).toEqual({
+      id: 11, food: 'rice', food_id: 6, amount: 100, unit: null, expires: null, sub_location: null, note: null,
+    });
+  });
+
   it('requests inventory entries without the empty filter', async () => {
     const sent = stubPages({ entries: [{ next: null, results: [] }], foods: [{ next: null, results: [] }] });
 
