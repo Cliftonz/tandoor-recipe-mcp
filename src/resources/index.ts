@@ -1,4 +1,4 @@
-// MCP resources — read-only context the model can subscribe to. Unlike
+// MCP resources: read-only context the model can subscribe to. Unlike
 // tools, resources don't require a function call to inspect; the client
 // pre-fetches them so the model always has current state.
 
@@ -36,12 +36,30 @@ function weekRange(anchor: Date = new Date()): { from: string; to: string } {
   return { from: isoDate(from), to: isoDate(to) };
 }
 
+const PANTRY_CAP = 500;
+
+async function collectUpTo(
+  fetchPage: (page: number) => Promise<{ results: any[]; next: string | null }>,
+  keep: (item: any) => boolean,
+): Promise<{ items: any[]; truncated: boolean }> {
+  const items: any[] = [];
+  for (let page = 1; ; page++) {
+    const r = await fetchPage(page);
+    for (const item of r.results) {
+      if (!keep(item)) continue;
+      if (items.length === PANTRY_CAP) return { items, truncated: true };
+      items.push(item);
+    }
+    if (!r.next) return { items, truncated: false };
+  }
+}
+
 export function registerResources(server: McpServer, client: TandoorClient): void {
   server.registerResource(
     'meal-plan-this-week',
     'tandoor://meal-plan/this-week',
     {
-      title: 'Meal Plan — This Week',
+      title: 'Meal Plan: This Week',
       description:
         'Your meal plan entries for Monday-Sunday of the current week, trimmed to {id, date, meal_type, recipe_name, servings, note}. Auto-refreshes every read.',
       mimeType: 'application/json',
@@ -73,33 +91,46 @@ export function registerResources(server: McpServer, client: TandoorClient): voi
     'pantry-on-hand',
     'tandoor://pantry/on-hand',
     {
-      title: 'Pantry — On Hand',
+      title: 'Pantry: On Hand',
       description:
-        'Foods flagged as currently on-hand (food_onhand=true). Useful for "what can I make tonight?" style queries.',
+        `What is available. locations holds inventory entries with amount > 0, grouped by location. is_freezer marks freezers. Each entry has amount, unit, expires, sub_location, and note. on_hand_no_quantity holds foods flagged on hand that have no inventory entry. Shows at most ${PANTRY_CAP} entries and ${PANTRY_CAP} foods. on_hand_no_quantity is exact only when truncated.entries is false. When truncated.entries is true, use list_inventory_entries (inventory section) for the full list of entries. When truncated.on_hand_no_quantity is true, use list_foods for the full list of foods.`,
       mimeType: 'application/json',
     },
     async (uri): Promise<ReadResourceResult> => {
-      // Tandoor lacks an `on_hand=true` filter; walk the paginated list and
-      // filter client-side. Cap at 200 to keep the resource cheap.
-      const results: any[] = [];
-      let page = 1;
-      while (results.length < 500) {
-        const r = await client.foodUnits.listFoods({ page, page_size: 100 });
-        const items = r.results || [];
-        for (const f of items) {
-          if (f.food_onhand) {
-            results.push({
-              id: f.id,
-              name: f.name,
-              plural_name: f.plural_name,
-              supermarket_category: f.supermarket_category?.name,
-            });
-          }
+      const entries = await collectUpTo(
+        (page) => client.inventory.listEntries({ page, page_size: 100 }),
+        () => true,
+      );
+      const stockedFoodIds = new Set(entries.items.map((e) => e.food.id));
+      const foods = await collectUpTo(
+        (page) => client.foodUnits.listFoods({ page, page_size: 100 }),
+        (f) => f.food_onhand && !stockedFoodIds.has(f.id),
+      );
+      const locations = new Map<number, { id: number; name: string; is_freezer: boolean; entries: unknown[] }>();
+      for (const e of entries.items) {
+        const loc = e.inventory_location;
+        let group = locations.get(loc.id);
+        if (!group) {
+          group = { id: loc.id, name: loc.name, is_freezer: loc.is_freezer, entries: [] };
+          locations.set(loc.id, group);
         }
-        if (!r.next || items.length === 0) break;
-        page++;
+        group.entries.push({
+          id: e.id,
+          food: e.food.name,
+          food_id: e.food.id,
+          amount: e.amount,
+          unit: e.unit?.name ?? null,
+          expires: e.expires,
+          sub_location: e.sub_location,
+          note: e.note,
+        });
       }
-      return jsonResource(uri.href, { count: results.length, results });
+      return jsonResource(uri.href, {
+        locations: [...locations.values()],
+        on_hand_no_quantity: foods.items.map((f) => ({ id: f.id, name: f.name, supermarket_category: f.supermarket_category?.name ?? null })),
+        counts: { entries: entries.items.length, on_hand_no_quantity: foods.items.length },
+        truncated: { entries: entries.truncated, on_hand_no_quantity: foods.truncated },
+      });
     }
   );
 
@@ -107,7 +138,7 @@ export function registerResources(server: McpServer, client: TandoorClient): voi
     'shopping-list-active',
     'tandoor://shopping-list/active',
     {
-      title: 'Shopping List — Active',
+      title: 'Shopping List: Active',
       description:
         'Unchecked shopping list entries (Tandoor filters to recent + unchecked by default). Slim fields: food, unit, amount, list_recipe.',
       mimeType: 'application/json',
