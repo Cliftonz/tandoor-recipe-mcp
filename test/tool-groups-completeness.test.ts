@@ -7,7 +7,7 @@ import { TandoorClient } from '../src/clients/index.js';
 import { registerAllTools } from '../src/lib/register-all.js';
 import { _resetRegisteredNames, _resetArraySkipLog } from '../src/lib/register.js';
 import { registeredToolNames } from './helpers/mcp.js';
-import { ALWAYS_ON_GROUP, ALWAYS_ON_TOOLS, SECTIONS } from '../src/lib/sections.js';
+import { ALWAYS_ON_GROUP, ALWAYS_ON_TOOLS, SECTIONS, parseSectionModes } from '../src/lib/sections.js';
 
 function mappedPlacements(): Array<{ tool: string; placement: string }> {
   const out = ALWAYS_ON_TOOLS.map((tool) => ({ tool, placement: ALWAYS_ON_GROUP }));
@@ -30,6 +30,7 @@ beforeAll(() => {
   const server = new McpServer({ name: 'completeness', version: 'completeness' });
   const client = new TandoorClient({ url: 'https://x.test', token: 't' });
   registerAllTools(server, client, {
+    sections: parseSectionModes({}),
     pkg: { name: 'tandoor-mcp-test', version: '0.0.0-test' },
     versionCheck: { status: 'ok', level: 'note', detail: 'completeness stub' },
   });

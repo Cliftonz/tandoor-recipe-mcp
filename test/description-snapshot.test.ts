@@ -14,6 +14,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../src/clients/index.js';
 import { registerAllTools } from '../src/lib/register-all.js';
+import { parseSectionModes } from '../src/lib/sections.js';
 import { _resetRegisteredNames, _resetArraySkipLog } from '../src/lib/register.js';
 import { listRegisteredTools, RegisteredToolInfo } from './helpers/mcp.js';
 
@@ -27,6 +28,7 @@ beforeAll(() => {
   const server = new McpServer({ name: 'snapshot', version: 'snapshot' });
   const client = new TandoorClient({ url: 'https://x.test', token: 't' });
   registerAllTools(server, client, {
+    sections: parseSectionModes({}),
     pkg: { name: 'tandoor-mcp-test', version: '0.0.0-test' },
     versionCheck: { status: 'ok', level: 'note', detail: 'snapshot test stub' },
   });

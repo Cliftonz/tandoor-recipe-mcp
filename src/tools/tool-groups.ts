@@ -25,6 +25,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
 import { CORE_TOOLS, TOOL_GROUPS } from '../lib/tool-groups.js';
+import { SECTIONS, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
 
 interface RegisteredToolEntry {
   enabled: boolean;
@@ -38,6 +39,21 @@ function getRegistry(server: McpServer): Record<string, RegisteredToolEntry> {
   // grep+fix across two files. Returning the live map (not a copy) is
   // intentional: the meta tools mutate it.
   return ((server as unknown as { _registeredTools?: Record<string, RegisteredToolEntry> })._registeredTools) ?? {};
+}
+
+function applyMode(reg: Record<string, RegisteredToolEntry>, section: Section, mode: SectionMode): void {
+  const on = new Set(visibleTools(section, mode));
+  for (const name of sectionTools(section)) {
+    const tool = reg[name];
+    if (!tool) continue;
+    if (on.has(name)) tool.enable();
+    else tool.disable();
+  }
+}
+
+export function applySectionModes(server: McpServer, modes: SectionModes): void {
+  const reg = getRegistry(server);
+  for (const section of SECTIONS) applyMode(reg, section, modes.get(section.name)!);
 }
 
 const SYNTHETIC_CORE_GROUP = 'core';

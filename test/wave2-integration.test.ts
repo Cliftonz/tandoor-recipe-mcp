@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../src/clients/index.js';
 import { registerAllTools } from '../src/lib/register-all.js';
+import { parseSectionModes } from '../src/lib/sections.js';
 import {
   _resetRegisteredNames,
   _resetArraySkipLog,
@@ -78,7 +79,7 @@ describe('registerAllTools + new client wiring', () => {
       const server = new McpServer({ name: 'integration-stdio', version: 'integration-stdio' });
       const client = new TandoorClient({ url: 'https://x.test', token: 't' });
       registerAllTools(server, client, {
-        profile: 'full',
+        sections: parseSectionModes({}),
         pkg: { name: 'tandoor-mcp-test', version: '0.0.0-test' },
         versionCheck: { status: 'ok', level: 'note', detail: 'integration stub' },
       });
@@ -109,7 +110,7 @@ describe('registerAllTools + new client wiring', () => {
       const server = new McpServer({ name: 'integration-http', version: 'integration-http' });
       const client = new TandoorClient({ url: 'https://x.test', token: 't' });
       registerAllTools(server, client, {
-        profile: 'full',
+        sections: parseSectionModes({}),
         pkg: { name: 'tandoor-mcp-test', version: '0.0.0-test' },
         versionCheck: { status: 'ok', level: 'note', detail: 'integration http stub' },
       });
@@ -127,7 +128,7 @@ describe('registerAllTools + new client wiring', () => {
       const server = new McpServer({ name: 'integration-http', version: 'integration-http' });
       const client = new TandoorClient({ url: 'https://x.test', token: 't' });
       registerAllTools(server, client, {
-        profile: 'full',
+        sections: parseSectionModes({}),
         pkg: { name: 'tandoor-mcp-test', version: '0.0.0-test' },
         versionCheck: { status: 'ok', level: 'note', detail: 'integration http stub' },
       });

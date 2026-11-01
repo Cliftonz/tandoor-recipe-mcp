@@ -20,6 +20,7 @@ import { checkTandoorVersion } from './lib/version-check.js';
 import { buildInstructions } from './lib/instructions.js';
 import { registerAllTools } from './lib/register-all.js';
 import { createHttpTransport, resolveHttpConfig } from './lib/http-transport.js';
+import { parseSectionModes, type SectionModes } from './lib/sections.js';
 
 // dotenv is a dev convenience — only load it if it's available (it's a
 // devDependency, not a production dep). Real deployments inject env via the
@@ -38,6 +39,17 @@ if (!TANDOOR_URL || !TANDOOR_TOKEN) {
   console.error('Error: TANDOOR_URL and TANDOOR_TOKEN must be set in .env file');
   process.exit(1);
 }
+
+function readSections(): SectionModes {
+  try {
+    return parseSectionModes(process.env);
+  } catch (error) {
+    console.error(`Error: ${(error as Error).message}`);
+    process.exit(1);
+  }
+}
+const sections = readSections();
+const sectionsLine = [...sections].map(([name, mode]) => `${name}=${mode}`).join(',');
 
 const tandoorClient = new TandoorClient({
   url: TANDOOR_URL,
@@ -63,21 +75,6 @@ if (versionCheck.status !== 'ok') {
   console.error(`[tandoor-mcp] ${versionCheck.level === 'warning' ? 'WARNING' : 'NOTE'}: ${versionCheck.detail}`);
 }
 
-// Tool-group profile. Every MCP client loads every tool schema into context
-// on `list_tools`, so ~135 tools × ~400 tokens each is a real cost for small
-// workflows. TANDOOR_MCP_PROFILE controls visibility.
-//   - "core"  (default): only ~25 always-on tools are visible; the rest are
-//     registered-but-disabled and revealed on demand via enable_tool_group.
-//   - "basic": skip admin/misc tool families entirely (legacy lever).
-//   - "full":  every tool visible at boot. Highest context cost.
-function resolveProfile(raw: string | undefined): 'core' | 'basic' | 'full' {
-  const v = (raw || '').toLowerCase();
-  if (v === 'basic') return 'basic';
-  if (v === 'full') return 'full';
-  return 'core';
-}
-const profile = resolveProfile(process.env.TANDOOR_MCP_PROFILE);
-
 function buildServer(): McpServer {
   const server = new McpServer(
     {
@@ -92,7 +89,7 @@ function buildServer(): McpServer {
       }),
     }
   );
-  registerAllTools(server, tandoorClient, { profile, pkg, versionCheck });
+  registerAllTools(server, tandoorClient, { sections, pkg, versionCheck });
   return server;
 }
 
@@ -105,7 +102,7 @@ async function main() {
     const handle = createHttpTransport(buildServer);
     await handle.start();
     console.error(
-      `[tandoor-mcp] ${pkg.name}@${pkg.version} on http://${httpCfg.host}:${httpCfg.port}${httpCfg.path} | auth=${httpCfg.requireAuth ? 'required' : 'disabled'} | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | profile=${profile} | ${stashLine} | max_body=${httpCfg.maxBodyBytes}B | max_conns=${httpCfg.maxConnections} | drain=${httpCfg.drainMs}ms | dynamic-gating=disabled`,
+      `[tandoor-mcp] ${pkg.name}@${pkg.version} on http://${httpCfg.host}:${httpCfg.port}${httpCfg.path} | auth=${httpCfg.requireAuth ? 'required' : 'disabled'} | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${sectionsLine} | ${stashLine} | max_body=${httpCfg.maxBodyBytes}B | max_conns=${httpCfg.maxConnections} | drain=${httpCfg.drainMs}ms | dynamic-gating=disabled`,
     );
     const shutdown = (signal: string) => {
       console.error(`[tandoor-mcp] ${signal} received, draining`);
@@ -119,7 +116,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await buildServer().connect(transport);
   console.error(
-    `[tandoor-mcp] ${pkg.name}@${pkg.version} on stdio | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | profile=${profile} | ${stashLine}`,
+    `[tandoor-mcp] ${pkg.name}@${pkg.version} on stdio | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${sectionsLine} | ${stashLine}`,
   );
 }
 

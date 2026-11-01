@@ -222,3 +222,13 @@ function parseMode(section: Section, raw: string | undefined): SectionMode {
 export function parseSectionModes(env: Record<string, string | undefined>): SectionModes {
   return new Map(SECTIONS.map((s) => [s.name, parseMode(s, env[s.envVar])]));
 }
+
+export function sectionTools(section: Section): readonly string[] {
+  return section.kind === 'tiered' ? [...section.simple, ...section.full] : section.tools;
+}
+
+export function visibleTools(section: Section, mode: SectionMode): readonly string[] {
+  if (mode === 'off') return [];
+  if (section.kind === 'toggle') return section.tools;
+  return mode === 'simple' ? section.simple : sectionTools(section);
+}

@@ -1,197 +1,68 @@
-// Behavior tests for the dynamic tool-gating contract.
-//
-// Exercises the three meta tools (`list_tool_groups`, `enable_tool_group`,
-// `disable_tool_group`) against a real McpServer with the full tool registry
-// in place. Verifies:
-//
-//   - profile=core disables every non-core tool at boot
-//   - profile=full leaves every tool enabled at boot
-//   - list_tool_groups reports accurate enabled-state per group
-//   - enable_tool_group enables every tool in the named group
-//   - enable_tool_group is idempotent (calling twice doesn't re-toggle)
-//   - disable_tool_group disables every tool in the named group
-//   - core cannot be disabled
-//   - unknown group names produce a helpful error listing known groups
-
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { TandoorClient } from '../src/clients/index.js';
 import { registerAllTools } from '../src/lib/register-all.js';
 import { _resetRegisteredNames, _resetArraySkipLog } from '../src/lib/register.js';
-import { CORE_TOOLS, TOOL_GROUPS } from '../src/lib/tool-groups.js';
-import { invokeTool } from './helpers/mcp.js';
+import { parseSectionModes } from '../src/lib/sections.js';
 
-interface RegisteredToolEntry {
-  enabled: boolean;
-}
-
-function getRegistry(server: McpServer): Record<string, RegisteredToolEntry> {
-  return (server as unknown as { _registeredTools: Record<string, RegisteredToolEntry> })._registeredTools;
-}
-
-function buildServer(profile: 'core' | 'full' | 'basic'): McpServer {
+async function connect(env: Record<string, string> = {}): Promise<Client> {
   _resetRegisteredNames();
   _resetArraySkipLog();
   const server = new McpServer({ name: 'gating', version: 'gating' });
-  const client = new TandoorClient({ url: 'https://x.test', token: 't' });
-  registerAllTools(server, client, {
-    profile,
+  registerAllTools(server, new TandoorClient({ url: 'https://x.test', token: 't' }), {
+    sections: parseSectionModes(env),
     pkg: { name: 'tandoor-mcp-test', version: '0.0.0-test' },
     versionCheck: { status: 'ok', level: 'note', detail: 'gating stub' },
   });
-  return server;
+  const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+  const client = new Client({ name: 'gating-client', version: '1.0' });
+  await Promise.all([server.connect(serverSide), client.connect(clientSide)]);
+  return client;
 }
 
-/** Parse the JSON payload out of a meta-tool CallToolResult. */
-function parseResult(result: { content: Array<{ type: string; text: string }>; isError?: boolean }): any {
-  expect(result.isError, `tool returned isError=true: ${JSON.stringify(result.content)}`).toBeFalsy();
-  const txt = result.content[0]!.text;
-  return JSON.parse(txt);
+async function visible(client: Client): Promise<string[]> {
+  return (await client.listTools()).tools.map((t) => t.name).sort();
 }
 
-describe('profile=core boot gate', () => {
-  let server: McpServer;
-  beforeEach(() => {
-    server = buildServer('core');
+describe('startup visibility', () => {
+  it('shows always-on tools plus the simple tier of every tiered section by default', async () => {
+    const client = await connect();
+    expect(await visible(client)).toEqual([
+      'add_recipe_to_shopping_list', 'bulk_check_shopping_entries', 'create_food', 'create_meal_plan',
+      'create_recipe', 'create_shopping_entry', 'delete_meal_plan', 'delete_shopping_entry',
+      'disable_tool_group', 'enable_tool_group', 'food_shopping_update', 'get_current_space',
+      'get_food', 'get_guard_stats', 'get_keyword', 'get_meal_plan', 'get_meal_type', 'get_recipe',
+      'get_shopping_entry', 'get_version', 'import_recipe_from_url', 'jq_query', 'jq_stash_stats',
+      'list_foods', 'list_keywords', 'list_meal_plans', 'list_meal_types', 'list_recipes',
+      'list_recipes_flat', 'list_shopping_entries', 'list_tool_groups', 'list_units', 'parse_ingredient',
+      'related_recipes', 'search_recipes', 'update_food', 'update_meal_plan', 'update_recipe',
+      'update_shopping_entry',
+    ]);
   });
 
-  it('every core tool is enabled at boot', () => {
-    const reg = getRegistry(server);
-    for (const name of CORE_TOOLS) {
-      expect(reg[name], `core tool '${name}' must be registered`).toBeDefined();
-      expect(reg[name]!.enabled, `core tool '${name}' must be enabled at boot`).toBe(true);
-    }
+  it('applies per-section overrides at startup', async () => {
+    const names = await visible(await connect({
+      TANDOOR_MCP_RECIPES: 'full',
+      TANDOOR_MCP_MEAL_PLAN: 'off',
+      TANDOOR_MCP_COOKLOG: 'on',
+    }));
+    expect(names).toEqual(expect.arrayContaining(['list_recipes', 'delete_step', 'list_cook_logs', 'list_tool_groups']));
+    expect(names).not.toContain('list_meal_plans');
+    expect(names).not.toContain('list_recipe_books');
   });
 
-  it('every non-core tool is disabled at boot', () => {
-    const reg = getRegistry(server);
-    for (const g of TOOL_GROUPS) {
-      for (const name of g.tools) {
-        const entry = reg[name];
-        if (!entry) continue; // unregistered — separate completeness test catches stale names
-        expect(entry.enabled, `non-core tool '${name}' (group=${g.name}) must be disabled at boot under profile=core`).toBe(false);
-      }
-    }
-  });
-});
-
-describe('profile=full leaves every tool enabled at boot', () => {
-  it('every registered tool is enabled', () => {
-    const server = buildServer('full');
-    const reg = getRegistry(server);
-    for (const name of Object.keys(reg)) {
-      expect(reg[name]!.enabled, `tool '${name}' must be enabled at boot under profile=full`).toBe(true);
-    }
-  });
-});
-
-describe('list_tool_groups', () => {
-  it('reports core as permanent + enabled and non-core groups as disabled at boot', async () => {
-    const server = buildServer('core');
-    const result = parseResult(await invokeTool(server, 'list_tool_groups', {}));
-    const core = result.groups.find((g: any) => g.name === 'core');
-    expect(core).toBeDefined();
-    expect(core.permanent).toBe(true);
-    expect(core.enabled).toBe(true);
-    expect(core.tools).toEqual(expect.arrayContaining([...CORE_TOOLS]));
-
-    const recipeWrite = result.groups.find((g: any) => g.name === 'recipe-write');
-    expect(recipeWrite).toBeDefined();
-    expect(recipeWrite.permanent).toBe(false);
-    expect(recipeWrite.enabled).toBe(false);
-  });
-
-  it('returns groups in a stable order — core first, then TOOL_GROUPS', async () => {
-    const server = buildServer('core');
-    const result = parseResult(await invokeTool(server, 'list_tool_groups', {}));
-    const expected = ['core', ...TOOL_GROUPS.map((g) => g.name)];
-    expect(result.groups.map((g: any) => g.name)).toEqual(expected);
-  });
-});
-
-describe('enable_tool_group', () => {
-  it('enables every tool in the named group', async () => {
-    const server = buildServer('core');
-    const reg = getRegistry(server);
-    const group = TOOL_GROUPS.find((g) => g.name === 'recipe-write')!;
-    for (const t of group.tools) expect(reg[t]!.enabled).toBe(false);
-
-    const result = parseResult(await invokeTool(server, 'enable_tool_group', { group: 'recipe-write' }));
-    expect(result.ok).toBe(true);
-    expect(result.group).toBe('recipe-write');
-    expect(new Set(result.enabled)).toEqual(new Set(group.tools));
-
-    for (const t of group.tools) expect(reg[t]!.enabled, `tool '${t}' must be enabled after enable_tool_group`).toBe(true);
-  });
-
-  it('is idempotent — second call reports already_enabled', async () => {
-    const server = buildServer('core');
-    await invokeTool(server, 'enable_tool_group', { group: 'recipe-write' });
-    const result = parseResult(await invokeTool(server, 'enable_tool_group', { group: 'recipe-write' }));
-    expect(result.enabled).toEqual([]);
-    expect(new Set(result.already_enabled)).toEqual(
-      new Set(TOOL_GROUPS.find((g) => g.name === 'recipe-write')!.tools),
-    );
-  });
-
-  it('treats core as a no-op', async () => {
-    const server = buildServer('core');
-    const result = parseResult(await invokeTool(server, 'enable_tool_group', { group: 'core' }));
-    expect(result.ok).toBe(true);
-    expect(result.note).toMatch(/permanent/);
-  });
-
-  it('returns isError with helpful message for unknown groups', async () => {
-    const server = buildServer('core');
-    const result = await invokeTool(server, 'enable_tool_group', { group: 'definitely-not-a-group' });
-    expect(result.isError).toBe(true);
-    expect(result.content[0].text).toMatch(/unknown tool group/);
-    expect(result.content[0].text).toMatch(/recipe-write/); // names a known group so the LLM has signal
-  });
-
-  it('flips list_tool_groups enabled state to true after enabling', async () => {
-    const server = buildServer('core');
-    await invokeTool(server, 'enable_tool_group', { group: 'cooklog' });
-    const list = parseResult(await invokeTool(server, 'list_tool_groups', {}));
-    const cooklog = list.groups.find((g: any) => g.name === 'cooklog');
-    expect(cooklog.enabled).toBe(true);
-  });
-});
-
-describe('disable_tool_group', () => {
-  it('disables every tool in the named group', async () => {
-    const server = buildServer('full');
-    const reg = getRegistry(server);
-    const group = TOOL_GROUPS.find((g) => g.name === 'shopping-write')!;
-    for (const t of group.tools) expect(reg[t]!.enabled).toBe(true);
-
-    const result = parseResult(await invokeTool(server, 'disable_tool_group', { group: 'shopping-write' }));
-    expect(result.ok).toBe(true);
-    expect(new Set(result.disabled)).toEqual(new Set(group.tools));
-
-    for (const t of group.tools) expect(reg[t]!.enabled, `tool '${t}' must be disabled after disable_tool_group`).toBe(false);
-  });
-
-  it('is idempotent — second call reports already_disabled', async () => {
-    const server = buildServer('core'); // non-core groups start disabled
-    const result = parseResult(await invokeTool(server, 'disable_tool_group', { group: 'shopping-write' }));
-    expect(result.disabled).toEqual([]);
-    expect(new Set(result.already_disabled)).toEqual(
-      new Set(TOOL_GROUPS.find((g) => g.name === 'shopping-write')!.tools),
-    );
-  });
-
-  it('refuses to disable core', async () => {
-    const server = buildServer('full');
-    const result = await invokeTool(server, 'disable_tool_group', { group: 'core' });
-    expect(result.isError).toBe(true);
-    expect(result.content[0].text).toMatch(/cannot disable 'core'/);
-  });
-
-  it('returns isError for unknown groups', async () => {
-    const server = buildServer('full');
-    const result = await invokeTool(server, 'disable_tool_group', { group: 'whoops' });
-    expect(result.isError).toBe(true);
-    expect(result.content[0].text).toMatch(/unknown tool group/);
+  it('hides always-on tools from no setting', async () => {
+    const names = await visible(await connect({
+      TANDOOR_MCP_RECIPES: 'off',
+      TANDOOR_MCP_MEAL_PLAN: 'off',
+      TANDOOR_MCP_SHOPPING: 'off',
+      TANDOOR_MCP_FOODS: 'off',
+    }));
+    expect(names).toEqual([
+      'disable_tool_group', 'enable_tool_group', 'get_current_space', 'get_guard_stats',
+      'get_version', 'jq_query', 'jq_stash_stats', 'list_tool_groups',
+    ]);
   });
 });
