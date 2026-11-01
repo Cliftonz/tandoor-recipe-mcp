@@ -398,3 +398,13 @@ describe('repeated shopping list ids', () => {
     expect(sent).toEqual([]);
   });
 });
+
+describe('ids in both shopping_lists_add and shopping_lists_remove', () => {
+  it('is rejected by name, and nothing is sent', async () => {
+    const sent = stubTandoor({});
+    const message = 'These shopping list ids are in both shopping_lists_add and shopping_lists_remove: 2, 3.';
+    await expect(handleBulkUpdateShoppingEntries(client(), { ids: [7], shopping_lists_add: [3, 2, 4], shopping_lists_remove: [2, 3] })).rejects.toThrow(message);
+    await expect(handleFoodBatchUpdate(client(), { foods: [1], shopping_lists_add: [2, 3], shopping_lists_remove: [5, 3, 2] })).rejects.toThrow(message);
+    expect(sent).toEqual([]);
+  });
+});

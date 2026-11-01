@@ -227,6 +227,10 @@ export function validateListOperations(ops: ListOperations): number[] | null {
   for (const [field, ids] of [['shopping_lists_add', add], ['shopping_lists_remove', remove], ['shopping_lists_set', set]] as const) {
     if (ids) assertNoRepeatedIds(field, ids);
   }
+  const inBoth = (add ?? []).filter((id) => remove?.includes(id)).sort((a, b) => a - b);
+  if (inBoth.length > 0) {
+    throw new Error(`These shopping list ids are in both shopping_lists_add and shopping_lists_remove: ${inBoth.join(', ')}.`);
+  }
   if (given.length > 1) {
     throw new Error(`Only shopping_lists_add and shopping_lists_remove can be combined; shopping_lists_set and shopping_lists_remove_all must be used alone. Got: ${given.join(', ')}.`);
   }
