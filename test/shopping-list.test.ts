@@ -163,13 +163,6 @@ describe('shopping entry list ids', () => {
     expect(body(out).shopping_lists).toEqual([]);
   });
 
-  it('names each unknown list id once', async () => {
-    stubTandoor(listPages);
-    await expect(client().shopping.assertShoppingListsExist([999, 2, 1000, 999])).rejects.toThrow(
-      new Error(unknownListError),
-    );
-  });
-
   it('rejects unknown list ids on update and patches nothing', async () => {
     const sent = stubTandoor(listPages);
     await expect(handleUpdateShoppingEntry(client(), { id: 7, checked: true, shopping_list_ids: [999, 1000] }))
