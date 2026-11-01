@@ -161,6 +161,7 @@ export const bulkCreateShoppingListRecipeEntriesShape = {
       ingredient_id: z.number().nullable(),
     })
   ),
+  shopping_list_ids: shoppingListIds.optional(),
 } as const;
 
 export type ListShoppingListsArgs = z.infer<z.ZodObject<typeof listShoppingListsShape>>;
@@ -270,7 +271,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   }, handleDeleteShoppingListRecipe);
 
   registerStringTool(server, client, 'bulk_create_shopping_list_recipe_entries', {
-    description: 'Append many shopping entries to an existing shopping-list-recipe in one call.',
+    description: `Append many shopping entries to an existing shopping-list-recipe in one call. Optional: shopping_list_ids puts every new entry on those lists. When shopping_list_ids is omitted or [], each new entry gets its food's lists, whatever the user preference. ${LIST_IDS_CHECKED}`,
     inputSchema: bulkCreateShoppingListRecipeEntriesShape,
   }, handleBulkCreateShoppingListRecipeEntries);
 }

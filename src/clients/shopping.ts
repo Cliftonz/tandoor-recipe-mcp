@@ -137,11 +137,12 @@ export class ShoppingClient extends BaseClient {
   /** Append entries to an existing shopping-list-recipe in one call. */
   async bulkCreateRecipeEntries(
     id: number,
-    entries: Array<{ amount: number; food_id: number | null; unit_id: number | null; ingredient_id: number | null }>
+    entries: Array<{ amount: number; food_id: number | null; unit_id: number | null; ingredient_id: number | null }>,
+    shoppingListsIds: number[],
   ): Promise<any> {
     return this.request(`/api/shopping-list-recipe/${id}/bulk_create_entries/`, {
       method: 'POST',
-      body: JSON.stringify({ entries }),
+      body: JSON.stringify({ entries, shopping_lists_ids: shoppingListsIds }),
     });
   }
 }

@@ -12,6 +12,7 @@ import {
   handleCreateShoppingEntry,
   handleUpdateShoppingEntry,
   handleBulkUpdateShoppingEntries,
+  handleBulkCreateShoppingListRecipeEntries,
 } from '../src/handlers/shopping.js';
 
 type Sent = { method: string; path: string; body?: unknown };
@@ -241,5 +242,29 @@ describe('bulk_update_shopping_entries', () => {
 
   it('requires at least one entry id', () => {
     expect(z.object(bulkUpdateShoppingEntriesShape).safeParse({ ids: [], checked: true }).success).toBe(false);
+  });
+});
+
+describe('bulk_create_shopping_list_recipe_entries lists', () => {
+  const entries = [{ amount: 1, food_id: 1, unit_id: null, ingredient_id: null }];
+  const echo = (b: object) => ({ 'POST /api/shopping-list-recipe/4/bulk_create_entries/': b });
+
+  it('sends shopping_lists_ids [] when no lists are given, so Tandoor uses each food\'s lists', async () => {
+    const sent = stubTandoor(echo({ entries, shopping_lists_ids: [] }));
+    await handleBulkCreateShoppingListRecipeEntries(client(), { id: 4, entries });
+    expect(sent).toEqual([{ method: 'POST', path: '/api/shopping-list-recipe/4/bulk_create_entries/', body: { entries, shopping_lists_ids: [] } }]);
+  });
+
+  it('sends the given lists after checking them', async () => {
+    const sent = stubTandoor({ ...listPages, ...echo({ entries, shopping_lists_ids: [3] }) });
+    await handleBulkCreateShoppingListRecipeEntries(client(), { id: 4, entries, shopping_list_ids: [3] });
+    expect(sent.at(-1)?.body).toEqual({ entries, shopping_lists_ids: [3] });
+  });
+
+  it('rejects unknown list ids and creates no entries', async () => {
+    const sent = stubTandoor(listPages);
+    await expect(handleBulkCreateShoppingListRecipeEntries(client(), { id: 4, entries, shopping_list_ids: [999, 1000] }))
+      .rejects.toThrow(unknownListError);
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
   });
 });

@@ -291,6 +291,8 @@ export async function handleBulkCreateShoppingListRecipeEntries(
   args: BulkCreateShoppingListRecipeEntriesArgs
 ): Promise<string> {
   if (args.entries.length === 0) throw new Error('entries must be a non-empty array');
-  const r = await client.shopping.bulkCreateRecipeEntries(args.id, args.entries);
+  const listIds = args.shopping_list_ids ?? [];
+  await client.shopping.assertShoppingListsExist(listIds);
+  const r = await client.shopping.bulkCreateRecipeEntries(args.id, args.entries, listIds);
   return emit(r);
 }
