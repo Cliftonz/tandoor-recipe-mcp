@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, onTestFinished } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createHttpTransport, resolveHttpConfig, bearerMatches, FailedAuthLimiter } from '../src/lib/http-transport.js';
 import type { Server } from 'node:http';
@@ -35,6 +35,12 @@ function pickPort(): number {
 
 function buildServer(): McpServer {
   return new McpServer({ name: 'test', version: '0.0.0' });
+}
+
+function buildServerWithTool(): McpServer {
+  const server = buildServer();
+  server.registerTool('ping', { description: 'ping' }, async () => ({ content: [{ type: 'text', text: 'pong' }] }));
+  return server;
 }
 
 async function postJson(url: string, body: unknown, headers: Record<string, string> = {}): Promise<{ status: number; headers: Headers; body: string }> {
@@ -119,7 +125,7 @@ describe('createHttpTransport round-trip', () => {
   it('handles a POST initialize round-trip', async () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const res = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc());
@@ -129,11 +135,119 @@ describe('createHttpTransport round-trip', () => {
     expect(res.body).toContain('"result"');
   });
 
+  it('answers every sequential POST, not only the first', async () => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    handle = createHttpTransport(buildServerWithTool);
+    await handle.start();
+
+    const first = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc());
+    const second = await postJson(`http://127.0.0.1:${port}/mcp`, { jsonrpc: '2.0', id: 2, method: 'tools/list' });
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(second.body).toContain('"name":"ping"');
+  });
+
+  it('closes the per-request server once its response ends', async () => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    let closed = 0;
+    handle = createHttpTransport(() => {
+      const server = buildServer();
+      server.server.onclose = () => { closed++; };
+      return server;
+    });
+    await handle.start();
+
+    const res = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc());
+    expect(res.status).toBe(200);
+    await vi.waitFor(() => expect(closed).toBe(1));
+  });
+
+  it('stop() ends an in-flight tool call at the drain deadline', async () => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    process.env.TANDOOR_MCP_HTTP_DRAIN_MS = '200';
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => { release = resolve; });
+    onTestFinished(() => release());
+    let entered!: () => void;
+    const started = new Promise<void>((resolve) => { entered = resolve; });
+    const h = createHttpTransport(() => {
+      const server = buildServer();
+      server.registerTool('hang', { description: 'hang' }, async () => {
+        entered();
+        await blocked;
+        return { content: [{ type: 'text', text: 'done' }] };
+      });
+      return server;
+    });
+    await h.start();
+
+    const call = postJson(`http://127.0.0.1:${port}/mcp`, { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'hang', arguments: {} } }).catch(() => undefined);
+    await started;
+    const outcome = await Promise.race([
+      h.stop().then(() => 'stopped'),
+      new Promise((resolve) => setTimeout(() => resolve('still draining'), 1000)),
+    ]);
+    expect(outcome).toBe('stopped');
+    await call;
+  });
+
+  it.each(['GET', 'DELETE', 'PUT'])('%s on the MCP path returns 405 with Allow: POST and a JSON-RPC error body', async (method) => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+
+    const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method });
+    expect(res.status).toBe(405);
+    expect(res.headers.get('allow')).toBe('POST');
+    expect(res.headers.get('content-type')).toBe('application/json');
+    expect(await res.json()).toEqual({ jsonrpc: '2.0', id: null, error: { code: -32000, message: 'Method not allowed' } });
+  });
+
+  it('logs event=method_not_allowed on stderr for a non-POST on the MCP path', async () => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+
+    const cap = captureStderr();
+    const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method: 'GET' });
+    cap.restore();
+    expect(res.status).toBe(405);
+    expect(cap.joined()).toContain(`reqId=${res.headers.get('x-tandoor-req-id')} level=info event=method_not_allowed method=GET path=/mcp`);
+  });
+
+  it('GET on the MCP path without a token returns 401, not 405, when auth is required', async () => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+
+    const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method: 'GET' });
+    expect(res.status).toBe(401);
+  });
+
+  it('GET on the MCP path with the correct token returns 405 when auth is required', async () => {
+    const port = pickPort();
+    process.env.TANDOOR_MCP_HTTP_PORT = String(port);
+    process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+
+    const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method: 'GET', headers: { Authorization: 'Bearer sekret' } });
+    expect(res.status).toBe(405);
+    expect(res.headers.get('allow')).toBe('POST');
+  });
+
   it('returns 401 with WWW-Authenticate when token is set and missing', async () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const res = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc());
@@ -145,7 +259,7 @@ describe('createHttpTransport round-trip', () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const res = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc(), {
@@ -158,7 +272,7 @@ describe('createHttpTransport round-trip', () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const res = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc(), {
@@ -171,7 +285,7 @@ describe('createHttpTransport round-trip', () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     process.env.TANDOOR_MCP_HTTP_PATH = '/custom';
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const okRes = await postJson(`http://127.0.0.1:${port}/custom`, initializeRpc());
@@ -190,7 +304,7 @@ describe('createHttpTransport round-trip', () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     process.env.TANDOOR_MCP_HTTP_MAX_BODY_BYTES = '128';
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const oversized = { jsonrpc: '2.0', id: 1, method: 'x', params: { pad: 'A'.repeat(4096) } };
@@ -206,7 +320,7 @@ describe('createHttpTransport round-trip', () => {
   it('binds loopback only, not 0.0.0.0', async () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     // Attempt to reach the port via a non-loopback route; connecting to
@@ -230,7 +344,7 @@ describe('createHttpTransport round-trip', () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const cap = captureStderr();
@@ -244,7 +358,7 @@ describe('createHttpTransport round-trip', () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const cap = captureStderr();
@@ -257,7 +371,7 @@ describe('createHttpTransport round-trip', () => {
   it('logs event=not_found on stderr for unknown routes', async () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const cap = captureStderr();
@@ -270,7 +384,7 @@ describe('createHttpTransport round-trip', () => {
   it('sets an x-tandoor-req-id header on every response', async () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const res = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc());
@@ -280,7 +394,7 @@ describe('createHttpTransport round-trip', () => {
   it('reqId in response header matches reqId in stderr log line', async () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const cap = captureStderr();
@@ -295,7 +409,7 @@ describe('createHttpTransport round-trip', () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const res = await fetch(`http://127.0.0.1:${port}/healthz`, { method: 'GET' });
@@ -307,7 +421,7 @@ describe('createHttpTransport round-trip', () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     process.env.TANDOOR_MCP_HTTP_MAX_CONNS = '64';
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const srv = (handle as unknown as { server(): Server }).server();
@@ -321,8 +435,11 @@ describe('createHttpTransport round-trip', () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
     process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(0);
+    onTestFinished(() => { vi.useRealTimers(); });
 
     for (let i = 0; i < 20; i++) {
       const r = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc(), { Authorization: 'Bearer wrong' });
@@ -341,7 +458,7 @@ describe('createHttpTransport round-trip', () => {
   it('malformed JSON body is caught by outer wrap → 500 JSON-RPC envelope + stderr internal_error', async () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const cap = captureStderr();
@@ -360,13 +477,9 @@ describe('createHttpTransport round-trip', () => {
   });
 
   it('serves parallel requests without transport-layer crashes and stamps distinct reqIds', async () => {
-    // Note: MCP StreamableHTTPServerTransport (stateless mode) serializes RPCs
-    // at the SDK layer, so a truly concurrent second RPC can return 500 from
-    // the SDK itself. Our http transport must still respond to both and stamp
-    // distinct x-tandoor-req-id headers on each.
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
-    handle = createHttpTransport(buildServer());
+    handle = createHttpTransport(buildServer);
     await handle.start();
 
     const [rA, rB] = await Promise.all([
@@ -385,7 +498,7 @@ describe('createHttpTransport round-trip', () => {
   it('stop() enters draining mode: subsequent requests return 503 shutdown envelope', async () => {
     const port = pickPort();
     process.env.TANDOOR_MCP_HTTP_PORT = String(port);
-    const h = createHttpTransport(buildServer());
+    const h = createHttpTransport(buildServer);
     await h.start();
     // Kick off stop; do not await yet so the socket is still up briefly.
     const stopping = h.stop();
