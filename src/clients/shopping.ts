@@ -33,7 +33,7 @@ export class ShoppingClient extends BaseClient {
   async assertShoppingListsExist(ids: number[], opts?: Opts): Promise<void> {
     if (ids.length === 0) return;
     const known = new Set((await allPages((page) => this.listShoppingLists({ page, page_size: 100 }, opts))).map((l) => l.id));
-    const unknown = ids.filter((id) => !known.has(id));
+    const unknown = [...new Set(ids)].filter((id) => !known.has(id));
     if (unknown.length > 0) {
       throw new Error(`These shopping list ids do not exist in this space: ${unknown.join(', ')}. Nothing was changed. Use list_shopping_lists to see the lists.`);
     }
