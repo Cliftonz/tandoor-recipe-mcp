@@ -490,7 +490,7 @@ function pickServings(raw: unknown): number {
  * Convert a schema.org Recipe into Tandoor's SourceImportRecipe shape so it
  * can be saved via the same `saveScrapedRecipe` pipeline as Tandoor's native
  * scraper output. Each ingredient string is parsed via Tandoor's own
- * `ingredient-from-string` endpoint to stay consistent with the UI's parser.
+ * `ingredient-parser` endpoint to stay consistent with the UI's parser.
  */
 export async function jsonLdToScrapedRecipe(
   client: TandoorClient,

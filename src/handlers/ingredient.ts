@@ -22,8 +22,6 @@ type IngredientMutable = {
   is_header?: boolean;
   no_amount?: boolean;
   original_text?: string;
-  always_use_plural_unit?: boolean;
-  always_use_plural_food?: boolean;
 };
 
 function buildIngredientPayload(args: IngredientMutable, opts: { partial: boolean }): Partial<Ingredient> {
@@ -59,14 +57,6 @@ function buildIngredientPayload(args: IngredientMutable, opts: { partial: boolea
 
   if (args.original_text !== undefined) {
     payload.original_text = args.original_text;
-  }
-
-  if (args.always_use_plural_unit !== undefined) {
-    payload.always_use_plural_unit = args.always_use_plural_unit;
-  }
-
-  if (args.always_use_plural_food !== undefined) {
-    payload.always_use_plural_food = args.always_use_plural_food;
   }
 
   if (!opts.partial) {

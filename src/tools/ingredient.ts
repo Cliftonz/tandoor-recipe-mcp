@@ -34,8 +34,6 @@ export const createIngredientShape = {
   is_header: z.boolean().optional(),
   no_amount: z.boolean().optional(),
   original_text: z.string().optional(),
-  always_use_plural_unit: z.boolean().optional(),
-  always_use_plural_food: z.boolean().optional(),
 } as const;
 
 export const updateIngredientShape = {
@@ -48,8 +46,6 @@ export const updateIngredientShape = {
   is_header: z.boolean().optional(),
   no_amount: z.boolean().optional(),
   original_text: z.string().optional(),
-  always_use_plural_unit: z.boolean().optional(),
-  always_use_plural_food: z.boolean().optional(),
 } as const;
 
 export const deleteIngredientShape = {
@@ -79,7 +75,7 @@ export function registerIngredientTools(server: McpServer, client: TandoorClient
   }, handleGetIngredient);
 
   registerStringTool(server, client, 'create_ingredient', {
-    description: 'Create ingredient. Required: food_id. Optional: unit_id, amount, note, order, is_header, no_amount, original_text, always_use_plural_unit, always_use_plural_food',
+    description: 'Create ingredient. Required: food_id. Optional: unit_id, amount, note, order, is_header, no_amount, original_text',
     inputSchema: createIngredientShape,
   }, handleCreateIngredient);
 
@@ -94,7 +90,7 @@ export function registerIngredientTools(server: McpServer, client: TandoorClient
   }, handleDeleteIngredient);
 
   registerStringTool(server, client, 'parse_ingredient', {
-    description: 'Parse a free-form ingredient string (e.g. "2 cups flour") into amount, unit, food, note. Tandoor\'s parser is heuristic and can misfire on compound descriptions, brand names, or non-English units. If the result looks wrong or unit/food come back null, recommend: construct the ingredient directly via create_ingredient with explicit food_id (via find_or_create on the food name) and unit_id. That path is deterministic.',
+    description: 'Parse a free-form ingredient string (e.g. "2 cups flour") into amount, unit, unit_id, food, food_id, note. Writes to the database: Tandoor creates any Food or Unit row it does not already have. unit and food are the matched row names, so "cups" can come back as "cup". With no unit, unit is "" and unit_id is omitted. food_id and unit_id pass straight to create_ingredient. Blank text returns Tandoor\'s 400. Tandoor\'s parser is heuristic and can misfire on compound descriptions, brand names, or non-English units.',
     inputSchema: parseIngredientShape,
   }, handleParseIngredient);
 }

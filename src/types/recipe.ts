@@ -46,8 +46,6 @@ export interface Ingredient {
   is_header?: boolean;
   no_amount?: boolean;
   original_text?: string;
-  always_use_plural_unit?: boolean;
-  always_use_plural_food?: boolean;
 }
 
 export interface Step {
@@ -161,7 +159,9 @@ export interface PaginatedIngredientList {
 export interface ParsedIngredient {
   amount: number;
   unit: string;
+  unit_id?: number;
   food: string;
+  food_id: number;
   note: string;
   original_text: string;
 }

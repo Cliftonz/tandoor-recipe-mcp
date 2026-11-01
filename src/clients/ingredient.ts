@@ -7,6 +7,11 @@ import {
   ParsedIngredient,
 } from '../types/index.js';
 
+type ParserIngredient = Omit<ParsedIngredient, 'unit' | 'unit_id' | 'food' | 'food_id'> & {
+  unit: { id: number; name: string } | null;
+  food: { id: number; name: string };
+};
+
 export class IngredientClient extends BaseClient {
   /**
    * List ingredients. Optional filters: food (id), unit (id), pagination.
@@ -79,13 +84,19 @@ export class IngredientClient extends BaseClient {
     });
   }
 
-  /**
-   * Parse a free-form ingredient string into amount/unit/food/note.
-   */
   async parseIngredientString(text: string): Promise<ParsedIngredient> {
-    return this.request<ParsedIngredient>('/api/ingredient-from-string/', {
+    const { ingredient } = await this.request<{ ingredient: ParserIngredient }>('/api/ingredient-parser/post/', {
       method: 'POST',
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ ingredient: text }),
     });
+    return {
+      amount: ingredient.amount,
+      unit: ingredient.unit?.name ?? '',
+      unit_id: ingredient.unit?.id,
+      food: ingredient.food.name,
+      food_id: ingredient.food.id,
+      note: ingredient.note,
+      original_text: ingredient.original_text,
+    };
   }
 }
