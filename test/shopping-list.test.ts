@@ -622,3 +622,18 @@ describe('food_batch_update with nothing to change', () => {
     expect(sent).toEqual([]);
   });
 });
+
+describe('food_batch_update empty arrays', () => {
+  it.each([[{ substitute_add: [] }], [{ inherit_fields_set: [] }], [{ child_inherit_fields_remove: [], substitute_set: [] }]])(
+    'rejects %o as no change and sends nothing', async (ops) => {
+      const sent = stubTandoor({});
+      await expect(handleFoodBatchUpdate(client(), { foods: [1], ...ops })).rejects.toThrow('Give a field to change, a list change, or both.');
+      expect(sent).toEqual([]);
+    });
+
+  it('does not send empty arrays alongside a real change', async () => {
+    const sent = stubTandoor({ 'PUT /api/food/batch_update/': {} });
+    await handleFoodBatchUpdate(client(), { foods: [1], on_hand: false, substitute_remove: [], inherit_fields_set: [] });
+    expect(sent).toEqual([{ method: 'PUT', path: '/api/food/batch_update/', body: { foods: [1], on_hand: false } }]);
+  });
+});
