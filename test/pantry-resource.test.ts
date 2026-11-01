@@ -100,10 +100,10 @@ describe('tandoor://pantry/on-hand', () => {
     });
   });
 
-  it('lists an on-hand food with no supermarket category without the category key', async () => {
+  it('lists an on-hand food with no supermarket category with a null category', async () => {
     stubPages({ entries: [{ next: null, results: [] }], foods: [{ next: null, results: [food(8, 'salt', true)] }] });
 
-    expect((await readPantry()).on_hand_no_quantity).toStrictEqual([{ id: 8, name: 'salt' }]);
+    expect((await readPantry()).on_hand_no_quantity).toStrictEqual([{ id: 8, name: 'salt', supermarket_category: null }]);
   });
 
   it('requests inventory entries without the empty filter', async () => {
