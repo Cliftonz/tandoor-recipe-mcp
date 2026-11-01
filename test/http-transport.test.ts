@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi, onTestFinished } from 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createHttpTransport, resolveHttpConfig, bearerMatches, FailedAuthLimiter, type HttpTransportHandle } from '../src/lib/http-transport.js';
 import type { Server } from 'node:http';
+import { createServer as createNetServer, type AddressInfo } from 'node:net';
 
 function captureStderr(): { lines: string[]; restore: () => void; joined(): string } {
   const original = process.stderr.write;
@@ -120,6 +121,15 @@ describe('createHttpTransport round-trip', () => {
     resetEnv();
     Object.assign(process.env, ORIGINAL_ENV);
   });
+
+  it('rejects start() with EADDRINUSE when the port is already in use', async () => {
+    const holder = createNetServer();
+    await new Promise<void>((resolve) => holder.listen(0, '127.0.0.1', resolve));
+    onTestFinished(() => new Promise<void>((resolve) => holder.close(() => resolve())));
+    process.env.TANDOOR_MCP_HTTP_PORT = String((holder.address() as AddressInfo).port);
+
+    await expect(createHttpTransport(buildServer).start()).rejects.toMatchObject({ code: 'EADDRINUSE' });
+  }, 2_000);
 
   it('handles a POST initialize round-trip', async () => {
     handle = createHttpTransport(buildServer);

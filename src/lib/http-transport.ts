@@ -254,8 +254,12 @@ export function createHttpTransport(buildServer: () => McpServer): HttpTransport
 
   return {
     async start() {
-      await new Promise<void>((resolve) => {
-        httpServer.listen(cfg.port, cfg.host, () => resolve());
+      await new Promise<void>((resolve, reject) => {
+        httpServer.once('error', reject);
+        httpServer.listen(cfg.port, cfg.host, () => {
+          httpServer.off('error', reject);
+          resolve();
+        });
       });
     },
     async stop() {

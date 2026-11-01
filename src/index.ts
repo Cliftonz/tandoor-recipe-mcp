@@ -106,7 +106,11 @@ async function main() {
 
   if (transportMode === 'http' && httpCfg) {
     const handle = createHttpTransport(buildServer);
-    await handle.start();
+    await handle.start().catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== 'EADDRINUSE') throw error;
+      console.error(`[tandoor-mcp] Error: port ${httpCfg.port} is already in use (TANDOOR_MCP_HTTP_PORT).`);
+      process.exit(1);
+    });
     console.error(
       `[tandoor-mcp] ${pkg.name}@${pkg.version} on http://${httpCfg.host}:${httpCfg.port}${httpCfg.path} | auth=${httpCfg.requireAuth ? 'required' : 'disabled'} | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${formatSectionModes(sections)} | ${stashLine} | max_body=${httpCfg.maxBodyBytes}B | max_conns=${httpCfg.maxConnections} | drain=${httpCfg.drainMs}ms | dynamic-gating=disabled`,
     );
