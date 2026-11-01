@@ -26,7 +26,7 @@ import {
   handleBulkUpdateShoppingEntries,
 } from '../handlers/shopping.js';
 
-const LIST_IDS_CHECKED = 'Every list id is checked against list_shopping_lists first; unknown ids are rejected and nothing is written.';
+export const LIST_IDS_CHECKED = 'Every list id is checked against list_shopping_lists first; unknown ids are rejected and nothing is written.';
 
 const ENTRY_LISTS = 'shopping_list_ids (ids from list_shopping_lists) puts the entry on those lists, and only those ids are sent. '
   + 'When shopping_list_ids is omitted or [], Tandoor copies the food\'s lists onto the new entry if the user preference shopping_update_food_lists is on. '

@@ -14,6 +14,7 @@ import {
   handleBulkUpdateShoppingEntries,
   handleBulkCreateShoppingListRecipeEntries,
 } from '../src/handlers/shopping.js';
+import { handleGetFood, handleCreateFood, handleUpdateFood } from '../src/handlers/foodunit.js';
 
 type Sent = { method: string; path: string; body?: unknown };
 type Reply = { status: number; body?: unknown };
@@ -265,6 +266,58 @@ describe('bulk_create_shopping_list_recipe_entries lists', () => {
     const sent = stubTandoor(listPages);
     await expect(handleBulkCreateShoppingListRecipeEntries(client(), { id: 4, entries, shopping_list_ids: [999, 1000] }))
       .rejects.toThrow(unknownListError);
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
+  });
+});
+
+describe('food shopping lists', () => {
+  const milk = { id: 1, name: 'Milk', plural_name: null, full_name: 'Milk', description: '', food_onhand: false, supermarket_category: null, parent: null, numchild: 0, fdc_id: null, properties: [], shopping_lists: [] };
+
+  it('shows the lists of a food as {id, name}', async () => {
+    stubTandoor({ 'GET /api/food/1/': { ...milk, shopping_lists: [costco, aldi] } });
+    expect(JSON.parse(await handleGetFood(client(), { id: 1 })).shopping_lists).toEqual([{ id: 2, name: 'Costco' }, { id: 3, name: 'Aldi' }]);
+  });
+
+  it('creates a food without lists, then sets its lists with a PATCH', async () => {
+    const sent = stubTandoor({
+      ...listPages,
+      'POST /api/food/': milk,
+      'PATCH /api/food/1/': { ...milk, shopping_lists: [costco] },
+    });
+    const out = await handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [2] });
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([
+      { method: 'POST', path: '/api/food/', body: { name: 'Milk' } },
+      { method: 'PATCH', path: '/api/food/1/', body: { shopping_lists: [2] } },
+    ]);
+    expect(body(out).shopping_lists).toEqual([{ id: 2, name: 'Costco' }]);
+  });
+
+  it('reports a food created without lists when the list PATCH fails', async () => {
+    stubTandoor({
+      ...listPages,
+      'POST /api/food/': milk,
+      'PATCH /api/food/1/': { status: 400, body: { shopping_lists: ['bad'] } },
+    });
+    await expect(handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [2] })).rejects.toThrow(
+      /^Food 1 was created without shopping lists; setting its lists failed: Tandoor API error: 400/,
+    );
+  });
+
+  it('rejects unknown list ids before creating the food', async () => {
+    const sent = stubTandoor(listPages);
+    await expect(handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [999, 1000] })).rejects.toThrow(unknownListError);
+    expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
+  });
+
+  it('replaces the lists of a food, and [] clears them', async () => {
+    const sent = stubTandoor({ 'PATCH /api/food/1/': milk });
+    await handleUpdateFood(client(), { id: 1, shopping_list_ids: [] });
+    expect(sent).toEqual([{ method: 'PATCH', path: '/api/food/1/', body: { shopping_lists: [] } }]);
+  });
+
+  it('rejects unknown list ids before updating the food', async () => {
+    const sent = stubTandoor(listPages);
+    await expect(handleUpdateFood(client(), { id: 1, name: 'Oat milk', shopping_list_ids: [2, 999, 1000] })).rejects.toThrow(unknownListError);
     expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
   });
 });

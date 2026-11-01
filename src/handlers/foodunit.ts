@@ -21,6 +21,7 @@ import type {
 } from '../tools/foodunit.js';
 
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
+import { slimListRefs } from './shopping.js';
 
 function slimFood(f: any) {
   if (!f) return f;
@@ -36,6 +37,7 @@ function slimFood(f: any) {
     parent: f.parent,
     numchild: f.numchild,
     fdc_id: f.fdc_id,
+    shopping_lists: f.shopping_lists && slimListRefs(f.shopping_lists),
   };
 }
 
@@ -81,7 +83,14 @@ export async function handleCreateFood(
   if (args.supermarket_category_id !== undefined) {
     body.supermarket_category = args.supermarket_category_id;
   }
-  const created = await client.foodUnits.createFood(body);
+  const listIds = args.shopping_list_ids;
+  if (listIds !== undefined) await client.shopping.assertShoppingListsExist(listIds);
+  let created = await client.foodUnits.createFood(body);
+  if (listIds !== undefined) {
+    created = await client.foodUnits.patchFood(created.id, { shopping_lists: listIds }).catch((e: Error) => {
+      throw new Error(`Food ${created.id} was created without shopping lists; setting its lists failed: ${e.message}`);
+    });
+  }
   return `Food created.\n\n${emit(args.format === 'full' ? created : slimFood(created))}`;
 }
 
@@ -100,6 +109,10 @@ export async function handleUpdateFood(
   }
   if (args.properties_food_amount !== undefined) body.properties_food_amount = args.properties_food_amount;
   if (args.properties_food_unit_id !== undefined) body.properties_food_unit = args.properties_food_unit_id;
+  if (args.shopping_list_ids !== undefined) {
+    await client.shopping.assertShoppingListsExist(args.shopping_list_ids);
+    body.shopping_lists = args.shopping_list_ids;
+  }
   const set = args.properties ?? [];
   const remove = args.remove_property_type_ids ?? [];
   const doomedRowIds: number[] = [];

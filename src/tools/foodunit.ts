@@ -23,6 +23,10 @@ import {
   handleMergeUnit,
   handleFoodBatchUpdate,
 } from '../handlers/foodunit.js';
+import { LIST_IDS_CHECKED } from './shopping.js';
+
+const FOOD_LISTS = 'Changing a food\'s lists does not change its existing shopping entries. New entries copy the food\'s lists when added through add_recipe_to_shopping_list, '
+  + `or through create_shopping_entry without shopping_list_ids while the user preference shopping_update_food_lists is on. ${LIST_IDS_CHECKED}`;
 
 
 export const listFoodsShape = {
@@ -47,6 +51,7 @@ export const createFoodShape = {
   food_onhand: z.boolean().optional(),
   fdc_id: z.number().optional(),
   supermarket_category_id: z.number().nullable().optional(),
+  shopping_list_ids: z.array(z.number()).optional(),
   format: formatEnum,
 } as const;
 
@@ -65,6 +70,7 @@ export const updateFoodShape = {
   remove_property_type_ids: z.array(z.number()).optional(),
   properties_food_amount: z.number().optional(),
   properties_food_unit_id: z.number().nullable().optional(),
+  shopping_list_ids: z.array(z.number()).optional(),
   format: formatEnum,
 } as const;
 
@@ -171,12 +177,12 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   }, handleGetFood);
 
   registerStringTool(server, client, 'create_food', {
-    description: 'Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id.',
+    description: `Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). Tandoor cannot set lists while creating a food, so the tool creates the food first and then sets its lists; if that second step fails, the error gives the new food's id. ${FOOD_LISTS}`,
     inputSchema: createFoodShape,
   }, handleCreateFood);
 
   registerStringTool(server, client, 'update_food', {
-    description: 'Update food (PATCH). Required: id. Optional properties[] {property_type_id, property_amount} sets one value per property type (amount null = unknown), updating the existing value of that type in place and deleting any duplicate values of that type; remove_property_type_ids[] deletes values by type. Other existing property values are kept. A type may appear once across both lists. properties_food_amount and properties_food_unit_id set the food amount the property values refer to (e.g. 100 g); properties_food_unit_id null clears the unit. Deleting a property row removes it from every food or recipe it is linked to. If a row delete fails, the food is already updated and the tool returns an error naming those rows.',
+    description: `Update food (PATCH). Required: id. Optional properties[] {property_type_id, property_amount} sets one value per property type (amount null = unknown), updating the existing value of that type in place and deleting any duplicate values of that type; remove_property_type_ids[] deletes values by type. Other existing property values are kept. A type may appear once across both lists. properties_food_amount and properties_food_unit_id set the food amount the property values refer to (e.g. 100 g); properties_food_unit_id null clears the unit. Deleting a property row removes it from every food or recipe it is linked to. If a row delete fails, the food is already updated and the tool returns an error naming those rows. shopping_list_ids replaces the food's lists; [] clears them; omit it to keep them. ${FOOD_LISTS}`,
     inputSchema: updateFoodShape,
   }, handleUpdateFood);
 
