@@ -1,13 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, readdir, readFile, writeFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { chmod, mkdtemp, readdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { deliverFile, INLINE_CAP } from '../src/lib/download.js';
+import { deliverFile, INLINE_CAP_BYTES } from '../src/lib/download.js';
 
+const ascii = (s: string) => [...s].map((c) => c.charCodeAt(0));
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 10, 20, 30]);
+const GIF = new Uint8Array([...ascii('GIF89a'), 1, 2, 3]);
+const WEBP = new Uint8Array([...ascii('RIFF'), 0, 0, 0, 0, ...ascii('WEBPVP8 '), 1, 2]);
+const PDF = new Uint8Array([...ascii('%PDF-1.7'), 10, 11]);
 const TEXT = new TextEncoder().encode('just some plain words here');
-const URL_ = 'https://tandoor.test/media/files/abc.pdf';
+const SOURCE_URL = 'https://tandoor.test/media/files/abc.pdf';
+
+type Delivery = Parameters<typeof deliverFile>[0];
 
 function streamOf(bytes: Uint8Array, chunkSize = bytes.length): ReadableStream<Uint8Array> {
   let offset = 0;
@@ -36,16 +43,18 @@ function endlessSource() {
   return { stream, state };
 }
 
-function file(body: ReadableStream<Uint8Array>, overrides: Partial<Parameters<typeof deliverFile>[0]> = {}) {
-  return { body, size: 123, filename: 'Soup.pdf', fallbackName: 'file-7', url: URL_, save: false, ...overrides };
+function file(body: ReadableStream<Uint8Array>, overrides: Partial<Delivery> = {}): Delivery {
+  return { body, declaredSize: 123, filename: 'Soup.pdf', idStem: 'file-7', url: SOURCE_URL, save: false, ...overrides };
 }
 
+const textOf = (result: Awaited<ReturnType<typeof deliverFile>>) => (result.content[0] as { text: string }).text;
+
 const ENV_KEYS = ['TANDOOR_MCP_DOWNLOAD_ROOT', 'TANDOOR_MCP_TRANSPORT'] as const;
-let saved: Record<string, string | undefined>;
+let envBefore: Record<string, string | undefined>;
 let root: string;
 
 beforeEach(async () => {
-  saved = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
+  envBefore = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
   delete process.env.TANDOOR_MCP_TRANSPORT;
   root = await mkdtemp(path.join(tmpdir(), 'tandoor-dl-'));
   process.env.TANDOOR_MCP_DOWNLOAD_ROOT = root;
@@ -53,9 +62,10 @@ beforeEach(async () => {
 
 afterEach(async () => {
   for (const k of ENV_KEYS) {
-    if (saved[k] === undefined) delete process.env[k];
-    else process.env[k] = saved[k];
+    if (envBefore[k] === undefined) delete process.env[k];
+    else process.env[k] = envBefore[k];
   }
+  await chmod(root, 0o700);
   await rm(root, { recursive: true, force: true });
 });
 
@@ -72,64 +82,123 @@ describe('deliverFile inline', () => {
     expect(JSON.parse((meta as { text: string }).text)).toEqual({ filename: 'Soup.pdf', mime: 'image/png', size: PNG.length });
   });
 
+  it.each([
+    ['image/jpeg', JPEG],
+    ['image/gif', GIF],
+    ['image/webp', WEBP],
+  ])('returns an image block for %s', async (mimeType, bytes) => {
+    const result = await deliverFile(file(streamOf(bytes)));
+    expect(result.content).toContainEqual({ type: 'image', data: Buffer.from(bytes).toString('base64'), mimeType });
+  });
+
   it('returns an embedded resource for a non-image', async () => {
     const result = await deliverFile(file(streamOf(TEXT), { filename: 'notes' }));
     expect(result.content).toContainEqual({
       type: 'resource',
-      resource: { uri: URL_, mimeType: 'application/octet-stream', blob: Buffer.from(TEXT).toString('base64') },
+      resource: { uri: SOURCE_URL, mimeType: 'application/octet-stream', blob: Buffer.from(TEXT).toString('base64') },
     });
     expect(result.content.filter((c) => c.type === 'text')).toHaveLength(1);
   });
 
+  it('strips control and format characters from the name shown to the model', async () => {
+    const result = await deliverFile(file(streamOf(PNG), { filename: 'So\u0007up​.pdf' }));
+    const meta = result.content.find((c) => c.type === 'text');
+    expect(JSON.parse((meta as { text: string }).text).filename).toBe('Soup.pdf');
+  });
+
   it('accepts a body of exactly the cap', async () => {
-    const bytes = new Uint8Array(INLINE_CAP);
+    const bytes = new Uint8Array(INLINE_CAP_BYTES);
     bytes.set(PNG);
     const result = await deliverFile(file(streamOf(bytes, 1024 * 1024)));
     expect(result.isError).toBeUndefined();
-    expect(INLINE_CAP).toBe(5 * 1024 * 1024);
+    expect(INLINE_CAP_BYTES).toBe(5 * 1024 * 1024);
   });
 
   it('stops at the cap, cancels the stream and points at save: true', async () => {
     const { stream, state } = endlessSource();
-    const result = await deliverFile(file(stream, { size: 9_000_000 }));
+    const result = await deliverFile(file(stream, { declaredSize: 9_000_000 }));
     expect(result.isError).toBe(true);
     expect(state.cancelled).toBe(true);
-    expect(state.pulled).toBeLessThan(INLINE_CAP + 3 * 1024 * 1024);
-    const text = (result.content[0] as { text: string }).text;
-    for (const part of ['Soup.pdf', 'image/png', '9000000', URL_, 'save: true']) expect(text).toContain(part);
+    expect(state.pulled).toBeLessThan(INLINE_CAP_BYTES + 3 * 1024 * 1024);
+    for (const part of ['Soup.pdf', 'image/png', '9000000 bytes', SOURCE_URL, 'save: true', '5 MiB']) {
+      expect(textOf(result)).toContain(part);
+    }
+  });
+
+  it('says "more than 5 MiB" when the declared size is unknown', async () => {
+    const { stream } = endlessSource();
+    const result = await deliverFile(file(stream, { declaredSize: 0 }));
+    expect(textOf(result)).toContain('more than 5 MiB');
+  });
+
+  it('rejects an empty file', async () => {
+    const result = await deliverFile(file(streamOf(new Uint8Array(0))));
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toBe('Tandoor returned an empty file for Soup.pdf.');
   });
 });
 
 describe('deliverFile save', () => {
-  const saveOf = (bytes: Uint8Array, overrides: Partial<Parameters<typeof deliverFile>[0]> = {}) =>
+  const saveOf = (bytes: Uint8Array, overrides: Partial<Delivery> = {}) =>
     deliverFile(file(streamOf(bytes, 3), { save: true, ...overrides }));
+  const savedName = async (bytes: Uint8Array, filename: string) =>
+    path.basename(JSON.parse(textOf(await saveOf(bytes, { filename }))).path);
 
-  it('refuses when TANDOOR_MCP_DOWNLOAD_ROOT is unset', async () => {
+  it('refuses and cancels when TANDOOR_MCP_DOWNLOAD_ROOT is unset', async () => {
     delete process.env.TANDOOR_MCP_DOWNLOAD_ROOT;
-    const result = await saveOf(PNG);
+    const { stream, state } = endlessSource();
+    const result = await deliverFile(file(stream, { save: true }));
     expect(result.isError).toBe(true);
-    expect((result.content[0] as { text: string }).text).toContain('TANDOOR_MCP_DOWNLOAD_ROOT');
+    expect(textOf(result)).toContain('TANDOOR_MCP_DOWNLOAD_ROOT');
+    expect(state.cancelled).toBe(true);
   });
 
   it('refuses when TANDOOR_MCP_DOWNLOAD_ROOT is empty', async () => {
     process.env.TANDOOR_MCP_DOWNLOAD_ROOT = '  ';
     const result = await saveOf(PNG);
     expect(result.isError).toBe(true);
-    expect((result.content[0] as { text: string }).text).toContain('TANDOOR_MCP_DOWNLOAD_ROOT');
+    expect(textOf(result)).toContain('TANDOOR_MCP_DOWNLOAD_ROOT');
+  });
+
+  it('refuses over the HTTP transport before looking at the root, and cancels', async () => {
+    process.env.TANDOOR_MCP_TRANSPORT = 'http';
+    delete process.env.TANDOOR_MCP_DOWNLOAD_ROOT;
+    const { stream, state } = endlessSource();
+    const result = await deliverFile(file(stream, { save: true }));
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain('stdio');
+    expect(state.cancelled).toBe(true);
+  });
+
+  it('refuses a missing root without creating it, and cancels', async () => {
+    const missing = path.join(root, 'nope');
+    process.env.TANDOOR_MCP_DOWNLOAD_ROOT = missing;
+    const { stream, state } = endlessSource();
+    const result = await deliverFile(file(stream, { save: true }));
+    expect(textOf(result)).toBe(`TANDOOR_MCP_DOWNLOAD_ROOT ${missing} does not exist or is not a folder.`);
+    expect(state.cancelled).toBe(true);
+    expect(await readdir(root)).toEqual([]);
+  });
+
+  it('refuses a root that is a file', async () => {
+    const notFolder = path.join(root, 'plain');
+    await writeFile(notFolder, 'x');
+    process.env.TANDOOR_MCP_DOWNLOAD_ROOT = notFolder;
+    const result = await saveOf(PNG);
+    expect(textOf(result)).toBe(`TANDOOR_MCP_DOWNLOAD_ROOT ${notFolder} does not exist or is not a folder.`);
+  });
+
+  it('expands ~ in the root', async () => {
+    const missing = `nope-${randomUUID()}`;
+    process.env.TANDOOR_MCP_DOWNLOAD_ROOT = `~/${missing}`;
+    const result = await saveOf(PNG);
+    expect(textOf(result)).toContain(path.join(homedir(), missing));
   });
 
   it('reports an absolute path when the root is relative', async () => {
     process.env.TANDOOR_MCP_DOWNLOAD_ROOT = path.relative(process.cwd(), root);
     const result = await saveOf(PNG);
-    expect(JSON.parse((result.content[0] as { text: string }).text).path).toBe(path.join(root, 'Soup.png'));
-  });
-
-  it('refuses over the HTTP transport', async () => {
-    process.env.TANDOOR_MCP_TRANSPORT = 'http';
-    const result = await saveOf(PNG);
-    expect(result.isError).toBe(true);
-    expect((result.content[0] as { text: string }).text).toContain('stdio');
-    expect(await readdir(root)).toEqual([]);
+    expect(JSON.parse(textOf(result)).path).toBe(path.join(root, 'Soup.png'));
   });
 
   it('writes the bytes under the sniffed extension and reports path, size and mime', async () => {
@@ -137,22 +206,45 @@ describe('deliverFile save', () => {
     const target = path.join(root, 'Soup.jpg');
     expect(await readFile(target)).toEqual(Buffer.from(JPEG));
     expect(await readdir(root)).toEqual(['Soup.jpg']);
-    expect(JSON.parse((result.content[0] as { text: string }).text)).toEqual({ path: target, size: JPEG.length, mime: 'image/jpeg' });
+    expect(JSON.parse(textOf(result))).toEqual({ path: target, size: JPEG.length, mime: 'image/jpeg' });
   });
 
-  it('sanitizes separators, control and reserved characters and strips leading dots', async () => {
-    await saveOf(PNG, { filename: '..a/b\\c<d>e:f"g|h?i*j\u0001k.png' });
-    expect(await readdir(root)).toEqual(['a_b_c_d_e_f_g_h_i_j_k.png']);
+  it.each([
+    ['gif', GIF],
+    ['webp', WEBP],
+    ['pdf', PDF],
+  ])('saves a %s under its sniffed extension', async (ext, bytes) => {
+    expect(await savedName(bytes, 'Soup.png')).toBe(`Soup.${ext}`);
+    expect(await readFile(path.join(root, `Soup.${ext}`))).toEqual(Buffer.from(bytes));
   });
 
-  it('caps the base name at 100 characters', async () => {
-    await saveOf(PNG, { filename: `${'x'.repeat(150)}.png` });
-    expect(await readdir(root)).toEqual([`${'x'.repeat(100)}.png`]);
+  it('keeps an unknown extension as part of the stem', async () => {
+    expect(await savedName(TEXT, 'notes.txt')).toBe('notes.txt');
+    expect(await savedName(PNG, "Dr. Smith's stew")).toBe("Dr. Smith's stew.png");
   });
 
-  it('falls back to the id-based name when nothing remains', async () => {
-    await saveOf(PNG, { filename: '...' });
-    expect(await readdir(root)).toEqual(['file-7.png']);
+  it('keeps a known extension when the sniffed type has none', async () => {
+    expect(await savedName(TEXT, 'clip.mp4')).toBe('clip.mp4');
+  });
+
+  it('sanitizes separators, control, format and reserved characters and strips leading dots', async () => {
+    expect(await savedName(PNG, '..a/b\\c<d>e:f"g|h?i*j\u0001k​l.png')).toBe('a_b_c_d_e_f_g_h_i_j_k_l.png');
+  });
+
+  it('strips trailing dots and spaces from the stem', async () => {
+    expect(await savedName(PNG, 'Soup. . .png')).toBe('Soup.png');
+  });
+
+  it('caps the stem at 200 UTF-8 bytes without splitting a grapheme', async () => {
+    expect(await savedName(PNG, `x${'é'.repeat(100)}.png`)).toBe(`x${'é'.repeat(66)}.png`);
+  });
+
+  it.each(['CON', 'prn', 'Aux.png', 'nul.txt', 'COM1', 'lpt9.png'])('prefixes the reserved name %s', async (name) => {
+    expect(await savedName(PNG, name)).toMatch(/^_/);
+  });
+
+  it.each(['...', '   ', '.png'])('falls back to the id stem for %j', async (name) => {
+    expect(await savedName(PNG, name)).toBe('file-7.png');
   });
 
   it('never overwrites an existing file', async () => {
@@ -161,7 +253,16 @@ describe('deliverFile save', () => {
     const result = await saveOf(PNG);
     expect(await readFile(path.join(root, 'Soup.png'), 'utf8')).toBe('first');
     expect(await readFile(path.join(root, 'Soup (3).png'))).toEqual(Buffer.from(PNG));
-    expect((result.content[0] as { text: string }).text).toContain('Soup (3).png');
+    expect(textOf(result)).toContain('Soup (3).png');
+  });
+
+  it('gives up after 1000 names', async () => {
+    await writeFile(path.join(root, 'Soup.png'), 'x');
+    for (let n = 2; n <= 1000; n++) await writeFile(path.join(root, `Soup (${n}).png`), 'x');
+    const result = await saveOf(PNG);
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain('Too many files named Soup.png in the download root.');
+    expect((await readdir(root)).filter((n) => n.endsWith('.part'))).toEqual([]);
   });
 
   it('does not clobber a file that appears while streaming', async () => {
@@ -181,6 +282,27 @@ describe('deliverFile save', () => {
     expect(await readFile(path.join(root, 'Soup (2).png'))).toEqual(Buffer.from(PNG));
   });
 
+  it('never truncates or writes through a pre-existing part file or symlink', async () => {
+    const outside = path.join(root, 'outside.txt');
+    await writeFile(outside, 'secret');
+    await writeFile(path.join(root, '.Soup.png.part'), 'stale');
+    await symlink(outside, path.join(root, '.Soup.part'));
+    await saveOf(PNG);
+    expect(await readFile(path.join(root, '.Soup.png.part'), 'utf8')).toBe('stale');
+    expect(await readlink(path.join(root, '.Soup.part'))).toBe(outside);
+    expect(await readFile(outside, 'utf8')).toBe('secret');
+  });
+
+  it('lets two concurrent saves of the same name both land', async () => {
+    const other = new Uint8Array([...PNG, 42, 43, 44]);
+    const results = await Promise.all([saveOf(PNG), saveOf(other)]);
+    expect(results.map((r) => r.isError)).toEqual([undefined, undefined]);
+    const contents = await Promise.all(['Soup.png', 'Soup (2).png'].map((n) => readFile(path.join(root, n))));
+    expect(contents.map((b) => b.length).sort()).toEqual([PNG.length, other.length]);
+    expect(contents).toContainEqual(Buffer.from(PNG));
+    expect(contents).toContainEqual(Buffer.from(other));
+  });
+
   it('deletes the part file and returns isError when the stream fails', async () => {
     let sent = false;
     const body = new ReadableStream<Uint8Array>({
@@ -192,7 +314,57 @@ describe('deliverFile save', () => {
     });
     const result = await deliverFile(file(body, { save: true }));
     expect(result.isError).toBe(true);
-    expect((result.content[0] as { text: string }).text).toContain('connection reset');
+    expect(textOf(result)).toContain('connection reset');
+    expect(await readdir(root)).toEqual([]);
+    expect(body.locked).toBe(false);
+  });
+
+  it('returns isError when the stream fails before 16 bytes', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.error('boom');
+      },
+    });
+    const result = await deliverFile(file(body, { save: true }));
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain('boom');
+    expect(await readdir(root)).toEqual([]);
+  });
+
+  it('returns isError and cancels when the part file cannot be opened', async () => {
+    await chmod(root, 0o500);
+    const { stream, state } = endlessSource();
+    const result = await deliverFile(file(stream, { save: true }));
+    expect(result.isError).toBe(true);
+    expect(state.cancelled).toBe(true);
+  });
+
+  it('rejects an empty file', async () => {
+    const result = await saveOf(new Uint8Array(0));
+    expect(textOf(result)).toBe('Tandoor returned an empty file for Soup.pdf.');
+    expect(await readdir(root)).toEqual([]);
+  });
+
+  it('stops, cleans up and returns isError when aborted mid-save', async () => {
+    const controller = new AbortController();
+    const state = { cancelled: false };
+    let sent = false;
+    const body = new ReadableStream<Uint8Array>({
+      pull(stream) {
+        if (sent) {
+          controller.abort();
+          return new Promise(() => {});
+        }
+        sent = true;
+        stream.enqueue(PNG);
+      },
+      cancel() {
+        state.cancelled = true;
+      },
+    });
+    const result = await deliverFile(file(body, { save: true, signal: controller.signal }));
+    expect(result.isError).toBe(true);
+    expect(state.cancelled).toBe(true);
     expect(await readdir(root)).toEqual([]);
   });
 });
