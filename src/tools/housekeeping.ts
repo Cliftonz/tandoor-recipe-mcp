@@ -7,6 +7,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
+import { INLINE_CAP_BYTES } from '../lib/download.js';
 import {
   handleListConnectors,
   handleGetConnector,
@@ -29,6 +30,8 @@ import {
   handleGetExternalRecipeFileLink,
   handleDownloadRecipeFile,
 } from '../handlers/housekeeping.js';
+
+const INLINE_CAP_MIB = INLINE_CAP_BYTES / 1024 / 1024;
 
 const connectorTypeEnum = z.enum(['HomeAssistant']);
 const searchEnum = z.enum(['PLAIN', 'PHRASE', 'RAW', 'WEB', 'FUZZY']);
@@ -137,7 +140,7 @@ export const exportMealPlanIcalShape = {
 export const getExternalRecipeFileLinkShape = { id: z.number().describe('Recipe ID') } as const;
 export const downloadRecipeFileShape = {
   recipe_id: z.number().describe('Recipe ID'),
-  save: z.boolean().optional().describe('Save to TANDOOR_MCP_DOWNLOAD_ROOT instead of returning the file inline (needed above 5 MiB; stdio only).'),
+  save: z.boolean().optional().describe(`Save to TANDOOR_MCP_DOWNLOAD_ROOT instead of returning the file inline (needed above ${INLINE_CAP_MIB} MiB; stdio only).`),
 } as const;
 
 // ---------- Inferred types ----------
@@ -277,7 +280,7 @@ export function registerHousekeepingTools(server: McpServer, client: TandoorClie
   }, handleGetExternalRecipeFileLink);
 
   registerStringTool(server, client, 'download_recipe_file', {
-    description: 'Download the file Tandoor stored for a recipe synced from a Storage backend (Dropbox, Nextcloud or Local). Images come back as an image, other files as an embedded resource, up to 5 MiB. Larger files need save: true.',
+    description: `Download the file Tandoor stored for a recipe synced from a Storage backend (Dropbox, Nextcloud or Local). Images come back as an image, other files as an embedded resource, up to ${INLINE_CAP_MIB} MiB. Larger files need save: true.`,
     inputSchema: downloadRecipeFileShape,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   }, handleDownloadRecipeFile);

@@ -3,7 +3,8 @@ import { TandoorClient } from '../clients/index.js';
 import type { HousekeepingClient } from '../clients/housekeeping.js';
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
 import type { HandlerContext } from '../lib/register.js';
-import { deliverFile } from '../lib/download.js';
+import { deliverFile, INLINE_CAP_BYTES } from '../lib/download.js';
+import { dispositionFilename } from '../lib/content-disposition.js';
 import type {
   ListConnectorsArgs,
   GetConnectorArgs,
@@ -209,17 +210,17 @@ export async function handleGetExternalRecipeFileLink(client: TandoorClient, arg
   return link;
 }
 
-const NEWLINE = 0x0a;
-const SPACE = 0x20;
+const ASCII_WHITESPACE = new Set([0x09, 0x0a, 0x0d, 0x20]);
 
 async function skipBlankBody(body: ReadableStream<Uint8Array>): Promise<ReadableStream<Uint8Array> | undefined> {
   const reader = body.getReader();
   const seen: Uint8Array[] = [];
-  for (;;) {
+  for (let scanned = 0; scanned < INLINE_CAP_BYTES; ) {
     const { done, value } = await reader.read();
     if (done) return undefined;
     seen.push(value);
-    if (value.some((b) => b !== NEWLINE && b !== SPACE)) break;
+    scanned += value.length;
+    if (value.some((b) => !ASCII_WHITESPACE.has(b))) break;
   }
   return new ReadableStream<Uint8Array>({
     start(controller) {
@@ -234,14 +235,10 @@ async function skipBlankBody(body: ReadableStream<Uint8Array>): Promise<Readable
   });
 }
 
-function dispositionFilename(disposition: string | null): string {
-  const encoded = disposition?.match(/filename\*=UTF-8''([^;]+)/i);
-  if (encoded) return decodeURIComponent(encoded[1]);
-  return disposition?.match(/filename="([^"]*)"/)?.[1] ?? '';
-}
-
 export async function handleDownloadRecipeFile(client: TandoorClient, args: DownloadRecipeFileArgs, ctx?: HandlerContext): Promise<CallToolResult> {
   const res = await hk(client).downloadRecipeFile(args.recipe_id, { signal: ctx?.signal });
+  const idStem = `recipe-${args.recipe_id}`;
+  const filename = dispositionFilename(res.headers.get('content-disposition')) || idStem;
   const body = await skipBlankBody(res.body!);
   if (!body) {
     return {
@@ -251,9 +248,9 @@ export async function handleDownloadRecipeFile(client: TandoorClient, args: Down
   }
   return deliverFile({
     body,
-    declaredSize: Number(res.headers.get('content-length') ?? 0),
-    filename: dispositionFilename(res.headers.get('content-disposition')),
-    idStem: `recipe-${args.recipe_id}`,
+    declaredSize: Number(res.headers.get('content-length')),
+    filename,
+    idStem,
     url: `${hk(client).getBaseUrl()}/api/get_recipe_file/${args.recipe_id}/`,
     save: args.save ?? false,
     signal: ctx?.signal,
