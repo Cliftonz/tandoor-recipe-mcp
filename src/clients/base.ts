@@ -131,6 +131,25 @@ function statusGuidance(status: number): string {
   return '';
 }
 
+function apiErrorMessage(response: Response, bodyText: string): string {
+  let errorMessage = `Tandoor API error: ${response.status} ${response.statusText}`;
+
+  if (bodyText.length > 0) {
+    try {
+      const errorData = JSON.parse(bodyText);
+      if (errorData.detail) {
+        errorMessage += `\nDetail: ${errorData.detail}`;
+      } else if (typeof errorData === 'object') {
+        errorMessage += `\n${JSON.stringify(errorData, null, 2)}`;
+      }
+    } catch {
+      errorMessage += `\n${bodyText}`;
+    }
+  }
+
+  return errorMessage + statusGuidance(response.status);
+}
+
 function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((r) => {
     const timer = setTimeout(r, ms);
@@ -230,24 +249,7 @@ export class BaseClient {
         logResponse(method, url, response.status, redactToken(bodyText, this.token), bodyPreview);
 
         if (!response.ok) {
-          let errorMessage = `Tandoor API error: ${response.status} ${response.statusText}`;
-
-          if (bodyText.length > 0) {
-            try {
-              const errorData = JSON.parse(bodyText);
-              if (errorData.detail) {
-                errorMessage += `\nDetail: ${errorData.detail}`;
-              } else if (typeof errorData === 'object') {
-                errorMessage += `\n${JSON.stringify(errorData, null, 2)}`;
-              }
-            } catch {
-              errorMessage += `\n${bodyText}`;
-            }
-          }
-
-          errorMessage += statusGuidance(response.status);
-
-          throw new Error(redactToken(errorMessage, this.token));
+          throw new Error(redactToken(apiErrorMessage(response, bodyText), this.token));
         }
 
         // Handle 204 No Content and any other empty body (e.g. DELETE)
@@ -330,7 +332,8 @@ export class BaseClient {
         logRequest(method, url, bodyPreview);
         const response = await fetch(url, { ...options, headers });
 
-        if (shouldRetry(response.status) && attempt < maxRetries && isReplayableBody && !signal?.aborted) {
+        const isPost5xx = method === 'POST' && response.status >= 500;
+        if (shouldRetry(response.status) && attempt < maxRetries && isReplayableBody && !isPost5xx && !signal?.aborted) {
           const wait = backoffMs(attempt, response.headers.get('retry-after'));
           await sleep(wait);
           continue;
@@ -340,9 +343,7 @@ export class BaseClient {
         logResponse(method, url, response.status, redactToken(bodyText, this.token), bodyPreview);
 
         if (!response.ok) {
-          throw new Error(
-            redactToken(`Tandoor API error: ${response.status} ${response.statusText}`, this.token)
-          );
+          throw new Error(redactToken(apiErrorMessage(response, bodyText), this.token));
         }
         return bodyText;
       } catch (error) {
