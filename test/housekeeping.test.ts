@@ -26,7 +26,6 @@ import {
   handleGetUser,
   handleUpdateUser,
   handleExportMealPlanIcal,
-  handleGetRecipeFileMetadata,
 } from '../src/handlers/housekeeping.js';
 import { paginated } from './helpers/factories.js';
 import { mockClient } from './helpers/mock-client.js';
@@ -271,14 +270,6 @@ describe('handlers/housekeeping.ts', () => {
       } finally {
         global.fetch = originalFetch;
       }
-    });
-  });
-
-  describe('recipe file / external link', () => {
-    it('get_recipe_file_metadata returns raw payload', async () => {
-      const client = mock({ housekeeping: { getRecipeFileMetadata: async () => ({ id: 1, name: 'x.pdf' }) } });
-      const res = await handleGetRecipeFileMetadata(client, { id: 1 } as any);
-      expect(JSON.parse(res)).toEqual({ id: 1, name: 'x.pdf' });
     });
   });
 });

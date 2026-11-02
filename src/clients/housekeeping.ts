@@ -97,7 +97,7 @@ export class HousekeepingClient extends BaseClient {
     return this.requestText(`/api/get_external_file_link/${id}/`, { signal: opts?.signal });
   }
 
-  async getRecipeFileMetadata(id: number, opts?: Opts): Promise<any> {
-    return this.request(`/api/get_recipe_file/${id}/`, { signal: opts?.signal });
+  async downloadRecipeFile(id: number, opts?: Opts): Promise<Response> {
+    return this.requestStream(`/api/get_recipe_file/${id}/`, { signal: opts?.signal });
   }
 }

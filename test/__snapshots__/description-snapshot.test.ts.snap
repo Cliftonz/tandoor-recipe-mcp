@@ -343,6 +343,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "disable_tool_group",
   },
   {
+    "description": "Download the file Tandoor stored for a recipe synced from a Storage backend (Dropbox, Nextcloud or Local). Images come back as an image, other files as an embedded resource, up to 5 MiB. Larger files need save: true.",
+    "name": "download_recipe_file",
+  },
+  {
     "description": "Widen a section so its tools become visible in tools/list. For a tiered section, tier "simple" or "full" (default full) picks how much to show; on/off sections take no tier. Enabling never narrows a section: asking for simple on a section already at full leaves it at full. The SDK emits tools/list_changed automatically; the client refreshes its tool list mid-conversation. Be sparing: every enabled tool adds its schema to your context budget. Run list_tool_groups first to see what is available.",
     "name": "enable_tool_group",
   },
@@ -493,10 +497,6 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
   {
     "description": "Get a recipe-book-entry by ID.",
     "name": "get_recipe_book_entry",
-  },
-  {
-    "description": "Fetch metadata for a recipe file attachment by ID. Does not return the binary; use the UI download link for that.",
-    "name": "get_recipe_file_metadata",
   },
   {
     "description": "Get a pending recipe-import queue entry by ID.",
@@ -3755,6 +3755,27 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "recipe_id": {
+          "description": "Recipe ID",
+          "type": "number",
+        },
+        "save": {
+          "description": "Save to TANDOOR_MCP_DOWNLOAD_ROOT instead of returning the file inline (needed above 5 MiB; stdio only).",
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "recipe_id",
+      ],
+      "type": "object",
+    },
+    "name": "download_recipe_file",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "group": {
           "description": "Name of the section to enable. Run list_tool_groups to see available sections.",
           "minLength": 1,
@@ -4738,22 +4759,6 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "get_recipe_book_entry",
-  },
-  {
-    "inputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "properties": {
-        "id": {
-          "type": "number",
-        },
-      },
-      "required": [
-        "id",
-      ],
-      "type": "object",
-    },
-    "name": "get_recipe_file_metadata",
   },
   {
     "inputSchema": {
