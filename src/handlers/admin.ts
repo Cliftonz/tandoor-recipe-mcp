@@ -236,14 +236,28 @@ export async function handleDownloadFile(
   args: DownloadFileArgs,
   ctx?: HandlerContext
 ) {
-  const response = await client.userFiles.downloadFile(args.file_id, ctx?.signal);
+  const response = await client.userFiles.downloadFile(args.file_id, ctx?.signal).catch((err: Error) => {
+    if (err.message.startsWith('Tandoor API error: 400 ')) return undefined;
+    throw err;
+  });
+  if (!response) {
+    return {
+      content: [{
+        type: 'text' as const,
+        text: `Tandoor could not read user file ${args.file_id}: it may not exist, belong to another space, or be missing from storage.`,
+      }],
+      isError: true,
+    };
+  }
+  const idStem = `file-${args.file_id}`;
+  const tandoorName = /filename="(.*)"/.exec(response.headers.get('content-disposition')!)![1].replace(/\.zip$/, '') || idStem;
   const entry = await openStoredZip(response.body!);
-  const tandoorName = /filename="(.*)"/.exec(response.headers.get('content-disposition')!)![1].replace(/\.zip$/, '');
+  const ext = path.posix.extname(entry.name);
   return deliverFile({
     body: entry.body,
     declaredSize: entry.size,
-    filename: tandoorName + path.extname(path.posix.basename(entry.name)),
-    idStem: `file-${args.file_id}`,
+    filename: tandoorName.toLowerCase().endsWith(ext.toLowerCase()) ? tandoorName : tandoorName + ext,
+    idStem,
     url: `${client.getBaseUrl()}/api/download-file/${args.file_id}/`,
     save: args.save ?? false,
     signal: ctx?.signal,

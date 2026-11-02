@@ -9,6 +9,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { TandoorClient } from '../src/clients/index.js';
 import { registerAdminTools } from '../src/tools/admin.js';
 import { startStub, type Stub } from './helpers/stub-http.js';
+import { INLINE_CAP_BYTES } from '../src/lib/download.js';
 
 const ascii = (s: string) => [...s].map((c) => c.charCodeAt(0));
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 10, 20, 30, 40]);
@@ -95,6 +96,39 @@ describe('download_file over MCP', () => {
     expect(JSON.parse(r.content[0].text).filename).toBe('Notes');
   });
 
+  it('does not repeat an extension the Tandoor name already ends with, ignoring case', async () => {
+    reply = { status: 200, body: zipOf('files/1/9f2c_photo.jpg', JPEG), filename: 'Soup.JPG.zip' };
+    const r = await call({ file_id: 7 });
+    expect(JSON.parse(r.content[0].text).filename).toBe('Soup.JPG');
+  });
+
+  it('appends only the last extension of the entry name', async () => {
+    reply = { status: 200, body: zipOf('files/1/9f2c_photo.tar.gz', PDF), filename: 'Backup.zip' };
+    const r = await call({ file_id: 7 });
+    expect(JSON.parse(r.content[0].text).filename).toBe('Backup.gz');
+  });
+
+  it('names the file file-<id> when the Tandoor name is empty', async () => {
+    reply = { status: 200, body: zipOf('files/1/9f2c_photo.jpg', JPEG), filename: '.zip' };
+    const r = await call({ file_id: 7 });
+    expect(JSON.parse(r.content[0].text).filename).toBe('file-7.jpg');
+  });
+
+  it('saves under file-<id> when the Tandoor name is empty', async () => {
+    reply = { status: 200, body: zipOf('files/1/9f2c_photo.jpg', JPEG), filename: '.zip' };
+    const r = await call({ file_id: 7, save: true });
+    expect(JSON.parse(r.content[0].text).path).toBe(path.join(root, 'file-7.jpg'));
+  });
+
+  it('reports the entry byte count when the file is over the inline cap', async () => {
+    const big = new Uint8Array(INLINE_CAP_BYTES + 1);
+    big.set(PDF);
+    reply = { status: 200, body: zipOf('files/1/ab_big.pdf', big), filename: 'Big.zip' };
+    const r = await call({ file_id: 9 });
+    expect(r.isError).toBe(true);
+    expect(r.content[0].text).toContain(`${big.length} bytes`);
+  });
+
   it('returns a PDF entry as an embedded resource at the download-file URL', async () => {
     reply = { status: 200, body: zipOf('files/1/ab_menu.pdf', PDF), filename: 'Menu.zip' };
     const r = await call({ file_id: 9 });
@@ -116,7 +150,10 @@ describe('download_file over MCP', () => {
     reply = { status: 400, body: new TextEncoder().encode('{}'), filename: 'x.zip' };
     const r = await call({ file_id: 404 });
     expect(r.isError).toBe(true);
-    expect(r.content[0].text).toContain('400');
+    expect(r.content).toEqual([{
+      type: 'text',
+      text: 'Tandoor could not read user file 404: it may not exist, belong to another space, or be missing from storage.',
+    }]);
   });
 
   it('saves the entry to the download root with save: true', async () => {
