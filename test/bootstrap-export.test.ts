@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -7,11 +7,12 @@ import { fileURLToPath } from 'node:url';
 
 const SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'scripts', 'tandoor-bootstrap.sh');
 const TOKEN = 'a'.repeat(43);
+const LOCAL_SYNC_CASE = `*"venv/bin/python -"*) printf '__LOCAL_PDF__:11\\n__LOCAL_JPEG__:12\\n' ;;`;
 
 let root: string;
 
 function run(command: string, env: Record<string, string> = {}) {
-  return execFileSync('bash', ['-c', command], {
+  const result = spawnSync('bash', ['-c', command], {
     env: {
       PATH: `${path.join(root, 'bin')}:/usr/bin:/bin`,
       SCRIPT,
@@ -19,9 +20,11 @@ function run(command: string, env: Record<string, string> = {}) {
       TANDOOR_TEST_PORT: '8123',
       ...env,
     },
-    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
     timeout: 20_000,
-  }).toString();
+  });
+  expect(result.status).toBe(0);
+  return result.stdout;
 }
 
 function stub(dir: string, name: string, body: string) {
@@ -36,6 +39,7 @@ beforeAll(() => {
   stub(bin, 'docker', `case "$*" in
   *showmigrations*) echo 0 ;;
   *"manage.py shell"*) echo "__TOKEN__:${TOKEN}" ;;
+  ${LOCAL_SYNC_CASE}
 esac`);
 });
 
@@ -53,6 +57,8 @@ describe.skipIf(process.platform === 'win32')('tandoor-bootstrap.sh output', () 
     expect(childEnv.TANDOOR_URL).toBe('http://127.0.0.1:8123');
     expect(childEnv.TANDOOR_TOKEN).toBe(TOKEN);
     expect(childEnv.TANDOOR_COMPOSE_FILE).toBe(path.join(root, 'tandoor test', 'docker-compose.yml'));
+    expect(childEnv.TANDOOR_TEST_LOCAL_PDF_RECIPE_ID).toBe('11');
+    expect(childEnv.TANDOOR_TEST_LOCAL_JPEG_RECIPE_ID).toBe('12');
   });
 
   it('writes KEY=value lines to GITHUB_ENV and prints no exports when GITHUB_ENV is set', () => {
@@ -66,6 +72,8 @@ describe.skipIf(process.platform === 'win32')('tandoor-bootstrap.sh output', () 
         `TANDOOR_TOKEN=${TOKEN}`,
         `TANDOOR_COMPOSE_FILE=${path.join(root, 'tandoor test', 'docker-compose.yml')}`,
         `TANDOOR_BOOTSTRAP_LOG=${path.join(root, 'tandoor test', 'bootstrap-django.log')}`,
+        'TANDOOR_TEST_LOCAL_PDF_RECIPE_ID=11',
+        'TANDOOR_TEST_LOCAL_JPEG_RECIPE_ID=12',
       ]),
     );
   });
@@ -84,6 +92,7 @@ describe.skipIf(process.platform === 'win32')('tandoor-bootstrap.sh migration wa
     stub(bin, 'python', 'printf " [X]  cookbook.0001_initial\\n [X]  cookbook.0002_more\\n"');
     stub(bin, 'docker', `case "$*" in
   *"manage.py shell"*) echo "__TOKEN__:${TOKEN}" ;;
+  ${LOCAL_SYNC_CASE}
   exec*) bash -c 'cd() { :; }; source() { :; }; '"\${@: -1}" ;;
 esac`);
     const result = spawnSync(SCRIPT, [], {
@@ -95,6 +104,7 @@ esac`);
       encoding: 'utf8',
       timeout: 20_000,
     });
+    expect(result.status).toBe(0);
     expect(result.stderr).toContain('migrations settled after 0s');
     expect(result.stderr).not.toContain('did not settle');
   });
