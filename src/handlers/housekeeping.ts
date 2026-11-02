@@ -202,8 +202,9 @@ export async function handleExportMealPlanIcal(client: TandoorClient, args: Expo
 // ---------- Recipe file / external link ----------
 
 export async function handleGetExternalRecipeFileLink(client: TandoorClient, args: GetExternalRecipeFileLinkArgs, ctx?: HandlerContext): Promise<string> {
-  const r = await hk(client).getExternalFileLink(args.id, { signal: ctx?.signal });
-  return emit(r);
+  const link = (await hk(client).getExternalFileLink(args.id, { signal: ctx?.signal })).trim();
+  if (!link) throw new Error(`Tandoor returned an empty share link for recipe ${args.id}.`);
+  return link;
 }
 
 export async function handleGetRecipeFileMetadata(client: TandoorClient, args: GetRecipeFileMetadataArgs, ctx?: HandlerContext): Promise<string> {

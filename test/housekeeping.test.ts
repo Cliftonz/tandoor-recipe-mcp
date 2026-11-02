@@ -1,6 +1,12 @@
 // Handler coverage for src/handlers/housekeeping.ts. One test per tool.
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { TandoorClient as RealTandoorClient } from '../src/clients/index.js';
+import { registerHousekeepingTools } from '../src/tools/housekeeping.js';
+import { startStub, type Stub } from './helpers/stub-http.js';
 import {
   handleListConnectors,
   handleGetConnector,
@@ -20,7 +26,6 @@ import {
   handleGetUser,
   handleUpdateUser,
   handleExportMealPlanIcal,
-  handleGetExternalRecipeFileLink,
   handleGetRecipeFileMetadata,
 } from '../src/handlers/housekeeping.js';
 import { paginated } from './helpers/factories.js';
@@ -270,16 +275,71 @@ describe('handlers/housekeeping.ts', () => {
   });
 
   describe('recipe file / external link', () => {
-    it('get_external_recipe_file_link returns raw payload', async () => {
-      const client = mock({ housekeeping: { getExternalFileLink: async () => ({ url: 'https://example.com/x' }) } });
-      const res = await handleGetExternalRecipeFileLink(client, { id: 1 } as any);
-      expect(JSON.parse(res)).toEqual({ url: 'https://example.com/x' });
-    });
-
     it('get_recipe_file_metadata returns raw payload', async () => {
       const client = mock({ housekeeping: { getRecipeFileMetadata: async () => ({ id: 1, name: 'x.pdf' }) } });
       const res = await handleGetRecipeFileMetadata(client, { id: 1 } as any);
       expect(JSON.parse(res)).toEqual({ id: 1, name: 'x.pdf' });
     });
+  });
+});
+
+describe('get_external_recipe_file_link over MCP', () => {
+  const link = 'https://cloud.example.com/s/AbC123';
+  let stub: Stub;
+  let server: McpServer;
+  let mcp: Client;
+  let requestedPath: string | undefined;
+  let body: string;
+
+  beforeAll(async () => {
+    stub = await startStub((req, res) => {
+      requestedPath = req.url;
+      res.setHeader('content-type', 'text/plain');
+      res.end(body);
+    });
+    server = new McpServer({ name: 'test', version: 'test' });
+    registerHousekeepingTools(server, new RealTandoorClient({ url: stub.url, token: 'x' }));
+    const [serverT, clientT] = InMemoryTransport.createLinkedPair();
+    await server.connect(serverT);
+    mcp = new Client({ name: 'test-client', version: 'test' });
+    await mcp.connect(clientT);
+  });
+
+  afterAll(async () => {
+    await mcp.close();
+    await server.close();
+    await stub.close();
+  });
+
+  beforeEach(() => { body = link; });
+
+  const call = async (): Promise<any> =>
+    mcp.callTool({ name: 'get_external_recipe_file_link', arguments: { id: 7 } });
+
+  it('returns the plain-text share link for the recipe', async () => {
+    const r: any = await mcp.callTool({ name: 'get_external_recipe_file_link', arguments: { id: 7 } });
+    expect(r.content[0].text).toBe(link);
+    expect(r.isError).toBeFalsy();
+    expect(requestedPath).toBe('/api/get_external_file_link/7/');
+  });
+
+  it('trims surrounding whitespace from the link', async () => {
+    body = `${link}\n`;
+    const r = await call();
+    expect(r.content[0].text).toBe(link);
+    expect(r.isError).toBeFalsy();
+  });
+
+  it('returns a tool error when Tandoor sends an empty link', async () => {
+    body = '';
+    const r = await call();
+    expect(r.content[0].text).toBe('Error: Tandoor returned an empty share link for recipe 7.');
+    expect(r.isError).toBe(true);
+  });
+
+  it('is listed as a non-destructive, idempotent write', async () => {
+    const { tools } = await mcp.listTools();
+    const tool = tools.find((t) => t.name === 'get_external_recipe_file_link')!;
+    expect(tool.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false, idempotentHint: true });
   });
 });

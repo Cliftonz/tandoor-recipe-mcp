@@ -134,7 +134,7 @@ export const exportMealPlanIcalShape = {
 
 // ---------- Recipe file / external link ----------
 
-export const getExternalRecipeFileLinkShape = { id: z.number() } as const;
+export const getExternalRecipeFileLinkShape = { id: z.number().describe('Recipe ID') } as const;
 export const getRecipeFileMetadataShape = { id: z.number() } as const;
 
 // ---------- Inferred types ----------
@@ -268,8 +268,9 @@ export function registerHousekeepingTools(server: McpServer, client: TandoorClie
   // ---------- Recipe file / external link ----------
 
   registerStringTool(server, client, 'get_external_recipe_file_link', {
-    description: 'Fetch a shareable external link for a recipe file (Storage-backed uploads such as Nextcloud). Returns link metadata only, not the binary.',
+    description: 'Get the public share link for a recipe whose file lives on an external storage backend (Nextcloud or Dropbox). Takes a recipe id and returns the link as plain text. The first call for a recipe may create a public share link on the storage backend and save it to the recipe.',
     inputSchema: getExternalRecipeFileLinkShape,
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   }, handleGetExternalRecipeFileLink);
 
   registerStringTool(server, client, 'get_recipe_file_metadata', {

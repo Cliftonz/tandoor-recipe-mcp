@@ -16,7 +16,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { McpServer, ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolResult, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { ZodRawShape, z } from 'zod';
 import { TandoorClient } from '../clients/index.js';
 import { getStashConfig, shouldStash as baseShouldStash, stashPut, type StashConfig } from './stash.js';
@@ -216,7 +216,7 @@ export function registerStringTool<S extends ZodRawShape>(
   server: McpServer,
   client: TandoorClient,
   name: string,
-  config: { description: string; inputSchema?: S; title?: string },
+  config: { description: string; inputSchema?: S; title?: string; annotations?: ToolAnnotations },
   handler: StringHandler<S>
 ): void {
   if (!isToolAllowed(name)) {
