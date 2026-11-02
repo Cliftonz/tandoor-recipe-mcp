@@ -124,7 +124,7 @@ export type StringHandler<S extends ZodRawShape> = (
   client: TandoorClient,
   args: InferShape<S>,
   ctx?: HandlerContext
-) => Promise<string>;
+) => Promise<string | CallToolResult>;
 
 interface ExtractedJson {
   structured: unknown;
@@ -232,6 +232,7 @@ export function registerStringTool<S extends ZodRawShape>(
     const reqId = extra?.requestId !== undefined ? String(extra.requestId) : shortReqId();
     try {
       const text = await handler(client, args, { signal, reqId });
+      if (typeof text !== 'string') return text;
       const extracted = tryExtractStructured(text);
       const stashCfg = getStashConfig();
 
