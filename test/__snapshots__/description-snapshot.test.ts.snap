@@ -343,6 +343,14 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "disable_tool_group",
   },
   {
+    "description": "Download a user file uploaded to Tandoor. Images come back as an image and other files as an embedded resource, up to 5 MiB; larger files need save: true.",
+    "name": "download_file",
+  },
+  {
+    "description": "Download the file Tandoor stored for a recipe synced from a Storage backend (Dropbox, Nextcloud or Local). Images come back as an image, other files as an embedded resource, up to 5 MiB. Larger files need save: true.",
+    "name": "download_recipe_file",
+  },
+  {
     "description": "Widen a section so its tools become visible in tools/list. For a tiered section, tier "simple" or "full" (default full) picks how much to show; on/off sections take no tier. Enabling never narrows a section: asking for simple on a section already at full leaves it at full. The SDK emits tools/list_changed automatically; the client refreshes its tool list mid-conversation. Be sparing: every enabled tool adds its schema to your context budget. Run list_tool_groups first to see what is available.",
     "name": "enable_tool_group",
   },
@@ -411,7 +419,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_export_log",
   },
   {
-    "description": "Fetch a shareable external link for a recipe file (Storage-backed uploads such as Nextcloud). Returns link metadata only, not the binary.",
+    "description": "Get the public share link for a recipe whose file lives on an external storage backend (Nextcloud or Dropbox). Takes a recipe id and returns the link as plain text. The first call for a recipe may create a public share link on the storage backend and save it to the recipe.",
     "name": "get_external_recipe_file_link",
   },
   {
@@ -493,10 +501,6 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
   {
     "description": "Get a recipe-book-entry by ID.",
     "name": "get_recipe_book_entry",
-  },
-  {
-    "description": "Fetch metadata for a recipe file attachment by ID. Does not return the binary; use the UI download link for that.",
-    "name": "get_recipe_file_metadata",
   },
   {
     "description": "Get a pending recipe-import queue entry by ID.",
@@ -3755,6 +3759,48 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "file_id": {
+          "description": "User file ID",
+          "type": "number",
+        },
+        "save": {
+          "description": "Save to TANDOOR_MCP_DOWNLOAD_ROOT instead of returning the file inline (needed above 5 MiB; stdio only).",
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "file_id",
+      ],
+      "type": "object",
+    },
+    "name": "download_file",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "recipe_id": {
+          "description": "Recipe ID",
+          "type": "number",
+        },
+        "save": {
+          "description": "Save to TANDOOR_MCP_DOWNLOAD_ROOT instead of returning the file inline (needed above 5 MiB; stdio only).",
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "recipe_id",
+      ],
+      "type": "object",
+    },
+    "name": "download_recipe_file",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "group": {
           "description": "Name of the section to enable. Run list_tool_groups to see available sections.",
           "minLength": 1,
@@ -4308,6 +4354,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Recipe ID",
           "type": "number",
         },
       },
@@ -4737,22 +4784,6 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "get_recipe_book_entry",
-  },
-  {
-    "inputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "properties": {
-        "id": {
-          "type": "number",
-        },
-      },
-      "required": [
-        "id",
-      ],
-      "type": "object",
-    },
-    "name": "get_recipe_file_metadata",
   },
   {
     "inputSchema": {

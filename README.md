@@ -6,6 +6,11 @@ A Model Context Protocol (MCP) server that gives LLM agents full read/write acce
 
 > Turn "plan the week and make me a grocery list" into one prompt.
 
+## New in 3.1.0
+
+- **File downloads** ([#10](https://github.com/Cliftonz/tandoor-recipe-mcp/issues/10)): `download_recipe_file` and `download_file` return a Tandoor file inline, or save it to `TANDOOR_MCP_DOWNLOAD_ROOT` with `save: true`. See [Downloading files](#downloading-files).
+- **`get_external_recipe_file_link` works again.** `get_recipe_file_metadata` is removed; use `download_recipe_file` instead.
+
 ## New in 3.0.0
 
 - **Per-section tool settings** replace `TANDOOR_MCP_PROFILE`. One env var per section: tiered sections take `off`, `simple`, or `full`, and toggle sections take `off` or `on`. See [Tool sections](#tool-sections) and [Migration from 2.x](#migration-from-2x).
@@ -16,11 +21,11 @@ A Model Context Protocol (MCP) server that gives LLM agents full read/write acce
 - **HTTP transport fix** ([#12](https://github.com/Cliftonz/tandoor-recipe-mcp/issues/12)): the HTTP transport now answers every request, not only the first.
 - **oxlint** for linting.
 
-306 tools in total; 46 are visible at startup with the default settings. The [CHANGELOG](CHANGELOG.md) has the full list of changes and breaking changes.
+307 tools in total; 46 are visible at startup with the default settings. The [CHANGELOG](CHANGELOG.md) has the full list of changes and breaking changes.
 
 ## Why this server
 
-- **Full Tandoor 2.6 API coverage.** 306 typed tools, spanning every domain the Tandoor OpenAPI exposes.
+- **Full Tandoor 2.6 API coverage.** 307 typed tools, spanning every domain the Tandoor OpenAPI exposes.
 - **Resources + prompts, not just tools.** Read-only subscribable resources like `tandoor://meal-plan/this-week` and `tandoor://pantry/on-hand`, plus ready-made prompts (`plan_week`, `grocery_list_for_plan`, `what_can_i_make_tonight`). Most Tandoor MCP forks ship tools only.
 - **Slim-by-default responses.** A full recipe GET shrinks from ~20k characters to ~2k by stripping substitute trees, readonly timestamps, image URLs, etc. Pass `format: "full"` anywhere for the raw Tandoor response.
 - **Per-section tool settings.** One env var per section (recipes, meal plan, shopping, and so on) sets it. Tiered sections take `off`, `simple`, or `full`. Toggle sections take `off` or `on`. In stdio mode the LLM can turn a hidden section on mid-session with `enable_tool_group`. See [Tool sections](#tool-sections).
@@ -94,7 +99,8 @@ The repo ships a `.claude/settings.json` that auto-allows read tools and prompts
       "mcp__tandoor__merge_*",
       "mcp__tandoor__switch_active_space",
       "mcp__tandoor__create_access_token",
-      "mcp__tandoor__create_invite_link"
+      "mcp__tandoor__create_invite_link",
+      "mcp__tandoor__get_external_recipe_file_link"
     ]
   }
 }
@@ -144,8 +150,17 @@ If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: B
 | `TANDOOR_MCP_STASH_MAX_ENTRIES` | no | `32` | LRU cap on stashed handles. |
 | `TANDOOR_MCP_STASH_MAX_BYTES` | no | `32000000` | Total-bytes cap on the stash; LRU eviction kicks in past this budget. |
 | `TANDOOR_MCP_STASH_TTL_MS` | no | `600000` | Per-entry TTL in milliseconds (default 10 minutes). |
+| `TANDOOR_MCP_DOWNLOAD_ROOT` | no | none | Existing folder that `save: true` writes downloads into. Stdio mode only. See [Downloading files](#downloading-files). |
 
 `INCLUDE_ONLY` and `EXCLUDE` run before the section settings and give finer control ("give me only read tools" or "hide destructive ops from this agent").
+
+## Downloading files
+
+`download_recipe_file({recipe_id})` returns the file Tandoor stored for a recipe synced from a Storage backend (Dropbox, Nextcloud, or Local). It is in the `recipes` section's `full` tier. `download_file({file_id})` returns a user file uploaded to Tandoor. It is in the `admin` section.
+
+Files up to 5 MiB come back inline, after a text block with `{filename, mime, size}`. Images (PNG, JPEG, GIF, and WebP) come back as an MCP image block. Other files come back as an embedded resource block. A larger file returns an error that tells the model to retry with `save: true`.
+
+To save a file to disk instead, set `TANDOOR_MCP_DOWNLOAD_ROOT` to an existing folder and call the tool with `save: true`. The tool streams the file into that folder and returns `{path, size, mime}`. Saving works over stdio only, because over HTTP the folder is on the server machine. The tool removes unsafe characters from the filename. It never overwrites a file: if the name is taken, it adds ` (2)`, ` (3)`, and so on.
 
 ## Tandoor compatibility
 

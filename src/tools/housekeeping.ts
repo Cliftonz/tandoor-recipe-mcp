@@ -7,6 +7,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
+import { INLINE_CAP_BYTES } from '../lib/download.js';
 import {
   handleListConnectors,
   handleGetConnector,
@@ -27,8 +28,10 @@ import {
   handleUpdateUser,
   handleExportMealPlanIcal,
   handleGetExternalRecipeFileLink,
-  handleGetRecipeFileMetadata,
+  handleDownloadRecipeFile,
 } from '../handlers/housekeeping.js';
+
+const INLINE_CAP_MIB = INLINE_CAP_BYTES / 1024 / 1024;
 
 const connectorTypeEnum = z.enum(['HomeAssistant']);
 const searchEnum = z.enum(['PLAIN', 'PHRASE', 'RAW', 'WEB', 'FUZZY']);
@@ -134,8 +137,11 @@ export const exportMealPlanIcalShape = {
 
 // ---------- Recipe file / external link ----------
 
-export const getExternalRecipeFileLinkShape = { id: z.number() } as const;
-export const getRecipeFileMetadataShape = { id: z.number() } as const;
+export const getExternalRecipeFileLinkShape = { id: z.number().describe('Recipe ID') } as const;
+export const downloadRecipeFileShape = {
+  recipe_id: z.number().describe('Recipe ID'),
+  save: z.boolean().optional().describe(`Save to TANDOOR_MCP_DOWNLOAD_ROOT instead of returning the file inline (needed above ${INLINE_CAP_MIB} MiB; stdio only).`),
+} as const;
 
 // ---------- Inferred types ----------
 
@@ -158,7 +164,7 @@ export type GetUserArgs = z.infer<z.ZodObject<typeof getUserShape>>;
 export type UpdateUserArgs = z.infer<z.ZodObject<typeof updateUserShape>>;
 export type ExportMealPlanIcalArgs = z.infer<z.ZodObject<typeof exportMealPlanIcalShape>>;
 export type GetExternalRecipeFileLinkArgs = z.infer<z.ZodObject<typeof getExternalRecipeFileLinkShape>>;
-export type GetRecipeFileMetadataArgs = z.infer<z.ZodObject<typeof getRecipeFileMetadataShape>>;
+export type DownloadRecipeFileArgs = z.infer<z.ZodObject<typeof downloadRecipeFileShape>>;
 
 export function registerHousekeepingTools(server: McpServer, client: TandoorClient): void {
   // ---------- Connector-config ----------
@@ -268,12 +274,14 @@ export function registerHousekeepingTools(server: McpServer, client: TandoorClie
   // ---------- Recipe file / external link ----------
 
   registerStringTool(server, client, 'get_external_recipe_file_link', {
-    description: 'Fetch a shareable external link for a recipe file (Storage-backed uploads such as Nextcloud). Returns link metadata only, not the binary.',
+    description: 'Get the public share link for a recipe whose file lives on an external storage backend (Nextcloud or Dropbox). Takes a recipe id and returns the link as plain text. The first call for a recipe may create a public share link on the storage backend and save it to the recipe.',
     inputSchema: getExternalRecipeFileLinkShape,
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   }, handleGetExternalRecipeFileLink);
 
-  registerStringTool(server, client, 'get_recipe_file_metadata', {
-    description: 'Fetch metadata for a recipe file attachment by ID. Does not return the binary; use the UI download link for that.',
-    inputSchema: getRecipeFileMetadataShape,
-  }, handleGetRecipeFileMetadata);
+  registerStringTool(server, client, 'download_recipe_file', {
+    description: `Download the file Tandoor stored for a recipe synced from a Storage backend (Dropbox, Nextcloud or Local). Images come back as an image, other files as an embedded resource, up to ${INLINE_CAP_MIB} MiB. Larger files need save: true.`,
+    inputSchema: downloadRecipeFileShape,
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  }, handleDownloadRecipeFile);
 }

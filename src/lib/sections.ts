@@ -61,7 +61,7 @@ export const SECTIONS: readonly Section[] = [
       ...preview('recipe'),
       ...preview('keyword'),
       ...crud('custom_filter'),
-      'get_recipe_file_metadata', 'get_external_recipe_file_link', 'get_share_link',
+      'download_recipe_file', 'get_external_recipe_file_link', 'get_share_link',
     ],
   },
   {
@@ -202,7 +202,7 @@ export const SECTIONS: readonly Section[] = [
     tools: [
       'get_server_settings',
       ...crud('automation'),
-      'list_user_files', 'get_user_file', 'upload_user_file', 'update_user_file', 'delete_user_file',
+      'list_user_files', 'get_user_file', 'upload_user_file', 'update_user_file', 'delete_user_file', 'download_file',
       ...preview('user_file'),
       'list_view_logs', 'get_view_log', 'update_view_log', 'delete_view_log',
       ...crud('access_token'), 'authenticate',

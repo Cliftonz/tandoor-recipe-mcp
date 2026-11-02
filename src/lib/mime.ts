@@ -35,3 +35,20 @@ export function guessMimeFromExt(filename: string, allow?: ReadonlySet<string>):
   if (allow && !allow.has(ext)) return 'application/octet-stream';
   return MIME_TABLE[ext] ?? 'application/octet-stream';
 }
+
+const ascii = (text: string): number[] => [...text].map((c) => c.charCodeAt(0));
+
+const SIGNATURES: ReadonlyArray<{ mime: string; parts: ReadonlyArray<{ offset: number; bytes: number[] }> }> = [
+  { mime: 'image/png', parts: [{ offset: 0, bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] }] },
+  { mime: 'image/jpeg', parts: [{ offset: 0, bytes: [0xff, 0xd8, 0xff] }] },
+  { mime: 'image/gif', parts: [{ offset: 0, bytes: ascii('GIF8') }] },
+  { mime: 'image/webp', parts: [{ offset: 0, bytes: ascii('RIFF') }, { offset: 8, bytes: ascii('WEBP') }] },
+  { mime: 'application/pdf', parts: [{ offset: 0, bytes: ascii('%PDF-') }] },
+];
+
+export function sniffMime(head: Uint8Array, filename = ''): string {
+  const match = SIGNATURES.find(({ parts }) =>
+    parts.every(({ offset, bytes }) => bytes.every((b, i) => head[offset + i] === b)),
+  );
+  return match?.mime ?? guessMimeFromExt(filename);
+}

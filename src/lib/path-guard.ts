@@ -36,7 +36,7 @@ import { tmpdir, homedir } from 'node:os';
 const DELIM = process.platform === 'win32' ? ';' : ':';
 const HOME_REF = /\$HOME\b/g;
 
-function expandHome(p: string): string {
+export function expandHome(p: string): string {
   if (p === '~') return homedir();
   if (p.startsWith('~/')) return path.join(homedir(), p.slice(2));
   return p.replace(HOME_REF, homedir());

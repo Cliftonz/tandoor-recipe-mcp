@@ -9,6 +9,8 @@ on:
     paths:
       - 'scripts/tandoor-bootstrap.sh'
       - '.github/workflows/bootstrap-smoke.yml'
+      - 'test/e2e/local-storage-bootstrap.e2e.test.ts'
+      - 'test/e2e/fixtures/local-storage/**'
   schedule:
     # Mondays 11:23 UTC — weekly drift check against vabene1111/recipes:latest.
     - cron: '23 11 * * 1'
@@ -36,10 +38,30 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # No npm install needed here — the script only spins Docker + curl.
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --no-save --no-audit --no-fund
 
       - name: Bootstrap Tandoor
         run: ./scripts/tandoor-bootstrap.sh
+
+      - name: Record first-run local recipe ids
+        run: |
+          {
+            echo "TANDOOR_TEST_FIRST_LOCAL_PDF_RECIPE_ID=$TANDOOR_TEST_LOCAL_PDF_RECIPE_ID"
+            echo "TANDOOR_TEST_FIRST_LOCAL_JPEG_RECIPE_ID=$TANDOOR_TEST_LOCAL_JPEG_RECIPE_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Re-run bootstrap against the same stack
+        run: ./scripts/tandoor-bootstrap.sh
+
+      - name: Local storage bootstrap is idempotent
+        run: npx vitest run --config vitest.e2e.config.ts test/e2e/local-storage-bootstrap.e2e.test.ts
 
       - name: Verify TANDOOR_URL + TANDOOR_TOKEN are exported
         run: |
