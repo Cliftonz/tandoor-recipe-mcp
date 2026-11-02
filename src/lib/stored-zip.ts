@@ -16,7 +16,7 @@ const view = (bytes: Uint8Array) => new DataView(bytes.buffer, bytes.byteOffset,
 
 export async function openStoredZip(
   zip: ReadableStream<Uint8Array>,
-): Promise<{ name: string; body: ReadableStream<Uint8Array> }> {
+): Promise<{ name: string; size: number; body: ReadableStream<Uint8Array> }> {
   const reader = zip.getReader();
   let buffered: Uint8Array = new Uint8Array(0);
 
@@ -47,7 +47,8 @@ export async function openStoredZip(
     await fail();
   }
   const expectedCrc = header.getUint32(CRC_OFFSET, true);
-  let remaining = header.getUint32(COMPRESSED_SIZE_OFFSET, true);
+  const size = header.getUint32(COMPRESSED_SIZE_OFFSET, true);
+  let remaining = size;
   const name = new TextDecoder().decode(await take(header.getUint16(NAME_LENGTH_OFFSET, true)));
   await take(header.getUint16(EXTRA_LENGTH_OFFSET, true));
 
@@ -69,5 +70,5 @@ export async function openStoredZip(
     },
     cancel: (reason) => reader.cancel(reason),
   });
-  return { name, body };
+  return { name, size, body };
 }

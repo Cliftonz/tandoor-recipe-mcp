@@ -5,6 +5,9 @@ import { TandoorClient } from '../clients/index.js';
 import { readSafeUpload } from '../lib/path-guard.js';
 import { safeFetchBytes } from '../lib/safe-fetch.js';
 import { guessMimeFromExt } from '../lib/mime.js';
+import { deliverFile } from '../lib/download.js';
+import { openStoredZip } from '../lib/stored-zip.js';
+import type { HandlerContext } from '../lib/register.js';
 
 const MAX_USERFILE_BYTES = 50 * 1024 * 1024; // 50MB cap on URL-fetched user files.
 import type {
@@ -22,6 +25,7 @@ import type {
   UploadUserFileArgs,
   UpdateUserFileArgs,
   DeleteUserFileArgs,
+  DownloadFileArgs,
   ListViewLogsArgs,
   ListImportLogsArgs,
   ListAiLogsArgs,
@@ -225,6 +229,25 @@ export async function handleUpdateUserFile(
 ): Promise<string> {
   const r = await client.userFiles.patchUserFile(args.id, { name: args.name });
   return `User file updated.\n\n${emit(args.format === 'full' ? r : slimUserFile(r))}`;
+}
+
+export async function handleDownloadFile(
+  client: TandoorClient,
+  args: DownloadFileArgs,
+  ctx?: HandlerContext
+) {
+  const response = await client.userFiles.downloadFile(args.file_id, ctx?.signal);
+  const entry = await openStoredZip(response.body!);
+  const tandoorName = /filename="(.*)"/.exec(response.headers.get('content-disposition')!)![1].replace(/\.zip$/, '');
+  return deliverFile({
+    body: entry.body,
+    declaredSize: entry.size,
+    filename: tandoorName + path.extname(path.posix.basename(entry.name)),
+    idStem: `file-${args.file_id}`,
+    url: `${client.getBaseUrl()}/api/download-file/${args.file_id}/`,
+    save: args.save ?? false,
+    signal: ctx?.signal,
+  });
 }
 
 export async function handleDeleteUserFile(
