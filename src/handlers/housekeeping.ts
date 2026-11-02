@@ -1,7 +1,9 @@
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { TandoorClient } from '../clients/index.js';
 import type { HousekeepingClient } from '../clients/housekeeping.js';
 import { emit, slimPaginated, assertNonEmptyBody } from '../lib/slim.js';
 import type { HandlerContext } from '../lib/register.js';
+import { deliverFile } from '../lib/download.js';
 import type {
   ListConnectorsArgs,
   GetConnectorArgs,
@@ -22,7 +24,7 @@ import type {
   UpdateUserArgs,
   ExportMealPlanIcalArgs,
   GetExternalRecipeFileLinkArgs,
-  GetRecipeFileMetadataArgs,
+  DownloadRecipeFileArgs,
 } from '../tools/housekeeping.js';
 
 const hk = (client: TandoorClient): HousekeepingClient => client.housekeeping;
@@ -207,7 +209,53 @@ export async function handleGetExternalRecipeFileLink(client: TandoorClient, arg
   return link;
 }
 
-export async function handleGetRecipeFileMetadata(client: TandoorClient, args: GetRecipeFileMetadataArgs, ctx?: HandlerContext): Promise<string> {
-  const r = await hk(client).getRecipeFileMetadata(args.id, { signal: ctx?.signal });
-  return emit(r);
+const NEWLINE = 0x0a;
+const SPACE = 0x20;
+
+async function skipBlankBody(body: ReadableStream<Uint8Array>): Promise<ReadableStream<Uint8Array> | undefined> {
+  const reader = body.getReader();
+  const seen: Uint8Array[] = [];
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) return undefined;
+    seen.push(value);
+    if (value.some((b) => b !== NEWLINE && b !== SPACE)) break;
+  }
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of seen) controller.enqueue(chunk);
+    },
+    async pull(controller) {
+      const { done, value } = await reader.read();
+      if (done) controller.close();
+      else controller.enqueue(value);
+    },
+    cancel: (reason) => reader.cancel(reason),
+  });
+}
+
+function dispositionFilename(disposition: string | null): string {
+  const encoded = disposition?.match(/filename\*=UTF-8''([^;]+)/i);
+  if (encoded) return decodeURIComponent(encoded[1]);
+  return disposition?.match(/filename="([^"]*)"/)?.[1] ?? '';
+}
+
+export async function handleDownloadRecipeFile(client: TandoorClient, args: DownloadRecipeFileArgs, ctx?: HandlerContext): Promise<CallToolResult> {
+  const res = await hk(client).downloadRecipeFile(args.recipe_id, { signal: ctx?.signal });
+  const body = await skipBlankBody(res.body!);
+  if (!body) {
+    return {
+      content: [{ type: 'text', text: `Recipe ${args.recipe_id} has no stored file; only recipes synced from a Storage backend have one.` }],
+      isError: true,
+    };
+  }
+  return deliverFile({
+    body,
+    declaredSize: Number(res.headers.get('content-length') ?? 0),
+    filename: dispositionFilename(res.headers.get('content-disposition')),
+    idStem: `recipe-${args.recipe_id}`,
+    url: `${hk(client).getBaseUrl()}/api/get_recipe_file/${args.recipe_id}/`,
+    save: args.save ?? false,
+    signal: ctx?.signal,
+  });
 }

@@ -61,7 +61,7 @@ export const SECTIONS: readonly Section[] = [
       ...preview('recipe'),
       ...preview('keyword'),
       ...crud('custom_filter'),
-      'get_recipe_file_metadata', 'get_external_recipe_file_link', 'get_share_link',
+      'download_recipe_file', 'get_external_recipe_file_link', 'get_share_link',
     ],
   },
   {

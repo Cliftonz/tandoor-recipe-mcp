@@ -27,7 +27,7 @@ import {
   handleUpdateUser,
   handleExportMealPlanIcal,
   handleGetExternalRecipeFileLink,
-  handleGetRecipeFileMetadata,
+  handleDownloadRecipeFile,
 } from '../handlers/housekeeping.js';
 
 const connectorTypeEnum = z.enum(['HomeAssistant']);
@@ -135,7 +135,10 @@ export const exportMealPlanIcalShape = {
 // ---------- Recipe file / external link ----------
 
 export const getExternalRecipeFileLinkShape = { id: z.number().describe('Recipe ID') } as const;
-export const getRecipeFileMetadataShape = { id: z.number() } as const;
+export const downloadRecipeFileShape = {
+  recipe_id: z.number().describe('Recipe ID'),
+  save: z.boolean().optional().describe('Save to TANDOOR_MCP_DOWNLOAD_ROOT instead of returning the file inline (needed above 5 MiB; stdio only).'),
+} as const;
 
 // ---------- Inferred types ----------
 
@@ -158,7 +161,7 @@ export type GetUserArgs = z.infer<z.ZodObject<typeof getUserShape>>;
 export type UpdateUserArgs = z.infer<z.ZodObject<typeof updateUserShape>>;
 export type ExportMealPlanIcalArgs = z.infer<z.ZodObject<typeof exportMealPlanIcalShape>>;
 export type GetExternalRecipeFileLinkArgs = z.infer<z.ZodObject<typeof getExternalRecipeFileLinkShape>>;
-export type GetRecipeFileMetadataArgs = z.infer<z.ZodObject<typeof getRecipeFileMetadataShape>>;
+export type DownloadRecipeFileArgs = z.infer<z.ZodObject<typeof downloadRecipeFileShape>>;
 
 export function registerHousekeepingTools(server: McpServer, client: TandoorClient): void {
   // ---------- Connector-config ----------
@@ -273,8 +276,9 @@ export function registerHousekeepingTools(server: McpServer, client: TandoorClie
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   }, handleGetExternalRecipeFileLink);
 
-  registerStringTool(server, client, 'get_recipe_file_metadata', {
-    description: 'Fetch metadata for a recipe file attachment by ID. Does not return the binary; use the UI download link for that.',
-    inputSchema: getRecipeFileMetadataShape,
-  }, handleGetRecipeFileMetadata);
+  registerStringTool(server, client, 'download_recipe_file', {
+    description: 'Download the file Tandoor stored for a recipe synced from a Storage backend (Dropbox, Nextcloud or Local). Images come back as an image, other files as an embedded resource, up to 5 MiB. Larger files need save: true.',
+    inputSchema: downloadRecipeFileShape,
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  }, handleDownloadRecipeFile);
 }

@@ -40,7 +40,7 @@ const NEW_TOOLS: string[] = [
   'get_ai_provider', 'create_ai_provider', 'update_ai_provider', 'delete_ai_provider', 'ai_step_sort',
   'list_connectors', 'get_connector', 'create_connector', 'update_connector', 'delete_connector',
   'get_view_log', 'update_view_log', 'delete_view_log',
-  'get_localization', 'list_groups', 'list_users', 'get_recipe_file_metadata',
+  'get_localization', 'list_groups', 'list_users', 'download_recipe_file',
   'list_recipes_flat', 'delete_recipe_external',
   'preview_food_delete_cascading', 'preview_recipe_delete_protecting',
 ];
