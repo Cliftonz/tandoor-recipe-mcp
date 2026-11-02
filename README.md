@@ -99,7 +99,8 @@ The repo ships a `.claude/settings.json` that auto-allows read tools and prompts
       "mcp__tandoor__merge_*",
       "mcp__tandoor__switch_active_space",
       "mcp__tandoor__create_access_token",
-      "mcp__tandoor__create_invite_link"
+      "mcp__tandoor__create_invite_link",
+      "mcp__tandoor__get_external_recipe_file_link"
     ]
   }
 }
