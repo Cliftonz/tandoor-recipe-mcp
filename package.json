@@ -54,7 +54,7 @@
     "node": ">=24.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.32.1",
+    "@modelcontextprotocol/sdk": "1.32.2",
     "jq-wasm": "3.0.0-jq-1.8.2",
     "undici": "^8.12.2",
     "zod": "^4.6.7"
