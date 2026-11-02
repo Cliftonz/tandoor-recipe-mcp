@@ -387,7 +387,7 @@ export class BaseClient {
           )
         );
       }
-      if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+      if (response.status >= 300 && response.status < 400) {
         throw new Error('Tandoor redirected a file download; refusing to follow it.');
       }
       if (shouldRetry(response.status) && attempt < DEFAULT_MAX_RETRIES) {
