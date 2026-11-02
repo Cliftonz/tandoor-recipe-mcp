@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { link, open, rm, stat } from 'node:fs/promises';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { guessMimeFromExt, sniffMime } from './mime.js';
@@ -42,18 +42,50 @@ const displayName = (file: FileDelivery) => file.filename.replace(INVISIBLE_CHAR
 const emptyFile = (file: FileDelivery) => fail(`Tandoor returned an empty file for ${displayName(file)}.`);
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
+class DeliveryError extends Error {}
+
 export function deliverFile(file: FileDelivery): Promise<CallToolResult> {
   return file.save ? saveToDisk(file) : deliverInline(file);
 }
 
+async function withReader<T>(
+  file: FileDelivery,
+  use: (reader: ReadableStreamDefaultReader<Uint8Array>) => Promise<T>,
+): Promise<T> {
+  const reader = file.body.getReader();
+  const cancelOnAbort = () => void reader.cancel(file.signal?.reason);
+  file.signal?.addEventListener('abort', cancelOnAbort, { once: true });
+  try {
+    return await use(reader);
+  } catch (err) {
+    reader.cancel(err).catch(() => undefined);
+    throw err;
+  } finally {
+    file.signal?.removeEventListener('abort', cancelOnAbort);
+    reader.releaseLock();
+  }
+}
+
 async function deliverInline(file: FileDelivery): Promise<CallToolResult> {
+  try {
+    return await withReader(file, (reader) => readInline(file, reader));
+  } catch (err) {
+    return fail(`Downloading ${displayName(file)} failed: ${messageOf(err)}`);
+  }
+}
+
+async function readInline(file: FileDelivery, reader: ReadableStreamDefaultReader<Uint8Array>): Promise<CallToolResult> {
   const chunks: Uint8Array[] = [];
   let bytesRead = 0;
-  for await (const chunk of file.body) {
-    chunks.push(chunk);
-    bytesRead += chunk.length;
-    if (bytesRead > INLINE_CAP_BYTES) break;
+  for (let next = await reader.read(); !next.done; next = await reader.read()) {
+    chunks.push(next.value);
+    bytesRead += next.value.length;
+    if (bytesRead > INLINE_CAP_BYTES) {
+      await reader.cancel();
+      break;
+    }
   }
+  file.signal?.throwIfAborted();
   if (bytesRead === 0) return emptyFile(file);
   const bytes = Buffer.concat(chunks);
   const mime = sniffMime(bytes.subarray(0, SNIFF_BYTES), file.filename);
@@ -110,19 +142,19 @@ async function linkWithoutClobber(part: string, root: string, stem: string, ext:
   for (let n = 1; n <= MAX_NAME_ATTEMPTS; n++) {
     const target = path.join(root, n === 1 ? `${stem}${ext}` : `${stem} (${n})${ext}`);
     try {
-      await link(part, target);
+      await fs.link(part, target);
       return target;
     } catch (err) {
       const code = (err as NodeJS.ErrnoException).code;
-      if (code === 'EPERM' || code === 'ENOTSUP') throw new Error(NO_HARD_LINKS);
+      if (code === 'EPERM' || code === 'ENOTSUP') throw new DeliveryError(NO_HARD_LINKS);
       if (code !== 'EEXIST') throw err;
     }
   }
-  throw new Error(`Too many files named ${stem}${ext} in the download root.`);
+  throw new DeliveryError(`Too many files named ${stem}${ext} in the download root.`);
 }
 
 async function writeAll(part: string, head: Uint8Array[], reader: ReadableStreamDefaultReader<Uint8Array>): Promise<number> {
-  const handle = await open(part, 'wx');
+  const handle = await fs.open(part, 'wx');
   let size = 0;
   try {
     for (const chunk of head) {
@@ -153,37 +185,29 @@ async function saveToDisk(file: FileDelivery): Promise<CallToolResult> {
   const raw = (process.env.TANDOOR_MCP_DOWNLOAD_ROOT ?? '').trim();
   if (raw === '') return abandon(file, 'Saving requires TANDOOR_MCP_DOWNLOAD_ROOT to be set to a folder on this machine.');
   const root = path.resolve(expandHome(raw));
-  if (!(await stat(root).then((s) => s.isDirectory(), () => false))) {
+  if (!(await fs.stat(root).then((s) => s.isDirectory(), () => false))) {
     return abandon(file, `TANDOOR_MCP_DOWNLOAD_ROOT ${root} does not exist or is not a folder.`);
   }
 
-  const reader = file.body.getReader();
-  const cancelOnAbort = () => void reader.cancel(file.signal?.reason);
-  file.signal?.addEventListener('abort', cancelOnAbort, { once: true });
   let part: string | undefined;
-  let target: string;
-  let size: number;
-  let mime: string;
   try {
-    const head = await readHead(reader);
-    if (head.length === 0) {
-      await reader.cancel();
-      return emptyFile(file);
-    }
-    mime = sniffMime(Buffer.concat(head).subarray(0, SNIFF_BYTES), file.filename);
-    const { stem, ext } = safeFileName(file.filename, file.idStem, mime);
-    part = path.join(root, `.${stem}.${randomUUID()}.part`);
-    size = await writeAll(part, head, reader);
-    file.signal?.throwIfAborted();
-    target = await linkWithoutClobber(part, root, stem, ext);
+    return await withReader(file, async (reader) => {
+      const head = await readHead(reader);
+      if (head.length === 0) {
+        await reader.cancel();
+        return emptyFile(file);
+      }
+      const mime = sniffMime(Buffer.concat(head).subarray(0, SNIFF_BYTES), file.filename);
+      const { stem, ext } = safeFileName(file.filename, file.idStem, mime);
+      part = path.join(root, `.${stem}.${randomUUID()}.part`);
+      const size = await writeAll(part, head, reader);
+      file.signal?.throwIfAborted();
+      const target = await linkWithoutClobber(part, root, stem, ext);
+      await fs.rm(part).catch(() => undefined);
+      return { content: [{ type: 'text', text: JSON.stringify({ path: target, size, mime }) }] };
+    });
   } catch (err) {
-    reader.cancel(err).catch(() => undefined);
-    if (part) await rm(part, { force: true });
-    return fail(`Saving ${file.url} failed: ${messageOf(err)}`);
-  } finally {
-    file.signal?.removeEventListener('abort', cancelOnAbort);
-    reader.releaseLock();
+    if (part) await fs.rm(part, { force: true });
+    return fail(err instanceof DeliveryError ? err.message : `Saving ${file.url} failed: ${messageOf(err)}`);
   }
-  await rm(part).catch(() => undefined);
-  return { content: [{ type: 'text', text: JSON.stringify({ path: target, size, mime }) }] };
 }

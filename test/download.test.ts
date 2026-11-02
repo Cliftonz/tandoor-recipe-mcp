@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import fs from 'node:fs/promises';
 import { chmod, mkdtemp, readdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
@@ -61,6 +62,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   for (const k of ENV_KEYS) {
     if (envBefore[k] === undefined) delete process.env[k];
     else process.env[k] = envBefore[k];
@@ -261,7 +263,7 @@ describe('deliverFile save', () => {
     for (let n = 2; n <= 1000; n++) await writeFile(path.join(root, `Soup (${n}).png`), 'x');
     const result = await saveOf(PNG);
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain('Too many files named Soup.png in the download root.');
+    expect(textOf(result)).toBe('Too many files named Soup.png in the download root.');
     expect((await readdir(root)).filter((n) => n.endsWith('.part'))).toEqual([]);
   });
 
@@ -365,6 +367,98 @@ describe('deliverFile save', () => {
     const result = await deliverFile(file(body, { save: true, signal: controller.signal }));
     expect(result.isError).toBe(true);
     expect(state.cancelled).toBe(true);
+    expect(await readdir(root)).toEqual([]);
+  });
+});
+
+describe('deliverFile inline failures', () => {
+  it('returns isError when the stream fails mid-read', async () => {
+    let sent = false;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (sent) return controller.error(new Error('connection reset'));
+        sent = true;
+        controller.enqueue(PNG);
+      },
+    });
+    const result = await deliverFile(file(body));
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toBe('Downloading Soup.pdf failed: connection reset');
+    expect(body.locked).toBe(false);
+  });
+
+  it('stops and returns isError when aborted mid-read', async () => {
+    const controller = new AbortController();
+    const state = { cancelled: false };
+    let sent = false;
+    const body = new ReadableStream<Uint8Array>({
+      pull(stream) {
+        if (sent) {
+          controller.abort();
+          return new Promise(() => {});
+        }
+        sent = true;
+        stream.enqueue(PNG);
+      },
+      cancel() {
+        state.cancelled = true;
+      },
+    });
+    const result = await deliverFile(file(body, { signal: controller.signal }));
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toMatch(/^Downloading Soup\.pdf failed: /);
+    expect(state.cancelled).toBe(true);
+  });
+});
+
+describe('deliverFile save filesystem faults', () => {
+  const errno = (code: string) => Object.assign(new Error(`${code}: injected`), { code });
+  const save = () => deliverFile(file(streamOf(PNG, 3), { save: true }));
+  it('reports the write error, not the close error, and removes the part file', async () => {
+    const open = fs.open.bind(fs);
+    vi.spyOn(fs, 'open').mockImplementation(async (...args: Parameters<typeof fs.open>) => {
+      const handle = await open(...args);
+      const write = handle.write.bind(handle);
+      const close = handle.close.bind(handle);
+      let writes = 0;
+      vi.spyOn(handle, 'write').mockImplementation(((...writeArgs: Parameters<typeof write>) => {
+        writes += 1;
+        return writes === 2 ? Promise.reject(errno('ENOSPC')) : write(...writeArgs);
+      }) as typeof write);
+      vi.spyOn(handle, 'close').mockImplementation(async () => {
+        await close();
+        throw errno('EBADF');
+      });
+      return handle;
+    });
+    const result = await save();
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain('ENOSPC');
+    expect(textOf(result)).not.toContain('EBADF');
+    expect(await readdir(root)).toEqual([]);
+  });
+
+  it.each(['EPERM', 'ENOTSUP'])('explains missing hard-link support on %s', async (code) => {
+    vi.spyOn(fs, 'link').mockRejectedValue(errno(code));
+    const result = await save();
+    expect(textOf(result)).toBe(
+      "The download root's filesystem does not support hard links; set TANDOOR_MCP_DOWNLOAD_ROOT to a folder on a local disk.",
+    );
+    expect(await readdir(root)).toEqual([]);
+  });
+
+  it('reports success when the part file cannot be removed after linking', async () => {
+    vi.spyOn(fs, 'rm').mockRejectedValueOnce(errno('EACCES'));
+    const result = await save();
+    expect(result.isError).toBeUndefined();
+    expect(JSON.parse(textOf(result)).path).toBe(path.join(root, 'Soup.png'));
+    expect(await readFile(path.join(root, 'Soup.png'))).toEqual(Buffer.from(PNG));
+  });
+
+  it('reports other link errors as a general failure and removes the part file', async () => {
+    vi.spyOn(fs, 'link').mockRejectedValue(errno('EIO'));
+    const result = await save();
+    expect(textOf(result)).toBe(`Saving ${SOURCE_URL} failed: EIO: injected`);
     expect(await readdir(root)).toEqual([]);
   });
 });
