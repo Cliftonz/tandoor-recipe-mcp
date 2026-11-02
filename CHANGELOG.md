@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## 3.0.0 / 2026-11-01
+## 3.0.0 / 2026-11-02
 
 ### Breaking changes
 - **`TANDOOR_MCP_PROFILE` is removed.** The server ignores it and writes one stderr warning when it has a value. The per-section settings below replace it.
@@ -34,6 +34,7 @@ All notable changes to this project are documented in this file.
 - **Named shopping list tools (Tandoor 2.6).** The `shopping` section's `simple` tier has `list_shopping_lists`. `full` adds `get_shopping_list`, `create_shopping_list`, `update_shopping_list`, `delete_shopping_list`, and the three delete previews. Lists belong to the space, so every member sees the same lists. A name has 1 to 32 characters, and a color is `#rrggbb` or `null`. If a list with the same name already exists (case-insensitive), `create_shopping_list` returns that list and does not change its description or color. `update_shopping_list` refuses a new name that another list already has (ignoring case and surrounding spaces), because Tandoor would accept it and then answer every `create_shopping_list` with that name with a 500, and always allows renaming a list to its own name. Deleting a list removes only its links; the foods, entries, and supermarkets that used it stay.
 - **Shopping list fields.** `create_food`, `update_food`, `create_shopping_entry`, and `update_shopping_entry` take `shopping_list_ids`. The ids replace the current lists, `[]` clears them, and leaving the field out keeps them. For `create_shopping_entry`, `[]` also clears the lists Tandoor copies from the food. `create_food` creates the food first and then sets its lists, because Tandoor 2.6 answers a food POST with lists with a 500. If setting the lists fails, the error gives the new food's id. If a food with the same name already exists (case-insensitive), Tandoor returns it instead of creating one, so `create_food` with `shopping_list_ids` (including `[]`) refuses, also when Tandoor's reply shows a food whose plural name matches, and points to `update_food`. `bulk_create_shopping_list_recipe_entries` takes optional `shopping_list_ids`; without them each new entry gets its food's lists, and an empty `shopping_list_ids` is rejected. `food_batch_update` takes `shopping_lists_add`, `shopping_lists_remove`, `shopping_lists_set`, and `shopping_lists_remove_all`. Every tool that takes list ids checks them against the space's lists first, and rejects unknown or repeated ids, naming them, before it writes anything. After the write, these four tools check that Tandoor's reply has exactly the requested lists and name any missing or extra ones. A create that fails after the POST says not to retry and names the update tool and the new id. Tandoor itself drops unknown ids silently from a PATCH, and writes ids from other spaces in bulk calls. Slim food and shopping entry output shows `shopping_lists` as `{id, name}`.
 - **`bulk_update_shopping_entries`** in the `shopping` section's `simple` tier. It takes `ids`, an optional `checked`, and the same four list fields as `food_batch_update`. `shopping_lists_add` and `shopping_lists_remove` can be combined. `shopping_lists_set` and `shopping_lists_remove_all` must be used alone, and `shopping_lists_set: []` is rejected, because Tandoor would ignore it. In both tools, an id may not repeat within a field or appear in both `shopping_lists_add` and `shopping_lists_remove`, and empty arrays and `*_remove_all: false` count as no change and are not sent. `food_batch_update` rejects a call with no field change and no list change ("Give a field to change, a list change, or both."). List changes do not update the entries' `updated_at`. `bulk_check_shopping_entries` is unchanged.
+- **`update_food` sets and removes food property values (#15).** `properties` sets one amount per property type and updates an existing row in place; `remove_property_type_ids` deletes rows by type. `properties_food_unit_id: null` clears the unit. Deleting a row removes it from every food or recipe that shares it, and if a delete fails, the tool returns an error naming the failed rows.
 
 ### Fixed
 - **`update_user_space` returned a 500 on Tandoor 2.6.15 when `groups` was omitted.** Tandoor requires `groups` in every PATCH. The tool now reads the membership and sends its current group ids, so `active` and `internal_note` can be set alone. When `groups` is given, the tool checks each id against `list_groups`, rejects unknown ids and lists them. Tandoor silently drops unknown ids, and answers a list of only unknown ids with 'You must select at least one group.'
@@ -42,10 +43,20 @@ All notable changes to this project are documented in this file.
 - **`move_food` and `merge_food` returned empty food fields.** Tandoor answers both with a `{msg}` reply, not a food. The tools now return that reply as is.
 - **`bulk_create_shopping_list_recipe_entries` returned a 500 on Tandoor 2.6 after saving the entries.** Tandoor requires `shopping_lists_ids`. The tool now always sends it.
 - **HTTP startup crashed when the port was taken.** It now prints "port N is already in use (TANDOOR_MCP_HTTP_PORT)." and exits 1.
+- **The HTTP transport answered only the first request (#12).** It now builds a fresh server and stateless transport for each request. Non-POST methods on the MCP path get a 405 with `Allow: POST` and a JSON-RPC error body.
+- **Nested foreign keys are sent as bare integer ids (#13)** for foods, units, property types, categories, recipe books, sync, steps, ingredients, shopping entries, and unit conversions. Tandoor rejected the `{id}` objects.
+- **POST requests are no longer retried on a 5xx.** Tandoor may already have applied them, so a retry could create duplicates. GET, PUT, and DELETE still retry.
+- **Meal types (Tandoor 2.6).** The removed `default` field is gone; `time` takes HH:MM or HH:MM:SS and comes back as HH:MM:SS.
+- **User preferences (Tandoor 2.6).** `plan_share_user_ids` and `shopping_share_user_ids` are removed; `default_meal_type_id` and `shopping_update_food_lists` are added.
+- **`export_recipes` with `custom_filter` returned a 500 on Tandoor 2.6.15.** The tool now sends the filter as `{id, name}` and accepts `custom_filter` alone; it rejects `custom_filter` together with `recipes`.
+- **`auto_meal_plan` keywords were ignored on Tandoor 2.6.** `keyword_ids` is now sent as `keywords`, is optional, and dates must be real `YYYY-MM-DD` calendar dates.
+- **Recipe imports (Tandoor 2.6).** `space`, `file_uid`, and `file_path` are no longer sent, slim output shows `storage` as its id, and `import_all_pending` returns Tandoor's reply as is.
+- **`parse_ingredient` failed on Tandoor 2.6, which removed `/api/ingredient-from-string/`.** It now uses `/api/ingredient-parser/post/` and also returns `food_id` and `unit_id`.
 
 ### Notes
 - **`PUT /api/user-space/batch_update/` is not exposed.** On Tandoor 2.6.15 it returns success for user-space and household ids that do not exist. It also replaces groups in steps that are not atomic, so an unknown group id can leave a user with no groups. `assign_household` uses one PATCH per user-space instead.
 - **`reset_food_inheritance` is withheld.** Tandoor 2.6.15's endpoint resets food inheritance in every space on the server.
+- The project now uses oxlint (`npm run lint`), and CI runs it.
 
 ### Thanks
 - n1coh for PRs #14 and #15: the bare-id foreign key fix for #13, and food property values on `update_food`. This release reimplements both, with n1coh as co-author.
