@@ -15,17 +15,47 @@ afterEach(async () => {
 });
 
 describe('requestText', () => {
-  it('sends a POST that gets a 503 exactly once', async () => {
+  it.each([502, 503, 504])('sends a POST that gets a %i exactly once', async (status) => {
     let hits = 0;
     stub = await startStub((_req, res) => {
       hits++;
-      res.writeHead(503);
+      res.writeHead(status);
       res.end();
     });
 
     const client = new TextClient({ url: stub.url, token: 'tok-test' });
-    await expect(client.text('/api/thing/', { method: 'POST', body: '{}' })).rejects.toThrow('Tandoor API error: 503');
+    await expect(client.text('/api/thing/', { method: 'POST', body: '{}' })).rejects.toThrow(`Tandoor API error: ${status}`);
     expect(hits).toBe(1);
+  });
+
+  it('replays a GET after a 503 and returns the recovered body', async () => {
+    let hits = 0;
+    stub = await startStub((_req, res) => {
+      hits++;
+      if (hits === 1) {
+        res.writeHead(503, { 'Retry-After': '0' });
+        res.end();
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'text/calendar' });
+      res.end('BEGIN:VCALENDAR');
+    });
+
+    const client = new TextClient({ url: stub.url, token: 'tok-test' });
+    await expect(client.text('/api/meal-plan/ical/')).resolves.toBe('BEGIN:VCALENDAR');
+    expect(hits).toBe(2);
+  });
+
+  it('puts a non-JSON error body in the error as raw text', async () => {
+    stub = await startStub((_req, res) => {
+      res.writeHead(500, { 'Content-Type': 'text/html' });
+      res.end('<html><body>Internal Server Error</body></html>');
+    });
+
+    const client = new TextClient({ url: stub.url, token: 'tok-test' });
+    await expect(client.text('/api/meal-plan/ical/')).rejects.toThrow(
+      'Tandoor API error: 500 Internal Server Error\n<html><body>Internal Server Error</body></html>\n\nServer error.'
+    );
   });
 
   it('puts the body detail and the 500 guidance in the error', async () => {
