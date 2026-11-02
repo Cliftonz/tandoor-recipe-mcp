@@ -74,7 +74,7 @@ jobs:
       # operators can dig deeper than the truncated step output (Observability F12).
       - name: Upload diagnostic artifacts on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tandoor-bootstrap-diag-${{ github.run_id }}
           # Paths sourced from bootstrap script's $GITHUB_ENV writes — keeps

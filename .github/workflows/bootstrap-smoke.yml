@@ -78,7 +78,7 @@ jobs:
       # cannot silently null-route the upload.
       - name: Upload diagnostic artifacts on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bootstrap-smoke-diag-${{ github.run_id }}
           path: |
