@@ -355,4 +355,34 @@ export class BaseClient {
     }
     throw lastError instanceof Error ? lastError : new Error('Unknown request failure');
   }
+
+  protected async requestStream(endpoint: string, options: TandoorRequestOptions = {}): Promise<Response> {
+    const method = options.method || 'GET';
+    const url = `${this.baseUrl}${endpoint}`;
+    const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
+    const headers = { 'Authorization': `Bearer ${this.token}` };
+    for (let attempt = 0; ; attempt++) {
+      logRequest(method, url);
+      let response: Response;
+      try {
+        response = await fetch(url, { ...options, headers });
+      } catch (error) {
+        logError(method, url, error);
+        if (!(error instanceof TypeError) || attempt >= maxRetries) throw error;
+        await sleep(backoffMs(attempt, null));
+        continue;
+      }
+      const isPost5xx = method === 'POST' && response.status >= 500;
+      if (shouldRetry(response.status) && attempt < maxRetries && !isPost5xx) {
+        await sleep(backoffMs(attempt, response.headers.get('retry-after')));
+        continue;
+      }
+      if (!response.ok) {
+        logResponse(method, url, response.status, redactToken(await response.text(), this.token));
+        throw new Error(redactToken(`Tandoor API error: ${response.status} ${response.statusText}`, this.token));
+      }
+      logResponse(method, url, response.status, '');
+      return response;
+    }
+  }
 }
