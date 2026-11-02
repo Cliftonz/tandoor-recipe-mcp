@@ -161,7 +161,7 @@ To check your instance version from an LLM session:
 > Returns: { mcp: "3.0.0", protocol: "...", tandoor: "2.6.15" }
 ```
 
-The server also probes `/api/version/` at boot and writes a WARNING to stderr if the connected instance is older than 2.6.0.
+The server also probes `/api/server-settings/current/` at boot and writes a WARNING to stderr if the connected instance is older than 2.6.0.
 
 ## Migration from 2.x
 

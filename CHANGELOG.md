@@ -14,6 +14,7 @@ All notable changes to this project are documented in this file.
 - **`create_access_token` and `update_access_token` accept `expires` only as a UTC ISO 8601 datetime with seconds and a `Z` suffix**, such as `2026-12-01T10:00:00Z`.
 - **`import_all_pending` no longer accepts `format`.** Tandoor ignored it.
 - **Minimum Tandoor version is 2.6.0.** The tools target the Tandoor 2.6.15 OpenAPI spec.
+- **User preferences no longer take `plan_share_user_ids` or `shopping_share_user_ids`.** Tandoor 2.6 removed both fields.
 
 ### Migration
 - `TANDOOR_MCP_PROFILE=full`: set every tiered section to `full` and every toggle section to `on`.
@@ -44,10 +45,10 @@ All notable changes to this project are documented in this file.
 - **`bulk_create_shopping_list_recipe_entries` returned a 500 on Tandoor 2.6 after saving the entries.** Tandoor requires `shopping_lists_ids`. The tool now always sends it.
 - **HTTP startup crashed when the port was taken.** It now prints "port N is already in use (TANDOOR_MCP_HTTP_PORT)." and exits 1.
 - **The HTTP transport answered only the first request (#12).** It now builds a fresh server and stateless transport for each request. Non-POST methods on the MCP path get a 405 with `Allow: POST` and a JSON-RPC error body.
-- **Nested foreign keys are sent as bare integer ids (#13)** for foods, units, property types, categories, recipe books, sync, steps, ingredients, shopping entries, and unit conversions. Tandoor rejected the `{id}` objects.
+- **Nested foreign keys are sent as bare integer ids (#13)** for food, ingredient, step, shopping entry, property, recipe properties, category relation, unit conversion, recipe book, and sync. Tandoor rejected the `{id}` objects.
 - **POST requests are no longer retried on a 5xx.** Tandoor may already have applied them, so a retry could create duplicates. GET, PUT, and DELETE still retry.
 - **Meal types (Tandoor 2.6).** The removed `default` field is gone; `time` takes HH:MM or HH:MM:SS and comes back as HH:MM:SS.
-- **User preferences (Tandoor 2.6).** `plan_share_user_ids` and `shopping_share_user_ids` are removed; `default_meal_type_id` and `shopping_update_food_lists` are added.
+- **User preferences (Tandoor 2.6).** `default_meal_type_id` and `shopping_update_food_lists` are added.
 - **`export_recipes` with `custom_filter` returned a 500 on Tandoor 2.6.15.** The tool now sends the filter as `{id, name}` and accepts `custom_filter` alone; it rejects `custom_filter` together with `recipes`.
 - **`auto_meal_plan` keywords were ignored on Tandoor 2.6.** `keyword_ids` is now sent as `keywords`, is optional, and dates must be real `YYYY-MM-DD` calendar dates.
 - **Recipe imports (Tandoor 2.6).** `space`, `file_uid`, and `file_path` are no longer sent, slim output shows `storage` as its id, and `import_all_pending` returns Tandoor's reply as is.
