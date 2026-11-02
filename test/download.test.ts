@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs/promises';
-import { chmod, mkdtemp, readdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -67,7 +67,6 @@ afterEach(async () => {
     if (envBefore[k] === undefined) delete process.env[k];
     else process.env[k] = envBefore[k];
   }
-  await chmod(root, 0o700);
   await rm(root, { recursive: true, force: true });
 });
 
@@ -334,7 +333,11 @@ describe('deliverFile save', () => {
   });
 
   it('returns isError and cancels when the part file cannot be opened', async () => {
-    await chmod(root, 0o500);
+    const open = fs.open.bind(fs);
+    vi.spyOn(fs, 'open').mockImplementation(async (...args: Parameters<typeof fs.open>) => {
+      if (String(args[0]).endsWith('.part')) throw Object.assign(new Error('EACCES: injected'), { code: 'EACCES' });
+      return open(...args);
+    });
     const { stream, state } = endlessSource();
     const result = await deliverFile(file(stream, { save: true }));
     expect(result.isError).toBe(true);
