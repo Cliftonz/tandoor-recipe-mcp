@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented in this file.
 
+## 3.1.0 / 2026-11-02
+
+### Migration
+- Calls to `get_recipe_file_metadata`: use `download_recipe_file` instead. See Fixed.
+
+### Added
+- **`download_recipe_file({recipe_id, save?})`** in the `recipes` section's `full` tier. It returns the file Tandoor stored for a recipe synced from a Storage backend (Dropbox, Nextcloud, or Local).
+- **`download_file({file_id, save?})`** in the `admin` section. It returns a user file uploaded to Tandoor. Tandoor sends the file inside a zip, and the tool unpacks it.
+- **Inline delivery up to 5 MiB.** Both tools return a text block with `{filename, mime, size}`, then the file. Images (PNG, JPEG, GIF, and WebP) come back as an MCP image block. Other files come back as an embedded resource block. A larger file returns an error that gives its size and says to retry with `save: true`.
+- **`save: true` and `TANDOOR_MCP_DOWNLOAD_ROOT`.** With `save: true`, the tool streams the file into the folder that `TANDOOR_MCP_DOWNLOAD_ROOT` names and returns `{path, size, mime}`. The folder must already exist; `~` expands to your home folder. Saving works over stdio only, because over HTTP the folder is on the server machine. The tool cleans the filename of characters that are unsafe on Windows, macOS, or Linux. If a file with that name exists, the tool adds ` (2)`, ` (3)`, and so on, so it never overwrites a file.
+
+### Fixed
+- **`get_recipe_file_metadata` failed on every call since 1.5.0.** The endpoint returns the file itself, not metadata. The tool is removed, and `download_recipe_file` replaces it.
+- **`get_external_recipe_file_link` failed on every call since 1.5.0.** Tandoor answers with a plain-text link, not JSON. The tool now reads the text, trims it, and returns an error when the link is empty. It is now marked as a write (`readOnlyHint: false`), because the first call for a recipe can create a public share link on Nextcloud or Dropbox.
+- **Text requests match JSON requests.** The client's text request path, used by `export_meal_plan_ical` and `get_external_recipe_file_link`, no longer retries a POST after a 5xx. Its errors now carry Tandoor's detail and the same guidance as other requests.
+
+### Notes
+- Downloads refuse HTTP redirects.
+- 307 tools in total (was 306). The default settings still show 46 at startup.
+- Closes [#10](https://github.com/Cliftonz/tandoor-recipe-mcp/issues/10).
+
 ## 3.0.0 / 2026-11-02
 
 ### Breaking changes
