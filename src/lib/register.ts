@@ -26,12 +26,12 @@ import { summarize } from './schema-summary.js';
 // stash handle namespace would leak between them. When TANDOOR_MCP_TRANSPORT
 // is `http`, bypass stashing unconditionally so each response is delivered
 // inline to its originating request.
-function transportBypassesStash(): boolean {
+export function isHttpTransport(): boolean {
   return (process.env.TANDOOR_MCP_TRANSPORT || '').toLowerCase() === 'http';
 }
 
 export function shouldStash(structured: unknown, sizeBytes: number, cfg: StashConfig): boolean {
-  if (transportBypassesStash()) return false;
+  if (isHttpTransport()) return false;
   return baseShouldStash(structured, sizeBytes, cfg);
 }
 
@@ -124,7 +124,7 @@ export type StringHandler<S extends ZodRawShape> = (
   client: TandoorClient,
   args: InferShape<S>,
   ctx?: HandlerContext
-) => Promise<string>;
+) => Promise<string | CallToolResult>;
 
 interface ExtractedJson {
   structured: unknown;
@@ -231,8 +231,9 @@ export function registerStringTool<S extends ZodRawShape>(
     // present in logs even for harnesses that don't set one.
     const reqId = extra?.requestId !== undefined ? String(extra.requestId) : shortReqId();
     try {
-      const text = await handler(client, args, { signal, reqId });
-      const extracted = tryExtractStructured(text);
+      const result = await handler(client, args, { signal, reqId });
+      if (typeof result !== 'string') return result;
+      const extracted = tryExtractStructured(result);
       const stashCfg = getStashConfig();
 
       // Stash gate: if the payload is structured (parseable JSON) and big,
@@ -285,13 +286,12 @@ export function registerStringTool<S extends ZodRawShape>(
         _loggedArraySkips.add(name);
         console.error(`[tandoor-mcp] structuredContent downgraded for '${name}': top-level array (req=${reqId})`);
       }
-      const result: CallToolResult = extracted && isJsonObject(extracted.structured)
+      return extracted && isJsonObject(extracted.structured)
         ? {
-            content: [{ type: 'text', text }],
+            content: [{ type: 'text', text: result }],
             structuredContent: extracted.structured,
           }
-        : { content: [{ type: 'text', text }] };
-      return result;
+        : { content: [{ type: 'text', text: result }] };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       // Distinguish security-guard rejections so an operator can grep

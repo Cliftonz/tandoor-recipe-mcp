@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { isHttpTransport, registerStringTool } from '../lib/register.js';
 import { ALWAYS_ON_GROUP, ALWAYS_ON_TOOLS, SECTIONS, SECTIONS_WITH_TOOLS, SECTION_ENV_VARS, modesOf, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
 
 interface RegisteredToolEntry {
@@ -63,10 +63,6 @@ function widen(section: Section, current: SectionMode, tier: 'simple' | 'full' |
 
 const HTTP_GATING_DISABLED_MSG =
   `Dynamic tool gating is disabled in HTTP transport mode. Set the section settings (${SECTION_ENV_VARS}) to lock the surface at boot.`;
-
-function isHttpMode(): boolean {
-  return (process.env.TANDOOR_MCP_TRANSPORT || '').toLowerCase() === 'http';
-}
 
 const listToolGroupsShape = {} as const;
 
@@ -146,7 +142,7 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
       inputSchema: enableToolGroupShape,
     },
     async (_client, args) => {
-      if (isHttpMode()) throw new Error(HTTP_GATING_DISABLED_MSG);
+      if (isHttpTransport()) throw new Error(HTTP_GATING_DISABLED_MSG);
       if (args.group === ALWAYS_ON_GROUP) return JSON.stringify({ ok: true, group: ALWAYS_ON_GROUP, mode: 'on', enabled: [] });
       const section = findSection(args.group);
       const mode = widen(section, modes.get(section.name)!, args.tier);
@@ -170,7 +166,7 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
       inputSchema: disableToolGroupShape,
     },
     async (_client, args) => {
-      if (isHttpMode()) throw new Error(HTTP_GATING_DISABLED_MSG);
+      if (isHttpTransport()) throw new Error(HTTP_GATING_DISABLED_MSG);
       if (args.group === ALWAYS_ON_GROUP) throw new Error(`cannot disable the '${ALWAYS_ON_GROUP}' section; its tools are always on.`);
       const section = findSection(args.group);
       modes.set(section.name, 'off');
