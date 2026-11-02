@@ -123,6 +123,21 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function statusGuidance(status: number): string {
+  if (status === 401) return '\n\nAuthentication failed. Please check your TANDOOR_TOKEN is valid.';
+  if (status === 403) return '\n\nAccess forbidden. Your API token may not have the required permissions.';
+  if (status === 404) return '\n\nResource not found. Please check the ID or URL is correct.';
+  if (status === 500) return '\n\nServer error. Please check your Tandoor instance logs for details.';
+  return '';
+}
+
+function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((r) => {
+    const timer = setTimeout(r, ms);
+    signal?.addEventListener('abort', () => { clearTimeout(timer); r(); }, { once: true });
+  });
+}
+
 /**
  * Back off with jitter. Honors the Retry-After header when Tandoor / reverse
  * proxies send one (common for 429).
@@ -230,16 +245,7 @@ export class BaseClient {
             }
           }
 
-          // Friendly guidance for common errors.
-          if (response.status === 401) {
-            errorMessage += '\n\nAuthentication failed. Please check your TANDOOR_TOKEN is valid.';
-          } else if (response.status === 403) {
-            errorMessage += '\n\nAccess forbidden. Your API token may not have the required permissions.';
-          } else if (response.status === 404) {
-            errorMessage += '\n\nResource not found. Please check the ID or URL is correct.';
-          } else if (response.status === 500) {
-            errorMessage += '\n\nServer error. Please check your Tandoor instance logs for details.';
-          }
+          errorMessage += statusGuidance(response.status);
 
           throw new Error(redactToken(errorMessage, this.token));
         }
@@ -354,5 +360,47 @@ export class BaseClient {
       }
     }
     throw lastError instanceof Error ? lastError : new Error('Unknown request failure');
+  }
+
+  protected async requestStream(endpoint: string, opts: { signal?: AbortSignal } = {}): Promise<Response> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const signal = opts.signal;
+    const headers = { 'Authorization': `Bearer ${this.token}` };
+    for (let attempt = 0; ; attempt++) {
+      signal?.throwIfAborted();
+      logRequest('GET', url);
+      let response: Response;
+      try {
+        response = await fetch(url, { headers, signal, redirect: 'manual' });
+      } catch (error) {
+        logError('GET', url, error);
+        if (signal?.aborted || (error as { name?: string }).name === 'AbortError') throw error;
+        const isNetwork = error instanceof TypeError || (error as { name?: string }).name === 'FetchError';
+        if (isNetwork && attempt < DEFAULT_MAX_RETRIES) {
+          await abortableSleep(backoffMs(attempt, null), signal);
+          continue;
+        }
+        throw new Error(
+          redactToken(
+            `Failed to connect to Tandoor: ${(error as Error).message}\nPlease check TANDOOR_URL is correct and the server is accessible.`,
+            this.token
+          )
+        );
+      }
+      if (response.status >= 300 && response.status < 400) {
+        throw new Error('Tandoor redirected a file download; refusing to follow it.');
+      }
+      if (shouldRetry(response.status) && attempt < DEFAULT_MAX_RETRIES) {
+        await response.body?.cancel();
+        await abortableSleep(backoffMs(attempt, response.headers.get('retry-after')), signal);
+        continue;
+      }
+      if (!response.ok) {
+        logResponse('GET', url, response.status, redactToken(await response.text(), this.token));
+        throw new Error(redactToken(`Tandoor API error: ${response.status} ${response.statusText}${statusGuidance(response.status)}`, this.token));
+      }
+      logResponse('GET', url, response.status, '');
+      return response;
+    }
   }
 }
