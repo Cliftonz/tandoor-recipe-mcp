@@ -123,6 +123,13 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((r) => {
+    const timer = setTimeout(r, ms);
+    signal?.addEventListener('abort', () => { clearTimeout(timer); r(); }, { once: true });
+  });
+}
+
 /**
  * Back off with jitter. Honors the Retry-After header when Tandoor / reverse
  * proxies send one (common for 429).
@@ -356,32 +363,44 @@ export class BaseClient {
     throw lastError instanceof Error ? lastError : new Error('Unknown request failure');
   }
 
-  protected async requestStream(endpoint: string, options: TandoorRequestOptions = {}): Promise<Response> {
-    const method = options.method || 'GET';
+  protected async requestStream(endpoint: string, opts: { signal?: AbortSignal } = {}): Promise<Response> {
     const url = `${this.baseUrl}${endpoint}`;
-    const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
+    const signal = opts.signal;
     const headers = { 'Authorization': `Bearer ${this.token}` };
     for (let attempt = 0; ; attempt++) {
-      logRequest(method, url);
+      signal?.throwIfAborted();
+      logRequest('GET', url);
       let response: Response;
       try {
-        response = await fetch(url, { ...options, headers });
+        response = await fetch(url, { headers, signal, redirect: 'error' });
       } catch (error) {
-        logError(method, url, error);
-        if (!(error instanceof TypeError) || attempt >= maxRetries) throw error;
-        await sleep(backoffMs(attempt, null));
-        continue;
+        logError('GET', url, error);
+        if (signal?.aborted || (error as { name?: string }).name === 'AbortError') throw error;
+        if ((error as { cause?: { message?: string } }).cause?.message === 'unexpected redirect') {
+          throw new Error('Tandoor redirected a file download; refusing to follow it.');
+        }
+        const isNetwork = error instanceof TypeError || (error as { name?: string }).name === 'FetchError';
+        if (isNetwork && attempt < DEFAULT_MAX_RETRIES) {
+          await abortableSleep(backoffMs(attempt, null), signal);
+          continue;
+        }
+        throw new Error(
+          redactToken(
+            `Failed to connect to Tandoor: ${(error as Error).message}\nPlease check TANDOOR_URL is correct and the server is accessible.`,
+            this.token
+          )
+        );
       }
-      const isPost5xx = method === 'POST' && response.status >= 500;
-      if (shouldRetry(response.status) && attempt < maxRetries && !isPost5xx) {
-        await sleep(backoffMs(attempt, response.headers.get('retry-after')));
+      if (shouldRetry(response.status) && attempt < DEFAULT_MAX_RETRIES) {
+        await response.body?.cancel();
+        await abortableSleep(backoffMs(attempt, response.headers.get('retry-after')), signal);
         continue;
       }
       if (!response.ok) {
-        logResponse(method, url, response.status, redactToken(await response.text(), this.token));
+        logResponse('GET', url, response.status, redactToken(await response.text(), this.token));
         throw new Error(redactToken(`Tandoor API error: ${response.status} ${response.statusText}`, this.token));
       }
-      logResponse(method, url, response.status, '');
+      logResponse('GET', url, response.status, '');
       return response;
     }
   }

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest
 import type { BaseClient as BaseClientType } from '../src/clients/base.js';
 import { startStub, type Stub } from './helpers/stub-http.js';
 
-type StreamClient = BaseClientType & { stream(endpoint: string, options?: RequestInit): Promise<Response> };
+type StreamClient = BaseClientType & { stream(endpoint: string, opts?: { signal?: AbortSignal }): Promise<Response> };
 
 let makeClient: (url: string, token?: string) => StreamClient;
 let stub: Stub;
@@ -12,8 +12,8 @@ beforeAll(async () => {
   vi.resetModules();
   const { BaseClient } = await import('../src/clients/base.js');
   class TestClient extends BaseClient {
-    stream(endpoint: string, options: RequestInit = {}): Promise<Response> {
-      return (this as any).requestStream(endpoint, options);
+    stream(endpoint: string, opts?: { signal?: AbortSignal }): Promise<Response> {
+      return (this as any).requestStream(endpoint, opts);
     }
   }
   makeClient = (url, token = 't') => new TestClient({ url, token });
@@ -25,6 +25,7 @@ afterAll(() => {
 });
 
 afterEach(async () => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   await stub?.close();
 });
@@ -32,7 +33,11 @@ afterEach(async () => {
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0xff, 0x0d, 0x0a]);
 
 async function bytesOf(response: Response): Promise<Buffer> {
-  return Buffer.from(await new Response(response.body).arrayBuffer());
+  return Buffer.from(await response.arrayBuffer());
+}
+
+function stderrOf(spy: { mock: { calls: unknown[][] } }): string {
+  return spy.mock.calls.map((c) => String(c[0])).join('\n');
 }
 
 describe('requestStream', () => {
@@ -92,16 +97,53 @@ describe('requestStream', () => {
     expect(received).toEqual(['GET', 'GET']);
   });
 
-  it('sends a POST that gets a 503 exactly once', async () => {
-    const received: string[] = [];
-    stub = await startStub((req, res) => {
-      received.push(req.method!);
+  it('rejects after DEFAULT_MAX_RETRIES + 1 attempts when every response is a 503', async () => {
+    let hits = 0;
+    stub = await startStub((_req, res) => {
+      hits++;
       res.writeHead(503, { 'Retry-After': '0' });
       res.end();
     });
 
-    await expect(makeClient(stub.url).stream('/api/export/', { method: 'POST' })).rejects.toThrow('Tandoor API error: 503');
-    expect(received).toEqual(['POST']);
+    await expect(makeClient(stub.url).stream('/media/pic.png')).rejects.toThrow('Tandoor API error: 503');
+    expect(hits).toBe(4);
+  });
+
+  it('cancels the body of a retried response before the next attempt', async () => {
+    let hits = 0;
+    let firstClosedBeforeRetry = false;
+    let firstResponse: { end(): void } | undefined;
+    let firstClosed = false;
+    stub = await startStub((_req, res) => {
+      hits++;
+      if (hits === 1) {
+        firstResponse = res;
+        res.on('close', () => { firstClosed = true; });
+        res.writeHead(503, { 'Retry-After': '0' });
+        res.write('partial');
+        return;
+      }
+      firstClosedBeforeRetry = firstClosed;
+      res.end(PNG);
+    });
+
+    const response = await makeClient(stub.url).stream('/media/pic.png');
+    firstResponse!.end();
+
+    expect(await bytesOf(response)).toEqual(PNG);
+    expect(firstClosedBeforeRetry).toBe(true);
+  });
+
+  it('rejects with a 3xx as a refused redirect without following it', async () => {
+    const paths: string[] = [];
+    stub = await startStub((req, res) => {
+      paths.push(req.url!);
+      res.writeHead(302, { Location: '/elsewhere' });
+      res.end();
+    });
+
+    await expect(makeClient(stub.url).stream('/media/pic.png')).rejects.toThrow('Tandoor redirected a file download');
+    expect(paths).toEqual(['/media/pic.png']);
   });
 
   it('retries after a dropped connection', async () => {
@@ -120,8 +162,21 @@ describe('requestStream', () => {
 
     expect(await bytesOf(response)).toEqual(PNG);
     expect(hits).toBe(2);
-    expect(errSpy.mock.calls.map((c) => String(c[0])).join('\n')).toContain(`✗ GET ${stub.url}/media/pic.png fetch failed`);
+    expect(stderrOf(errSpy)).toContain(`✗ GET ${stub.url}/media/pic.png fetch failed`);
   });
+
+  it('wraps a connection failure after DEFAULT_MAX_RETRIES + 1 dropped attempts', async () => {
+    let hits = 0;
+    stub = await startStub((req) => {
+      hits++;
+      req.socket.destroy();
+    });
+
+    const call = makeClient(stub.url, 'tok-secret').stream('/media/pic.png');
+
+    await expect(call).rejects.toThrow('Failed to connect to Tandoor: fetch failed\nPlease check TANDOOR_URL is correct and the server is accessible.');
+    expect(hits).toBe(4);
+  }, 10_000);
 
   it('rejects without contacting Tandoor when the signal is already aborted', async () => {
     let hits = 0;
@@ -132,8 +187,27 @@ describe('requestStream', () => {
     const ac = new AbortController();
     ac.abort();
 
-    await expect(makeClient(stub.url).stream('/media/pic.png', { signal: ac.signal })).rejects.toThrow();
+    await expect(makeClient(stub.url).stream('/media/pic.png', { signal: ac.signal })).rejects.toBe(ac.signal.reason);
     expect(hits).toBe(0);
+  });
+
+  it('rejects promptly when aborted during a retry backoff', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    let hits = 0;
+    stub = await startStub((_req, res) => {
+      hits++;
+      res.writeHead(503, { 'Retry-After': '30' });
+      res.end();
+    });
+    const ac = new AbortController();
+
+    const call = makeClient(stub.url).stream('/media/pic.png', { signal: ac.signal });
+    const settled = call.catch((e: unknown) => e);
+    await vi.waitFor(() => expect(vi.getTimerCount()).toBeGreaterThan(0));
+    ac.abort();
+
+    expect(await settled).toBe(ac.signal.reason);
+    expect(hits).toBe(1);
   });
 
   it('logs the request and error response with the token redacted', async () => {
@@ -145,7 +219,7 @@ describe('requestStream', () => {
 
     await expect(makeClient(stub.url, 'tok-secret').stream('/media/pic.png')).rejects.toThrow('Tandoor API error: 500');
 
-    const stderr = errSpy.mock.calls.map((c) => String(c[0])).join('\n');
+    const stderr = stderrOf(errSpy);
     expect(stderr).toContain(`→ GET ${stub.url}/media/pic.png`);
     expect(stderr).toContain(`← GET ${stub.url}/media/pic.png 500 boom ***REDACTED***`);
     expect(stderr).not.toContain('tok-secret');
