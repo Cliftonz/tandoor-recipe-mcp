@@ -31,7 +31,8 @@ function zipOf(name: string, data: Uint8Array, method = 0): Uint8Array {
 interface Reply {
   status: number;
   body: Uint8Array;
-  filename: string;
+  filename?: string;
+  disposition?: string;
 }
 
 describe('download_file over MCP', () => {
@@ -49,7 +50,8 @@ describe('download_file over MCP', () => {
       requestedPath = req.url;
       authorization = req.headers.authorization;
       res.statusCode = reply.status;
-      res.setHeader('content-disposition', `attachment; filename="${reply.filename}"`);
+      const disposition = 'disposition' in reply ? reply.disposition : `attachment; filename="${reply.filename}"`;
+      if (disposition !== undefined) res.setHeader('content-disposition', disposition);
       res.end(reply.body);
     });
     server = new McpServer({ name: 'test', version: 'test' });
@@ -118,6 +120,20 @@ describe('download_file over MCP', () => {
     reply = { status: 200, body: zipOf('files/1/9f2c_photo.jpg', JPEG), filename: '.zip' };
     const r = await call({ file_id: 7, save: true });
     expect(JSON.parse(r.content[0].text).path).toBe(path.join(root, 'file-7.jpg'));
+  });
+
+  it('decodes an RFC 2047 encoded Content-Disposition name', async () => {
+    reply = { status: 200, body: zipOf('files/1/9f2c_photo.jpg', JPEG), disposition: '=?utf-8?b?YXR0YWNobWVudDsgZmlsZW5hbWU9Ium4oeaxpC56aXAi?=' };
+    const r = await call({ file_id: 7 });
+    expect(JSON.parse(r.content[0].text).filename).toBe('鸡汤.jpg');
+  });
+
+  it('names the file file-<id> and still delivers it when Content-Disposition is missing', async () => {
+    reply = { status: 200, body: zipOf('files/1/9f2c_photo.jpg', JPEG), disposition: undefined };
+    const r = await call({ file_id: 7 });
+    expect(r.isError).toBeFalsy();
+    expect(JSON.parse(r.content[0].text).filename).toBe('file-7.jpg');
+    expect(r.content[1]).toEqual({ type: 'image', mimeType: 'image/jpeg', data: Buffer.from(JPEG).toString('base64') });
   });
 
   it('reports the entry byte count when the file is over the inline cap', async () => {

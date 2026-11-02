@@ -6,6 +6,7 @@ import { readSafeUpload } from '../lib/path-guard.js';
 import { safeFetchBytes } from '../lib/safe-fetch.js';
 import { guessMimeFromExt } from '../lib/mime.js';
 import { deliverFile } from '../lib/download.js';
+import { dispositionFilename } from '../lib/content-disposition.js';
 import { openStoredZip } from '../lib/stored-zip.js';
 import type { HandlerContext } from '../lib/register.js';
 
@@ -250,7 +251,7 @@ export async function handleDownloadFile(
     };
   }
   const idStem = `file-${args.file_id}`;
-  const tandoorName = /filename="(.*)"/.exec(response.headers.get('content-disposition')!)![1].replace(/\.zip$/, '') || idStem;
+  const tandoorName = dispositionFilename(response.headers.get('content-disposition')).replace(/\.zip$/i, '') || idStem;
   const entry = await openStoredZip(response.body!);
   const ext = path.posix.extname(entry.name);
   return deliverFile({
