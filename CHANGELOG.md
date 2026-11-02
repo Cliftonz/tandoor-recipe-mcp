@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased (3.0.0)
+## 3.0.0 / 2026-11-01
 
 ### Breaking changes
 - **`TANDOOR_MCP_PROFILE` is removed.** The server ignores it and writes one stderr warning when it has a value. The per-section settings below replace it.
@@ -11,6 +11,9 @@ All notable changes to this project are documented in this file.
 - **Default startup tools change.** The old `core` profile started with about 23 tools, mostly reads. The new defaults start with 46 tools, including create, update, and delete tools from the simple tiers, such as `create_recipe`, `delete_meal_plan`, and `delete_shopping_entry`.
 - **Claude Code plugin default changes.** The plugin used to default to `full` (every tool). It now starts with the section defaults.
 - **`tandoor://pantry/on-hand` output changed, with no alias for the old shape.** The `count` and `results` keys are removed, and the food items no longer carry `plural_name`. It now returns `{locations, on_hand_no_quantity, counts, truncated}`. `locations` holds inventory entries with an amount above 0, grouped by location. `on_hand_no_quantity` holds foods flagged on hand that have no entry, as `{id, name, supermarket_category}`. `counts` and `truncated` each have an `entries` key and an `on_hand_no_quantity` key.
+- **`create_access_token` and `update_access_token` accept `expires` only as a UTC ISO 8601 datetime with seconds and a `Z` suffix**, such as `2026-12-01T10:00:00Z`.
+- **`import_all_pending` no longer accepts `format`.** Tandoor ignored it.
+- **Minimum Tandoor version is 2.6.0.** The tools target the Tandoor 2.6.15 OpenAPI spec.
 
 ### Migration
 - `TANDOOR_MCP_PROFILE=full`: set every tiered section to `full` and every toggle section to `on`.
@@ -38,9 +41,15 @@ All notable changes to this project are documented in this file.
 - **`update_shopping_entry` cleared `completed_at` when `checked` was omitted.** Tandoor sets `completed_at` to null on any PATCH without `checked`. The tool now reads the entry and sends its current `checked` value.
 - **`move_food` and `merge_food` returned empty food fields.** Tandoor answers both with a `{msg}` reply, not a food. The tools now return that reply as is.
 - **`bulk_create_shopping_list_recipe_entries` returned a 500 on Tandoor 2.6 after saving the entries.** Tandoor requires `shopping_lists_ids`. The tool now always sends it.
+- **HTTP startup crashed when the port was taken.** It now prints "port N is already in use (TANDOOR_MCP_HTTP_PORT)." and exits 1.
 
 ### Notes
 - **`PUT /api/user-space/batch_update/` is not exposed.** On Tandoor 2.6.15 it returns success for user-space and household ids that do not exist. It also replaces groups in steps that are not atomic, so an unknown group id can leave a user with no groups. `assign_household` uses one PATCH per user-space instead.
+- **`reset_food_inheritance` is withheld.** Tandoor 2.6.15's endpoint resets food inheritance in every space on the server.
+
+### Thanks
+- n1coh for PRs #14 and #15: the bare-id foreign key fix for #13, and food property values on `update_food`. This release reimplements both, with n1coh as co-author.
+- HalmSascha for reporting #12: the HTTP transport answered only the first request.
 
 ## 2.0.1 / 2026-08-21
 
