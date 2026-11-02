@@ -2,7 +2,10 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest
 import type { BaseClient as BaseClientType } from '../src/clients/base.js';
 import { startStub, type Stub } from './helpers/stub-http.js';
 
-type StreamClient = BaseClientType & { stream(endpoint: string, opts?: { signal?: AbortSignal }): Promise<Response> };
+type StreamClient = BaseClientType & {
+  stream(endpoint: string, opts?: { signal?: AbortSignal }): Promise<Response>;
+  json(endpoint: string): Promise<unknown>;
+};
 
 let makeClient: (url: string, token?: string) => StreamClient;
 let stub: Stub;
@@ -15,8 +18,11 @@ beforeAll(async () => {
     stream(endpoint: string, opts?: { signal?: AbortSignal }): Promise<Response> {
       return (this as any).requestStream(endpoint, opts);
     }
+    json(endpoint: string): Promise<unknown> {
+      return (this as any).request(endpoint);
+    }
   }
-  makeClient = (url, token = 't') => new TestClient({ url, token });
+  makeClient = (url, token = 'tok-test') => new TestClient({ url, token });
 });
 
 afterAll(() => {
@@ -81,6 +87,33 @@ describe('requestStream', () => {
 
     await expect(call).rejects.toThrow('Tandoor API error: 404 Missing ***REDACTED***');
     await expect(call).rejects.not.toThrow('tok-secret');
+  });
+
+  it('adds the request() guidance text to a 404', async () => {
+    stub = await startStub((_req, res) => {
+      res.writeHead(404, 'Not Found');
+      res.end();
+    });
+
+    await expect(makeClient(stub.url).stream('/media/missing')).rejects.toThrow(
+      'Tandoor API error: 404 Not Found\n\nResource not found. Please check the ID or URL is correct.',
+    );
+  });
+
+  it.each([
+    [401, 'Unauthorized', 'Authentication failed. Please check your TANDOOR_TOKEN is valid.'],
+    [403, 'Forbidden', 'Access forbidden. Your API token may not have the required permissions.'],
+    [404, 'Not Found', 'Resource not found. Please check the ID or URL is correct.'],
+    [500, 'Internal Server Error', 'Server error. Please check your Tandoor instance logs for details.'],
+  ])('keeps request() guidance for a %i byte-identical', async (status, statusText, guidance) => {
+    stub = await startStub((_req, res) => {
+      res.writeHead(status, statusText);
+      res.end();
+    });
+
+    const error = await makeClient(stub.url).json('/api/thing/').catch((e: Error) => e);
+
+    expect((error as Error).message).toBe(`Tandoor API error: ${status} ${statusText}\n\n${guidance}`);
   });
 
   it('replays a GET after a 503 and returns the recovered body', async () => {
@@ -166,17 +199,22 @@ describe('requestStream', () => {
   });
 
   it('wraps a connection failure after DEFAULT_MAX_RETRIES + 1 dropped attempts', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
     let hits = 0;
     stub = await startStub((req) => {
       hits++;
       req.socket.destroy();
     });
 
-    const call = makeClient(stub.url, 'tok-secret').stream('/media/pic.png');
+    const settled = makeClient(stub.url, 'tok-secret').stream('/media/pic.png').catch((e: Error) => e);
+    for (let backoff = 0; backoff < 3; backoff++) {
+      await vi.waitFor(() => expect(vi.getTimerCount()).toBeGreaterThan(0));
+      vi.runOnlyPendingTimers();
+    }
 
-    await expect(call).rejects.toThrow('Failed to connect to Tandoor: fetch failed\nPlease check TANDOOR_URL is correct and the server is accessible.');
+    expect((await settled).message).toBe('Failed to connect to Tandoor: fetch failed\nPlease check TANDOOR_URL is correct and the server is accessible.');
     expect(hits).toBe(4);
-  }, 10_000);
+  });
 
   it('rejects without contacting Tandoor when the signal is already aborted', async () => {
     let hits = 0;

@@ -123,6 +123,14 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function statusGuidance(status: number): string {
+  if (status === 401) return '\n\nAuthentication failed. Please check your TANDOOR_TOKEN is valid.';
+  if (status === 403) return '\n\nAccess forbidden. Your API token may not have the required permissions.';
+  if (status === 404) return '\n\nResource not found. Please check the ID or URL is correct.';
+  if (status === 500) return '\n\nServer error. Please check your Tandoor instance logs for details.';
+  return '';
+}
+
 function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((r) => {
     const timer = setTimeout(r, ms);
@@ -237,16 +245,7 @@ export class BaseClient {
             }
           }
 
-          // Friendly guidance for common errors.
-          if (response.status === 401) {
-            errorMessage += '\n\nAuthentication failed. Please check your TANDOOR_TOKEN is valid.';
-          } else if (response.status === 403) {
-            errorMessage += '\n\nAccess forbidden. Your API token may not have the required permissions.';
-          } else if (response.status === 404) {
-            errorMessage += '\n\nResource not found. Please check the ID or URL is correct.';
-          } else if (response.status === 500) {
-            errorMessage += '\n\nServer error. Please check your Tandoor instance logs for details.';
-          }
+          errorMessage += statusGuidance(response.status);
 
           throw new Error(redactToken(errorMessage, this.token));
         }
@@ -372,13 +371,10 @@ export class BaseClient {
       logRequest('GET', url);
       let response: Response;
       try {
-        response = await fetch(url, { headers, signal, redirect: 'error' });
+        response = await fetch(url, { headers, signal, redirect: 'manual' });
       } catch (error) {
         logError('GET', url, error);
         if (signal?.aborted || (error as { name?: string }).name === 'AbortError') throw error;
-        if ((error as { cause?: { message?: string } }).cause?.message === 'unexpected redirect') {
-          throw new Error('Tandoor redirected a file download; refusing to follow it.');
-        }
         const isNetwork = error instanceof TypeError || (error as { name?: string }).name === 'FetchError';
         if (isNetwork && attempt < DEFAULT_MAX_RETRIES) {
           await abortableSleep(backoffMs(attempt, null), signal);
@@ -391,6 +387,9 @@ export class BaseClient {
           )
         );
       }
+      if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+        throw new Error('Tandoor redirected a file download; refusing to follow it.');
+      }
       if (shouldRetry(response.status) && attempt < DEFAULT_MAX_RETRIES) {
         await response.body?.cancel();
         await abortableSleep(backoffMs(attempt, response.headers.get('retry-after')), signal);
@@ -398,7 +397,7 @@ export class BaseClient {
       }
       if (!response.ok) {
         logResponse('GET', url, response.status, redactToken(await response.text(), this.token));
-        throw new Error(redactToken(`Tandoor API error: ${response.status} ${response.statusText}`, this.token));
+        throw new Error(redactToken(`Tandoor API error: ${response.status} ${response.statusText}${statusGuidance(response.status)}`, this.token));
       }
       logResponse('GET', url, response.status, '');
       return response;
