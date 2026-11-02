@@ -223,7 +223,7 @@ if ! [[ "$TOKEN" =~ ^[A-Za-z0-9_-]{32,}$ ]]; then
 fi
 
 LOCAL_RAW=$(TOKEN="$TOKEN" LOCAL_STORAGE_PATH="$LOCAL_STORAGE_PATH" docker exec -i -e TOKEN -e LOCAL_STORAGE_PATH "$WEB" /opt/recipes/venv/bin/python - <<'PY'
-import json, os, urllib.request
+import json, os, sys, urllib.request
 
 PATH = os.environ['LOCAL_STORAGE_PATH']
 HEADERS = {'Authorization': 'Bearer ' + os.environ['TOKEN'], 'Content-Type': 'application/json'}
@@ -237,12 +237,16 @@ def api(method, path, body=None):
 storage = next((s for s in api('GET', '/api/storage/')['results'] if s['name'] == 'e2e-local'), None) \
     or api('POST', '/api/storage/', {'name': 'e2e-local', 'method': 'LOCAL'})
 sync = next((s for s in api('GET', '/api/sync/')['results'] if s['path'] == PATH), None) \
-    or api('POST', '/api/sync/', {'storage': storage, 'path': PATH, 'active': True})
+    or api('POST', '/api/sync/', {'storage': storage['id'], 'path': PATH})
 api('POST', f"/api/sync/{sync['id']}/query_synced_folder/", {})
-api('POST', '/api/recipe-import/import_all/', {})
+for imp in api('GET', '/api/recipe-import/?page_size=200')['results']:
+    if imp['storage']['id'] == storage['id'] and imp['file_path'].startswith(PATH + '/'):
+        api('POST', f"/api/recipe-import/{imp['id']}/import_recipe/", {})
 for kind in ('PDF', 'JPEG'):
     name = 'e2e-local-' + kind.lower()
     ids = [r['id'] for r in api('GET', '/api/recipe/?query=' + name)['results'] if r['name'] == name]
+    if len(ids) != 1:
+        sys.exit(f'[tandoor-bootstrap] expected exactly 1 recipe for fixture {name}, found {len(ids)}')
     print(f'__LOCAL_{kind}__:{ids[0]}')
 PY
 )
