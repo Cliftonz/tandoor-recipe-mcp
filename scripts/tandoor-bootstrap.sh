@@ -7,6 +7,8 @@
 #   export TANDOOR_URL=<url>
 #   export TANDOOR_TOKEN=<token>
 #   export TANDOOR_COMPOSE_FILE=<path>
+#   export TANDOOR_TEST_LOCAL_PDF_RECIPE_ID=<id>
+#   export TANDOOR_TEST_LOCAL_JPEG_RECIPE_ID=<id>
 # When GITHUB_ENV is set: writes those vars plus TANDOOR_BOOTSTRAP_LOG to
 # $GITHUB_ENV as plain KEY=value lines and prints no export lines. The only
 # stdout is the `::add-mask::` command, so the token never appears verbatim
@@ -29,6 +31,8 @@ TEST_DIR="${TANDOOR_TEST_DIR:-/tmp/tandoor-test}"
 PORT="${TANDOOR_TEST_PORT:-8088}"
 URL="http://127.0.0.1:${PORT}"
 COMPOSE_FILE="$TEST_DIR/docker-compose.yml"
+LOCAL_FIXTURES="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/test/e2e/fixtures/local-storage"
+LOCAL_STORAGE_PATH=/opt/recipes/local-storage
 
 mkdir -p "$TEST_DIR"
 chmod 700 "$TEST_DIR"
@@ -71,6 +75,9 @@ services:
       # case the port mapping ever regresses to 0.0.0.0.
       - ALLOWED_HOSTS=127.0.0.1,localhost
       - TZ=UTC
+      - LOCAL_STORAGE_PATHS=$LOCAL_STORAGE_PATH
+    volumes:
+      - "$LOCAL_FIXTURES:$LOCAL_STORAGE_PATH:ro"
     ports:
       # Explicit 127.0.0.1 prefix prevents docker-compose's short-syntax
       # default of binding on 0.0.0.0 (Security F1).
@@ -215,6 +222,33 @@ if ! [[ "$TOKEN" =~ ^[A-Za-z0-9_-]{32,}$ ]]; then
   exit 1
 fi
 
+LOCAL_RAW=$(TOKEN="$TOKEN" LOCAL_STORAGE_PATH="$LOCAL_STORAGE_PATH" docker exec -i -e TOKEN -e LOCAL_STORAGE_PATH "$WEB" /opt/recipes/venv/bin/python - <<'PY'
+import json, os, urllib.request
+
+PATH = os.environ['LOCAL_STORAGE_PATH']
+HEADERS = {'Authorization': 'Bearer ' + os.environ['TOKEN'], 'Content-Type': 'application/json'}
+
+def api(method, path, body=None):
+    req = urllib.request.Request('http://127.0.0.1' + path, method=method, headers=HEADERS,
+                                 data=None if body is None else json.dumps(body).encode())
+    with urllib.request.urlopen(req) as res:
+        return json.load(res)
+
+storage = next((s for s in api('GET', '/api/storage/')['results'] if s['name'] == 'e2e-local'), None) \
+    or api('POST', '/api/storage/', {'name': 'e2e-local', 'method': 'LOCAL'})
+sync = next((s for s in api('GET', '/api/sync/')['results'] if s['path'] == PATH), None) \
+    or api('POST', '/api/sync/', {'storage': storage, 'path': PATH, 'active': True})
+api('POST', f"/api/sync/{sync['id']}/query_synced_folder/", {})
+api('POST', '/api/recipe-import/import_all/', {})
+for kind in ('PDF', 'JPEG'):
+    name = 'e2e-local-' + kind.lower()
+    ids = [r['id'] for r in api('GET', '/api/recipe/?query=' + name)['results'] if r['name'] == name]
+    print(f'__LOCAL_{kind}__:{ids[0]}')
+PY
+)
+LOCAL_PDF_RECIPE_ID=$(sed -n 's/^__LOCAL_PDF__://p' <<<"$LOCAL_RAW")
+LOCAL_JPEG_RECIPE_ID=$(sed -n 's/^__LOCAL_JPEG__://p' <<<"$LOCAL_RAW")
+
 # When running in GitHub Actions, mask the token before anything else so GHA
 # redacts it in every subsequent log line — even an accidental future echo
 # would still get scrubbed. Then write the assignments to $GITHUB_ENV (also
@@ -229,10 +263,14 @@ if [ -n "${GITHUB_ENV:-}" ]; then
     # uploads in e2e.yml + bootstrap-smoke.yml don't drift if TANDOOR_TEST_DIR
     # is ever overridden (Observability F13).
     echo "TANDOOR_BOOTSTRAP_LOG=$DJANGO_LOG"
+    echo "TANDOOR_TEST_LOCAL_PDF_RECIPE_ID=$LOCAL_PDF_RECIPE_ID"
+    echo "TANDOOR_TEST_LOCAL_JPEG_RECIPE_ID=$LOCAL_JPEG_RECIPE_ID"
   } >> "$GITHUB_ENV"
 else
   printf 'export %s=%q\n' \
     TANDOOR_URL "$URL" \
     TANDOOR_TOKEN "$TOKEN" \
-    TANDOOR_COMPOSE_FILE "$COMPOSE_FILE"
+    TANDOOR_COMPOSE_FILE "$COMPOSE_FILE" \
+    TANDOOR_TEST_LOCAL_PDF_RECIPE_ID "$LOCAL_PDF_RECIPE_ID" \
+    TANDOOR_TEST_LOCAL_JPEG_RECIPE_ID "$LOCAL_JPEG_RECIPE_ID"
 fi
