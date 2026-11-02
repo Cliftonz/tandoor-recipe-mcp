@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { AlphabeticalSequencer } from './test/e2e/alphabetical-sequencer.js';
 
 // Separate config for end-to-end tests that hit a real Tandoor instance.
 // Requires TANDOOR_URL + TANDOOR_TOKEN. Run in an ISOLATED space — the suite
@@ -14,6 +15,6 @@ export default defineConfig({
     // Force serial execution — tests share created resources through a
     // module-level tracker and cannot run in parallel safely.
     fileParallelism: false,
-    sequence: { concurrent: false },
+    sequence: { concurrent: false, sequencer: AlphabeticalSequencer },
   },
 });

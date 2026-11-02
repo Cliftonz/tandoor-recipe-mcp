@@ -153,15 +153,22 @@ describe('handlers/misc.ts', () => {
     }
   });
 
-  describe('body builders forward nested-id envelopes', () => {
-    it('create_property wraps property_type_id into {property_type:{id}}', async () => {
+  describe('body builders send nested foreign keys as bare ids', () => {
+    it('create_property sends property_type as a bare id', async () => {
       const create = vi.fn().mockResolvedValue({ id: 1, property_type: { id: 9 } });
       const client = mock({ properties: { createProperty: create } });
       await handleCreateProperty(client, { property_amount: 5, property_type_id: 9 } as any);
-      expect(create).toHaveBeenCalledWith({ property_amount: 5, property_type: { id: 9 } });
+      expect(create).toHaveBeenCalledWith({ property_amount: 5, property_type: 9 });
     });
 
-    it('create_unit_conversion wraps base/converted/food ids', async () => {
+    it('update_property sends property_type as a bare id', async () => {
+      const patch = vi.fn().mockResolvedValue({ id: 1, property_type: { id: 9 } });
+      const client = mock({ properties: { patchProperty: patch } });
+      await handleUpdateProperty(client, { id: 1, property_type_id: 9 } as any);
+      expect(patch).toHaveBeenCalledWith(1, { property_type: 9 });
+    });
+
+    it('create_unit_conversion sends base/converted/food as bare ids', async () => {
       const create = vi.fn().mockResolvedValue({ id: 1 });
       const client = mock({ unitConversions: { createConversion: create } });
       await handleCreateUnitConversion(client, {
@@ -170,8 +177,30 @@ describe('handlers/misc.ts', () => {
       } as any);
       expect(create).toHaveBeenCalledWith({
         base_amount: 1, converted_amount: 240,
-        base_unit: { id: 1 }, converted_unit: { id: 2 },
-        food: { id: 5 },
+        base_unit: 1, converted_unit: 2,
+        food: 5,
+      });
+    });
+
+    it('update_unit_conversion sends base/converted/food as bare ids', async () => {
+      const patch = vi.fn().mockResolvedValue({ id: 1 });
+      const client = mock({ unitConversions: { patchConversion: patch } });
+      await handleUpdateUnitConversion(client, {
+        id: 1, base_unit_id: 1, converted_unit_id: 2, food_id: 5,
+      } as any);
+      expect(patch).toHaveBeenCalledWith(1, { base_unit: 1, converted_unit: 2, food: 5 });
+    });
+
+    it('create_unit_conversion food_id=null sends food: null', async () => {
+      const create = vi.fn().mockResolvedValue({ id: 1 });
+      const client = mock({ unitConversions: { createConversion: create } });
+      await handleCreateUnitConversion(client, {
+        base_amount: 1, converted_amount: 240,
+        base_unit_id: 1, converted_unit_id: 2, food_id: null,
+      } as any);
+      expect(create).toHaveBeenCalledWith({
+        base_amount: 1, converted_amount: 240,
+        base_unit: 1, converted_unit: 2, food: null,
       });
     });
 
@@ -182,15 +211,22 @@ describe('handlers/misc.ts', () => {
       expect(patch).toHaveBeenCalledWith(1, { food: null });
     });
 
-    it('create_relation wraps category_id and forwards order when present', async () => {
+    it('create_relation sends category as a bare id and forwards order when present', async () => {
       const create = vi.fn().mockResolvedValue({ id: 1 });
       const client = mock({ supermarketCategoryRelations: { createRelation: create } });
       await handleCreateSupermarketCategoryRelation(client, {
         category_id: 7, supermarket: 3, order: 2,
       } as any);
       expect(create).toHaveBeenCalledWith({
-        category: { id: 7 }, supermarket: 3, order: 2,
+        category: 7, supermarket: 3, order: 2,
       });
+    });
+
+    it('update_relation sends category as a bare id', async () => {
+      const patch = vi.fn().mockResolvedValue({ id: 1 });
+      const client = mock({ supermarketCategoryRelations: { patchRelation: patch } });
+      await handleUpdateSupermarketCategoryRelation(client, { id: 1, category_id: 7 } as any);
+      expect(patch).toHaveBeenCalledWith(1, { category: 7 });
     });
 
     it('create_custom_filter omits shared when shared_user_ids not provided', async () => {

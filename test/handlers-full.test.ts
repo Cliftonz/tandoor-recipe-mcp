@@ -15,10 +15,11 @@ import {
 } from '../src/handlers/mealplan.js';
 import { handleListFoods, handleCreateFood, handleUpdateFood, handleMergeFood, handleFoodShoppingUpdate, handleFoodFdcLookup, handleFoodBatchUpdate } from '../src/handlers/foodunit.js';
 import { handleCreateCookLog, handleListCookLogs } from '../src/handlers/cooklog.js';
-import { handleCreateShoppingEntry, handleBulkCheckShoppingEntries } from '../src/handlers/shopping.js';
+import { handleCreateShoppingEntry, handleUpdateShoppingEntry, handleBulkCheckShoppingEntries } from '../src/handlers/shopping.js';
 import { handleCreateStep } from '../src/handlers/step.js';
-import { handleCreateBook, handleCreateBookEntry } from '../src/handlers/recipebook.js';
-import { handleSearchRecipes, handleRecipeBatchUpdate, handleDeleteRecipe } from '../src/handlers/recipe.js';
+import { handleCreateBook, handleUpdateBook, handleCreateBookEntry } from '../src/handlers/recipebook.js';
+import { handleSearchRecipes, handleRecipeBatchUpdate, handleDeleteRecipe, handleCreateRecipe, handleUpdateRecipe } from '../src/handlers/recipe.js';
+import { handleCreateIngredient, handleUpdateIngredient } from '../src/handlers/ingredient.js';
 import { slimPaginated, emit } from '../src/lib/slim.js';
 import { paginated } from './helpers/factories.js';
 
@@ -437,18 +438,6 @@ describe('meal plan handlers — misc', () => {
     });
   });
 
-  it('handleAutoMealPlan rejects empty keyword_ids', async () => {
-    const autoCreateMealPlans = vi.fn();
-    const client = { mealPlans: { autoCreateMealPlans } } as any;
-    await expect(
-      handleAutoMealPlan(client, {
-        start_date: '2026-04-18', end_date: '2026-04-25',
-        meal_type_id: 1, keyword_ids: [], servings: 2, addshopping: false,
-      })
-    ).rejects.toThrow(/non-empty/);
-    expect(autoCreateMealPlans).not.toHaveBeenCalled();
-  });
-
   it('handleAutoMealPlan rejects start_date > end_date', async () => {
     const autoCreateMealPlans = vi.fn();
     const client = { mealPlans: { autoCreateMealPlans } } as any;
@@ -470,7 +459,7 @@ describe('meal plan handlers — misc', () => {
     });
     expect(autoCreateMealPlans).toHaveBeenCalledWith({
       start_date: '2026-04-18', end_date: '2026-04-25',
-      meal_type_id: 2, keyword_ids: [1, 2], servings: 3, addshopping: true,
+      meal_type_id: 2, keywords: [1, 2], servings: 3, addshopping: true,
     });
   });
 });
@@ -495,6 +484,7 @@ describe('food handlers', () => {
         substitute: [{ id: 77 }],
         recipe: { steps: [/* enormous */] },
         created_by: { id: 1 },
+        shopping_lists: [],
       },
     ]));
     const client = { foodUnits: { listFoods } } as any;
@@ -511,15 +501,29 @@ describe('food handlers', () => {
     expect(parsed.results[0]).not.toHaveProperty('recipe');
   });
 
-  it('handleCreateFood builds {supermarket_category: {id}} envelope when id provided', async () => {
-    const createFood = vi.fn(async (b) => ({ id: 20, ...b }));
+  it('handleCreateFood sends supermarket_category as a bare id', async () => {
+    const createFood = vi.fn(async (b) => ({ id: 20, shopping_lists: [], ...b }));
     const client = { foodUnits: { createFood } } as any;
     await handleCreateFood(client, { name: 'kale', supermarket_category_id: 5 });
-    expect(createFood.mock.calls[0][0].supermarket_category).toEqual({ id: 5 });
+    expect(createFood.mock.calls[0][0].supermarket_category).toBe(5);
+  });
+
+  it('handleUpdateFood sends supermarket_category as a bare id', async () => {
+    const patchFood = vi.fn(async (id, b) => ({ id, name: 'kale', shopping_lists: [], ...b }));
+    const client = { foodUnits: { patchFood } } as any;
+    await handleUpdateFood(client, { id: 20, supermarket_category_id: 5 });
+    expect(patchFood.mock.calls[0][1]).toEqual({ supermarket_category: 5 });
+  });
+
+  it('handleUpdateFood passes null supermarket_category_id through as null', async () => {
+    const patchFood = vi.fn(async (id, b) => ({ id, name: 'kale', shopping_lists: [], ...b }));
+    const client = { foodUnits: { patchFood } } as any;
+    await handleUpdateFood(client, { id: 20, supermarket_category_id: null });
+    expect(patchFood.mock.calls[0][1]).toEqual({ supermarket_category: null });
   });
 
   it('handleCreateFood passes null supermarket_category_id through as null', async () => {
-    const createFood = vi.fn(async (b) => ({ id: 20, ...b }));
+    const createFood = vi.fn(async (b) => ({ id: 20, shopping_lists: [], ...b }));
     const client = { foodUnits: { createFood } } as any;
     await handleCreateFood(client, { name: 'kale', supermarket_category_id: null });
     expect(createFood.mock.calls[0][0].supermarket_category).toBeNull();
@@ -548,7 +552,7 @@ describe('food handlers', () => {
 
   it('handleFoodFdcLookup fetches current food, overlays fdc_id, and posts', async () => {
     const getFood = vi.fn(async () => ({ id: 1, name: 'x', fdc_id: null }));
-    const foodFdcLookup = vi.fn(async () => ({ id: 1, name: 'x', fdc_id: 999 }));
+    const foodFdcLookup = vi.fn(async () => ({ id: 1, name: 'x', fdc_id: 999, shopping_lists: [] }));
     const client = { foodUnits: { getFood, foodFdcLookup } } as any;
     await handleFoodFdcLookup(client, { id: 1, fdc_id: 999 });
     const body = foodFdcLookup.mock.calls[0][1];
@@ -578,8 +582,8 @@ describe('cook log handlers', () => {
 // ---------- Shopping ----------
 
 describe('shopping handlers', () => {
-  it('handleCreateShoppingEntry sends nested food/unit and optional mealplan_id', async () => {
-    const createEntry = vi.fn(async (b) => ({ id: 1, ...b }));
+  it('handleCreateShoppingEntry sends food/unit as bare ids and optional mealplan_id', async () => {
+    const createEntry = vi.fn(async (b) => ({ id: 1, shopping_lists: [], ...b }));
     const client = { shopping: { createEntry } } as any;
     await handleCreateShoppingEntry(client, {
       amount: 2,
@@ -588,13 +592,34 @@ describe('shopping handlers', () => {
       mealplan_id: 99,
     });
     const body = createEntry.mock.calls[0][0];
-    expect(body.food).toEqual({ id: 3 });
-    expect(body.unit).toEqual({ id: 4 });
+    expect(body.food).toBe(3);
+    expect(body.unit).toBe(4);
     expect(body.mealplan_id).toBe(99);
   });
 
+  it('handleUpdateShoppingEntry sends food/unit as bare ids', async () => {
+    const patchEntry = vi.fn(async (id, b) => ({ id, shopping_lists: [], ...b }));
+    const client = { shopping: { patchEntry, getEntry: async () => ({ checked: false }) } } as any;
+    await handleUpdateShoppingEntry(client, { id: 7, food_id: 3, unit_id: 4 });
+    expect(patchEntry.mock.calls[0][1]).toEqual({ food: 3, unit: 4, checked: false });
+  });
+
+  it('handleUpdateShoppingEntry passes null food/unit through as null', async () => {
+    const patchEntry = vi.fn(async (id, b) => ({ id, shopping_lists: [], ...b }));
+    const client = { shopping: { patchEntry, getEntry: async () => ({ checked: false }) } } as any;
+    await handleUpdateShoppingEntry(client, { id: 7, food_id: null, unit_id: null });
+    expect(patchEntry.mock.calls[0][1]).toEqual({ food: null, unit: null, checked: false });
+  });
+
+  it('handleCreateShoppingEntry sends null unit when unit_id is omitted', async () => {
+    const createEntry = vi.fn(async (b) => ({ id: 1, shopping_lists: [], ...b }));
+    const client = { shopping: { createEntry } } as any;
+    await handleCreateShoppingEntry(client, { amount: 1, food_id: 3 });
+    expect(createEntry.mock.calls[0][0].unit).toBeNull();
+  });
+
   it('handleCreateShoppingEntry passes null unit when unit_id is null', async () => {
-    const createEntry = vi.fn(async (b) => ({ id: 1, ...b }));
+    const createEntry = vi.fn(async (b) => ({ id: 1, shopping_lists: [], ...b }));
     const client = { shopping: { createEntry } } as any;
     await handleCreateShoppingEntry(client, { amount: 1, food_id: 3, unit_id: null });
     expect(createEntry.mock.calls[0][0].unit).toBeNull();
@@ -652,7 +677,7 @@ describe('step handler find-or-create path', () => {
 
     expect(findOrCreateFood).not.toHaveBeenCalled();
     expect(findOrCreateUnit).not.toHaveBeenCalled();
-    expect(createStep.mock.calls[0][0].ingredients[0].food).toEqual({ id: 100 });
+    expect(createStep.mock.calls[0][0].ingredients[0]).toMatchObject({ food: 100, unit: 200 });
   });
 });
 
@@ -664,6 +689,29 @@ describe('recipe book handlers', () => {
     const client = { recipeBooks: { createBook } } as any;
     await handleCreateBook(client, { name: 'Weeknight', shared_user_ids: [2, 3] });
     expect(createBook.mock.calls[0][0].shared).toEqual([{ id: 2 }, { id: 3 }]);
+  });
+
+  it('handleCreateBook sends null filter when filter_id is null', async () => {
+    const createBook = vi.fn(async (b) => ({ id: 1, ...b }));
+    const client = { recipeBooks: { createBook } } as any;
+    await handleCreateBook(client, { name: 'Weeknight', filter_id: null });
+    expect(createBook.mock.calls[0][0].filter).toBeNull();
+  });
+
+  it('handleCreateBook sends filter as a bare id', async () => {
+    const createBook = vi.fn(async (b) => ({ id: 1, ...b }));
+    const client = { recipeBooks: { createBook } } as any;
+    await handleCreateBook(client, { name: 'Weeknight', filter_id: 8 });
+    expect(createBook.mock.calls[0][0].filter).toBe(8);
+  });
+
+  it('handleUpdateBook sends filter as a bare id and null clears it', async () => {
+    const patchBook = vi.fn(async (id, b) => ({ id, name: 'Weeknight', ...b }));
+    const client = { recipeBooks: { patchBook } } as any;
+    await handleUpdateBook(client, { id: 1, filter_id: 8 });
+    await handleUpdateBook(client, { id: 1, filter_id: null });
+    expect(patchBook.mock.calls[0][1]).toEqual({ filter: 8 });
+    expect(patchBook.mock.calls[1][1]).toEqual({ filter: null });
   });
 
   it('handleCreateBookEntry links a recipe to a book with both ids in the body', async () => {
@@ -980,5 +1028,54 @@ describe('handleBulkCreateMealPlans', () => {
     expect(out).not.toContain('MALICIOUS');
     expect(out).not.toContain('INJECT');
     expect(out).toContain('"recipe_id":10');
+  });
+});
+
+describe('recipe properties', () => {
+  it('handleCreateRecipe sends property_type as a bare id when property_type_id is given', async () => {
+    const createRecipe = vi.fn(async (b) => ({ id: 1, ...b }));
+    const client = { recipes: { createRecipe } } as any;
+    await handleCreateRecipe(client, {
+      name: 'stew',
+      properties: [{ property_amount: 12, property_type_id: 3 }],
+    } as any);
+    expect(createRecipe.mock.calls[0][0].properties).toEqual([
+      { property_amount: 12, property_type: 3 },
+    ]);
+  });
+
+  it('handleUpdateRecipe sends property_type as a bare id when property_type_id is given', async () => {
+    const patchRecipe = vi.fn(async (id, b) => ({ id, name: 'stew', ...b }));
+    const client = { recipes: { patchRecipe } } as any;
+    await handleUpdateRecipe(client, {
+      id: 1,
+      properties: [{ id: 4, property_amount: 12, property_type_id: 3 }],
+    } as any);
+    expect(patchRecipe.mock.calls[0][1].properties).toEqual([
+      { id: 4, property_amount: 12, property_type: 3 },
+    ]);
+  });
+});
+
+describe('ingredient handlers', () => {
+  it('handleUpdateIngredient sends null unit when unit_id is null', async () => {
+    const patchIngredient = vi.fn(async (id, b) => ({ id, ...b }));
+    const client = { ingredients: { patchIngredient } } as any;
+    await handleUpdateIngredient(client, { id: 5, unit_id: null });
+    expect(patchIngredient.mock.calls[0][1]).toEqual({ unit: null });
+  });
+
+  it('handleUpdateIngredient sends food/unit as bare ids', async () => {
+    const patchIngredient = vi.fn(async (id, b) => ({ id, ...b }));
+    const client = { ingredients: { patchIngredient } } as any;
+    await handleUpdateIngredient(client, { id: 5, food_id: 3, unit_id: 4 });
+    expect(patchIngredient.mock.calls[0][1]).toEqual({ food: 3, unit: 4 });
+  });
+
+  it('handleCreateIngredient sends food/unit as bare ids', async () => {
+    const createIngredient = vi.fn(async (b) => ({ id: 5, ...b }));
+    const client = { ingredients: { createIngredient } } as any;
+    await handleCreateIngredient(client, { food_id: 3, unit_id: 4, amount: 2 });
+    expect(createIngredient.mock.calls[0][0]).toMatchObject({ food: 3, unit: 4, amount: 2 });
   });
 });

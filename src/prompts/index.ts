@@ -1,4 +1,4 @@
-// MCP prompts — user-invokable templates. These are the "/ commands" a user
+// MCP prompts: user-invokable templates. These are the "/ commands" a user
 // runs from an MCP client UI. Each prompt returns a set of messages the model
 // should use as its starting context.
 
@@ -40,7 +40,7 @@ export function registerPrompts(server: McpServer, _client: TandoorClient): void
     ({ start_date, days, keywords, use_pantry }): GetPromptResult => {
       const startLine = start_date ? `Start date: ${start_date}` : 'Start today.';
       const dayCount = days || '7';
-      const kwLine = keywords ? `Favor these keywords: ${keywords}` : 'No keyword preference — mix it up.';
+      const kwLine = keywords ? `Favor these keywords: ${keywords}` : 'No keyword preference; mix it up.';
       const pantryLine = use_pantry === 'true'
         ? 'First, read the `tandoor://pantry/on-hand` resource and bias recipe choices toward what\'s already in the pantry.'
         : 'Ignore pantry on-hand state unless the user asks.';
@@ -102,7 +102,7 @@ export function registerPrompts(server: McpServer, _client: TandoorClient): void
               '2. For each plan with a recipe_id, call `add_recipe_to_shopping_list` with {id: recipe_id, servings: <plan servings>} so Tandoor merges ingredients.',
               '3. Read `tandoor://shopping-list/active` to show the current pending entries.',
               '4. Group the entries by food.supermarket_category (call `get_food` if the category is missing) and present as a checklist grouped by aisle.',
-              '5. Flag any ingredient where the food is already in `tandoor://pantry/on-hand` — user may want to skip.',
+              '5. Flag any ingredient whose food is in `tandoor://pantry/on-hand`, in its inventory entries or its on-hand foods with no quantity. The user may want to skip it.',
             ].join('\n')
           ),
         ],
@@ -134,11 +134,11 @@ export function registerPrompts(server: McpServer, _client: TandoorClient): void
               `What can I make tonight? Give me up to 5 options, each under ${timeBound} minutes total time.`,
               '',
               'Workflow:',
-              '1. Read `tandoor://pantry/on-hand` so you know what\'s available.',
+              '1. Read `tandoor://pantry/on-hand` so you know what\'s available. Check both its inventory entries and its on-hand foods with no quantity.',
               '2. Call `list_recipes` with makenow=true, sort_order=-rating, page_size=10 to get candidates Tandoor thinks are makeable.',
               `3. Filter candidates where working_time + waiting_time <= ${timeBound}.`,
               '4. For the top 5, call `get_recipe` (format=slim) to show ingredient names and step count.',
-              '5. Present as a numbered list with name, total time, and 1-line description. Do not start cooking anything — wait for user to pick.',
+              '5. Present as a numbered list with name, total time, and 1-line description. Do not start cooking anything. Wait for the user to pick.',
             ].join('\n')
           ),
         ],

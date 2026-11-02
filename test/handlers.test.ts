@@ -1,13 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { handleCreateMealPlan, handleUpdateMealPlan } from '../src/handlers/mealplan.js';
-import {
-  handleCreateIngredient,
-  handleUpdateIngredient,
-  handleParseIngredient,
-} from '../src/handlers/ingredient.js';
-import { handleCreateShoppingEntry, handleBulkCheckShoppingEntries } from '../src/handlers/shopping.js';
-import { handleCreateStep, handleUpdateStep } from '../src/handlers/step.js';
-import { handleAddRecipeToShoppingList } from '../src/handlers/recipe.js';
+import { handleUpdateIngredient } from '../src/handlers/ingredient.js';
+import { handleBulkCheckShoppingEntries } from '../src/handlers/shopping.js';
+import { handleUpdateStep } from '../src/handlers/step.js';
 
 // None of these should touch the network — they should throw before calling
 // the client. A bare object stands in as a "client".

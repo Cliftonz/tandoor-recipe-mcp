@@ -1,6 +1,7 @@
 import type { TandoorClient } from '../clients/index.js';
 
-export const MIN_SUPPORTED_MAJOR = 2;
+const MIN_SUPPORTED = { major: 2, minor: 6 };
+const MIN_SUPPORTED_LABEL = `${MIN_SUPPORTED.major}.${MIN_SUPPORTED.minor}.0`;
 
 // Server-reported version strings are untrusted input that ends up in the MCP
 // instructions channel and stderr. Only strings matching this allowlist are
@@ -8,9 +9,9 @@ export const MIN_SUPPORTED_MAJOR = 2;
 const VERSION_SHAPE = /^[0-9][\w.+-]{0,31}$/;
 
 const UNSUPPORTED_ADVICE =
-  `This server targets the Tandoor ${MIN_SUPPORTED_MAJOR}.x API; write operations ` +
+  `This server targets Tandoor ${MIN_SUPPORTED_LABEL} or later; write operations ` +
   '(recipes, meal plans, shopping entries) will likely fail. Upgrade Tandoor to ' +
-  `${MIN_SUPPORTED_MAJOR}.x or use an older release of this MCP server.`;
+  `${MIN_SUPPORTED_LABEL} or later, or use an older release of this MCP server.`;
 
 export interface VersionCheckResult {
   status: 'ok' | 'unsupported' | 'unknown';
@@ -38,8 +39,8 @@ export function evaluateVersion(version: unknown): VersionCheckResult {
       detail: 'Tandoor reported a malformed version string; compatibility cannot be verified.',
     };
   }
-  const major = /^(\d+)(?:\.|$)/.exec(trimmed);
-  if (!major) {
+  const parsed = /^(\d+)(?:$|\.(\d+)?)/.exec(trimmed);
+  if (!parsed) {
     return {
       status: 'unknown',
       level: 'note',
@@ -47,7 +48,12 @@ export function evaluateVersion(version: unknown): VersionCheckResult {
       detail: `Tandoor reported an unparseable version "${trimmed}"; compatibility cannot be verified.`,
     };
   }
-  if (Number(major[1]) < MIN_SUPPORTED_MAJOR) {
+  const major = Number(parsed[1]);
+  const minor = Number(parsed[2] ?? 0);
+  if (
+    major < MIN_SUPPORTED.major ||
+    (major === MIN_SUPPORTED.major && minor < MIN_SUPPORTED.minor)
+  ) {
     return {
       status: 'unsupported',
       level: 'warning',

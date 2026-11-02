@@ -1,7 +1,11 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`tool description snapshot (full profile) > descriptions match the recorded snapshot 1`] = `
+exports[`tool description snapshot > descriptions match the recorded snapshot 1`] = `
 [
+  {
+    "description": "Add food to inventory. Required: food_id, unit_id, amount (> 0), location_id. Optional: expires (YYYY-MM-DD), sub_location, note, code. Always creates a new entry, even when the same food already has an entry at that location.",
+    "name": "add_inventory_item",
+  },
   {
     "description": "Add a recipe to a recipe book. Required: book (id), recipe (id).",
     "name": "add_recipe_to_book",
@@ -15,11 +19,15 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "ai_step_sort",
   },
   {
+    "description": "Put user-spaces into a household, or take them out with household_id null. Space owner only (admins get 403). Required: user_space_ids (ids from list_user_spaces), household_id (an id from list_households, or null). Each user-space keeps its groups. Errors if household_id does not exist. Reports each id as updated, unchanged (already in that household), or failed with Tandoor's error; errors only when every id failed.",
+    "name": "assign_household",
+  },
+  {
     "description": "Trade username + password for a Tandoor bearer token via POST /api-token-auth/. ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user.",
     "name": "authenticate",
   },
   {
-    "description": "Auto-generate meal plans. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, keyword_ids[], servings, addshopping",
+    "description": "Auto-generate meal plans from internal recipes the user can see. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, servings, addshopping. Optional: keyword_ids[] (if omitted or empty, plans from all recipes), keyword_mode ("and" default: recipes must carry every keyword; "or": any keyword). Tandoor plans at most 14 days and ignores shared. When no recipe matches, Tandoor returns 400 "No recipes found."",
     "name": "auto_meal_plan",
   },
   {
@@ -31,11 +39,19 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "bulk_create_meal_plans",
   },
   {
-    "description": "Append many shopping entries to an existing shopping-list-recipe in one call.",
+    "description": "Append many shopping entries to an existing shopping-list-recipe in one call. Tandoor answers 404 when the shopping-list-recipe has no entries yet. Optional: shopping_list_ids puts every new entry on those lists. When shopping_list_ids is omitted, each new entry gets its food's lists, whatever the user preference. An empty shopping_list_ids is rejected. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written.",
     "name": "bulk_create_shopping_list_recipe_entries",
   },
   {
-    "description": "Mint a new Tandoor access token. Required: scope, expires (ISO datetime). ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user.",
+    "description": "Update many shopping entries in one call. Required: ids (entry ids; ids that do not exist or are not visible to you are skipped). Give checked, a list change, or both. checked: true checks every entry and sets completed_at to now, also on entries already checked; without checked, checked and completed_at stay as they are. List changes do not update the entries' updated_at. List changes: shopping_lists_add and shopping_lists_remove (may be combined), shopping_lists_set (replaces the lists; must not be empty) or shopping_lists_remove_all: true (takes every list off). set and remove_all must be used alone. Empty arrays and shopping_lists_remove_all: false count as no change and are not sent. An id may not appear in both shopping_lists_add and shopping_lists_remove. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written.",
+    "name": "bulk_update_shopping_entries",
+  },
+  {
+    "description": "Use up some or all of an inventory entry. Identify it by entry_id, or by food_id with optional location_id (errors listing the candidates when several entries match). Give exactly one of amount (> 0) or all: true. Optional unit_id must match the entry unit; there is no unit conversion. The amount never goes below 0: consuming more than is on hand sets it to 0 and returns a warning. Never deletes the entry; at 0 (including after all: true) it is hidden from list_inventory_entries unless include_empty is true. Not atomic: two concurrent consumes of one entry can lose an update.",
+    "name": "consume_inventory_item",
+  },
+  {
+    "description": "Mint a new Tandoor access token. Required: scope, expires (UTC ISO 8601 datetime with seconds and Z suffix, e.g. 2026-12-01T10:00:00Z). ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user.",
     "name": "create_access_token",
   },
   {
@@ -67,16 +83,24 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_export_log",
   },
   {
-    "description": "Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id.",
+    "description": "Create food. Required: name. Optional: plural_name, description, food_onhand, fdc_id, supermarket_category_id, shopping_list_ids (ids from list_shopping_lists). If a food with this name exists, Tandoor returns it instead of creating one. With shopping_list_ids (including []), the tool looks up the name first and, if a food with that name exists (ignoring case and surrounding spaces), refuses and changes nothing; use update_food. Tandoor also returns an existing food whose plural name matches; the tool detects that from the create reply and refuses the same way, setting no lists. With non-empty shopping_list_ids, the tool creates the food first and then sets its lists, because Tandoor cannot set lists while creating a food. With any shopping_list_ids (including []), if a step after the create fails, the error gives the new food's id and says not to retry. Changing a food's lists does not change its existing shopping entries. add_recipe_to_shopping_list copies the food's lists onto new entries. create_shopping_entry without shopping_list_ids copies them when the user preference shopping_update_food_lists is on. bulk_create_shopping_list_recipe_entries without shopping_list_ids copies each food's lists whatever the user preference. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written. If the lists after the write differ from the request, the tool errors and names the missing and the extra lists.",
     "name": "create_food",
+  },
+  {
+    "description": "Create a household in this space. Space owner only (admins get 403). Required: name. Add members with assign_household.",
+    "name": "create_household",
   },
   {
     "description": "Create an import-log entry. Required: type. Optional: msg, running, total_recipes, imported_recipes. Tandoor also writes these automatically during URL/AI/bookmarklet imports.",
     "name": "create_import_log",
   },
   {
-    "description": "Create ingredient. Required: food_id. Optional: unit_id, amount, note, order, is_header, no_amount, original_text, always_use_plural_unit, always_use_plural_food",
+    "description": "Create ingredient. Required: food_id. Optional: unit_id, amount, note, order, is_header, no_amount, original_text",
     "name": "create_ingredient",
+  },
+  {
+    "description": "Create an inventory location in your household. Required: name. Optional: is_freezer. Fails if you are not in a household in this space; create one with create_household and assign yourself with assign_household (household-space section, space owner only), or ask the space owner.",
+    "name": "create_inventory_location",
   },
   {
     "description": "DESTRUCTIVE: Creating an invite link allows a new user to join your space. Required: email, group (Group id), valid_until (YYYY-MM-DD). Optional: reusable, internal_note. Response uuid is the shareable token; treat it as sensitive.",
@@ -91,7 +115,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_meal_plan",
   },
   {
-    "description": "Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), default.",
+    "description": "Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; returned as HH:MM:SS). Creating with an existing name returns the existing meal type unchanged and ignores the order, color and time passed. The name match ignores case and only finds meal types you created.",
     "name": "create_meal_type",
   },
   {
@@ -111,12 +135,16 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "create_recipe_book",
   },
   {
-    "description": "Add an entry to the recipe-import staging queue. Required: name, storage, space. Optional: file_uid, file_path. Does not import; call import_pending_recipe or import_all_pending afterwards.",
+    "description": "Add an entry to the recipe-import staging queue. Required: name, storage. Does not import; call import_pending_recipe or import_all_pending afterwards.",
     "name": "create_recipe_import",
   },
   {
-    "description": "Create a shopping list entry. Required: amount, food_id. Optional: unit_id, checked, list_recipe, ingredient, order, delay_until, mealplan_id (links to existing/new ShoppingListRecipe for that mealplan).",
+    "description": "Create a shopping list entry. Required: amount, food_id. Optional: unit_id, checked, list_recipe, ingredient, order, delay_until, mealplan_id (links to existing/new ShoppingListRecipe for that mealplan), shopping_list_ids. shopping_list_ids (ids from list_shopping_lists) puts the entry on exactly those lists; the food's lists are not added. When shopping_list_ids is omitted, Tandoor copies the food's lists onto the new entry if the user preference shopping_update_food_lists is on. With [], the tool clears any lists Tandoor copied, so the entry is on no list. add_recipe_to_shopping_list always copies each food's lists; food_shopping_update never does. Changing a food's lists later does not change existing entries. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written. If the lists after the write differ from the request, the tool errors and names the missing and the extra lists.",
     "name": "create_shopping_entry",
+  },
+  {
+    "description": "Create a named shopping list. Required: name (1 to 32 characters). Optional: description, color (#rrggbb or null). If a list with the same name already exists (case-insensitive), Tandoor returns that list instead of creating a new one, and does not change its description or color.",
+    "name": "create_shopping_list",
   },
   {
     "description": "Create a shopping-list-recipe. Required: servings. Optional: name, recipe (id), mealplan (id).",
@@ -195,12 +223,24 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "delete_food",
   },
   {
+    "description": "Delete a household by ID. Space owner only (admins get 403). Refuses, and deletes nothing, while any user-space or inventory location still belongs to the household; the error lists them and how to clear them.",
+    "name": "delete_household",
+  },
+  {
     "description": "Delete an import-log entry by ID.",
     "name": "delete_import_log",
   },
   {
     "description": "Delete ingredient by ID",
     "name": "delete_ingredient",
+  },
+  {
+    "description": "Delete an inventory entry by ID. This also deletes its log rows.",
+    "name": "delete_inventory_entry",
+  },
+  {
+    "description": "Delete an inventory location by ID. This also deletes every inventory entry in it and the log rows of every entry that ever passed through it, including entries since moved elsewhere. Use preview_inventory_location_delete_cascading to see the full cascade first.",
+    "name": "delete_inventory_location",
   },
   {
     "description": "Delete a space invite link by ID. Revokes the invite so the uuid can no longer be redeemed.",
@@ -245,6 +285,10 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "Delete a shopping entry by ID.",
     "name": "delete_shopping_entry",
+  },
+  {
+    "description": "Delete a named shopping list by ID. This only removes the links to the list: foods, shopping entries and supermarkets that used it keep existing. To see the links first, use preview_shopping_list_delete_cascading.",
+    "name": "delete_shopping_list",
   },
   {
     "description": "Delete a shopping-list-recipe by ID.",
@@ -295,11 +339,11 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "delete_view_log",
   },
   {
-    "description": "Disable every tool in the named group so they disappear from tools/list. The SDK emits tools/list_changed automatically. Idempotent: disabling an already-disabled group is a no-op. The synthetic "core" group cannot be disabled. Use this to free context budget once a workflow no longer needs a group of tools.",
+    "description": "Turn a section off so all its tools disappear from tools/list. The SDK emits tools/list_changed automatically. The "always" section cannot be disabled. Use this to free context budget once a workflow no longer needs a section.",
     "name": "disable_tool_group",
   },
   {
-    "description": "Enable every tool in the named group so they become visible in tools/list. The SDK emits tools/list_changed automatically; the client refreshes its tool list mid-conversation. Idempotent: enabling an already-enabled group is a no-op. Passing "core" is also a no-op (core is always on). Be sparing — every enabled group adds tool schemas to your context budget. Run list_tool_groups first to see what is available.",
+    "description": "Widen a section so its tools become visible in tools/list. For a tiered section, tier "simple" or "full" (default full) picks how much to show; on/off sections take no tier. Enabling never narrows a section: asking for simple on a section already at full leaves it at full. The SDK emits tools/list_changed automatically; the client refreshes its tool list mid-conversation. Be sparing: every enabled tool adds its schema to your context budget. Run list_tool_groups first to see what is available.",
     "name": "enable_tool_group",
   },
   {
@@ -307,7 +351,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "export_meal_plan_ical",
   },
   {
-    "description": "Trigger a recipe export job. Required: type (e.g. json, zip, pdf; depends on Tandoor build). Provide recipes[] (ids) or all=true. Returns the ExportLog for the queued job.",
+    "description": "Trigger a recipe export job. Required: type (e.g. json, zip, pdf; depends on Tandoor build). Provide recipes[] (ids), all=true, or custom_filter (saved filter id); recipes[] cannot be combined with custom_filter, even when all=true. all=true overrides custom_filter. Filters reachable only via a shared recipe book return 404. A deleted or empty filter exports every recipe. Returns the ExportLog for the queued job.",
     "name": "export_recipes",
   },
   {
@@ -319,7 +363,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "food_ai_properties",
   },
   {
-    "description": "Apply a narrow set of bulk mutations across many foods in one call via Tandoor's /api/food/batch_update/ endpoint. Required: foods[]. Optional (all apply to every food in foods[]): category (set supermarket_category, null clears), substitute_add/remove/set/remove_all, inherit_fields_add/remove/set/remove_all, child_inherit_fields_* (same pattern), substitute_children/siblings (boolean), ignore_shopping, on_hand, parent_set/parent_remove. Does NOT support bulk name/plural/description/fdc_id edits — those still need update_food per-item. Use for: pantry on-hand toggle across a set, retagging supermarket category, configuring substitute groups.",
+    "description": "Apply a narrow set of bulk mutations across many foods in one call via Tandoor's /api/food/batch_update/ endpoint. Required: foods[]. Optional (all apply to every food in foods[]): category (set supermarket_category, null clears), substitute_add/remove/set/remove_all, inherit_fields_add/remove/set/remove_all, child_inherit_fields_* (same pattern), substitute_children/siblings (boolean), ignore_shopping, on_hand, parent_set/parent_remove. Does NOT support bulk name/plural/description/fdc_id edits; those still need update_food per-item. Use for: pantry on-hand toggle across a set, retagging supermarket category, configuring substitute groups, moving foods between shopping lists. Empty arrays and *_remove_all: false count as no change and are not sent. A call with no field change and no list change is rejected ("Give a field to change, a list change, or both."). Shopping list changes: shopping_lists_add and shopping_lists_remove (may be combined), shopping_lists_set (replaces the lists; must not be empty) or shopping_lists_remove_all: true (takes every list off). set and remove_all must be used alone. Empty arrays and shopping_lists_remove_all: false count as no change and are not sent. An id may not appear in both shopping_lists_add and shopping_lists_remove. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written. Existing shopping entries keep their lists.",
     "name": "food_batch_update",
   },
   {
@@ -387,12 +431,28 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "get_guard_stats",
   },
   {
+    "description": "Get a household by ID, with its members as {user_space_id, user}. Space owner only (admins get 403).",
+    "name": "get_household",
+  },
+  {
     "description": "Get an import-log entry by ID.",
     "name": "get_import_log",
   },
   {
     "description": "Get ingredient by ID",
     "name": "get_ingredient",
+  },
+  {
+    "description": "Get an inventory entry by ID.",
+    "name": "get_inventory_entry",
+  },
+  {
+    "description": "Get an inventory location by ID.",
+    "name": "get_inventory_location",
+  },
+  {
+    "description": "Get an inventory log row by ID.",
+    "name": "get_inventory_log",
   },
   {
     "description": "Get a space invite link by ID. The uuid field is the shareable invite token.",
@@ -453,6 +513,10 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "Get a shopping list entry by ID.",
     "name": "get_shopping_entry",
+  },
+  {
+    "description": "Get a named shopping list by ID.",
+    "name": "get_shopping_list",
   },
   {
     "description": "Get a shopping-list-recipe by ID.",
@@ -603,12 +667,28 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "list_groups",
   },
   {
+    "description": "List the households in this space. Space owner only (admins get 403). Optional: page, page_size. Use get_household to see a household's members.",
+    "name": "list_households",
+  },
+  {
     "description": "List import-log entries (URL/AI/bookmarklet import history).",
     "name": "list_import_logs",
   },
   {
     "description": "List ingredients. Optional filters: food (food id), unit (unit id), page, page_size",
     "name": "list_ingredients",
+  },
+  {
+    "description": "List inventory entries (what is on hand, where). Optional: location_id, food_id, include_empty (entries with amount 0 or less are hidden unless true), page, page_size.",
+    "name": "list_inventory_entries",
+  },
+  {
+    "description": "List inventory locations (pantry, fridge, freezer and so on). Optional: page, page_size.",
+    "name": "list_inventory_locations",
+  },
+  {
+    "description": "List inventory log rows (read-only history of amount and location changes). Optional: entry_id, food_id, page, page_size. booking_type is add on creation, move when the location changed (even if the amount changed too), and remove for any other amount change, even an increase.",
+    "name": "list_inventory_logs",
   },
   {
     "description": "List space invite links. Optional: page, page_size, limit, query, unused, internal_note, updated_at. The returned uuid is the shareable invite token.",
@@ -667,12 +747,16 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "list_search_preferences",
   },
   {
-    "description": "List shopping list entries (auto-filtered to unchecked + recent by Tandoor). Optional: mealplan, updated_after (ISO), page, page_size, format.",
+    "description": "List shopping list entries (auto-filtered to unchecked + recent by Tandoor). Optional: mealplan, updated_after (ISO), page, page_size, format. Entries cannot be filtered by shopping list; use the shopping_lists field of the results.",
     "name": "list_shopping_entries",
   },
   {
     "description": "List shopping-list-recipe groupings (a recipe added to the shopping list).",
     "name": "list_shopping_list_recipes",
+  },
+  {
+    "description": "List the named shopping lists of this space (for example one per store), as {id, name, description, color}. Every member of the space sees the same lists. Optional: page, page_size.",
+    "name": "list_shopping_lists",
   },
   {
     "description": "List spaces (tenant workspaces) the caller can see. Optional: page, page_size.",
@@ -707,7 +791,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "list_syncs",
   },
   {
-    "description": "List every tool group exposed by this MCP server and whether each is currently enabled. The "core" group is permanent and always enabled; non-core groups start disabled (with profile=core) and can be turned on by calling enable_tool_group with the group name. When a group is enabled, its tools become visible via tools/list and the SDK emits tools/list_changed so the client refreshes mid-conversation. Use this first to discover what is available before reaching for enable_tool_group.",
+    "description": "List every tool section with its current mode and the modes it accepts. Tiered sections (off / simple / full) and on/off sections can be widened with enable_tool_group and turned off with disable_tool_group. The "always" section is permanent. When a section changes, its tools appear in or leave tools/list and the SDK emits tools/list_changed so the client refreshes mid-conversation. Use this first to discover what is available before reaching for enable_tool_group.",
     "name": "list_tool_groups",
   },
   {
@@ -759,11 +843,15 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "move_food",
   },
   {
+    "description": "Move a whole inventory entry to another location. Required: entry_id, to_location_id. Optional: sub_location (null clears it).",
+    "name": "move_inventory_item",
+  },
+  {
     "description": "Move keyword \`id\` under parent (parent=0 for root).",
     "name": "move_keyword",
   },
   {
-    "description": "Parse a free-form ingredient string (e.g. "2 cups flour") into amount, unit, food, note. Tandoor's parser is heuristic and can misfire on compound descriptions, brand names, or non-English units. If the result looks wrong or unit/food come back null, recommend: construct the ingredient directly via create_ingredient with explicit food_id (via find_or_create on the food name) and unit_id. That path is deterministic.",
+    "description": "Parse a free-form ingredient string (e.g. "2 cups flour") into amount, unit, unit_id, food, food_id, note. Writes to the database: Tandoor creates any Food or Unit row it does not already have. unit and food are the matched row names, so "cups" can come back as "cup". With no unit, unit is "" and unit_id is omitted. food_id and unit_id pass straight to create_ingredient. Blank text returns Tandoor's 400. Tandoor's parser is heuristic and can misfire on compound descriptions, brand names, or non-English units.",
     "name": "parse_ingredient",
   },
   {
@@ -777,6 +865,30 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "Preview which related objects would be protecting if you delete this food. Read-only, use before delete_food.",
     "name": "preview_food_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this inventory entry. Read-only, use before delete_inventory_entry.",
+    "name": "preview_inventory_entry_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this inventory entry. Read-only, use before delete_inventory_entry.",
+    "name": "preview_inventory_entry_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this inventory entry. Read-only, use before delete_inventory_entry.",
+    "name": "preview_inventory_entry_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this inventory location. Read-only, use before delete_inventory_location.",
+    "name": "preview_inventory_location_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this inventory location. Read-only, use before delete_inventory_location.",
+    "name": "preview_inventory_location_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this inventory location. Read-only, use before delete_inventory_location.",
+    "name": "preview_inventory_location_delete_protecting",
   },
   {
     "description": "Preview which related objects would be cascading if you delete this keyword. Read-only, use before delete_keyword.",
@@ -837,6 +949,18 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "Preview which related objects would be protecting if you delete this recipe. Read-only, use before delete_recipe.",
     "name": "preview_recipe_delete_protecting",
+  },
+  {
+    "description": "Preview which related objects would be cascading if you delete this shopping list. Read-only, use before delete_shopping_list.",
+    "name": "preview_shopping_list_delete_cascading",
+  },
+  {
+    "description": "Preview which related objects would be nulling if you delete this shopping list. Read-only, use before delete_shopping_list.",
+    "name": "preview_shopping_list_delete_nulling",
+  },
+  {
+    "description": "Preview which related objects would be protecting if you delete this shopping list. Read-only, use before delete_shopping_list.",
+    "name": "preview_shopping_list_delete_protecting",
   },
   {
     "description": "Preview which related objects would be cascading if you delete this storage. Read-only, use before delete_storage.",
@@ -931,7 +1055,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "switch_active_space",
   },
   {
-    "description": "Update an access token (PATCH). Required: id. Token strings redacted in slim; use format='full' to reveal.",
+    "description": "Update an access token (PATCH). Required: id. Optional: scope, expires (UTC ISO 8601 datetime with seconds and Z suffix, e.g. 2026-12-01T10:00:00Z). ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user. Token strings redacted in slim; use format='full' to reveal.",
     "name": "update_access_token",
   },
   {
@@ -963,8 +1087,12 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_export_log",
   },
   {
-    "description": "Update food (PATCH). Required: id.",
+    "description": "Update food (PATCH). Required: id. Optional properties[] {property_type_id, property_amount} sets one value per property type (amount null = unknown), updating the existing value of that type in place and deleting any duplicate values of that type; remove_property_type_ids[] deletes values by type. Other existing property values are kept. A type may appear once across both lists. properties_food_amount and properties_food_unit_id set the food amount the property values refer to (e.g. 100 g); properties_food_unit_id null clears the unit. Deleting a property row removes it from every food or recipe it is linked to. If a row delete fails, the food is already updated and the tool returns an error naming those rows. shopping_list_ids replaces the food's lists; [] clears them; omit it to keep them. Changing a food's lists does not change its existing shopping entries. add_recipe_to_shopping_list copies the food's lists onto new entries. create_shopping_entry without shopping_list_ids copies them when the user preference shopping_update_food_lists is on. bulk_create_shopping_list_recipe_entries without shopping_list_ids copies each food's lists whatever the user preference. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written. If the lists after the write differ from the request, the tool errors and names the missing and the extra lists.",
     "name": "update_food",
+  },
+  {
+    "description": "Rename a household. Space owner only (admins get 403). Required: id, name.",
+    "name": "update_household",
   },
   {
     "description": "Update an import-log entry (PATCH). Required: id.",
@@ -973,6 +1101,14 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
   {
     "description": "Partially update ingredient (PATCH). Required: id. All other fields optional. Pass unit_id: null to clear unit",
     "name": "update_ingredient",
+  },
+  {
+    "description": "Update an inventory entry (PATCH). Required: id. Optional: food_id, unit_id, amount (>= 0), location_id, expires (YYYY-MM-DD; null clears it), sub_location (null clears it), note (null clears it), code.",
+    "name": "update_inventory_entry",
+  },
+  {
+    "description": "Update an inventory location (PATCH). Required: id. Optional: name, is_freezer.",
+    "name": "update_inventory_location",
   },
   {
     "description": "Update a space invite link (PATCH). Required: id. Changing valid_until or reusable alters who can still join your space.",
@@ -987,7 +1123,7 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_meal_plan",
   },
   {
-    "description": "Update a meal type (PATCH). Required: id.",
+    "description": "Update a meal type (PATCH). Required: id. Optional: name, order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; null clears it).",
     "name": "update_meal_type",
   },
   {
@@ -1015,8 +1151,12 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_search_preference",
   },
   {
-    "description": "Update a shopping entry (PATCH). Required: id. Other fields optional.",
+    "description": "Update a shopping entry (PATCH). Required: id. Other fields optional. When checked is omitted, the tool reads the entry and sends its current checked value again, so a checked entry keeps its completed_at. A check made elsewhere between that read and the write is undone (last write wins). shopping_list_ids puts the entry on exactly those lists; [] clears them; omit it to keep them. Every list id is checked against list_shopping_lists first; unknown or repeated ids are rejected and nothing is written. If the lists after the write differ from the request, the tool errors and names the missing and the extra lists.",
     "name": "update_shopping_entry",
+  },
+  {
+    "description": "Update a named shopping list (PATCH). Required: id and at least one of name (1 to 32 characters), description, color (#rrggbb, or null to clear it). A new name that another list already has (ignoring case and surrounding spaces) is refused, because Tandoor would accept it and then fail every create_shopping_list with that name. Renaming a list to its own name is always allowed.",
+    "name": "update_shopping_list",
   },
   {
     "description": "Update a shopping-list-recipe (PATCH). Required: id.",
@@ -1067,11 +1207,11 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
     "name": "update_user_file",
   },
   {
-    "description": "Update user preferences (PATCH). Required: user_id. Common fields: theme, default_page (SEARCH/PLAN/BOOKS/SHOPPING), default_unit, use_fractions, use_kj, comments, ingredient_decimals, shopping_auto_sync, shopping_recent_days, mealplan_autoadd_shopping, mealplan_autoinclude_related, mealplan_autoexclude_onhand, filter_to_supermarket, left_handed, plan_share_user_ids[], shopping_share_user_ids[].",
+    "description": "Update user preferences (PATCH). Required: user_id. Common fields: theme, default_page (SEARCH/PLAN/BOOKS/SHOPPING), default_unit, use_fractions, use_kj, comments, ingredient_decimals, shopping_auto_sync, shopping_recent_days, mealplan_autoadd_shopping, mealplan_autoinclude_related, mealplan_autoexclude_onhand, filter_to_supermarket, left_handed, default_meal_type_id (the user's default meal type; null clears it), shopping_update_food_lists (a new shopping entry created without shopping lists gets its food's shopping lists).",
     "name": "update_user_preference",
   },
   {
-    "description": "Update a user-space membership (PATCH). Required: id, plus at least one field (active, groups, internal_note).",
+    "description": "Update a user-space membership (PATCH). Space owner only (admins get 403). Required: id, plus at least one of active, groups, internal_note. Omitted groups keep their current value. groups replaces the membership's groups and must be ids from list_groups. ESCALATION SURFACE: groups can grant space admin rights. Only change groups when explicitly asked by the user. To set the household, use assign_household.",
     "name": "update_user_space",
   },
   {
@@ -1089,8 +1229,58 @@ exports[`tool description snapshot (full profile) > descriptions match the recor
 ]
 `;
 
-exports[`tool description snapshot (full profile) > input schemas match the recorded snapshot 1`] = `
+exports[`tool description snapshot > input schemas match the recorded snapshot 1`] = `
 [
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "exclusiveMinimum": 0,
+          "type": "number",
+        },
+        "code": {
+          "type": "string",
+        },
+        "expires": {
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "type": "string",
+        },
+        "food_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "location_id": {
+          "type": "number",
+        },
+        "note": {
+          "type": "string",
+        },
+        "sub_location": {
+          "type": "string",
+        },
+        "unit_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "food_id",
+        "unit_id",
+        "amount",
+        "location_id",
+      ],
+      "type": "object",
+    },
+    "name": "add_inventory_item",
+  },
   {
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -1135,15 +1325,11 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "list_recipe": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
-          ],
           "description": "Existing shopping-list-recipe id to update",
+          "type": [
+            "number",
+            "null",
+          ],
         },
         "servings": {
           "description": "Default 1. Use 0 with list_recipe to delete.",
@@ -1178,6 +1364,33 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "household_id": {
+          "type": [
+            "number",
+            "null",
+          ],
+        },
+        "user_space_ids": {
+          "items": {
+            "type": "number",
+          },
+          "minItems": 1,
+          "type": "array",
+        },
+      },
+      "required": [
+        "user_space_ids",
+        "household_id",
+      ],
+      "type": "object",
+    },
+    "name": "assign_household",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "password": {
           "type": "string",
         },
@@ -1202,6 +1415,8 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "end_date": {
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
           "type": "string",
         },
         "keyword_ids": {
@@ -1210,6 +1425,13 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           },
           "type": "array",
         },
+        "keyword_mode": {
+          "enum": [
+            "or",
+            "and",
+          ],
+          "type": "string",
+        },
         "meal_type_id": {
           "type": "number",
         },
@@ -1217,6 +1439,8 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "start_date": {
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
           "type": "string",
         },
       },
@@ -1224,7 +1448,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "start_date",
         "end_date",
         "meal_type_id",
-        "keyword_ids",
         "servings",
         "addshopping",
       ],
@@ -1319,33 +1542,21 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
                 "type": "number",
               },
               "food_id": {
-                "anyOf": [
-                  {
-                    "type": "number",
-                  },
-                  {
-                    "type": "null",
-                  },
+                "type": [
+                  "number",
+                  "null",
                 ],
               },
               "ingredient_id": {
-                "anyOf": [
-                  {
-                    "type": "number",
-                  },
-                  {
-                    "type": "null",
-                  },
+                "type": [
+                  "number",
+                  "null",
                 ],
               },
               "unit_id": {
-                "anyOf": [
-                  {
-                    "type": "number",
-                  },
-                  {
-                    "type": "null",
-                  },
+                "type": [
+                  "number",
+                  "null",
                 ],
               },
             },
@@ -1362,6 +1573,12 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "id": {
           "type": "number",
         },
+        "shopping_list_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
       },
       "required": [
         "id",
@@ -1376,9 +1593,90 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "checked": {
+          "type": "boolean",
+        },
+        "ids": {
+          "items": {
+            "type": "number",
+          },
+          "minItems": 1,
+          "type": "array",
+        },
+        "shopping_lists_add": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "shopping_lists_remove": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "shopping_lists_remove_all": {
+          "type": "boolean",
+        },
+        "shopping_lists_set": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "ids",
+      ],
+      "type": "object",
+    },
+    "name": "bulk_update_shopping_entries",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "all": {
+          "const": true,
+          "type": "boolean",
+        },
+        "amount": {
+          "exclusiveMinimum": 0,
+          "type": "number",
+        },
+        "entry_id": {
+          "type": "number",
+        },
+        "food_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "location_id": {
+          "type": "number",
+        },
+        "unit_id": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "consume_inventory_item",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "expires": {
           "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
           "type": "string",
         },
         "format": {
@@ -1555,23 +1853,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "todo_entity": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "token": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "type": {
@@ -1581,13 +1871,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "url": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -1605,13 +1891,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "created_at": {
@@ -1625,26 +1907,18 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "rating": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "recipe": {
           "type": "number",
         },
         "servings": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -1753,14 +2027,16 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "plural_name": {
           "type": "string",
         },
+        "shopping_list_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
         "supermarket_category_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -1770,6 +2046,31 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "create_food",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_household",
   },
   {
     "inputSchema": {
@@ -1811,12 +2112,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
-        "always_use_plural_food": {
-          "type": "boolean",
-        },
-        "always_use_plural_unit": {
-          "type": "boolean",
-        },
         "amount": {
           "type": "number",
         },
@@ -1854,6 +2149,32 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "is_freezer": {
+          "type": "boolean",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_inventory_location",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "email": {
           "type": "string",
         },
@@ -1868,13 +2189,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "internal_note": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "reusable": {
@@ -1964,17 +2281,10 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "color": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
-        },
-        "default": {
-          "type": "boolean",
         },
         "format": {
           "enum": [
@@ -1988,6 +2298,17 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         },
         "order": {
           "type": "number",
+        },
+        "time": {
+          "anyOf": [
+            {
+              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$",
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
         },
       },
       "required": [
@@ -2030,23 +2351,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "description": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "fdc_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -2060,26 +2373,18 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "open_data_slug": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "order": {
           "type": "number",
         },
         "unit": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -2244,13 +2549,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "filter_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -2285,12 +2586,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
-        "file_path": {
-          "type": "string",
-        },
-        "file_uid": {
-          "type": "string",
-        },
         "format": {
           "enum": [
             "slim",
@@ -2301,9 +2596,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "name": {
           "type": "string",
         },
-        "space": {
-          "type": "number",
-        },
         "storage": {
           "type": "number",
         },
@@ -2311,7 +2603,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "required": [
         "name",
         "storage",
-        "space",
       ],
       "type": "object",
     },
@@ -2342,23 +2633,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "ingredient": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "list_recipe": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "mealplan_id": {
@@ -2367,14 +2650,16 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "order": {
           "type": "number",
         },
+        "shopping_list_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
         "unit_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -2385,6 +2670,45 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "create_shopping_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "description": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "name": {
+          "maxLength": 32,
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "create_shopping_list",
   },
   {
     "inputSchema": {
@@ -2522,13 +2846,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "step_recipe": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "time": {
@@ -2566,46 +2886,30 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "password": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "path": {
           "type": "string",
         },
         "token": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "url": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "username": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -2624,13 +2928,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "description": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "format": {
@@ -2644,13 +2944,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "open_data_slug": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -2733,13 +3029,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "last_checked": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "path": {
@@ -2807,13 +3099,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "food_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -2992,6 +3280,22 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       ],
       "type": "object",
     },
+    "name": "delete_household",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "delete_import_log",
   },
   {
@@ -3009,6 +3313,38 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "delete_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_inventory_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_inventory_location",
   },
   {
     "inputSchema": {
@@ -3187,6 +3523,22 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "delete_shopping_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "delete_shopping_list",
   },
   {
     "inputSchema": {
@@ -3386,7 +3738,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "group": {
-          "description": "Name of the group to disable. The synthetic "core" group cannot be disabled.",
+          "description": "Name of the section to turn off. The "always" section cannot be disabled.",
           "minLength": 1,
           "type": "string",
         },
@@ -3404,8 +3756,16 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "group": {
-          "description": "Name of the group to enable. Run list_tool_groups to see available group names. The synthetic "core" group is permanent — calling enable on it is a no-op.",
+          "description": "Name of the section to enable. Run list_tool_groups to see available sections.",
           "minLength": 1,
+          "type": "string",
+        },
+        "tier": {
+          "description": "Tier for a tiered section (default full). Not accepted for on/off sections.",
+          "enum": [
+            "simple",
+            "full",
+          ],
           "type": "string",
         },
       },
@@ -3449,14 +3809,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "custom_filter": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
-          ],
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer",
         },
         "format": {
           "enum": [
@@ -3550,13 +3905,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "category": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "child_inherit_fields_add": {
@@ -3587,13 +3938,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "ignore_shopping": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "inherit_fields_add": {
@@ -3618,34 +3965,43 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "on_hand": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "parent_remove": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "parent_set": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
+        },
+        "shopping_lists_add": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "shopping_lists_remove": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "shopping_lists_remove_all": {
+          "type": "boolean",
+        },
+        "shopping_lists_set": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
         },
         "substitute_add": {
           "items": {
@@ -3654,13 +4010,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "substitute_children": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "substitute_remove": {
@@ -3679,13 +4031,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "substitute_siblings": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
       },
@@ -3728,13 +4076,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "amount": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "delete": {
@@ -3744,13 +4088,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "unit_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -4077,6 +4417,29 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       ],
       "type": "object",
     },
+    "name": "get_household",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
     "name": "get_import_log",
   },
   {
@@ -4094,6 +4457,75 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "get_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_inventory_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_inventory_location",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_inventory_log",
   },
   {
     "inputSchema": {
@@ -4392,6 +4824,29 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "get_shopping_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "get_shopping_list",
   },
   {
     "inputSchema": {
@@ -4774,15 +5229,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
-      "properties": {
-        "format": {
-          "enum": [
-            "slim",
-            "full",
-          ],
-          "type": "string",
-        },
-      },
+      "properties": {},
       "type": "object",
     },
     "name": "import_all_pending",
@@ -5281,6 +5728,29 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       },
       "type": "object",
     },
+    "name": "list_households",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
     "name": "list_import_logs",
   },
   {
@@ -5306,6 +5776,90 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "list_ingredients",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "food_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "include_empty": {
+          "type": "boolean",
+        },
+        "location_id": {
+          "type": "number",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_inventory_entries",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_inventory_locations",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "entry_id": {
+          "type": "number",
+        },
+        "food_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
+    "name": "list_inventory_logs",
   },
   {
     "inputSchema": {
@@ -5903,6 +6457,29 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       },
       "type": "object",
     },
+    "name": "list_shopping_lists",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "page": {
+          "type": "number",
+        },
+        "page_size": {
+          "type": "number",
+        },
+      },
+      "type": "object",
+    },
     "name": "list_spaces",
   },
   {
@@ -6375,6 +6952,39 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "entry_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "sub_location": {
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "to_location_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "entry_id",
+        "to_location_id",
+      ],
+      "type": "object",
+    },
+    "name": "move_inventory_item",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
         "id": {
           "type": "number",
         },
@@ -6453,6 +7063,102 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "preview_food_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_inventory_entry_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_inventory_entry_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_inventory_entry_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_inventory_location_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_inventory_location_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_inventory_location_delete_protecting",
   },
   {
     "inputSchema": {
@@ -6693,6 +7399,54 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "preview_recipe_delete_protecting",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_shopping_list_delete_cascading",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_shopping_list_delete_nulling",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "preview_shopping_list_delete_protecting",
   },
   {
     "inputSchema": {
@@ -6989,13 +7743,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "clear_description": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "keywords_add": {
@@ -7020,13 +7770,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "private": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "recipes": {
@@ -7036,23 +7782,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "servings": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "servings_text": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "shared_add": {
@@ -7077,33 +7815,21 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "array",
         },
         "show_ingredient_overview": {
-          "anyOf": [
-            {
-              "type": "boolean",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "boolean",
+            "null",
           ],
         },
         "waiting_time": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "working_time": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -7299,7 +8025,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "properties": {
         "expires": {
           "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
           "type": "string",
         },
         "format": {
@@ -7489,23 +8215,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "todo_entity": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "token": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "type": {
@@ -7515,13 +8233,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "url": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -7538,13 +8252,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "created_at": {
@@ -7561,26 +8271,18 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "rating": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "recipe": {
           "type": "number",
         },
         "servings": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -7697,14 +8399,53 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "plural_name": {
           "type": "string",
         },
+        "properties": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "property_amount": {
+                "type": [
+                  "number",
+                  "null",
+                ],
+              },
+              "property_type_id": {
+                "type": "number",
+              },
+            },
+            "required": [
+              "property_type_id",
+              "property_amount",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "properties_food_amount": {
+          "type": "number",
+        },
+        "properties_food_unit_id": {
+          "type": [
+            "number",
+            "null",
+          ],
+        },
+        "remove_property_type_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
+        "shopping_list_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
         "supermarket_category_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -7714,6 +8455,35 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "update_food",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+        "name",
+      ],
+      "type": "object",
+    },
+    "name": "update_household",
   },
   {
     "inputSchema": {
@@ -7758,12 +8528,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
-        "always_use_plural_food": {
-          "type": "boolean",
-        },
-        "always_use_plural_unit": {
-          "type": "boolean",
-        },
         "amount": {
           "type": "number",
         },
@@ -7789,13 +8553,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "unit_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -7805,6 +8565,98 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "update_ingredient",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "minimum": 0,
+          "type": "number",
+        },
+        "code": {
+          "type": "string",
+        },
+        "expires": {
+          "anyOf": [
+            {
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "food_id": {
+          "type": "number",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "location_id": {
+          "type": "number",
+        },
+        "note": {
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "sub_location": {
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "unit_id": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_inventory_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "is_freezer": {
+          "type": "boolean",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_inventory_location",
   },
   {
     "inputSchema": {
@@ -7828,13 +8680,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "internal_note": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "reusable": {
@@ -7898,13 +8746,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "recipe_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "servings": {
@@ -7930,17 +8774,10 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "color": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
-        },
-        "default": {
-          "type": "boolean",
         },
         "format": {
           "enum": [
@@ -7957,6 +8794,17 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         },
         "order": {
           "type": "number",
+        },
+        "time": {
+          "anyOf": [
+            {
+              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$",
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
         },
       },
       "required": [
@@ -8001,23 +8849,15 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "description": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "fdc_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -8034,26 +8874,18 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "open_data_slug": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "order": {
           "type": "number",
         },
         "unit": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -8221,13 +9053,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "filter_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -8265,12 +9093,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
-        "file_path": {
-          "type": "string",
-        },
-        "file_uid": {
-          "type": "string",
-        },
         "format": {
           "enum": [
             "slim",
@@ -8283,9 +9105,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         },
         "name": {
           "type": "string",
-        },
-        "space": {
-          "type": "number",
         },
         "storage": {
           "type": "number",
@@ -8382,13 +9201,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "food_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -8404,14 +9219,16 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "order": {
           "type": "number",
         },
+        "shopping_list_ids": {
+          "items": {
+            "type": "number",
+          },
+          "type": "array",
+        },
         "unit_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
       },
@@ -8421,6 +9238,48 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "type": "object",
     },
     "name": "update_shopping_entry",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "description": {
+          "type": "string",
+        },
+        "format": {
+          "enum": [
+            "slim",
+            "full",
+          ],
+          "type": "string",
+        },
+        "id": {
+          "type": "number",
+        },
+        "name": {
+          "maxLength": 32,
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "update_shopping_list",
   },
   {
     "inputSchema": {
@@ -8573,13 +9432,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "boolean",
         },
         "step_recipe": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "time": {
@@ -8620,46 +9475,30 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "password": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "path": {
           "type": "string",
         },
         "token": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "url": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "username": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -8676,13 +9515,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
       "additionalProperties": false,
       "properties": {
         "description": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "format": {
@@ -8699,13 +9534,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "string",
         },
         "open_data_slug": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
       },
@@ -8796,13 +9627,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "last_checked": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "string",
+            "null",
           ],
         },
         "path": {
@@ -8872,13 +9699,9 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "type": "number",
         },
         "food_id": {
-          "anyOf": [
-            {
-              "type": "number",
-            },
-            {
-              "type": "null",
-            },
+          "type": [
+            "number",
+            "null",
           ],
         },
         "format": {
@@ -8963,6 +9786,12 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "comments": {
           "type": "boolean",
         },
+        "default_meal_type_id": {
+          "type": [
+            "number",
+            "null",
+          ],
+        },
         "default_page": {
           "enum": [
             "SEARCH",
@@ -9000,12 +9829,6 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "mealplan_autoinclude_related": {
           "type": "boolean",
         },
-        "plan_share_user_ids": {
-          "items": {
-            "type": "number",
-          },
-          "type": "array",
-        },
         "shopping_add_onhand": {
           "type": "boolean",
         },
@@ -9015,11 +9838,8 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
         "shopping_recent_days": {
           "type": "number",
         },
-        "shopping_share_user_ids": {
-          "items": {
-            "type": "number",
-          },
-          "type": "array",
+        "shopping_update_food_lists": {
+          "type": "boolean",
         },
         "theme": {
           "type": "string",
@@ -9060,6 +9880,7 @@ exports[`tool description snapshot (full profile) > input schemas match the reco
           "items": {
             "type": "number",
           },
+          "minItems": 1,
           "type": "array",
         },
         "id": {

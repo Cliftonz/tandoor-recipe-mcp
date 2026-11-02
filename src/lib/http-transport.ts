@@ -144,11 +144,11 @@ export class FailedAuthLimiter {
   }
 }
 
-export function createHttpTransport(server: McpServer): HttpTransportHandle {
+export function createHttpTransport(buildServer: () => McpServer): HttpTransportHandle {
   const cfg = resolveHttpConfig();
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   const expected = cfg.token ?? '';
   const limiter = new FailedAuthLimiter();
+  const live = new Set<McpServer>();
 
   let draining = false;
   let inFlight = 0;
@@ -208,6 +208,14 @@ export function createHttpTransport(server: McpServer): HttpTransportHandle {
         try {
           const raw = await readBody(req, cfg.maxBodyBytes);
           const parsed = raw.length > 0 ? JSON.parse(raw) : undefined;
+          const server = buildServer();
+          const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+          live.add(server);
+          res.on('close', () => {
+            live.delete(server);
+            server.close();
+          });
+          await server.connect(transport);
           await transport.handleRequest(req, res, parsed);
         } catch (err) {
           if (err instanceof PayloadTooLargeError) {
@@ -221,8 +229,9 @@ export function createHttpTransport(server: McpServer): HttpTransportHandle {
         return;
       }
 
-      if (req.method === 'GET' && urlPath === cfg.path) {
-        await transport.handleRequest(req, res);
+      if (urlPath === cfg.path) {
+        httpLog(reqId, 'info', 'method_not_allowed', { method: req.method, path: urlPath });
+        jsonRpcError(res, 405, -32000, 'Method not allowed', undefined, { Allow: 'POST' });
         return;
       }
 
@@ -245,9 +254,12 @@ export function createHttpTransport(server: McpServer): HttpTransportHandle {
 
   return {
     async start() {
-      await server.connect(transport);
-      await new Promise<void>((resolve) => {
-        httpServer.listen(cfg.port, cfg.host, () => resolve());
+      await new Promise<void>((resolve, reject) => {
+        httpServer.once('error', reject);
+        httpServer.listen(cfg.port, cfg.host, () => {
+          httpServer.off('error', reject);
+          resolve();
+        });
       });
     },
     async stop() {
@@ -263,7 +275,7 @@ export function createHttpTransport(server: McpServer): HttpTransportHandle {
           t.unref();
         });
       }
-      await transport.close();
+      await Promise.all([...live].map((s) => s.close()));
       await new Promise<void>((resolve) => {
         httpServer.close(() => resolve());
       });

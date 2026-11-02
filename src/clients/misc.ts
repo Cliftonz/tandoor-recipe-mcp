@@ -104,7 +104,9 @@ export class CustomFilterClient extends BaseClient {
   async listFilters(params?: { page?: number; page_size?: number }): Promise<any> {
     return this.request(`/api/custom-filter/${qs(params)}`);
   }
-  async getFilter(id: number): Promise<any> { return this.request(`/api/custom-filter/${id}/`); }
+  async getFilter(id: number, opts?: { signal?: AbortSignal }): Promise<any> {
+    return this.request(`/api/custom-filter/${id}/`, { signal: opts?.signal });
+  }
   async createFilter(body: any): Promise<any> {
     return this.request('/api/custom-filter/', { method: 'POST', body: JSON.stringify(body) });
   }

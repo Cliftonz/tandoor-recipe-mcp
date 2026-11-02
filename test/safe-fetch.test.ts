@@ -1,6 +1,6 @@
 // Unit tests for the SSRF guard.
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   isPrivateIp,
   safeFetch,

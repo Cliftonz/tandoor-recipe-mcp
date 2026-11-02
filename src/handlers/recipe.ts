@@ -214,7 +214,7 @@ export async function handleCreateRecipe(
       id: p.id,
       property_amount: p.property_amount,
       property_type: typeof p.property_type_id === 'number'
-        ? { id: p.property_type_id }
+        ? p.property_type_id
         : p.property_type,
     })) as any;
   }
@@ -264,7 +264,7 @@ export async function handleUpdateRecipe(
       id: p.id,
       property_amount: p.property_amount,
       property_type: typeof p.property_type_id === 'number'
-        ? { id: p.property_type_id }
+        ? p.property_type_id
         : p.property_type,
     })) as any;
   }
@@ -490,7 +490,7 @@ function pickServings(raw: unknown): number {
  * Convert a schema.org Recipe into Tandoor's SourceImportRecipe shape so it
  * can be saved via the same `saveScrapedRecipe` pipeline as Tandoor's native
  * scraper output. Each ingredient string is parsed via Tandoor's own
- * `ingredient-from-string` endpoint to stay consistent with the UI's parser.
+ * `ingredient-parser` endpoint to stay consistent with the UI's parser.
  */
 export async function jsonLdToScrapedRecipe(
   client: TandoorClient,

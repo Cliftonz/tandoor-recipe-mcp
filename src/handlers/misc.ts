@@ -208,7 +208,7 @@ export async function handleGetProperty(client: TandoorClient, args: GetProperty
 export async function handleCreateProperty(client: TandoorClient, args: CreatePropertyArgs): Promise<string> {
   const body: any = {
     property_amount: args.property_amount,
-    property_type: { id: args.property_type_id },
+    property_type: args.property_type_id,
   };
   const r = await client.properties.createProperty(body);
   return `Property created.\n\n${emit(args.format === 'full' ? r : slimProperty(r))}`;
@@ -217,7 +217,7 @@ export async function handleCreateProperty(client: TandoorClient, args: CreatePr
 export async function handleUpdateProperty(client: TandoorClient, args: UpdatePropertyArgs): Promise<string> {
   const body: any = {};
   if (args.property_amount !== undefined) body.property_amount = args.property_amount;
-  if (args.property_type_id !== undefined) body.property_type = { id: args.property_type_id };
+  if (args.property_type_id !== undefined) body.property_type = args.property_type_id;
   assertNonEmptyBody(body);
   const r = await client.properties.patchProperty(args.id, body);
   return `Property updated.\n\n${emit(args.format === 'full' ? r : slimProperty(r))}`;
@@ -288,7 +288,7 @@ export async function handleGetSupermarketCategoryRelation(client: TandoorClient
 
 export async function handleCreateSupermarketCategoryRelation(client: TandoorClient, args: CreateSupermarketCategoryRelationArgs): Promise<string> {
   const body: any = {
-    category: { id: args.category_id },
+    category: args.category_id,
     supermarket: args.supermarket,
   };
   if (args.order !== undefined) body.order = args.order;
@@ -298,7 +298,7 @@ export async function handleCreateSupermarketCategoryRelation(client: TandoorCli
 
 export async function handleUpdateSupermarketCategoryRelation(client: TandoorClient, args: UpdateSupermarketCategoryRelationArgs): Promise<string> {
   const body: any = {};
-  if (args.category_id !== undefined) body.category = { id: args.category_id };
+  if (args.category_id !== undefined) body.category = args.category_id;
   if (args.supermarket !== undefined) body.supermarket = args.supermarket;
   if (args.order !== undefined) body.order = args.order;
   assertNonEmptyBody(body);
@@ -328,10 +328,10 @@ export async function handleCreateUnitConversion(client: TandoorClient, args: Cr
   const body: any = {
     base_amount: args.base_amount,
     converted_amount: args.converted_amount,
-    base_unit: { id: args.base_unit_id },
-    converted_unit: { id: args.converted_unit_id },
+    base_unit: args.base_unit_id,
+    converted_unit: args.converted_unit_id,
   };
-  if (args.food_id !== undefined) body.food = args.food_id == null ? null : { id: args.food_id };
+  if (args.food_id !== undefined) body.food = args.food_id;
   const r = await client.unitConversions.createConversion(body);
   return `Unit conversion created.\n\n${emit(args.format === 'full' ? r : slimConversion(r))}`;
 }
@@ -340,9 +340,9 @@ export async function handleUpdateUnitConversion(client: TandoorClient, args: Up
   const body: any = {};
   if (args.base_amount !== undefined) body.base_amount = args.base_amount;
   if (args.converted_amount !== undefined) body.converted_amount = args.converted_amount;
-  if (args.base_unit_id !== undefined) body.base_unit = { id: args.base_unit_id };
-  if (args.converted_unit_id !== undefined) body.converted_unit = { id: args.converted_unit_id };
-  if (args.food_id !== undefined) body.food = args.food_id == null ? null : { id: args.food_id };
+  if (args.base_unit_id !== undefined) body.base_unit = args.base_unit_id;
+  if (args.converted_unit_id !== undefined) body.converted_unit = args.converted_unit_id;
+  if (args.food_id !== undefined) body.food = args.food_id;
   assertNonEmptyBody(body);
   const r = await client.unitConversions.patchConversion(args.id, body);
   return `Unit conversion updated.\n\n${emit(args.format === 'full' ? r : slimConversion(r))}`;

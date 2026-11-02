@@ -14,6 +14,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../src/clients/index.js';
 import { registerAllTools } from '../src/lib/register-all.js';
+import { parseSectionModes } from '../src/lib/sections.js';
 import { _resetRegisteredNames, _resetArraySkipLog } from '../src/lib/register.js';
 import { listRegisteredTools, RegisteredToolInfo } from './helpers/mcp.js';
 
@@ -27,16 +28,17 @@ beforeAll(() => {
   const server = new McpServer({ name: 'snapshot', version: 'snapshot' });
   const client = new TandoorClient({ url: 'https://x.test', token: 't' });
   registerAllTools(server, client, {
+    sections: parseSectionModes({}),
     pkg: { name: 'tandoor-mcp-test', version: '0.0.0-test' },
     versionCheck: { status: 'ok', level: 'note', detail: 'snapshot test stub' },
   });
   tools = listRegisteredTools(server);
 });
 
-describe('tool description snapshot (full profile)', () => {
+describe('tool description snapshot', () => {
   it('tool count is stable', () => {
     // Update deliberately on tool additions or removals. Range guards mask silent tool loss.
-    expect(tools.length).toBe(271);
+    expect(tools.length).toBe(306);
   });
 
   it('every tool has at least one character of description', () => {

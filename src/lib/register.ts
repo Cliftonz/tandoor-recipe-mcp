@@ -151,7 +151,7 @@ function tryExtractStructured(text: string): ExtractedJson | undefined {
       return { structured: JSON.parse(trimmed), payloadText: trimmed };
     } catch { /* fallthrough */ }
   }
-  const splitIdx = text.search(/\n\n[\[{]/);
+  const splitIdx = text.search(/\n\n[[{]/);
   if (splitIdx !== -1) {
     const header = text.slice(0, splitIdx);
     const payload = text.slice(splitIdx + 2);

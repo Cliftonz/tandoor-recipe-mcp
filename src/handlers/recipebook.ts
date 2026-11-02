@@ -61,7 +61,7 @@ export async function handleCreateBook(
   const body: any = { name: args.name, shared: [] };
   if (args.description !== undefined) body.description = args.description;
   if (args.order !== undefined) body.order = args.order;
-  if (args.filter_id !== undefined) body.filter = args.filter_id == null ? null : { id: args.filter_id };
+  if (args.filter_id !== undefined) body.filter = args.filter_id;
   if (Array.isArray(args.shared_user_ids)) body.shared = args.shared_user_ids.map((id: number) => ({ id }));
   const r = await client.recipeBooks.createBook(body);
   return `Recipe book created.\n\n${emit(args.format === 'full' ? r : slimBook(r))}`;
@@ -75,7 +75,7 @@ export async function handleUpdateBook(
   if (args.name !== undefined) body.name = args.name;
   if (args.description !== undefined) body.description = args.description;
   if (args.order !== undefined) body.order = args.order;
-  if (args.filter_id !== undefined) body.filter = args.filter_id == null ? null : { id: args.filter_id };
+  if (args.filter_id !== undefined) body.filter = args.filter_id;
   if (Array.isArray(args.shared_user_ids)) body.shared = args.shared_user_ids.map((id: number) => ({ id }));
   assertNonEmptyBody(body);
   const r = await client.recipeBooks.patchBook(args.id, body);

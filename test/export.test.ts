@@ -1,4 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
+import { z } from 'zod';
+import { exportRecipesShape } from '../src/tools/export.js';
 import {
   handleExportRecipes,
   handleListExportLogs,
@@ -40,14 +42,14 @@ describe('export handlers', () => {
     });
   });
 
-  it('handleExportRecipes throws when neither recipes[] nor all=true is provided', async () => {
+  it('handleExportRecipes throws when none of recipes[], all=true, or custom_filter is provided', async () => {
     const exportRecipes = vi.fn();
     const client = { exports: { exportRecipes } } as any;
     await expect(handleExportRecipes(client, { type: 'json' })).rejects.toThrow(
-      /Provide either recipes\[\] with at least one id, or all=true/,
+      /Provide recipes\[\] with at least one id, all=true, or custom_filter/,
     );
     await expect(handleExportRecipes(client, { type: 'json', recipes: [] })).rejects.toThrow(
-      /Provide either recipes\[\] with at least one id, or all=true/,
+      /Provide recipes\[\] with at least one id, all=true, or custom_filter/,
     );
     expect(exportRecipes).not.toHaveBeenCalled();
   });
@@ -59,24 +61,12 @@ describe('export handlers', () => {
     expect(exportRecipes).toHaveBeenCalledWith({ recipes: [], type: 'zip', all: true }, { signal: undefined });
   });
 
-  it('handleExportRecipes forwards custom_filter=null verbatim (clears the filter)', async () => {
-    const exportRecipes = vi.fn(async () => ({ id: 1, type: 'json', running: true, created_at: 't' }));
-    const client = { exports: { exportRecipes } } as any;
-    await handleExportRecipes(client, { type: 'json', all: true, custom_filter: null });
-    expect(exportRecipes).toHaveBeenCalledWith(
-      { recipes: [], type: 'json', all: true, custom_filter: null },
-      { signal: undefined },
-    );
+  it.each([0, -1, 1.5])('export_recipes rejects custom_filter=%s at the input schema', (custom_filter) => {
+    expect(z.object(exportRecipesShape).safeParse({ type: 'json', custom_filter }).success).toBe(false);
   });
 
-  it('handleExportRecipes wraps a numeric custom_filter id as { id }', async () => {
-    const exportRecipes = vi.fn(async () => ({ id: 1, type: 'json', running: true, created_at: 't' }));
-    const client = { exports: { exportRecipes } } as any;
-    await handleExportRecipes(client, { type: 'json', all: true, custom_filter: 42 });
-    expect(exportRecipes).toHaveBeenCalledWith(
-      { recipes: [], type: 'json', all: true, custom_filter: { id: 42 } },
-      { signal: undefined },
-    );
+  it('export_recipes rejects custom_filter=null at the input schema', () => {
+    expect(z.object(exportRecipesShape).safeParse({ type: 'json', all: true, custom_filter: null }).success).toBe(false);
   });
 
   it('handleListExportLogs slims paginated results and forwards pagination', async () => {

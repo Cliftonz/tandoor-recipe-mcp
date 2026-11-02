@@ -67,12 +67,12 @@ export function registerAccessTokenTools(server: McpServer, client: TandoorClien
   }, handleGetAccessToken);
 
   registerStringTool(server, client, 'create_access_token', {
-    description: `Mint a new Tandoor access token. Required: scope, expires (ISO datetime). ${ESCALATION_WARNING}`,
+    description: `Mint a new Tandoor access token. Required: scope, expires (UTC ISO 8601 datetime with seconds and Z suffix, e.g. 2026-12-01T10:00:00Z). ${ESCALATION_WARNING}`,
     inputSchema: createAccessTokenShape,
   }, handleCreateAccessToken);
 
   registerStringTool(server, client, 'update_access_token', {
-    description: "Update an access token (PATCH). Required: id. Token strings redacted in slim; use format='full' to reveal.",
+    description: `Update an access token (PATCH). Required: id. Optional: scope, expires (UTC ISO 8601 datetime with seconds and Z suffix, e.g. 2026-12-01T10:00:00Z). ${ESCALATION_WARNING} Token strings redacted in slim; use format='full' to reveal.`,
     inputSchema: updateAccessTokenShape,
   }, handleUpdateAccessToken);
 

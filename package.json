@@ -1,6 +1,6 @@
 {
   "name": "@cliftonz/tandoor-recipes-mcp",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "description": "Model Context Protocol server for Tandoor — recipes, meal plans, shopping lists, ingredients, cook logs, nutrition, AI import, and more.",
   "type": "module",
   "main": "./build/index.js",
@@ -16,6 +16,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
+    "lint": "oxlint --deny-warnings src test scripts vitest.config.ts vitest.e2e.config.ts",
     "test": "vitest run",
     "test:ci": "cross-env CI=1 vitest run",
     "test:watch": "vitest",
@@ -53,17 +54,18 @@
     "node": ">=24.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.30.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "jq-wasm": "3.0.0-jq-1.8.2",
-    "undici": "^8.10.0",
-    "zod": "^4.4.3"
+    "undici": "^8.12.2",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.6.5",
     "cross-env": "^10.1.0",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.8",
+    "oxlint": "1.90.0",
     "typescript": "7.0.2",
-    "vitest": "^4.1.11",
-    "yaml": "^2.9.0"
+    "vitest": "^5.0.5",
+    "yaml": "^2.9.1"
   }
 }

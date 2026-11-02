@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Tandoor
-  version: 0.0.0 (2.3.6)
+  version: 0.0.0 (2.6.15)
   x-logo:
     url: /static/assets/brand_logo.svg
     backgroundColor: '#FFFFFF'
@@ -2443,6 +2443,164 @@ paths:
               schema:
                 $ref: '#/components/schemas/Group'
           description: ''
+  /api/household/:
+    get:
+      operationId: apiHouseholdList
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedHouseholdList'
+          description: ''
+    post:
+      operationId: apiHouseholdCreate
+      description: logs request counts to redis cache total/per user/
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Household'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Household'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Household'
+        required: true
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Household'
+          description: ''
+  /api/household/{id}/:
+    get:
+      operationId: apiHouseholdRetrieve
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this household.
+        required: true
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Household'
+          description: ''
+    put:
+      operationId: apiHouseholdUpdate
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this household.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Household'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Household'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Household'
+        required: true
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Household'
+          description: ''
+    patch:
+      operationId: apiHouseholdPartialUpdate
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this household.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedHousehold'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedHousehold'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedHousehold'
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Household'
+          description: ''
+    delete:
+      operationId: apiHouseholdDestroy
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this household.
+        required: true
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/import/:
     post:
       operationId: apiImportCreate
@@ -2724,23 +2882,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/Ingredient'
           description: ''
-  /api/ingredient-from-string/:
+  /api/ingredient-parser/post/:
     post:
-      operationId: apiIngredientFromStringCreate
+      operationId: apiIngredientParserPostCreate
       tags:
       - api
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IngredientString'
+              $ref: '#/components/schemas/IngredientParserRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/IngredientString'
+              $ref: '#/components/schemas/IngredientParserRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/IngredientString'
-        required: true
+              $ref: '#/components/schemas/IngredientParserRequest'
       security:
       - ApiKeyAuth: []
       responses:
@@ -2748,7 +2905,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParsedIngredient'
+                $ref: '#/components/schemas/IngredientParserResponse'
           description: ''
   /api/ingredient/{id}/:
     get:
@@ -2854,6 +3011,650 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/inventory-entry/:
+    get:
+      operationId: apiInventoryEntryList
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: query
+        name: code
+        schema:
+          type: string
+        description: Returns all entries with the same food as the given code. If
+          code is given food parameter is ignored
+      - in: query
+        name: empty
+        schema:
+          type: boolean
+        description: If true also return empty entries, if false (default) only return
+          entries with amount > 0.
+      - in: query
+        name: food_id
+        schema:
+          type: integer
+        description: Returns all entries with the given food id
+      - in: query
+        name: inventory_location_id
+        schema:
+          type: integer
+        description: Returns all entries with the given inventory location id
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInventoryEntryList'
+          description: ''
+    post:
+      operationId: apiInventoryEntryCreate
+      description: logs request counts to redis cache total/per user/
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryEntry'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InventoryEntry'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InventoryEntry'
+        required: true
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryEntry'
+          description: ''
+  /api/inventory-entry/{id}/:
+    get:
+      operationId: apiInventoryEntryRetrieve
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory entry.
+        required: true
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryEntry'
+          description: ''
+    put:
+      operationId: apiInventoryEntryUpdate
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory entry.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryEntry'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InventoryEntry'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InventoryEntry'
+        required: true
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryEntry'
+          description: ''
+    patch:
+      operationId: apiInventoryEntryPartialUpdate
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory entry.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryEntry'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryEntry'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryEntry'
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryEntry'
+          description: ''
+    delete:
+      operationId: apiInventoryEntryDestroy
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory entry.
+        required: true
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/inventory-entry/{id}/cascading/:
+    get:
+      operationId: apiInventoryEntryCascadingList
+      description: get a paginated list of objects that will be cascaded (deleted)
+        when deleting the selected object
+      parameters:
+      - in: query
+        name: cache
+        schema:
+          type: boolean
+          default: true
+        description: If results can be cached or not
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory entry.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGenericModelReferenceList'
+          description: ''
+  /api/inventory-entry/{id}/nulling/:
+    get:
+      operationId: apiInventoryEntryNullingList
+      description: get a paginated list of objects where the selected object will
+        be removed whe its deleted
+      parameters:
+      - in: query
+        name: cache
+        schema:
+          type: boolean
+          default: true
+        description: If results can be cached or not
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory entry.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGenericModelReferenceList'
+          description: ''
+  /api/inventory-entry/{id}/protecting/:
+    get:
+      operationId: apiInventoryEntryProtectingList
+      description: get a paginated list of objects that are protecting the selected
+        object form being deleted
+      parameters:
+      - in: query
+        name: cache
+        schema:
+          type: boolean
+          default: true
+        description: If results can be cached or not
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory entry.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGenericModelReferenceList'
+          description: ''
+  /api/inventory-location/:
+    get:
+      operationId: apiInventoryLocationList
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInventoryLocationList'
+          description: ''
+    post:
+      operationId: apiInventoryLocationCreate
+      description: logs request counts to redis cache total/per user/
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryLocation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InventoryLocation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InventoryLocation'
+        required: true
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryLocation'
+          description: ''
+  /api/inventory-location/{id}/:
+    get:
+      operationId: apiInventoryLocationRetrieve
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory location.
+        required: true
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryLocation'
+          description: ''
+    put:
+      operationId: apiInventoryLocationUpdate
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory location.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryLocation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InventoryLocation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InventoryLocation'
+        required: true
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryLocation'
+          description: ''
+    patch:
+      operationId: apiInventoryLocationPartialUpdate
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory location.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryLocation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryLocation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryLocation'
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryLocation'
+          description: ''
+    delete:
+      operationId: apiInventoryLocationDestroy
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory location.
+        required: true
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/inventory-location/{id}/cascading/:
+    get:
+      operationId: apiInventoryLocationCascadingList
+      description: get a paginated list of objects that will be cascaded (deleted)
+        when deleting the selected object
+      parameters:
+      - in: query
+        name: cache
+        schema:
+          type: boolean
+          default: true
+        description: If results can be cached or not
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory location.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGenericModelReferenceList'
+          description: ''
+  /api/inventory-location/{id}/nulling/:
+    get:
+      operationId: apiInventoryLocationNullingList
+      description: get a paginated list of objects where the selected object will
+        be removed whe its deleted
+      parameters:
+      - in: query
+        name: cache
+        schema:
+          type: boolean
+          default: true
+        description: If results can be cached or not
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory location.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGenericModelReferenceList'
+          description: ''
+  /api/inventory-location/{id}/protecting/:
+    get:
+      operationId: apiInventoryLocationProtectingList
+      description: get a paginated list of objects that are protecting the selected
+        object form being deleted
+      parameters:
+      - in: query
+        name: cache
+        schema:
+          type: boolean
+          default: true
+        description: If results can be cached or not
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory location.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGenericModelReferenceList'
+          description: ''
+  /api/inventory-log/:
+    get:
+      operationId: apiInventoryLogList
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: query
+        name: entry_id
+        schema:
+          type: integer
+        description: Returns all entries with the given entry id
+      - in: query
+        name: food_id
+        schema:
+          type: integer
+        description: Returns all entries with the given food id
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInventoryLogList'
+          description: ''
+  /api/inventory-log/{id}/:
+    get:
+      operationId: apiInventoryLogRetrieve
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this inventory log.
+        required: true
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryLog'
+          description: ''
   /api/invite-link/:
     get:
       operationId: apiInviteLinkList
@@ -3048,6 +3849,129 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/invite-link/{id}/cascading/:
+    get:
+      operationId: apiInviteLinkCascadingList
+      description: get a paginated list of objects that will be cascaded (deleted)
+        when deleting the selected object
+      parameters:
+      - in: query
+        name: cache
+        schema:
+          type: boolean
+          default: true
+        description: If results can be cached or not
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invite link.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGenericModelReferenceList'
+          description: ''
+  /api/invite-link/{id}/nulling/:
+    get:
+      operationId: apiInviteLinkNullingList
+      description: get a paginated list of objects where the selected object will
+        be removed whe its deleted
+      parameters:
+      - in: query
+        name: cache
+        schema:
+          type: boolean
+          default: true
+        description: If results can be cached or not
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invite link.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGenericModelReferenceList'
+          description: ''
+  /api/invite-link/{id}/protecting/:
+    get:
+      operationId: apiInviteLinkProtectingList
+      description: get a paginated list of objects that are protecting the selected
+        object form being deleted
+      parameters:
+      - in: query
+        name: cache
+        schema:
+          type: boolean
+          default: true
+        description: If results can be cached or not
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invite link.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGenericModelReferenceList'
+          description: ''
   /api/keyword/:
     get:
       operationId: apiKeywordList
@@ -3471,7 +4395,8 @@ paths:
         name: from_date
         schema:
           type: string
-        description: Filter meal plans from date (inclusive).
+        description: Filter meal plans from date (inclusive). If nothing is given
+          its today - 90 days.
         examples:
           DateFormat:
             value: '1972-12-05'
@@ -3499,7 +4424,8 @@ paths:
         name: to_date
         schema:
           type: string
-        description: Filter meal plans to date (inclusive).
+        description: Filter meal plans to date (inclusive). If nothing is given its
+          today + 360 days.
         examples:
           DateFormat:
             value: '1972-12-05'
@@ -3654,7 +4580,8 @@ paths:
         name: from_date
         schema:
           type: string
-        description: Filter meal plans from date (inclusive).
+        description: Filter meal plans from date (inclusive). If nothing is given
+          its today - 90 days.
         examples:
           DateFormat:
             value: '1972-12-05'
@@ -3670,7 +4597,8 @@ paths:
         name: to_date
         schema:
           type: string
-        description: Filter meal plans to date (inclusive).
+        description: Filter meal plans to date (inclusive). If nothing is given its
+          today + 360 days.
         examples:
           DateFormat:
             value: '1972-12-05'
@@ -4555,6 +5483,11 @@ paths:
             type: integer
         description: Food IDs, repeat for multiple. Exclude recipes with any of the
           foods.
+      - in: query
+        name: include_children
+        schema:
+          type: boolean
+        description: Include child keywords and foods in search results. [<b>true</b>/false]
       - in: query
         name: internal
         schema:
@@ -6075,6 +7008,59 @@ paths:
               schema:
                 $ref: '#/components/schemas/ShareLink'
           description: ''
+  /api/shopping-list/:
+    get:
+      operationId: apiShoppingListList
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedShoppingListList'
+          description: ''
+    post:
+      operationId: apiShoppingListCreate
+      description: logs request counts to redis cache total/per user/
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShoppingList'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ShoppingList'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ShoppingList'
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+          description: ''
   /api/shopping-list-entry/:
     get:
       operationId: apiShoppingListEntryList
@@ -6482,6 +7468,232 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShoppingListEntryBulkCreate'
+          description: ''
+  /api/shopping-list/{id}/:
+    get:
+      operationId: apiShoppingListRetrieve
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this shopping list.
+        required: true
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+          description: ''
+    put:
+      operationId: apiShoppingListUpdate
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this shopping list.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShoppingList'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ShoppingList'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ShoppingList'
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+          description: ''
+    patch:
+      operationId: apiShoppingListPartialUpdate
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this shopping list.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedShoppingList'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedShoppingList'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedShoppingList'
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+          description: ''
+    delete:
+      operationId: apiShoppingListDestroy
+      description: logs request counts to redis cache total/per user/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this shopping list.
+        required: true
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/shopping-list/{id}/cascading/:
+    get:
+      operationId: apiShoppingListCascadingList
+      description: get a paginated list of objects that will be cascaded (deleted)
+        when deleting the selected object
+      parameters:
+      - in: query
+        name: cache
+        schema:
+          type: boolean
+          default: true
+        description: If results can be cached or not
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this shopping list.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGenericModelReferenceList'
+          description: ''
+  /api/shopping-list/{id}/nulling/:
+    get:
+      operationId: apiShoppingListNullingList
+      description: get a paginated list of objects where the selected object will
+        be removed whe its deleted
+      parameters:
+      - in: query
+        name: cache
+        schema:
+          type: boolean
+          default: true
+        description: If results can be cached or not
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this shopping list.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGenericModelReferenceList'
+          description: ''
+  /api/shopping-list/{id}/protecting/:
+    get:
+      operationId: apiShoppingListProtectingList
+      description: get a paginated list of objects that are protecting the selected
+        object form being deleted
+      parameters:
+      - in: query
+        name: cache
+        schema:
+          type: boolean
+          default: true
+        description: If results can be cached or not
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this shopping list.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGenericModelReferenceList'
           description: ''
   /api/space/:
     get:
@@ -9343,19 +10555,6 @@ paths:
         return all userspaces for the user requesting the endpoint
         :param request:
         :return:
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      - name: page_size
-        required: false
-        in: query
-        description: Number of results to return per page.
-        schema:
-          type: integer
       tags:
       - api
       security:
@@ -9365,7 +10564,36 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedUserSpaceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSpace'
+          description: ''
+  /api/user-space/batch_update/:
+    put:
+      operationId: apiUserSpaceBatchUpdateUpdate
+      description: logs request counts to redis cache total/per user/
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSpaceBatchUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserSpaceBatchUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserSpaceBatchUpdate'
+        required: true
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSpaceBatchUpdate'
           description: ''
   /api/user/{id}/:
     get:
@@ -9749,9 +10977,15 @@ components:
           format: date-time
         meal_type_id:
           type: integer
-        keyword_ids:
+        keywords:
           type: array
-          items: {}
+          items:
+            type: integer
+          default: []
+        keyword_mode:
+          allOf:
+          - $ref: '#/components/schemas/KeywordModeEnum'
+          default: and
         servings:
           type: number
           format: double
@@ -9765,7 +10999,6 @@ components:
       required:
       - addshopping
       - end_date
-      - keyword_ids
       - meal_type_id
       - servings
       - start_date
@@ -9831,6 +11064,16 @@ components:
         * `FOOD_REPLACE` - Food Replace
         * `UNIT_REPLACE` - Unit Replace
         * `NAME_REPLACE` - Name Replace
+    BookingTypeEnum:
+      enum:
+      - add
+      - remove
+      - move
+      type: string
+      description: |-
+        * `add` - Add
+        * `remove` - Remove
+        * `move` - Move
     BookmarkletImport:
       type: object
       properties:
@@ -9887,10 +11130,13 @@ components:
         type:
           $ref: '#/components/schemas/ConnectorConfigTypeEnum'
         url:
-          type: string
-          format: uri
           nullable: true
-          maxLength: 200
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
         token:
           type: string
           writeOnly: true
@@ -10214,6 +11460,10 @@ components:
           type: string
           nullable: true
           maxLength: 128
+        shopping_lists:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingList'
       required:
       - full_name
       - name
@@ -10274,6 +11524,21 @@ components:
           items:
             type: integer
         child_inherit_fields_remove_all:
+          type: boolean
+          default: false
+        shopping_lists_add:
+          type: array
+          items:
+            type: integer
+        shopping_lists_remove:
+          type: array
+          items:
+            type: integer
+        shopping_lists_set:
+          type: array
+          items:
+            type: integer
+        shopping_lists_remove_all:
           type: boolean
           default: false
         substitute_children:
@@ -10354,6 +11619,33 @@ components:
           type: string
           nullable: true
       required: []
+    FoodShopping:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: false
+        name:
+          type: string
+          maxLength: 128
+          minLength: 1
+        plural_name:
+          type: string
+          nullable: true
+          maxLength: 128
+        supermarket_category:
+          allOf:
+          - $ref: '#/components/schemas/SupermarketCategory'
+          readOnly: true
+        shopping_lists:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingList'
+          readOnly: true
+      required:
+      - name
+      - shopping_lists
+      - supermarket_category
     FoodShoppingUpdate:
       type: object
       properties:
@@ -10457,6 +11749,28 @@ components:
           readOnly: true
       required:
       - name
+    Household:
+      type: object
+      description: Adds nested create feature
+      properties:
+        id:
+          type: integer
+          readOnly: false
+        name:
+          type: string
+          maxLength: 128
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - name
+      - updated_at
     ImportLog:
       type: object
       properties:
@@ -10674,23 +11988,231 @@ components:
           type: array
           items: {}
           readOnly: true
-        always_use_plural_unit:
+        checked:
           type: boolean
-        always_use_plural_food:
-          type: boolean
+          readOnly: true
+          default: false
+          description: Just laziness to have a checked field on the frontend API client
       required:
       - amount
+      - checked
       - conversions
       - food
       - unit
       - used_in_recipes
-    IngredientString:
+    IngredientParserRequest:
       type: object
       properties:
-        text:
+        ingredient:
           type: string
+        ingredients:
+          type: array
+          items:
+            type: string
+    IngredientParserResponse:
+      type: object
+      properties:
+        ingredient:
+          allOf:
+          - $ref: '#/components/schemas/IngredientSimple'
+          nullable: true
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngredientSimple'
       required:
-      - text
+      - ingredient
+      - ingredients
+    IngredientSimple:
+      type: object
+      description: Adds nested create feature
+      properties:
+        id:
+          type: integer
+          readOnly: false
+        food:
+          allOf:
+          - $ref: '#/components/schemas/FoodSimple'
+          nullable: true
+        unit:
+          allOf:
+          - $ref: '#/components/schemas/Unit'
+          nullable: true
+        amount:
+          type: number
+          format: double
+        note:
+          type: string
+          nullable: true
+          maxLength: 256
+        order:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        is_header:
+          type: boolean
+        no_amount:
+          type: boolean
+        original_text:
+          type: string
+          nullable: true
+          maxLength: 512
+        checked:
+          type: boolean
+          readOnly: true
+          default: false
+          description: Just laziness to have a checked field on the frontend API client
+      required:
+      - amount
+      - checked
+      - food
+      - unit
+    InventoryEntry:
+      type: object
+      description: Adds nested create feature
+      properties:
+        id:
+          type: integer
+          readOnly: false
+        inventory_location:
+          $ref: '#/components/schemas/InventoryLocation'
+        sub_location:
+          type: string
+          nullable: true
+          maxLength: 64
+        code:
+          type: string
+          nullable: true
+          maxLength: 16
+        food:
+          $ref: '#/components/schemas/Food'
+        unit:
+          $ref: '#/components/schemas/Unit'
+        amount:
+          type: number
+          format: double
+          maximum: 10000000000000000
+          minimum: -10000000000000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+        expires:
+          type: string
+          format: date
+          nullable: true
+        note:
+          type: string
+          nullable: true
+          maxLength: 256
+        label:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - food
+      - inventory_location
+      - label
+      - unit
+    InventoryLocation:
+      type: object
+      description: |-
+        Moves `UniqueValidator`'s from the validation stage to the save stage.
+        It solves the problem with nested validation for unique fields on update.
+
+        If you want more details, you can read related issues and articles:
+        https://github.com/beda-software/drf-writable-nested/issues/1
+        http://www.django-rest-framework.org/api-guide/validators/#updating-nested-serializers
+
+        Example of usage:
+        ```
+            class Child(models.Model):
+            field = models.CharField(unique=True)
+
+
+        class Parent(models.Model):
+            child = models.ForeignKey('Child')
+
+
+        class ChildSerializer(UniqueFieldsMixin, serializers.ModelSerializer):
+            class Meta:
+                model = Child
+
+
+        class ParentSerializer(NestedUpdateMixin, serializers.ModelSerializer):
+            child = ChildSerializer()
+
+            class Meta:
+                model = Parent
+        ```
+
+        Note: `UniqueFieldsMixin` must be applied only on the serializer
+        which has unique fields.
+
+        Note: When you are using both mixins
+        (`UniqueFieldsMixin` and `NestedCreateMixin` or `NestedUpdateMixin`)
+        you should put `UniqueFieldsMixin` ahead.
+      properties:
+        id:
+          type: integer
+          readOnly: false
+        name:
+          type: string
+          maxLength: 64
+        is_freezer:
+          type: boolean
+        household:
+          $ref: '#/components/schemas/Household'
+      required:
+      - household
+      - name
+    InventoryLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: false
+        entry:
+          $ref: '#/components/schemas/InventoryEntry'
+        booking_type:
+          $ref: '#/components/schemas/BookingTypeEnum'
+        old_amount:
+          type: number
+          format: double
+          maximum: 10000000000000000
+          minimum: -10000000000000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+        new_amount:
+          type: number
+          format: double
+          maximum: 10000000000000000
+          minimum: -10000000000000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+        old_inventory_location:
+          $ref: '#/components/schemas/InventoryLocation'
+        new_inventory_location:
+          $ref: '#/components/schemas/InventoryLocation'
+        note:
+          type: string
+          nullable: true
+          maxLength: 256
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - entry
+      - new_inventory_location
+      - old_inventory_location
     InviteLink:
       type: object
       description: Adds nested create feature
@@ -10703,11 +12225,18 @@ components:
           format: uuid
           readOnly: true
         email:
-          type: string
-          format: email
-          maxLength: 254
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
         group:
           $ref: '#/components/schemas/Group'
+        household:
+          allOf:
+          - $ref: '#/components/schemas/Household'
+          nullable: true
         valid_until:
           type: string
           format: date
@@ -10727,9 +12256,14 @@ components:
           type: string
           format: date-time
           readOnly: true
+        email_sent:
+          type: boolean
+          description: Return whether the invite email was successfully sent.
+          readOnly: true
       required:
       - created_at
       - created_by
+      - email_sent
       - group
       - used_by
       - uuid
@@ -10822,6 +12356,14 @@ components:
           readOnly: true
       required:
       - label
+    KeywordModeEnum:
+      enum:
+      - or
+      - and
+      type: string
+      description: |-
+        * `or` - or
+        * `and` - and
     Localization:
       type: object
       properties:
@@ -10868,11 +12410,6 @@ components:
         created_by:
           type: integer
           readOnly: true
-        shared:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-          nullable: true
         recipe_name:
           type: string
           readOnly: true
@@ -10916,8 +12453,6 @@ components:
           type: string
           nullable: true
           maxLength: 7
-        default:
-          type: boolean
         created_by:
           type: integer
           readOnly: true
@@ -11221,6 +12756,32 @@ components:
         timestamp:
           type: string
           format: date-time
+    PaginatedHouseholdList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Household'
+        timestamp:
+          type: string
+          format: date-time
     PaginatedImportLogList:
       type: object
       required:
@@ -11270,6 +12831,84 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Ingredient'
+        timestamp:
+          type: string
+          format: date-time
+    PaginatedInventoryEntryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryEntry'
+        timestamp:
+          type: string
+          format: date-time
+    PaginatedInventoryLocationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryLocation'
+        timestamp:
+          type: string
+          format: date-time
+    PaginatedInventoryLogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryLog'
         timestamp:
           type: string
           format: date-time
@@ -11553,6 +13192,32 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ShoppingListEntry'
+        timestamp:
+          type: string
+          format: date-time
+    PaginatedShoppingListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingList'
         timestamp:
           type: string
           format: date-time
@@ -11920,25 +13585,6 @@ components:
         timestamp:
           type: string
           format: date-time
-    ParsedIngredient:
-      type: object
-      properties:
-        amount:
-          type: integer
-        unit:
-          type: string
-        food:
-          type: string
-        note:
-          type: string
-        original_text:
-          type: string
-      required:
-      - amount
-      - food
-      - note
-      - original_text
-      - unit
     PatchedAccessToken:
       type: object
       properties:
@@ -12062,10 +13708,13 @@ components:
         type:
           $ref: '#/components/schemas/ConnectorConfigTypeEnum'
         url:
-          type: string
-          format: uri
           nullable: true
-          maxLength: 200
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
         token:
           type: string
           writeOnly: true
@@ -12302,6 +13951,28 @@ components:
           type: string
           nullable: true
           maxLength: 128
+        shopping_lists:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingList'
+    PatchedHousehold:
+      type: object
+      description: Adds nested create feature
+      properties:
+        id:
+          type: integer
+          readOnly: false
+        name:
+          type: string
+          maxLength: 128
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
     PatchedImportLog:
       type: object
       properties:
@@ -12376,10 +14047,106 @@ components:
           type: array
           items: {}
           readOnly: true
-        always_use_plural_unit:
+        checked:
           type: boolean
-        always_use_plural_food:
+          readOnly: true
+          default: false
+          description: Just laziness to have a checked field on the frontend API client
+    PatchedInventoryEntry:
+      type: object
+      description: Adds nested create feature
+      properties:
+        id:
+          type: integer
+          readOnly: false
+        inventory_location:
+          $ref: '#/components/schemas/InventoryLocation'
+        sub_location:
+          type: string
+          nullable: true
+          maxLength: 64
+        code:
+          type: string
+          nullable: true
+          maxLength: 16
+        food:
+          $ref: '#/components/schemas/Food'
+        unit:
+          $ref: '#/components/schemas/Unit'
+        amount:
+          type: number
+          format: double
+          maximum: 10000000000000000
+          minimum: -10000000000000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+        expires:
+          type: string
+          format: date
+          nullable: true
+        note:
+          type: string
+          nullable: true
+          maxLength: 256
+        label:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+    PatchedInventoryLocation:
+      type: object
+      description: |-
+        Moves `UniqueValidator`'s from the validation stage to the save stage.
+        It solves the problem with nested validation for unique fields on update.
+
+        If you want more details, you can read related issues and articles:
+        https://github.com/beda-software/drf-writable-nested/issues/1
+        http://www.django-rest-framework.org/api-guide/validators/#updating-nested-serializers
+
+        Example of usage:
+        ```
+            class Child(models.Model):
+            field = models.CharField(unique=True)
+
+
+        class Parent(models.Model):
+            child = models.ForeignKey('Child')
+
+
+        class ChildSerializer(UniqueFieldsMixin, serializers.ModelSerializer):
+            class Meta:
+                model = Child
+
+
+        class ParentSerializer(NestedUpdateMixin, serializers.ModelSerializer):
+            child = ChildSerializer()
+
+            class Meta:
+                model = Parent
+        ```
+
+        Note: `UniqueFieldsMixin` must be applied only on the serializer
+        which has unique fields.
+
+        Note: When you are using both mixins
+        (`UniqueFieldsMixin` and `NestedCreateMixin` or `NestedUpdateMixin`)
+        you should put `UniqueFieldsMixin` ahead.
+      properties:
+        id:
+          type: integer
+          readOnly: false
+        name:
+          type: string
+          maxLength: 64
+        is_freezer:
           type: boolean
+        household:
+          $ref: '#/components/schemas/Household'
     PatchedInviteLink:
       type: object
       description: Adds nested create feature
@@ -12392,11 +14159,18 @@ components:
           format: uuid
           readOnly: true
         email:
-          type: string
-          format: email
-          maxLength: 254
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
         group:
           $ref: '#/components/schemas/Group'
+        household:
+          allOf:
+          - $ref: '#/components/schemas/Household'
+          nullable: true
         valid_until:
           type: string
           format: date
@@ -12415,6 +14189,10 @@ components:
         created_at:
           type: string
           format: date-time
+          readOnly: true
+        email_sent:
+          type: boolean
+          description: Return whether the invite email was successfully sent.
           readOnly: true
     PatchedKeyword:
       type: object
@@ -12519,11 +14297,6 @@ components:
         created_by:
           type: integer
           readOnly: true
-        shared:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-          nullable: true
         recipe_name:
           type: string
           readOnly: true
@@ -12558,8 +14331,6 @@ components:
           type: string
           nullable: true
           maxLength: 7
-        default:
-          type: boolean
         created_by:
           type: integer
           readOnly: true
@@ -12658,8 +14429,8 @@ components:
         image:
           type: string
           format: uri
-          readOnly: true
           nullable: true
+          readOnly: true
         keywords:
           type: array
           items:
@@ -12712,8 +14483,15 @@ components:
           minimum: -2147483648
         file_path:
           type: string
-          maxLength: 512
+          readOnly: true
         servings_text:
+          type: string
+          maxLength: 32
+        diameter:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        diameter_text:
           type: string
           maxLength: 32
         rating:
@@ -12780,27 +14558,26 @@ components:
           readOnly: true
     PatchedRecipeImport:
       type: object
+      description: Adds nested create feature
       properties:
         id:
           type: integer
           readOnly: false
+        storage:
+          $ref: '#/components/schemas/Storage'
         name:
           type: string
           maxLength: 128
         file_uid:
           type: string
-          maxLength: 256
+          readOnly: true
         file_path:
           type: string
-          maxLength: 512
+          readOnly: true
         created_at:
           type: string
           format: date-time
           readOnly: true
-        storage:
-          type: integer
-        space:
-          type: integer
     PatchedSearchPreference:
       type: object
       description: Adds nested create feature
@@ -12845,6 +14622,22 @@ components:
           minimum: -10
           exclusiveMaximum: true
           exclusiveMinimum: true
+    PatchedShoppingList:
+      type: object
+      description: Adds nested create feature
+      properties:
+        id:
+          type: integer
+          readOnly: false
+        name:
+          type: string
+          maxLength: 32
+        description:
+          type: string
+        color:
+          type: string
+          nullable: true
+          maxLength: 7
     PatchedShoppingListEntry:
       type: object
       description: Adds nested create feature
@@ -12855,9 +14648,13 @@ components:
         list_recipe:
           type: integer
           nullable: true
+        shopping_lists:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingList'
         food:
           allOf:
-          - $ref: '#/components/schemas/Food'
+          - $ref: '#/components/schemas/FoodShopping'
           nullable: true
         unit:
           allOf:
@@ -12920,13 +14717,13 @@ components:
           allOf:
           - $ref: '#/components/schemas/RecipeOverview'
           readOnly: true
-        mealplan:
-          type: integer
-          nullable: true
         meal_plan_data:
           allOf:
           - $ref: '#/components/schemas/MealPlan'
           readOnly: true
+        mealplan:
+          type: integer
+          nullable: true
         servings:
           type: number
           format: double
@@ -13055,6 +14852,8 @@ components:
           nullable: true
         space_setup_completed:
           type: boolean
+        household_setup_completed:
+          type: boolean
     PatchedStep:
       type: object
       description: Adds nested create feature
@@ -13125,10 +14924,13 @@ components:
           nullable: true
           maxLength: 4098
         url:
-          type: string
-          format: uri
           nullable: true
-          maxLength: 200
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
         path:
           type: string
           maxLength: 256
@@ -13184,6 +14986,10 @@ components:
         description:
           type: string
           nullable: true
+        shopping_lists:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingList'
         category_to_supermarket:
           type: array
           items:
@@ -13426,6 +15232,7 @@ components:
         file:
           type: string
           format: uri
+          nullable: true
           writeOnly: true
         file_download:
           type: string
@@ -13474,11 +15281,6 @@ components:
           type: boolean
         use_kj:
           type: boolean
-        plan_share:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-          nullable: true
         nav_sticky:
           type: boolean
         ingredient_decimals:
@@ -13508,11 +15310,6 @@ components:
           type: boolean
         mealplan_autoexclude_onhand:
           type: boolean
-        shopping_share:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-          nullable: true
         shopping_recent_days:
           type: integer
           maximum: 2147483647
@@ -13523,6 +15320,12 @@ components:
         csv_prefix:
           type: string
           maxLength: 10
+        shopping_update_food_lists:
+          type: boolean
+        default_meal_type:
+          allOf:
+          - $ref: '#/components/schemas/MealType'
+          nullable: true
         filter_to_supermarket:
           type: boolean
         shopping_add_onhand:
@@ -13552,6 +15355,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Group'
+        household:
+          allOf:
+          - $ref: '#/components/schemas/Household'
+          nullable: true
         active:
           type: boolean
         internal_note:
@@ -13684,8 +15491,8 @@ components:
         image:
           type: string
           format: uri
-          readOnly: true
           nullable: true
+          readOnly: true
         keywords:
           type: array
           items:
@@ -13738,8 +15545,15 @@ components:
           minimum: -2147483648
         file_path:
           type: string
-          maxLength: 512
+          readOnly: true
         servings_text:
+          type: string
+          maxLength: 32
+        diameter:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        diameter_text:
           type: string
           maxLength: 32
         rating:
@@ -13761,6 +15575,7 @@ components:
       required:
       - created_at
       - created_by
+      - file_path
       - food_properties
       - image
       - last_cooked
@@ -13902,8 +15717,8 @@ components:
         image:
           type: string
           format: uri
-          readOnly: true
           nullable: true
+          readOnly: true
       required:
       - image
       - name
@@ -13958,31 +15773,31 @@ components:
           maxLength: 4096
     RecipeImport:
       type: object
+      description: Adds nested create feature
       properties:
         id:
           type: integer
           readOnly: false
+        storage:
+          $ref: '#/components/schemas/Storage'
         name:
           type: string
           maxLength: 128
         file_uid:
           type: string
-          maxLength: 256
+          readOnly: true
         file_path:
           type: string
-          maxLength: 512
+          readOnly: true
         created_at:
           type: string
           format: date-time
           readOnly: true
-        storage:
-          type: integer
-        space:
-          type: integer
       required:
       - created_at
+      - file_path
+      - file_uid
       - name
-      - space
       - storage
     RecipeOverview:
       type: object
@@ -14001,8 +15816,8 @@ components:
         image:
           type: string
           format: uri
-          readOnly: true
           nullable: true
+          readOnly: true
         keywords:
           type: array
           items:
@@ -14225,8 +16040,6 @@ components:
       properties:
         shopping_min_autosync_interval:
           type: string
-        enable_pdf_export:
-          type: boolean
         disable_external_connectors:
           type: boolean
         terms_url:
@@ -14248,6 +16061,7 @@ components:
         logo_color_32:
           type: string
           format: uri
+          nullable: true
         logo_color_128:
           type: string
         logo_color_144:
@@ -14269,7 +16083,6 @@ components:
       required:
       - debug
       - disable_external_connectors
-      - enable_pdf_export
       - force_theme_from_space
       - hosted
       - imprint_url
@@ -14292,6 +16105,23 @@ components:
       - link
       - pk
       - share
+    ShoppingList:
+      type: object
+      description: Adds nested create feature
+      properties:
+        id:
+          type: integer
+          readOnly: false
+        name:
+          type: string
+          maxLength: 32
+        description:
+          type: string
+        color:
+          type: string
+          nullable: true
+          maxLength: 7
+      required: []
     ShoppingListEntry:
       type: object
       description: Adds nested create feature
@@ -14302,9 +16132,13 @@ components:
         list_recipe:
           type: integer
           nullable: true
+        shopping_lists:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingList'
         food:
           allOf:
-          - $ref: '#/components/schemas/Food'
+          - $ref: '#/components/schemas/FoodShopping'
           nullable: true
         unit:
           allOf:
@@ -14366,12 +16200,27 @@ components:
           items: {}
         checked:
           type: boolean
+          nullable: true
         timestamp:
           type: string
           format: date-time
           readOnly: true
+        shopping_lists_add:
+          type: array
+          items:
+            type: integer
+        shopping_lists_remove:
+          type: array
+          items:
+            type: integer
+        shopping_lists_set:
+          type: array
+          items:
+            type: integer
+        shopping_lists_remove_all:
+          type: boolean
+          default: false
       required:
-      - checked
       - ids
       - timestamp
     ShoppingListEntryBulkCreate:
@@ -14381,6 +16230,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ShoppingListEntrySimpleCreate'
+        shopping_lists_ids:
+          type: array
+          items:
+            type: integer
       required:
       - entries
     ShoppingListEntrySimpleCreate:
@@ -14419,13 +16272,13 @@ components:
           allOf:
           - $ref: '#/components/schemas/RecipeOverview'
           readOnly: true
-        mealplan:
-          type: integer
-          nullable: true
         meal_plan_data:
           allOf:
           - $ref: '#/components/schemas/MealPlan'
           readOnly: true
+        mealplan:
+          type: integer
+          nullable: true
         servings:
           type: number
           format: double
@@ -14467,6 +16320,9 @@ components:
           $ref: '#/components/schemas/SourceImportUnit'
         note:
           type: string
+        order:
+          type: integer
+          nullable: true
         original_text:
           type: string
       required:
@@ -14701,6 +16557,8 @@ components:
           nullable: true
         space_setup_completed:
           type: boolean
+        household_setup_completed:
+          type: boolean
       required:
       - ai_monthly_credits_used
       - allow_sharing
@@ -14816,10 +16674,13 @@ components:
           nullable: true
           maxLength: 4098
         url:
-          type: string
-          format: uri
           nullable: true
-          maxLength: 200
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
         path:
           type: string
           maxLength: 256
@@ -14878,6 +16739,10 @@ components:
         description:
           type: string
           nullable: true
+        shopping_lists:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingList'
         category_to_supermarket:
           type: array
           items:
@@ -15185,6 +17050,7 @@ components:
         file:
           type: string
           format: uri
+          nullable: true
           writeOnly: true
         file_download:
           type: string
@@ -15273,11 +17139,6 @@ components:
           type: boolean
         use_kj:
           type: boolean
-        plan_share:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-          nullable: true
         nav_sticky:
           type: boolean
         ingredient_decimals:
@@ -15307,11 +17168,6 @@ components:
           type: boolean
         mealplan_autoexclude_onhand:
           type: boolean
-        shopping_share:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-          nullable: true
         shopping_recent_days:
           type: integer
           maximum: 2147483647
@@ -15322,6 +17178,12 @@ components:
         csv_prefix:
           type: string
           maxLength: 10
+        shopping_update_food_lists:
+          type: boolean
+        default_meal_type:
+          allOf:
+          - $ref: '#/components/schemas/MealType'
+          nullable: true
         filter_to_supermarket:
           type: boolean
         shopping_add_onhand:
@@ -15363,6 +17225,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Group'
+        household:
+          allOf:
+          - $ref: '#/components/schemas/Household'
+          nullable: true
         active:
           type: boolean
         internal_note:
@@ -15387,6 +17253,23 @@ components:
       - space
       - updated_at
       - user
+    UserSpaceBatchUpdate:
+      type: object
+      properties:
+        user_spaces:
+          type: array
+          items:
+            type: integer
+        household:
+          type: integer
+          nullable: true
+        group_set:
+          type: array
+          items:
+            type: integer
+      required:
+      - group_set
+      - user_spaces
     ViewLog:
       type: object
       properties:

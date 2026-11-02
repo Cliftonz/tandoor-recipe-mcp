@@ -94,6 +94,13 @@ export function redactToken(text: string, token: string): string {
     .split(token).join('***REDACTED***');
 }
 
+export function explainOwnerOnly403<T>(call: Promise<T>): Promise<T> {
+  return call.catch((e: Error) => {
+    if (!e.message.startsWith('Tandoor API error: 403')) throw e;
+    throw new Error(`${e.message}\n\nThis call requires the space owner and a read-write token; space admins and members get 403.`);
+  });
+}
+
 /** Statuses worth retrying with backoff. Everything else fails fast. */
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
 const DEFAULT_MAX_RETRIES = 3;
@@ -176,9 +183,9 @@ export class BaseClient {
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${this.token}`,
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      ...((options.headers as Record<string, string>) || {}),
+      ...(options.headers as Record<string, string>),
     };
-    const isIdempotentBody = isFormData ? false : true; // JSON bodies are safe to replay; we don't retry streams.
+    const isReplayableBody = !isFormData;
     const bodyPreview = typeof options.body === 'string'
       ? redactToken(options.body, this.token)
       : undefined;
@@ -195,8 +202,9 @@ export class BaseClient {
         logRequest(method, url, bodyPreview);
         const response = await fetch(url, { ...options, headers });
 
-        // Retry on transient 5xx / 429 before reading the body.
-        if (shouldRetry(response.status) && attempt < maxRetries && isIdempotentBody && !signal?.aborted) {
+        // Retry on transient 5xx / 429 before reading the body, except POST 5xx: it may follow a committed write, so a replay can duplicate it.
+        const isPost5xx = method === 'POST' && response.status >= 500;
+        if (shouldRetry(response.status) && attempt < maxRetries && isReplayableBody && !isPost5xx && !signal?.aborted) {
           const wait = backoffMs(attempt, response.headers.get('retry-after'));
           await sleep(wait);
           continue;
@@ -257,7 +265,7 @@ export class BaseClient {
         }
         // Network errors (DNS failure, socket reset) — worth retrying.
         const isNetwork = error instanceof TypeError || (error as any)?.name === 'FetchError';
-        if (isNetwork && attempt < maxRetries && isIdempotentBody) {
+        if (isNetwork && attempt < maxRetries && isReplayableBody) {
           await sleep(backoffMs(attempt, null));
           continue;
         }
@@ -299,9 +307,9 @@ export class BaseClient {
       'Authorization': `Bearer ${this.token}`,
       'Accept': options.accept || '*/*',
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      ...((options.headers as Record<string, string>) || {}),
+      ...(options.headers as Record<string, string>),
     };
-    const isIdempotentBody = isFormData ? false : true;
+    const isReplayableBody = !isFormData;
     const bodyPreview = typeof options.body === 'string'
       ? redactToken(options.body, this.token)
       : undefined;
@@ -316,7 +324,7 @@ export class BaseClient {
         logRequest(method, url, bodyPreview);
         const response = await fetch(url, { ...options, headers });
 
-        if (shouldRetry(response.status) && attempt < maxRetries && isIdempotentBody && !signal?.aborted) {
+        if (shouldRetry(response.status) && attempt < maxRetries && isReplayableBody && !signal?.aborted) {
           const wait = backoffMs(attempt, response.headers.get('retry-after'));
           await sleep(wait);
           continue;
@@ -338,7 +346,7 @@ export class BaseClient {
           throw error;
         }
         const isNetwork = error instanceof TypeError || (error as { name?: string })?.name === 'FetchError';
-        if (isNetwork && attempt < maxRetries && isIdempotentBody) {
+        if (isNetwork && attempt < maxRetries && isReplayableBody) {
           await sleep(backoffMs(attempt, null));
           continue;
         }

@@ -136,7 +136,7 @@ describe('registerTreeSafetyTools', () => {
     registerTreeSafetyTools(server, client);
     const names = registeredToolNames(server).filter((n) => n.startsWith('preview_'));
     expect(names.length).toBe(RESOURCES.length * 3);
-    expect(names.length).toBe(33);
+    expect(names.length).toBe(42);
   });
 
   it('names follow preview_{resource_snake}_delete_{action} pattern', () => {
@@ -182,5 +182,22 @@ describe('registerTreeSafetyTools', () => {
     registerTreeSafetyTools(server, client);
     const res = await invokeTool(server, 'preview_keyword_delete_protecting', { id: 11 });
     expect(JSON.parse(res.content[0].text)).toEqual({ r: 'keyword', id: 11, a: 'protecting' });
+  });
+
+  it('end-to-end: preview_shopping_list_delete_cascading reads /api/shopping-list/{id}/cascading/', async () => {
+    const paths: string[] = [];
+    const spy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      paths.push(new URL(String(url)).pathname);
+      return new Response(JSON.stringify({ count: 0, results: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    });
+    try {
+      const server = freshServer();
+      registerTreeSafetyTools(server, new TandoorClient(cfg));
+      const res = await invokeTool(server, 'preview_shopping_list_delete_cascading', { id: 6 });
+      expect(JSON.parse(res.content[0].text)).toEqual({ count: 0, results: [] });
+      expect(paths).toEqual(['/api/shopping-list/6/cascading/']);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

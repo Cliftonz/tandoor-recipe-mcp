@@ -64,8 +64,8 @@ function slimUserPrefs(p: any) {
     mealplan_autoexclude_onhand: p.mealplan_autoexclude_onhand,
     filter_to_supermarket: p.filter_to_supermarket,
     left_handed: p.left_handed,
-    plan_share_user_ids: Array.isArray(p.plan_share) ? p.plan_share.map((u: any) => u.id) : [],
-    shopping_share_user_ids: Array.isArray(p.shopping_share) ? p.shopping_share.map((u: any) => u.id) : [],
+    default_meal_type_id: p.default_meal_type && p.default_meal_type.id,
+    shopping_update_food_lists: p.shopping_update_food_lists,
   };
 }
 
@@ -91,10 +91,9 @@ export async function handleUpdateUserPreference(
   client: TandoorClient,
   args: UpdateUserPreferenceArgs
 ): Promise<string> {
-  const { user_id, format, plan_share_user_ids, shopping_share_user_ids, ...rest } = args;
+  const { user_id, format, default_meal_type_id, ...rest } = args;
   const body: any = { ...rest };
-  if (Array.isArray(plan_share_user_ids)) body.plan_share = plan_share_user_ids.map((id) => ({ id }));
-  if (Array.isArray(shopping_share_user_ids)) body.shopping_share = shopping_share_user_ids.map((id) => ({ id }));
+  if (default_meal_type_id !== undefined) body.default_meal_type = default_meal_type_id;
   assertNonEmptyBody(body);
   const r = await client.userPreferences.patchPreference(user_id, body);
   return `User preferences updated.\n\n${emit(format === 'full' ? r : slimUserPrefs(r))}`;

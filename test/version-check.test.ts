@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  checkTandoorVersion,
-  evaluateVersion,
-  MIN_SUPPORTED_MAJOR,
-} from '../src/lib/version-check.js';
+import { checkTandoorVersion, evaluateVersion } from '../src/lib/version-check.js';
 
 type GetCurrent = (opts?: { signal?: AbortSignal; maxRetries?: number }) => Promise<any>;
 
@@ -16,12 +12,21 @@ function fakeClient(getCurrent: GetCurrent) {
 
 describe('evaluateVersion', () => {
   it.each([
+    ['2.6.0', 'ok'],
     ['2.6.9', 'ok'],
-    ['2', 'ok'], // bare major
+    ['2.6.15', 'ok'],
+    ['2.10.0', 'ok'], // multi-digit minor
+    ['3', 'ok'], // bare major
     ['10.0', 'ok'], // multi-digit major
-    ['2.0.0-beta', 'ok'], // prerelease suffix
-    [' 2.1', 'ok'], // leading whitespace trimmed
+    ['2.6.0-beta', 'ok'], // prerelease suffix
+    ['2.6-rc1', 'ok'], // suffix right after the minor
+    [' 2.6', 'ok'], // leading whitespace trimmed
     ['3.0.0', 'ok'], // future major
+    ['3.1.4', 'ok'],
+    ['2.5.9', 'unsupported'],
+    ['2.5.0', 'unsupported'],
+    ['2.0.0-beta', 'unsupported'],
+    ['2', 'unsupported'], // bare major, minor taken as 0
     ['1.5.35', 'unsupported'],
     ['0.9', 'unsupported'],
     ['v2.1', 'unknown'], // v-prefix is NOT parsed — fails the digit-first shape
@@ -39,11 +44,18 @@ describe('evaluateVersion', () => {
     expect(evaluateVersion(null).status).toBe('unknown');
   });
 
+  it('2.5.x warns with the 2.6.0 minimum', () => {
+    const r = evaluateVersion('2.5.3');
+    expect(r.level).toBe('warning');
+    expect(r.detail).toMatch(/2\.5\.3/);
+    expect(r.detail).toMatch(/Upgrade Tandoor to 2\.6\.0 or later/);
+  });
+
   it('unsupported message carries the version and actionable advice', () => {
     const r = evaluateVersion('1.5.35');
     expect(r.level).toBe('warning');
     expect(r.detail).toMatch(/1\.5\.35/);
-    expect(r.detail).toMatch(new RegExp(`targets the Tandoor ${MIN_SUPPORTED_MAJOR}\\.x API`));
+    expect(r.detail).toMatch(/targets Tandoor 2\.6\.0 or later/);
   });
 
   it('hostile version strings are never echoed into the detail', () => {

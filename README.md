@@ -6,22 +6,24 @@ A Model Context Protocol (MCP) server that gives LLM agents full read/write acce
 
 > Turn "plan the week and make me a grocery list" into one prompt.
 
-## New in 1.5.0
+## New in 3.0.0
 
-- **271 tools across 21 groups** (up from ~135 across 16 in 1.4.0). Coverage push against the Tandoor 2.3.6 OpenAPI.
-- **Stateless HTTP transport** via `TANDOOR_MCP_TRANSPORT=http`, loopback-only bind on `127.0.0.1:3737`, optional bearer auth. See [Transport modes](#transport-modes).
-- **33 tree-safety delete previews.** Preview the blast radius before every destructive call.
-- **Escalation-surface warnings** on every tool that mints tokens or grants access.
-- **Credential redaction on slim reads** for storages (`token`, `password`) and AI providers (`api_key`).
-- **New CRUD families:** meal-type, supermarket, invite-link, access-token, export, import queue, storage, sync, multi-space, AI-provider extend + step sort, housekeeping reads.
-- **Requires Tandoor server 2.3.6 or later.** See [Tandoor compatibility](#tandoor-compatibility).
+- **Per-section tool settings** replace `TANDOOR_MCP_PROFILE`. One env var per section: tiered sections take `off`, `simple`, or `full`, and toggle sections take `off` or `on`. See [Tool sections](#tool-sections) and [Migration from 2.x](#migration-from-2x).
+- **Pantry and freezer inventory tools** in the `inventory` section, plus a combined `tandoor://pantry/on-hand` resource.
+- **Households:** list, get, create, update, and delete households, and `assign_household` to move user-spaces between them.
+- **Named shopping lists**, such as one per store. Foods and shopping entries take `shopping_lists`.
+- **Tandoor 2.6 API alignment.** Requires Tandoor 2.6.0 or later.
+- **HTTP transport fix** ([#12](https://github.com/Cliftonz/tandoor-recipe-mcp/issues/12)): the HTTP transport now answers every request, not only the first.
+- **oxlint** for linting.
+
+306 tools in total; 46 are visible at startup with the default settings. The [CHANGELOG](CHANGELOG.md) has the full list of changes and breaking changes.
 
 ## Why this server
 
-- **Full Tandoor 2.3.6 API coverage.** 271 typed tools, spanning every domain the Tandoor OpenAPI exposes.
+- **Full Tandoor 2.6 API coverage.** 306 typed tools, spanning every domain the Tandoor OpenAPI exposes.
 - **Resources + prompts, not just tools.** Read-only subscribable resources like `tandoor://meal-plan/this-week` and `tandoor://pantry/on-hand`, plus ready-made prompts (`plan_week`, `grocery_list_for_plan`, `what_can_i_make_tonight`). Most Tandoor MCP forks ship tools only.
 - **Slim-by-default responses.** A full recipe GET shrinks from ~20k characters to ~2k by stripping substitute trees, readonly timestamps, image URLs, etc. Pass `format: "full"` anywhere for the raw Tandoor response.
-- **Dynamic tool gating.** ~25 core tools are visible at boot; the LLM enables the rest on demand via `enable_tool_group`. Cuts the boot-time context cost of loading every tool schema.
+- **Per-section tool settings.** One env var per section (recipes, meal plan, shopping, and so on) sets it. Tiered sections take `off`, `simple`, or `full`. Toggle sections take `off` or `on`. In stdio mode the LLM can turn a hidden section on mid-session with `enable_tool_group`. See [Tool sections](#tool-sections).
 - **jq stash for large payloads.** Responses larger than 5KB return a stash handle plus a schema summary; the LLM follows up with `jq_query` to project just the fields it needs.
 - **3-stage URL import with a real fallback.** Tries Tandoor's native scraper first, then extracts schema.org JSON-LD from the page directly (works when Tandoor can't reach the URL or doesn't support the site), with an optional stub-on-failure escape hatch.
 - **AI import from images / PDFs.** Multipart upload to Tandoor's `ai-import/` endpoint, saves the parsed recipe.
@@ -118,11 +120,11 @@ TANDOOR_MCP_HTTP_TOKEN=some-long-random-string \
 npx -y @cliftonz/tandoor-recipes-mcp
 ```
 
-The server listens on `http://127.0.0.1:${TANDOOR_MCP_HTTP_PORT:-3737}/mcp` (POST for JSON-RPC requests, GET for the streaming session). The bind is loopback-only; expose it to another host only through an operator-managed reverse proxy.
+The server listens on `http://127.0.0.1:${TANDOOR_MCP_HTTP_PORT:-3737}/mcp` (POST only for JSON-RPC requests). Any other method on that path gets a 405 with `Allow: POST` and a JSON-RPC error body. Auth is checked first, so a request without a valid token gets a 401 instead. The bind is loopback-only; expose it to another host only through an operator-managed reverse proxy.
 
 If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: Bearer <token>`. Missing or wrong tokens get a 401 with `WWW-Authenticate: Bearer`.
 
-**HTTP-mode constraints:** the jq stash and dynamic tool gating both assume a single long-lived session. In HTTP mode both are auto-disabled: `enable_tool_group` and `disable_tool_group` throw, and every tool response is inlined rather than stashed. Use `TANDOOR_MCP_PROFILE=full` in HTTP mode to expose every tool at boot.
+**HTTP-mode constraints:** the jq stash and dynamic tool gating both assume a single long-lived session. In HTTP mode both are auto-disabled: `enable_tool_group` and `disable_tool_group` throw, and every tool response is inlined rather than stashed. The [section settings](#tool-sections) fix the tool list at startup, so set every section you need before you start the server.
 
 ## Environment variables
 
@@ -133,7 +135,7 @@ If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: B
 | `TANDOOR_MCP_TRANSPORT` | no | `stdio` | `stdio` or `http`. |
 | `TANDOOR_MCP_HTTP_PORT` | no | `3737` | HTTP-mode port. |
 | `TANDOOR_MCP_HTTP_TOKEN` | no | none | HTTP-mode bearer token. If unset, HTTP transport runs open (loopback-only, still). |
-| `TANDOOR_MCP_PROFILE` | no | `core` | `core` (default) exposes ~25 always-on tools plus the meta gating tools; `basic` skips admin/misc families entirely (legacy); `full` exposes every tool at boot. |
+| `TANDOOR_MCP_<SECTION>` | no | per section | One variable per tool section, such as `TANDOOR_MCP_RECIPES`. See [Tool sections](#tool-sections) for every variable, its values, and its default. |
 | `TANDOOR_MCP_INCLUDE_ONLY` | no | none | Comma-separated allowlist (glob `*` supported). E.g. `list_*,get_*,create_meal_plan`. |
 | `TANDOOR_MCP_EXCLUDE` | no | none | Comma-separated denylist. E.g. `merge_*,delete_*` to hide destructive tools. |
 | `TANDOOR_MCP_LOG` | no | none | Stderr trace mode. `request`, `response`, `error`, `all`, or comma list. Bearer token redacted. |
@@ -143,59 +145,81 @@ If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: B
 | `TANDOOR_MCP_STASH_MAX_BYTES` | no | `32000000` | Total-bytes cap on the stash; LRU eviction kicks in past this budget. |
 | `TANDOOR_MCP_STASH_TTL_MS` | no | `600000` | Per-entry TTL in milliseconds (default 10 minutes). |
 
-`core` (default) is best for most stdio callers: the LLM sees a small tool list at boot and enables groups on demand. `INCLUDE_ONLY` and `EXCLUDE` compose on top of the profile for finer control ("give me only read tools" or "hide destructive ops from this agent").
+`INCLUDE_ONLY` and `EXCLUDE` run before the section settings and give finer control ("give me only read tools" or "hide destructive ops from this agent").
 
 ## Tandoor compatibility
 
-**Minimum:** Tandoor server 2.3.6.
+**Minimum:** Tandoor server 2.6.0.
 
-The 1.5.0 tool surface targets the endpoints in the 2.3.6 OpenAPI spec (see `tandoor api specification.yaml`, `info.version` header). Older 2.x instances will 404 on the new tools; the pre-1.5.0 surface still works.
+The 3.0.0 tools target the endpoints in the vendored Tandoor 2.6.15 OpenAPI spec (see `tandoor api specification.yaml`, `info.version` header). Older 2.x instances return 404 on the tools for newer endpoints, such as named shopping lists.
 
 To check your instance version from an LLM session:
 
 ```
 > Ask: what version of Tandoor am I connected to?
 > Claude calls: get_version
-> Returns: { mcp: "1.5.0", protocol: "...", tandoor: "2.3.6" }
+> Returns: { mcp: "3.0.0", protocol: "...", tandoor: "2.6.15" }
 ```
 
-The server also probes `/api/version/` at boot and writes a WARNING to stderr if the connected instance is older than 2.x.
+The server also probes `/api/server-settings/current/` at boot and writes a WARNING to stderr if the connected instance is older than 2.6.0.
+
+## Migration from 2.x
+
+3.0.0 removes `TANDOOR_MCP_PROFILE` and the old tool-group names. The per-section settings in [Tool sections](#tool-sections) replace both.
+
+- **`TANDOOR_MCP_PROFILE` is ignored.** When it has a value, the server prints one stderr warning.
+- **`TANDOOR_MCP_PROFILE=full`:** set every tiered section to `full` and every toggle section to `on`.
+- **Claude Code plugin users:** the plugin used to default to `full` (every tool). It now starts with the section defaults. To get more tools back, set `recipes`, `meal_plan`, `shopping`, `inventory`, `foods`, `cooklog`, `recipe_books`, `ai`, `import_export`, `household_space`, and `admin` in the plugin settings.
+- **Old group names are gone, with no aliases.** Use the section names in `enable_tool_group`. The always-on group is now `always` (was `core`). The [CHANGELOG](CHANGELOG.md) lists every removed name.
 
 ## Migration from 1.4.0
 
 - **Stdio users:** nothing required. No breaking changes, no config edits.
 - **HTTP users:** opt in with `TANDOOR_MCP_TRANSPORT=http`. Set `TANDOOR_MCP_HTTP_TOKEN` and expect the jq stash + dynamic gating to be off (both are stdio-session assumptions).
-- **Anyone pinning `TANDOOR_MCP_PROFILE=basic`:** unchanged. `basic` still skips admin/misc entirely and now also skips every 1.5.0 group by definition; `core` is the better lever if you want smaller boot context but keep-on-demand access.
 
-## Tool matrix
+## Tool sections
 
-271 tools across 21 groups (including the synthetic `core` always-on group).
+Each section has one env var. The server trims each value and ignores case. An unset, empty, or whitespace-only variable means the default. If any section variable is invalid, the server stops at startup with one error that names every invalid variable and its valid values.
 
-| Group | Tools | Purpose |
-|---|---:|---|
-| `core` | 23 | Always-on: recipe/meal-plan/shopping/foods reads, `jq_query`, `get_version`, gating meta tools. |
-| `recipe-write` | 8 | Create / update / delete recipes, URL import, image upload, batch update. |
-| `mealplan-write` | 9 | Meal-plan writes + meal-type CRUD + auto-plan + bulk week create. |
-| `shopping-write` | 11 | Shopping entry CRUD + bulk check + shopping-list-recipe CRUD. |
-| `foods-write` | 8 | Food CRUD, merge/move, FDC lookup, batch update. |
-| `ingredients-write` | 4 | Ingredient CRUD (usually managed via recipes). |
-| `keywords` | 5 | Keyword CRUD + merge/move. |
-| `cooklog` | 5 | Cook-log entries: when and how often you made a recipe. |
-| `recipebook` | 9 | Recipe books (collections / cookbooks). |
-| `ai` | 7 | AI recipe import from image/PDF/text; AI provider CRUD; AI step sort. |
-| `steps` | 5 | Step-level CRUD inside a recipe. |
-| `units` | 17 | Unit CRUD + supermarket-category entities. |
-| `unit-conversions` | 5 | Unit conversion rules (cup to ml, etc). |
-| `properties` | 10 | Property types + values (nutrition labels, allergens). |
-| `custom-filters` | 5 | Saved custom recipe filters (Tandoor filter DSL). |
-| `admin` | 51 | Server settings, user prefs, automations, user files, view/import/AI logs, share/invite links, access tokens, storages, connectors, groups, users, syncs. |
-| `supermarket-write` | 5 | **New in 1.5.0.** Physical-store CRUD for aisle-ordering. |
-| `import-export` | 28 | **New in 1.5.0.** Export recipes, import queue (recipe-import, bookmarklet, open-data, FDC search, food-inherit), export logs. |
-| `multi-space` | 10 | **New in 1.5.0.** Space CRUD, user-space memberships, `switch_active_space` (DESTRUCTIVE). |
-| `tree-safety` | 33 | **New in 1.5.0.** Delete-preview tools (cascading / nulling / protecting) for tree-shaped resources. Call before `delete_*`. |
-| `housekeeping-read` | 13 | **New in 1.5.0.** Read-only: localization, groups, users, view-log CRUD (skip write), search prefs, recipe file metadata, meal-plan iCal. |
+Tiered sections take `off`, `simple`, or `full` and default to `simple`. `full` includes everything in `simple`.
 
-Full tool lists per group are in `src/lib/tool-groups.ts`. From an active session, call `list_tool_groups` for a live listing.
+| Section | Env var | `simple` | `full` adds |
+|---|---|---|---|
+| `recipes` | `TANDOOR_MCP_RECIPES` | Browse, search, get, related recipes, create, update, import from URL, read keywords. | Delete, steps, ingredients, images, batch update, keyword writes, custom filters, file links, share links. |
+| `meal-plan` | `TANDOOR_MCP_MEAL_PLAN` | Meal plan create, read, update, and delete. Read meal types. | Auto-plan, bulk create, meal type writes, iCal export. |
+| `shopping` | `TANDOOR_MCP_SHOPPING` | List the named shopping lists. Shopping entry create, read, update, delete, and check. `bulk_update_shopping_entries` checks entries and adds, removes, sets, or clears their lists in one call. Add a recipe's ingredients or a single food as shopping entries. | Named shopping list get, create, update, and delete, and their delete previews. Deleting a list removes only its links; the foods, entries, and supermarkets stay. Shopping-list-recipe create, read, update, and delete. Supermarkets, categories, and category relations. |
+| `inventory` | `TANDOOR_MCP_INVENTORY` | List locations, list entries, add, consume, and move. `add_inventory_item` always creates a new entry. `consume_inventory_item` stops at 0 and warns when you consume more than the entry holds. `move_inventory_item` moves a whole entry. | Location create, get, update, and delete. Entry get, update, and delete. The read-only inventory log. Delete previews. Deleting a location also deletes its entries and the log rows of every entry that was ever in it, including entries moved elsewhere since. Deleting an entry deletes its log rows. |
+| `foods` | `TANDOOR_MCP_FOODS` | List, get, create, and update foods, including their shopping lists. Parse an ingredient. List units. | Delete, merge, move, FDC lookup and search, batch update (including shopping list changes), unit CRUD, unit merge, food inherit fields, unit conversions, properties, and property types. |
+
+Toggle sections take `off` or `on` and default to `off`.
+
+| Section | Env var | Contents |
+|---|---|---|
+| `cooklog` | `TANDOOR_MCP_COOKLOG` | Cook-log entries: when and how often a recipe was made. |
+| `recipe-books` | `TANDOOR_MCP_RECIPE_BOOKS` | Recipe books (collections) and their entries. |
+| `ai` | `TANDOOR_MCP_AI` | AI providers, AI recipe import from images, AI step sort and property estimation, AI logs. |
+| `import-export` | `TANDOOR_MCP_IMPORT_EXPORT` | Recipe import and export, import queues, bookmarklet and open-data imports, their logs. |
+| `household-space` | `TANDOOR_MCP_HOUSEHOLD_SPACE` | Spaces, memberships, households and household assignment, users, groups, invite links, user preferences. Only the space owner can use the household tools and `update_user_space`; Tandoor answers space admins with a 403. |
+| `admin` | `TANDOOR_MCP_ADMIN` | Server settings, access tokens, storages, syncs, connectors, automations, user files, view logs, search settings, localization. |
+
+A delete preview (`preview_*_delete_*`) belongs to the same section and tier as its delete tool.
+
+These tools are always on, whatever the section settings: `list_tool_groups`, `enable_tool_group`, `disable_tool_group`, `get_version`, `jq_query`, `jq_stash_stats`, `get_guard_stats`, and `get_current_space`. Every `tandoor://` resource and every prompt is also always available. `list_tool_groups` reports them as the `always` group.
+
+The server applies the settings in this order:
+
+1. `TANDOOR_MCP_INCLUDE_ONLY` and `TANDOOR_MCP_EXCLUDE` filter the tool list. `EXCLUDE` is a hard block: nothing can enable an excluded tool.
+2. The section settings decide which of the remaining tools are visible at startup. An `off` section is hidden.
+
+In stdio mode the LLM can change sections during a session:
+
+- `enable_tool_group({group, tier?})` widens a section: `off` to `simple` or `full`, or `simple` to `full`. It never narrows a section. For a tiered section, `tier` is `simple` or `full` and defaults to `full`. Passing `tier` for an on/off section is an error.
+- `disable_tool_group({group})` sets a section to `off`. It cannot disable `always`.
+- `enable_tool_group({group: "always"})` succeeds and changes nothing.
+
+A section with no registered tools does not count as a section at runtime. That covers any section that `INCLUDE_ONLY` or `EXCLUDE` empties. `enable_tool_group` and `disable_tool_group` reject it as unknown, and `list_tool_groups` and the server instructions leave it out.
+
+From an active session, call `list_tool_groups` for a live listing of sections and their tools.
 
 ## Example conversations
 
@@ -265,7 +289,7 @@ If FDC returns 404 for a food, the `fdc_id` you passed doesn't exist in USDA's d
 | URI | Purpose |
 |---|---|
 | `tandoor://meal-plan/this-week` | Monday to Sunday meal plan entries, slimmed to `{id, date, meal_type, recipe_name, servings, note}` |
-| `tandoor://pantry/on-hand` | Foods flagged `food_onhand=true` |
+| `tandoor://pantry/on-hand` | Inventory entries by location, plus on-hand foods with no entry; at most 500 of each |
 | `tandoor://shopping-list/active` | Unchecked, recent shopping entries |
 | `tandoor://meal-types` | Breakfast/Lunch/Dinner/etc. with IDs |
 
@@ -306,6 +330,10 @@ npm run test:e2e
 | `TANDOOR_E2E_SKIP_IMPORT=1` | Skip the URL-import step (offline runners) |
 | `TANDOOR_E2E_IMPORT_URL=<url>` | Override the default recipe URL |
 | `TANDOOR_E2E_AI_PROVIDER=<id>` | Run the AI-import step against this provider |
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how pull requests are reviewed, credited, and merged.
 
 ## Security posture
 

@@ -52,7 +52,7 @@ beforeAll(async () => {
   try {
     installDir = mkdtempSync(path.join(tmpdir(), 'tandoor-mcp-pack-'));
 
-    execSync(`npm pack --pack-destination "${installDir}"`, {
+    execSync(`npm pack --ignore-scripts --pack-destination "${installDir}"`, {
       cwd: REPO,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -141,11 +141,9 @@ describe('packed tarball smoke', () => {
     await client.connect(transport);
     try {
       const tools = await client.listTools();
-      // Under the default profile=core only the always-on tools are visible
-      // (~25). list_recipes and jq_query both live in CORE_TOOLS, so they
-      // must be exposed even without a prior enable_tool_group call.
-      expect(tools.tools.length).toBeGreaterThan(15);
-      expect(tools.tools.length).toBeLessThan(40);
+      // Default sections: always-on tools plus the simple tier of each
+      // tiered section, no enable_tool_group call needed.
+      expect(tools.tools.length).toBe(46);
       expect(tools.tools.some((t) => t.name === 'list_recipes')).toBe(true);
       expect(tools.tools.some((t) => t.name === 'jq_query')).toBe(true);
       // Meta gating tool is reachable so the LLM can discover the rest.
@@ -186,12 +184,12 @@ describe('packed tarball smoke', () => {
       expect(mt.structuredContent).toBeUndefined();
     } finally {
       await client.close();
-      const serverStderr = stderrBuf.join('');
-      // Widened net beyond the rc.2 specific markers — any stderr indicating
-      // module-resolution failure or unhandled crash counts.
-      if (/Cannot find module|MODULE_NOT_FOUND|Aborted\(\)|UnhandledRejection|throw\b/i.test(serverStderr)) {
-        throw new Error(`server stderr surfaced a module-resolution failure:\n${serverStderr}`);
-      }
+    }
+    const serverStderr = stderrBuf.join('');
+    // Widened net beyond the rc.2 specific markers; any stderr indicating
+    // module-resolution failure or unhandled crash counts.
+    if (/Cannot find module|MODULE_NOT_FOUND|Aborted\(\)|UnhandledRejection|throw\b/i.test(serverStderr)) {
+      throw new Error(`server stderr surfaced a module-resolution failure:\n${serverStderr}`);
     }
   }, 60_000);
 });

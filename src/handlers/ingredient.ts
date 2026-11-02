@@ -22,20 +22,17 @@ type IngredientMutable = {
   is_header?: boolean;
   no_amount?: boolean;
   original_text?: string;
-  always_use_plural_unit?: boolean;
-  always_use_plural_food?: boolean;
 };
 
 function buildIngredientPayload(args: IngredientMutable, opts: { partial: boolean }): Partial<Ingredient> {
   const payload: any = {};
 
   if (args.food_id !== undefined) {
-    // IngredientSerializer expects nested food/unit objects with `id`.
-    payload.food = { id: args.food_id };
+    payload.food = args.food_id;
   }
 
   if (args.unit_id !== undefined) {
-    payload.unit = args.unit_id === null ? null : { id: args.unit_id };
+    payload.unit = args.unit_id;
   }
 
   if (args.amount !== undefined) {
@@ -60,14 +57,6 @@ function buildIngredientPayload(args: IngredientMutable, opts: { partial: boolea
 
   if (args.original_text !== undefined) {
     payload.original_text = args.original_text;
-  }
-
-  if (args.always_use_plural_unit !== undefined) {
-    payload.always_use_plural_unit = args.always_use_plural_unit;
-  }
-
-  if (args.always_use_plural_food !== undefined) {
-    payload.always_use_plural_food = args.always_use_plural_food;
   }
 
   if (!opts.partial) {
