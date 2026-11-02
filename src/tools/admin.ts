@@ -20,6 +20,7 @@ import {
   handleUploadUserFile,
   handleUpdateUserFile,
   handleDeleteUserFile,
+  handleDownloadFile,
   handleListViewLogs,
   handleListImportLogs,
   handleListAiLogs,
@@ -106,6 +107,10 @@ export const uploadUserFileShape = {
 } as const;
 export const updateUserFileShape = { id: z.number(), name: z.string(), format: formatEnum } as const;
 export const deleteUserFileShape = { id: z.number() } as const;
+export const downloadFileShape = {
+  file_id: z.number().describe('User file ID'),
+  save: z.boolean().optional().describe('Save to TANDOOR_MCP_DOWNLOAD_ROOT instead of returning the file inline (needed above 5 MiB; stdio only).'),
+} as const;
 
 export const listViewLogsShape = { page: z.number().optional(), page_size: z.number().optional(), format: formatEnum } as const;
 export const listImportLogsShape = { page: z.number().optional(), page_size: z.number().optional(), format: formatEnum } as const;
@@ -139,6 +144,7 @@ export type GetUserFileArgs = z.infer<z.ZodObject<typeof getUserFileShape>>;
 export type UploadUserFileArgs = z.infer<z.ZodObject<typeof uploadUserFileShape>>;
 export type UpdateUserFileArgs = z.infer<z.ZodObject<typeof updateUserFileShape>>;
 export type DeleteUserFileArgs = z.infer<z.ZodObject<typeof deleteUserFileShape>>;
+export type DownloadFileArgs = z.infer<z.ZodObject<typeof downloadFileShape>>;
 export type ListViewLogsArgs = z.infer<z.ZodObject<typeof listViewLogsShape>>;
 export type ListImportLogsArgs = z.infer<z.ZodObject<typeof listImportLogsShape>>;
 export type ListAiLogsArgs = z.infer<z.ZodObject<typeof listAiLogsShape>>;
@@ -216,6 +222,12 @@ export function registerAdminTools(server: McpServer, client: TandoorClient): vo
     description: 'Delete a user file by ID.',
     inputSchema: deleteUserFileShape,
   }, handleDeleteUserFile);
+
+  registerStringTool(server, client, 'download_file', {
+    description: 'Download a user file uploaded to Tandoor. Images come back as an image and other files as an embedded resource, up to 5 MiB; larger files need save: true.',
+    inputSchema: downloadFileShape,
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  }, handleDownloadFile);
 
   registerStringTool(server, client, 'list_view_logs', {
     description: 'List recipe view-log entries (which recipes have been viewed and when).',

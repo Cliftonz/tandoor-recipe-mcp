@@ -72,6 +72,12 @@ describe('openStoredZip', () => {
     expect(await readAll(entry.body)).toEqual(fixtureContent);
   });
 
+  it('reports the entry size from the local header', async () => {
+    const entry = await openStoredZip(streamOf(fixture));
+    expect(entry.size).toBe(10240);
+    await entry.body.cancel();
+  });
+
   it('reassembles the entry when the archive arrives one byte at a time', async () => {
     const entry = await openStoredZip(streamOf(fixture, 1));
     expect(entry.name).toBe('files/1/9f2c_photo.jpg');

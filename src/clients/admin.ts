@@ -68,6 +68,10 @@ export class UserFileClient extends BaseClient {
   async deleteUserFile(id: number): Promise<void> {
     return this.request(`/api/user-file/${id}/`, { method: 'DELETE' });
   }
+
+  async downloadFile(id: number, signal?: AbortSignal): Promise<Response> {
+    return this.requestStream(`/api/download-file/${id}/`, { signal });
+  }
 }
 
 export class ServerSettingsClient extends BaseClient {

@@ -343,6 +343,10 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "disable_tool_group",
   },
   {
+    "description": "Download a user file uploaded to Tandoor. Images come back as an image and other files as an embedded resource, up to 5 MiB; larger files need save: true.",
+    "name": "download_file",
+  },
+  {
     "description": "Download the file Tandoor stored for a recipe synced from a Storage backend (Dropbox, Nextcloud or Local). Images come back as an image, other files as an embedded resource, up to 5 MiB. Larger files need save: true.",
     "name": "download_recipe_file",
   },
@@ -3749,6 +3753,27 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "disable_tool_group",
+  },
+  {
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "file_id": {
+          "description": "User file ID",
+          "type": "number",
+        },
+        "save": {
+          "description": "Save to TANDOOR_MCP_DOWNLOAD_ROOT instead of returning the file inline (needed above 5 MiB; stdio only).",
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "file_id",
+      ],
+      "type": "object",
+    },
+    "name": "download_file",
   },
   {
     "inputSchema": {
