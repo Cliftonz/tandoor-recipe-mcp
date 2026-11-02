@@ -6,19 +6,21 @@ A Model Context Protocol (MCP) server that gives LLM agents full read/write acce
 
 > Turn "plan the week and make me a grocery list" into one prompt.
 
-## New in 1.5.0
+## New in 3.0.0
 
-- **271 tools across 21 groups** (up from ~135 across 16 in 1.4.0). Coverage push against the Tandoor 2.3.6 OpenAPI.
-- **Stateless HTTP transport** via `TANDOOR_MCP_TRANSPORT=http`, loopback-only bind on `127.0.0.1:3737`, optional bearer auth. See [Transport modes](#transport-modes).
-- **33 tree-safety delete previews.** Preview the blast radius before every destructive call.
-- **Escalation-surface warnings** on every tool that mints tokens or grants access.
-- **Credential redaction on slim reads** for storages (`token`, `password`) and AI providers (`api_key`).
-- **New CRUD families:** meal-type, supermarket, invite-link, access-token, export, import queue, storage, sync, multi-space, AI-provider extend + step sort, housekeeping reads.
-- **Requires Tandoor server 2.3.6 or later.** See [Tandoor compatibility](#tandoor-compatibility).
+- **Per-section tool settings** replace `TANDOOR_MCP_PROFILE`. One env var per section: tiered sections take `off`, `simple`, or `full`, and toggle sections take `off` or `on`. See [Tool sections](#tool-sections) and [Migration from 2.x](#migration-from-2x).
+- **Pantry and freezer inventory tools** in the `inventory` section, plus a combined `tandoor://pantry/on-hand` resource.
+- **Households:** list, get, create, update, and delete households, and `assign_household` to move user-spaces between them.
+- **Named shopping lists**, such as one per store. Foods and shopping entries take `shopping_lists`.
+- **Tandoor 2.6 API alignment.** Requires Tandoor 2.6.0 or later.
+- **HTTP transport fix** ([#12](https://github.com/Cliftonz/tandoor-recipe-mcp/issues/12)): the HTTP transport now answers every request, not only the first.
+- **oxlint** for linting.
+
+306 tools in total; 46 are visible at startup with the default settings. The [CHANGELOG](CHANGELOG.md) has the full list of changes and breaking changes.
 
 ## Why this server
 
-- **Full Tandoor 2.3.6 API coverage.** 291 typed tools, spanning every domain the Tandoor OpenAPI exposes.
+- **Full Tandoor 2.6 API coverage.** 306 typed tools, spanning every domain the Tandoor OpenAPI exposes.
 - **Resources + prompts, not just tools.** Read-only subscribable resources like `tandoor://meal-plan/this-week` and `tandoor://pantry/on-hand`, plus ready-made prompts (`plan_week`, `grocery_list_for_plan`, `what_can_i_make_tonight`). Most Tandoor MCP forks ship tools only.
 - **Slim-by-default responses.** A full recipe GET shrinks from ~20k characters to ~2k by stripping substitute trees, readonly timestamps, image URLs, etc. Pass `format: "full"` anywhere for the raw Tandoor response.
 - **Per-section tool settings.** One env var per section (recipes, meal plan, shopping, and so on) sets it. Tiered sections take `off`, `simple`, or `full`. Toggle sections take `off` or `on`. In stdio mode the LLM can turn a hidden section on mid-session with `enable_tool_group`. See [Tool sections](#tool-sections).
@@ -147,16 +149,16 @@ If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: B
 
 ## Tandoor compatibility
 
-**Minimum:** Tandoor server 2.3.6.
+**Minimum:** Tandoor server 2.6.0.
 
-The 1.5.0 tool surface targets the endpoints in the 2.3.6 OpenAPI spec (see `tandoor api specification.yaml`, `info.version` header). Older 2.x instances will 404 on the new tools; the pre-1.5.0 surface still works.
+The 3.0.0 tools target the endpoints in the vendored Tandoor 2.6.15 OpenAPI spec (see `tandoor api specification.yaml`, `info.version` header). Older 2.x instances return 404 on the tools for newer endpoints, such as named shopping lists.
 
 To check your instance version from an LLM session:
 
 ```
 > Ask: what version of Tandoor am I connected to?
 > Claude calls: get_version
-> Returns: { mcp: "1.5.0", protocol: "...", tandoor: "2.3.6" }
+> Returns: { mcp: "3.0.0", protocol: "...", tandoor: "2.6.15" }
 ```
 
 The server also probes `/api/version/` at boot and writes a WARNING to stderr if the connected instance is older than 2.x.
@@ -328,6 +330,10 @@ npm run test:e2e
 | `TANDOOR_E2E_SKIP_IMPORT=1` | Skip the URL-import step (offline runners) |
 | `TANDOOR_E2E_IMPORT_URL=<url>` | Override the default recipe URL |
 | `TANDOOR_E2E_AI_PROVIDER=<id>` | Run the AI-import step against this provider |
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how pull requests are reviewed, credited, and merged.
 
 ## Security posture
 
