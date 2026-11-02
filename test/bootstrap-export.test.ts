@@ -43,7 +43,8 @@ afterAll(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-describe('tandoor-bootstrap.sh output', () => {
+// Windows runners have no bash on PATH; the bootstrap script is exercised on POSIX runners.
+describe.skipIf(process.platform === 'win32')('tandoor-bootstrap.sh output', () => {
   it('exports the vars to child processes after the documented eval', () => {
     const out = run('eval "$("$SCRIPT")" && env');
     const childEnv = Object.fromEntries(
@@ -70,7 +71,8 @@ describe('tandoor-bootstrap.sh output', () => {
   });
 });
 
-describe('tandoor-bootstrap.sh migration wait', () => {
+// Windows runners have no bash on PATH; the bootstrap script is exercised on POSIX runners.
+describe.skipIf(process.platform === 'win32')('tandoor-bootstrap.sh migration wait', () => {
   it('reports migrations settled when the container has none pending', () => {
     const bin = path.join(root, 'bin-container');
     const clock = path.join(root, 'clock');
