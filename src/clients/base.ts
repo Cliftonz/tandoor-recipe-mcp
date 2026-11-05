@@ -181,7 +181,7 @@ export class BaseClient {
     // `recipes.example.com/settings/api`, but the API lives at the root, so
     // we strip any path/query/hash and keep just `<scheme>://<host>[:port]`.
     let raw = config.url.trim();
-    if (!raw.startsWith('http://') && !raw.startsWith('https://')) {
+    if (!/^https?:\/\//i.test(raw)) {
       raw = `https://${raw}`;
     }
     try {

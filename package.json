@@ -21,9 +21,10 @@
     "test:ci": "cross-env CI=1 vitest run",
     "test:watch": "vitest",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "mcpb": "npx --yes @anthropic-ai/mcpb@2.1.2",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build && npm run test:ci",
-    "version": "node scripts/sync-plugin-version.js && git add .claude-plugin/plugin.json .claude-plugin/marketplace.json"
+    "version": "node scripts/sync-plugin-version.js && git add .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json manifest.json"
   },
   "keywords": [
     "mcp",

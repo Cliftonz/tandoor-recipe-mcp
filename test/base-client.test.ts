@@ -104,6 +104,16 @@ describe('BaseClient.request', () => {
     expect(fetchSpy.mock.calls[0][0]).toBe('http://tandoor.local:8080/api/ping/');
   });
 
+  it('accepts an uppercase https scheme without prepending another', () => {
+    const c = new TestClient({ url: 'HTTPS://tandoor.example.com', token: 't' });
+    expect(c.getBaseUrl()).toBe('https://tandoor.example.com');
+  });
+
+  it('keeps http for an uppercase http scheme', () => {
+    const c = new TestClient({ url: 'HTTP://host:8080/path', token: 't' });
+    expect(c.getBaseUrl()).toBe('http://host:8080');
+  });
+
   it('throws a clear error for an unparseable URL', () => {
     expect(() => new TestClient({ url: 'http://', token: 't' })).toThrow(/Invalid TANDOOR_URL/);
   });

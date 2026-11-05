@@ -94,6 +94,11 @@ jobs:
         # CI=1 → vitest strict snapshot mode. Missing/stale snapshots fail.
         run: npm run test:ci
 
+      # Before the tag check so a broken extension bundle stops the release
+      # before anything is tagged or published.
+      - name: Pack Claude Desktop extension
+        run: node scripts/pack-mcpb.js tandoor-recipes-mcp.mcpb
+
       # Defensive: detect.changed already implies a fresh version, but a
       # racing pre-existing tag (e.g. a prior failed run that pushed the
       # tag but not the release) would silently re-publish. Skip if already
@@ -144,7 +149,7 @@ jobs:
           NEW: ${{ needs.detect.outputs.version }}
         run: |
           if [ "${{ needs.detect.outputs.prerelease }}" = "true" ]; then
-            gh release create "v$NEW" --prerelease --generate-notes --target "$GITHUB_SHA" --title "v$NEW"
+            gh release create "v$NEW" --prerelease --generate-notes --target "$GITHUB_SHA" --title "v$NEW" tandoor-recipes-mcp.mcpb
           else
-            gh release create "v$NEW" --generate-notes --target "$GITHUB_SHA" --title "v$NEW"
+            gh release create "v$NEW" --generate-notes --target "$GITHUB_SHA" --title "v$NEW" tandoor-recipes-mcp.mcpb
           fi

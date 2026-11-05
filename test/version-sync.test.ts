@@ -1,8 +1,10 @@
-// Guards against version drift across the three files that must agree before
+// Guards against version drift across the five files that must agree before
 // a release is tagged:
 //   - package.json
 //   - .claude-plugin/plugin.json
 //   - .claude-plugin/marketplace.json
+//   - .codex-plugin/plugin.json
+//   - manifest.json
 //
 // The `version` npm script runs scripts/sync-plugin-version.js, but that only
 // fires on `npm version`. A direct edit to package.json followed by a tag
@@ -34,5 +36,13 @@ describe('plugin version sync', () => {
       .find((p) => p.name === 'tandoor-recipes-mcp');
     expect(entry).toBeDefined();
     expect(entry!.version).toBe(pkg.version);
+  });
+
+  it('package.json and .codex-plugin/plugin.json agree on version', () => {
+    expect(readJson('.codex-plugin/plugin.json').version).toBe(pkg.version);
+  });
+
+  it('package.json and the Claude Desktop extension manifest.json agree on version', () => {
+    expect(readJson('manifest.json').version).toBe(pkg.version);
   });
 });

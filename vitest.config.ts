@@ -7,7 +7,7 @@ export default defineConfig({
     // Excluded from the default `npm test` run so CI never touches a live
     // Tandoor instance.
     exclude: ['test/e2e/**', '**/node_modules/**'],
-    globalSetup: ['test/global-build.ts'],
+    globalSetup: ['test/global-build.ts', 'test/global-config-home.ts'],
     globals: false,
     environment: 'node',
     testTimeout: 30_000,

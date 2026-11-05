@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { isHttpTransport, registerStringTool } from '../lib/register.js';
+import { saveSectionMode } from '../lib/section-store.js';
 import { ALWAYS_ON_GROUP, ALWAYS_ON_TOOLS, SECTIONS, SECTIONS_WITH_TOOLS, SECTION_ENV_VARS, modesOf, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
 
 interface RegisteredToolEntry {
@@ -50,6 +51,17 @@ function findSection(group: string): Section {
     );
   }
   return section;
+}
+
+function persist(client: TandoorClient, section: Section, mode: SectionMode): { notSaved?: string; envOverride?: string } {
+  try {
+    saveSectionMode(process.env, client.getBaseUrl(), section.name, mode);
+  } catch (error) {
+    return { notSaved: `This change applies to this session only; it was not saved: ${(error as Error).message}` };
+  }
+  return process.env[section.envVar]?.trim()
+    ? { envOverride: `${section.envVar} is set and will override the saved value on restart.` }
+    : {};
 }
 
 function widen(section: Section, current: SectionMode, tier: 'simple' | 'full' | undefined): SectionMode {
@@ -145,10 +157,11 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
       if (isHttpTransport()) throw new Error(HTTP_GATING_DISABLED_MSG);
       if (args.group === ALWAYS_ON_GROUP) return JSON.stringify({ ok: true, group: ALWAYS_ON_GROUP, mode: 'on', enabled: [] });
       const section = findSection(args.group);
-      const mode = widen(section, modes.get(section.name)!, args.tier);
+      const current = modes.get(section.name)!;
+      const mode = widen(section, current, args.tier);
       modes.set(section.name, mode);
       const { enabled } = applyMode(getRegistry(server), section, mode);
-      return JSON.stringify({ ok: true, group: section.name, mode, enabled });
+      return JSON.stringify({ ok: true, group: section.name, mode, enabled, ...(mode === current ? {} : persist(client, section, mode)) });
     },
   );
 
@@ -169,9 +182,10 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
       if (isHttpTransport()) throw new Error(HTTP_GATING_DISABLED_MSG);
       if (args.group === ALWAYS_ON_GROUP) throw new Error(`cannot disable the '${ALWAYS_ON_GROUP}' section; its tools are always on.`);
       const section = findSection(args.group);
+      const current = modes.get(section.name)!;
       modes.set(section.name, 'off');
       const { disabled } = applyMode(getRegistry(server), section, 'off');
-      return JSON.stringify({ ok: true, group: section.name, mode: 'off', disabled });
+      return JSON.stringify({ ok: true, group: section.name, mode: 'off', disabled, ...(current === 'off' ? {} : persist(client, section, 'off')) });
     },
   );
 }

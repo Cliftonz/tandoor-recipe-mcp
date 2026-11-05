@@ -225,13 +225,15 @@ export function modesOf(section: Section): readonly SectionMode[] {
 
 export class SectionSettingsError extends Error {}
 
-export function parseSectionModes(env: Record<string, string | undefined>): SectionModes {
+export function parseSectionModes(env: Record<string, string | undefined>, saved: Partial<Record<string, SectionMode>> = {}): SectionModes {
   const modes: SectionModes = new Map();
   const problems: string[] = [];
   for (const section of SECTIONS) {
     const valid = modesOf(section);
     const value = (env[section.envVar] ?? '').trim();
-    const mode = value ? valid.find((m) => m === value.toLowerCase()) : DEFAULT_MODE[section.kind];
+    const mode = value
+      ? valid.find((m) => m === value.toLowerCase())
+      : (saved[section.name] ?? DEFAULT_MODE[section.kind]);
     if (mode) modes.set(section.name, mode);
     else problems.push(`${section.envVar}=${value} is not valid. Valid values: ${valid.join(', ')}.`);
   }

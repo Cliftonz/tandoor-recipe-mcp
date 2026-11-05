@@ -6,6 +6,7 @@ import { AlphabeticalSequencer } from './test/e2e/alphabetical-sequencer.js';
 // creates and deletes real data.
 export default defineConfig({
   test: {
+    globalSetup: ['test/global-config-home.ts'],
     include: ['test/e2e/**/*.e2e.test.ts'],
     globals: false,
     environment: 'node',

@@ -20,6 +20,7 @@ import { checkTandoorVersion } from './lib/version-check.js';
 import { buildInstructions } from './lib/instructions.js';
 import { registerAllTools } from './lib/register-all.js';
 import { createHttpTransport, resolveHttpConfig } from './lib/http-transport.js';
+import { loadSavedSections } from './lib/section-store.js';
 import { SECTION_ENV_VARS, SectionSettingsError, formatSectionModes, parseSectionModes, type SectionModes } from './lib/sections.js';
 
 // dotenv is a dev convenience — only load it if it's available (it's a
@@ -48,19 +49,19 @@ if (process.env.TANDOOR_MCP_PROFILE?.trim()) {
 
 function readSections(): SectionModes {
   try {
-    return parseSectionModes(process.env);
+    return parseSectionModes(process.env, loadSavedSections(process.env, tandoorClient.getBaseUrl()));
   } catch (error) {
     if (!(error instanceof SectionSettingsError)) throw error;
     console.error(`Error: ${error.message}`);
     process.exit(1);
   }
 }
-const sections = readSections();
 
 const tandoorClient = new TandoorClient({
   url: TANDOOR_URL,
   token: TANDOOR_TOKEN,
 });
+const sections = readSections();
 
 function resolveTransportMode(raw: string | undefined): 'stdio' | 'http' {
   return (raw || '').toLowerCase() === 'http' ? 'http' : 'stdio';
