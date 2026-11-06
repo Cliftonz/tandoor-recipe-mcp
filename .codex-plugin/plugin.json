@@ -21,7 +21,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@cliftonz/tandoor-recipes-mcp"
+        "@cliftonz/tandoor-recipes-mcp@3.1.0"
       ],
       "env_vars": [
         "TANDOOR_URL",

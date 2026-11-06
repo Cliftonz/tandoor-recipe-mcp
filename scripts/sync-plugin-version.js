@@ -22,6 +22,11 @@ for (const file of targets) {
       if (p.version !== undefined) p.version = version;
     }
   }
+  if (json.mcpServers) {
+    json.mcpServers.tandoor.args = json.mcpServers.tandoor.args.map((arg) =>
+      arg === pkg.name || arg.startsWith(`${pkg.name}@`) ? `${pkg.name}@${version}` : arg,
+    );
+  }
   writeFileSync(file, JSON.stringify(json, null, 2) + '\n');
   console.log(`synced ${file.replace(root + '/', '')} → ${version}`);
 }
