@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## 3.2.0 / 2026-11-06
+
+### Added
+- **Claude Desktop extension.** Each GitHub release has a `tandoor-recipes-mcp.mcpb` file attached. It uses the same settings as the Claude plugin.
+- **Codex plugin.** The plugin is in `.codex-plugin`, and its marketplace is in `.agents/plugins`. Codex has no install-time prompt, so set `TANDOOR_URL` and `TANDOOR_TOKEN` in the environment.
+- **Saved sections.** `enable_tool_group` and `disable_tool_group` save their change to `sections.json` in the XDG config folder (default `~/.config/tandoor-mcp`), keyed by Tandoor origin. The server reads the file at startup. A set env var still wins, and the tool result says so. A bad file is ignored with one warning. A failed save still applies for the session, and the tool result says it was not saved.
+- **README install steps** for the Claude Desktop extension and Codex.
+- **Plugin listing icon and marketplace description** for the Claude plugin directory.
+
+### Fixed
+- **A `TANDOOR_URL` with an uppercase scheme resolved to the wrong host.** `HTTPS://host` became `https://HTTPS://host`.
+
+### Notes
+- Both plugins now pin the npm package to the release version. `npm version` keeps the pin in sync.
+
 ## 3.1.0 / 2026-11-02
 
 ### Migration
