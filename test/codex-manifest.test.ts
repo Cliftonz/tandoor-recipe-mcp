@@ -24,7 +24,7 @@ describe('Codex plugin manifests', () => {
   it('launches the published npm package and passes through only the Tandoor credentials', () => {
     expect(plugin.mcpServers.tandoor).toEqual({
       command: 'npx',
-      args: ['-y', pkg.name],
+      args: ['-y', `${pkg.name}@${pkg.version}`],
       env_vars: ['TANDOOR_URL', 'TANDOOR_TOKEN'],
     });
   });

@@ -102,7 +102,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@cliftonz/tandoor-recipes-mcp"
+        "@cliftonz/tandoor-recipes-mcp@3.1.0"
       ],
       "env": {
         "TANDOOR_URL": "${user_config.tandoor_url}",
