@@ -9,6 +9,7 @@
   "repository": "https://github.com/Cliftonz/tandoor-recipe-mcp",
   "homepage": "https://github.com/Cliftonz/tandoor-recipe-mcp#readme",
   "license": "MIT",
+  "icon": "./.claude-plugin/icon.png",
   "keywords": [
     "tandoor",
     "recipes",
