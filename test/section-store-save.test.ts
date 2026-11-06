@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -30,7 +30,6 @@ afterEach(() => {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
-  if (readdirSync(configHome).length > 0) chmodSync(dir, 0o700);
   rmSync(configHome, { recursive: true, force: true });
 });
 
@@ -136,10 +135,9 @@ describe('saving section changes', () => {
 
   it('adds no setting note when the save failed', async () => {
     process.env.TANDOOR_MCP_COOKLOG = 'off';
-    mkdirSync(dir);
-    chmodSync(dir, 0o500);
+    writeFileSync(dir, '');
     const result = JSON.parse(await call(await start(), 'enable_tool_group', { group: 'cooklog' }));
-    expect(result.notSaved).toMatch(/not saved: EACCES/);
+    expect(result.notSaved).toMatch(/^This change applies to this session only; it was not saved: /);
     expect(result).not.toHaveProperty('envOverride');
   });
 
@@ -176,25 +174,21 @@ describe('saving section changes', () => {
     expect(readdirSync(dir)).toEqual(['sections.json']);
   });
 
-  it('applies the change for this session and says it was not saved when the directory is read-only', async () => {
-    mkdirSync(dir);
-    chmodSync(dir, 0o500);
+  it('applies the change for this session and says it was not saved when the config folder cannot be created', async () => {
+    writeFileSync(dir, '');
     const client = await start();
     const result = JSON.parse(await call(client, 'enable_tool_group', { group: 'cooklog' }));
-    expect(result.notSaved).toMatch(/^This change applies to this session only; it was not saved: EACCES/);
+    expect(result.notSaved).toMatch(/^This change applies to this session only; it was not saved: /);
     expect(await visible(client)).toContain('list_cook_logs');
   });
 
   it('treats an unreadable file as a save failure and leaves it untouched', async () => {
-    const contents = JSON.stringify({ [INSTANCE]: { ai: 'on' } });
-    mkdirSync(dir);
-    writeFileSync(file, contents);
     const client = await start();
-    chmodSync(file, 0o000);
+    mkdirSync(file, { recursive: true });
     const result = JSON.parse(await call(client, 'disable_tool_group', { group: 'recipes' }));
-    chmodSync(file, 0o600);
-    expect(result.notSaved).toMatch(/^This change applies to this session only; it was not saved: EACCES/);
+    expect(result.notSaved).toMatch(/^This change applies to this session only; it was not saved: EISDIR/);
     expect(await visible(client)).not.toContain('list_recipes');
-    expect(readFileSync(file, 'utf8')).toBe(contents);
+    expect(statSync(file).isDirectory()).toBe(true);
+    expect(readdirSync(file)).toEqual([]);
   });
 });

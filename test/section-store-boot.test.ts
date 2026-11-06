@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawn } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -139,15 +139,14 @@ describe('saved sections at startup', () => {
   }, 15_000);
 
   it('ignores an unreadable file with one warning naming it, leaving it untouched', async () => {
-    const contents = JSON.stringify({ 'http://127.0.0.1:1': { recipes: 'full' } });
-    save(contents);
-    chmodSync(file, 0o000);
+    mkdirSync(file, { recursive: true });
     const log = await bootLog();
-    chmodSync(file, 0o600);
     expect(log.match(/WARNING/g)).toHaveLength(1);
     expect(log).toContain(file);
+    expect(log).toContain('EISDIR');
     expect(log).toContain('recipes=simple,');
-    expect(readFileSync(file, 'utf8')).toBe(contents);
+    expect(statSync(file).isDirectory()).toBe(true);
+    expect(readdirSync(file)).toEqual([]);
   }, 15_000);
 
   it('starts with env settings only when no file exists', async () => {
