@@ -1,0 +1,17 @@
+{
+  "name": "cliftonz-tandoor",
+  "plugins": [
+    {
+      "name": "tandoor-recipes-mcp",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -10,6 +10,8 @@ const version = pkg.version;
 const targets = [
   resolve(root, '.claude-plugin/plugin.json'),
   resolve(root, '.claude-plugin/marketplace.json'),
+  resolve(root, '.codex-plugin/plugin.json'),
+  resolve(root, 'manifest.json'),
 ];
 
 for (const file of targets) {

@@ -61,9 +61,42 @@ Node 24 or later is required (see `engines.node` in `package.json`).
 /plugin install tandoor-recipes-mcp@cliftonz-tandoor
 ```
 
+From a terminal, the same two steps are:
+
+```bash
+claude plugin marketplace add Cliftonz/tandoor-recipe-mcp
+claude plugin install tandoor-recipes-mcp@cliftonz-tandoor
+```
+
 Claude Code prompts you for `TANDOOR_URL` and `TANDOOR_TOKEN` on install and stores the token securely. No `mcpServers` JSON editing needed.
 
+### Claude Desktop, desktop extension
+
+Use the desktop extension for Claude Desktop Chat and Cowork. It bundles the server and runs on Claude Desktop's built-in Node, so you do not need to install Node.
+
+1. Download [`tandoor-recipes-mcp.mcpb`](https://github.com/Cliftonz/tandoor-recipe-mcp/releases/latest/download/tandoor-recipes-mcp.mcpb) from the latest GitHub release.
+2. Double-click the file. Or, in Claude Desktop, open **Settings > Extensions > Advanced settings > Install Extension** and select the file.
+3. Enter your Tandoor URL and API token. Claude Desktop stores the token securely.
+4. Optional: set the [section settings](#tool-sections) you want.
+
+### Claude Desktop, plugin marketplace
+
+Claude Desktop can also add the plugin:
+
+1. Open **Customize > Plugins > Add > Add marketplace > Add from a repository**.
+2. Enter `Cliftonz/tandoor-recipe-mcp`.
+3. Open **Customize > Plugins > Discover**, select the plugin, and select **Add**.
+
+This path does not give you a working server in Chat or Cowork. Chat and Cowork do not prompt for plugin settings, so `TANDOOR_URL` and `TANDOOR_TOKEN` stay empty. Chat ignores local MCP servers from plugins. Cowork loads them only when the session runs on your computer. Use the [desktop extension](#claude-desktop-desktop-extension) or the [manual config](#claude-desktop--claude-code-manual-config) instead. Use the plugin from the Claude Code CLI.
+
 ### Claude Desktop / Claude Code, manual config
+
+Edit the Claude Desktop config file:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+For Claude Code, put the same `mcpServers` block in a project `.mcp.json`, or use `claude mcp add`.
 
 ```json
 {
@@ -79,6 +112,67 @@ Claude Code prompts you for `TANDOOR_URL` and `TANDOOR_TOKEN` on install and sto
   }
 }
 ```
+
+Quit and reopen Claude Desktop to load the change. This config runs the server with `npx`, so Node 24 or later must be on your `PATH`.
+
+### Codex
+
+The ChatGPT desktop app, the Codex CLI, and the Codex IDE extension share one config file, `~/.codex/config.toml`. Every Codex path below runs the server with `npx`, so Node 24 or later must be on your `PATH`.
+
+#### Codex, settings
+
+1. In the app, open **Settings > MCP servers > Add server**.
+2. Choose **STDIO**.
+3. Set the command to `npx`.
+4. Add the arguments `-y` and `@cliftonz/tandoor-recipes-mcp`.
+5. Add the environment variables `TANDOOR_URL` and `TANDOOR_TOKEN`. Add any `TANDOOR_MCP_*` [section settings](#tool-sections) you want.
+6. Select **Save**, then restart the app.
+
+From a terminal, the same setup is:
+
+```bash
+codex mcp add tandoor \
+  --env TANDOOR_URL=https://your-tandoor-instance.com \
+  --env TANDOOR_TOKEN=your-api-token \
+  -- npx -y @cliftonz/tandoor-recipes-mcp
+```
+
+`codex mcp add` writes this block to `~/.codex/config.toml`. You can also add it to `config.toml` by hand:
+
+```toml
+[mcp_servers.tandoor]
+command = "npx"
+args = ["-y", "@cliftonz/tandoor-recipes-mcp"]
+
+[mcp_servers.tandoor.env]
+TANDOOR_URL = "https://your-tandoor-instance.com"
+TANDOOR_TOKEN = "your-api-token"
+```
+
+#### Codex, plugin
+
+1. Open the **Plugins** page and select **Add > Add a marketplace**.
+2. Enter the source `Cliftonz/tandoor-recipe-mcp`.
+3. Open the Tandoor plugin's details and select the plus button.
+4. Restart the app.
+
+From a terminal:
+
+```bash
+codex plugin marketplace add Cliftonz/tandoor-recipe-mcp
+codex plugin add tandoor-recipes-mcp@cliftonz-tandoor
+```
+
+Codex does not prompt for settings on install, and you cannot override a plugin's environment. The plugin passes through only `TANDOOR_URL` and `TANDOOR_TOKEN` from the app's environment. An app you start from the Dock usually does not see exports in `~/.zshrc`. On macOS, set the variables for your login session and then restart the app:
+
+```bash
+launchctl setenv TANDOOR_URL https://your-tandoor-instance.com
+launchctl setenv TANDOOR_TOKEN your-api-token
+```
+
+`launchctl setenv` does not survive a reboot. It also exposes the token to every app you start in that session.
+
+The Codex plugin does not pass through section settings. To change sections, use [saved sections](#saved-sections) or the [settings path](#codex-settings).
 
 ### Recommended Claude Code permissions
 
@@ -154,6 +248,8 @@ If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: B
 
 `INCLUDE_ONLY` and `EXCLUDE` run before the section settings and give finer control ("give me only read tools" or "hide destructive ops from this agent").
 
+Section values can also come from [saved sections](#saved-sections).
+
 ## Downloading files
 
 `download_recipe_file({recipe_id})` returns the file Tandoor stored for a recipe synced from a Storage backend (Dropbox, Nextcloud, or Local). It is in the `recipes` section's `full` tier. `download_file({file_id})` returns a user file uploaded to Tandoor. It is in the `admin` section.
@@ -194,7 +290,7 @@ The server also probes `/api/server-settings/current/` at boot and writes a WARN
 
 ## Tool sections
 
-Each section has one env var. The server trims each value and ignores case. An unset, empty, or whitespace-only variable means the default. If any section variable is invalid, the server stops at startup with one error that names every invalid variable and its valid values.
+Each section has one env var. The server trims each value and ignores case. An unset, empty, or whitespace-only variable means the [saved setting](#saved-sections) for this `TANDOOR_URL` if there is one, otherwise the default. If any section variable is invalid, the server stops at startup with one error that names every invalid variable and its valid values.
 
 Tiered sections take `off`, `simple`, or `full` and default to `simple`. `full` includes everything in `simple`.
 
@@ -224,7 +320,11 @@ These tools are always on, whatever the section settings: `list_tool_groups`, `e
 The server applies the settings in this order:
 
 1. `TANDOOR_MCP_INCLUDE_ONLY` and `TANDOOR_MCP_EXCLUDE` filter the tool list. `EXCLUDE` is a hard block: nothing can enable an excluded tool.
-2. The section settings decide which of the remaining tools are visible at startup. An `off` section is hidden.
+2. A section env var that is set and not empty or whitespace-only decides that section.
+3. For a section whose env var is unset, empty, or whitespace-only, the [saved section](#saved-sections) for this `TANDOOR_URL` decides.
+4. Every other section takes its default.
+
+The result decides which of the remaining tools are visible at startup. An `off` section is hidden.
 
 In stdio mode the LLM can change sections during a session:
 
@@ -232,9 +332,34 @@ In stdio mode the LLM can change sections during a session:
 - `disable_tool_group({group})` sets a section to `off`. It cannot disable `always`.
 - `enable_tool_group({group: "always"})` succeeds and changes nothing.
 
+If you see only some tools in Claude Desktop or Codex, ask the model to enable a section, for example "enable the cooklog section". If the new tools do not appear, restart the app. If the change was saved, it applies on the next start.
+
 A section with no registered tools does not count as a section at runtime. That covers any section that `INCLUDE_ONLY` or `EXCLUDE` empties. `enable_tool_group` and `disable_tool_group` reject it as unknown, and `list_tool_groups` and the server instructions leave it out.
 
 From an active session, call `list_tool_groups` for a live listing of sections and their tools.
+
+### Saved sections
+
+When `enable_tool_group` or `disable_tool_group` changes a section, it saves the change, so the change survives a restart. `disable_tool_group` saves an explicit `"off"`. The server saves sections per Tandoor instance, keyed by `TANDOOR_URL`. The key is the URL origin only: the scheme, host, and port, lowercased, with a default port dropped. The server ignores any path, query, or trailing slash, so `https://host/tandoor` and `https://host` share one entry. These are the same rules the server applies to `TANDOOR_URL`, including adding `https://` to a URL without a scheme.
+
+The server matches keys in the file by the same rules, so a key you write by hand, such as `"https://Tandoor.example.com/tandoor"`, still matches. A save updates that entry under its key as written.
+
+The file is `$XDG_CONFIG_HOME/tandoor-mcp/sections.json`. When `XDG_CONFIG_HOME` is unset or is not an absolute path, the file is `~/.config/tandoor-mcp/sections.json`. The path is the same on every OS.
+
+```json
+{"https://tandoor.example.com": {"recipes": "full", "meal-plan": "full", "cooklog": "on"}}
+```
+
+Inside each entry, the keys are the section names from the tables above: `recipes`, `meal-plan`, `shopping`, `inventory`, `foods`, `cooklog`, `recipe-books`, `ai`, `import-export`, `household-space`, and `admin`. Like the env vars, saved values ignore case and surrounding spaces, so `"FULL"` works.
+
+- HTTP mode reads saved sections at startup but never changes them.
+- A missing file is normal and gives no warning.
+- If the file exists but cannot be read, is not valid JSON, has any invalid section value, or has two or more keys that match the same instance, the server ignores the whole file and starts from the env settings. It prints a warning to stderr that names the file.
+- If you save a change while the file is invalid, the server replaces the file with a new one that holds only that change.
+- If a save succeeds and the section's env var is set, the tool result notes that the env var will override the saved value on restart.
+- If saving fails, the change still applies for the current session. The tool result says that the change was not saved.
+- The server ignores saved entries for sections that are filtered out or no longer exist, and keeps them in the file.
+- The server ignores a key it cannot parse as a URL, and keeps it in the file.
 
 ## Example conversations
 
