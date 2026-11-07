@@ -2,6 +2,34 @@
 
 All notable changes to this project are documented in this file.
 
+## 3.4.0 / 2026-11-07
+
+### Added
+- **Remote mode for Claude and ChatGPT.** You can self-host the server next to your Tandoor and add it as a custom connector in Claude (web, mobile, Desktop, Cowork, Claude Code) or ChatGPT. The server runs its own OAuth sign-in. Each user signs in by pasting their own Tandoor API token, and each request uses that user's token. `TANDOOR_MCP_PUBLIC_URL` turns remote mode on. `TANDOOR_MCP_SECRET_KEY` encrypts the stored Tandoor tokens. `TANDOOR_MCP_DATA_DIR` sets where they are stored. `TANDOOR_MCP_TANDOOR_PUBLIC_URL` sets the Tandoor address the sign-in page shows, if users open Tandoor at a different address than the server uses.
+- **`TANDOOR_MCP_HTTP_HOST`** sets the address the HTTP server binds to.
+- **`TANDOOR_MCP_TRUST_PROXY`** accepts a hop count or a comma-separated list of IP addresses and CIDR ranges. It works in every HTTP mode.
+- **Docker image on GHCR.** Each release pushes a signed multi-arch image to `ghcr.io/cliftonz/tandoor-recipes-mcp`. It runs as a non-root user, keeps data in `/data`, and has a healthcheck. `docker-compose.example.yml` shows a setup.
+- **MCP Registry listing.** Stable releases publish `server.json` to the MCP Registry, with the npm package, the `.mcpb` file and the Docker image.
+- **Titles and annotations on every tool.** All 307 tools declare a title and the read-only, destructive, idempotent and open-world hints.
+- **SBOM, checksums and provenance on releases.** Each GitHub release has a CycloneDX SBOM, a `SHA256SUMS` file and provenance for the `.mcpb` file.
+- **Privacy, security and support docs.** `PRIVACY.md`, `SECURITY.md` and `SUPPORT.md` are new.
+- **README remote-mode guide.** It covers settings, Docker, reverse proxies and tunnels, client setup, operations and testing.
+
+### Fixed
+- **Invalid JSON on `/mcp` returned 500.** It now returns 400 with a JSON-RPC parse error.
+- **A shared-token guess with multibyte characters returned 500.** It now returns 401.
+
+### Security
+- **Host and Origin checks.** Remote mode checks the Host and Origin headers. Local HTTP mode checks Origin on `/mcp`.
+- **Per-visitor rate limit on remote `/mcp`.** Failed sign-in attempts are also rate limited.
+- **CodeQL and OpenSSF Scorecard** now run on the repository.
+
+### Notes
+- This is the first release with a GHCR image. The maintainer makes the package public once after the first push.
+- In remote mode, the server refuses to start if `TANDOOR_TOKEN` or `TANDOOR_MCP_HTTP_TOKEN` is set.
+- In remote mode, `file_path` uploads are refused. Use `file_url` instead.
+- Tool descriptions changed: `switch_active_space` now starts with "Changes which space this token works in" instead of "DESTRUCTIVE state change", and `list_meal_types` now declares an empty input schema.
+
 ## 3.3.0 / 2026-11-06
 
 ### Added
