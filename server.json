@@ -1,0 +1,66 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Cliftonz/tandoor-recipe-mcp",
+  "description": "Recipes, meal plans, shopping lists and more for your local or self-hosted Tandoor instance.",
+  "repository": {
+    "url": "https://github.com/Cliftonz/tandoor-recipe-mcp",
+    "source": "github"
+  },
+  "version": "3.3.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@cliftonz/tandoor-recipes-mcp",
+      "version": "3.3.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "TANDOOR_URL",
+          "description": "Base URL of your Tandoor instance (e.g. https://tandoor.example.com)",
+          "isRequired": true
+        },
+        {
+          "name": "TANDOOR_TOKEN",
+          "description": "Tandoor API token with write access, from Settings > API Tokens",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    },
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/Cliftonz/tandoor-recipe-mcp/releases/download/v3.3.0/tandoor-recipes-mcp.mcpb",
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/cliftonz/tandoor-recipes-mcp:3.3.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "TANDOOR_MCP_TRANSPORT",
+          "description": "Runs the image over stdio instead of its default remote HTTP mode",
+          "value": "stdio"
+        },
+        {
+          "name": "TANDOOR_URL",
+          "description": "Base URL of your Tandoor instance (e.g. https://tandoor.example.com)",
+          "isRequired": true
+        },
+        {
+          "name": "TANDOOR_TOKEN",
+          "description": "Tandoor API token with write access, from Settings > API Tokens",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

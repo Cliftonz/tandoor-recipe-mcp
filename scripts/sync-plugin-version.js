@@ -12,6 +12,7 @@ const targets = [
   resolve(root, '.claude-plugin/marketplace.json'),
   resolve(root, '.codex-plugin/plugin.json'),
   resolve(root, 'manifest.json'),
+  resolve(root, 'server.json'),
 ];
 
 for (const file of targets) {
@@ -20,6 +21,14 @@ for (const file of targets) {
   if (Array.isArray(json.plugins)) {
     for (const p of json.plugins) {
       if (p.version !== undefined) p.version = version;
+    }
+  }
+  if (Array.isArray(json.packages)) {
+    for (const p of json.packages) {
+      if (p.version !== undefined) p.version = version;
+      p.identifier = p.identifier
+        .replace(/\/releases\/download\/v[^/]+\//, `/releases/download/v${version}/`)
+        .replace(/:[^:/]+$/, `:${version}`);
     }
   }
   if (json.mcpServers) {

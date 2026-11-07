@@ -1,16 +1,3 @@
-// Guards against version drift across the five files that must agree before
-// a release is tagged:
-//   - package.json
-//   - plugins/claude/.claude-plugin/plugin.json
-//   - .claude-plugin/marketplace.json
-//   - .codex-plugin/plugin.json
-//   - manifest.json
-//
-// The `version` npm script runs scripts/sync-plugin-version.js, but that only
-// fires on `npm version`. A direct edit to package.json followed by a tag
-// push would ship a desynced plugin manifest — silent today, this guard
-// makes it loud.
-
 import { describe, it, expect } from 'vitest';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -48,6 +35,20 @@ describe('plugin version sync', () => {
     expect(readJson('manifest.json').version).toBe(pkg.version);
   });
 
+  it('server.json carries package.json version on itself and on every package', () => {
+    const server = readJson('server.json');
+    expect(server.version).toBe(pkg.version);
+    expect(server.packages.map((p: { identifier: string; version?: string }) => p.version ?? p.identifier)).toEqual([
+      pkg.version,
+      `https://github.com/Cliftonz/tandoor-recipe-mcp/releases/download/v${pkg.version}/tandoor-recipes-mcp.mcpb`,
+      `ghcr.io/cliftonz/tandoor-recipes-mcp:${pkg.version}`,
+    ]);
+  });
+
+  it('npm version script stages server.json after syncing', () => {
+    expect(pkg.scripts.version).toMatch(/git add .*\bserver\.json\b/);
+  });
+
   it('both plugin manifests pin the npx package to package.json version', () => {
     const pinned = `${pkg.name}@${pkg.version}`;
     expect(plugin.mcpServers.tandoor.args).toContain(pinned);
@@ -63,6 +64,7 @@ describe('plugin version sync', () => {
       '.claude-plugin/marketplace.json',
       '.codex-plugin/plugin.json',
       'manifest.json',
+      'server.json',
     ];
     for (const rel of files) {
       mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
@@ -73,7 +75,14 @@ describe('plugin version sync', () => {
     const readTmp = (rel: string) => JSON.parse(readFileSync(path.join(dir, rel), 'utf8'));
     const claudeArgs = readTmp('plugins/claude/.claude-plugin/plugin.json').mcpServers.tandoor.args;
     const codexArgs = readTmp('.codex-plugin/plugin.json').mcpServers.tandoor.args;
+    const server = readTmp('server.json');
     rmSync(dir, { recursive: true });
+    expect(server.version).toBe('9.8.7');
+    expect(server.packages.map((p: { identifier: string; version?: string }) => [p.identifier, p.version])).toEqual([
+      [pkg.name, '9.8.7'],
+      ['https://github.com/Cliftonz/tandoor-recipe-mcp/releases/download/v9.8.7/tandoor-recipes-mcp.mcpb', undefined],
+      ['ghcr.io/cliftonz/tandoor-recipes-mcp:9.8.7', undefined],
+    ]);
     expect(claudeArgs).toEqual(['-y', `${pkg.name}@9.8.7`]);
     expect(codexArgs).toEqual(['-y', `${pkg.name}@9.8.7`]);
   });

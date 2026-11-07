@@ -4,6 +4,8 @@ node_modules/
 # Build output
 build/
 *.mcpb
+*.cdx.json
+SHA256SUMS
 dist/
 
 # Environment variables
