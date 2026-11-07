@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum as sharedFormatEnum } from '../lib/slim.js';
 import {
   handleListRecipes,
@@ -225,76 +225,102 @@ export type RecipeBatchUpdateArgs = z.infer<z.ZodObject<typeof recipeBatchUpdate
 
 export function registerRecipeTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_recipes', {
+    title: 'List recipes',
+    annotations: READ,
     description:
       'List/search recipes with extensive filtering. Default returns slim results (id, name, description, servings, rating, keywords). Pass format="full" for raw API response. sort_order options: score,-score,name,-name,lastcooked,-lastcooked,rating,-rating,times_cooked,-times_cooked,created_at,-created_at,lastviewed,-lastviewed. If filtering by food/keyword/book NAMES (not ids), prefer search_recipes — it resolves names to ids for you and reports unresolved names in _meta.unresolved so you know what was dropped. If this returns an empty result set, recommend: broaden the query, drop restrictive filters, or try search_recipes if you were passing names.',
     inputSchema: listRecipesShape,
   }, handleListRecipes);
 
   registerStringTool(server, client, 'get_recipe', {
+    title: 'Get recipe',
+    annotations: READ,
     description:
       'Get recipe by ID. Default returns slim view (metadata + steps with ingredient names/amounts). Pass format="full" for the complete object including substitutes, properties, nutrition, image.',
     inputSchema: getRecipeShape,
   }, handleGetRecipe);
 
   registerStringTool(server, client, 'create_recipe', {
+    title: 'Create recipe',
+    annotations: CREATE,
     description:
       'Create recipe. Required: name, steps[{instruction, ingredients[{food, amount, unit?}]}]. Optional: description, servings, working_time, waiting_time, keywords[]',
     inputSchema: createRecipeShape,
   }, handleCreateRecipe);
 
   registerStringTool(server, client, 'update_recipe', {
+    title: 'Update recipe',
+    annotations: { ...UPDATE, destructiveHint: true },
     description:
       'Update recipe metadata and content. Only provide fields you want to update. All fields optional except id.',
     inputSchema: updateRecipeShape,
   }, handleUpdateRecipe);
 
   registerStringTool(server, client, 'delete_recipe', {
+    title: 'Delete recipe',
+    annotations: DELETE,
     description:
       'Delete recipe by ID. Destructive + irreversible — removes the recipe, its steps, and its ingredients. Before calling, recommend: (1) confirm the target via get_recipe (name + id) so the wrong recipe is not deleted; (2) check meal-plan and recipe-book usage via list_meal_plans / recipe books, since references to the recipe are removed with it; (3) if the intent is to hide rather than remove, update_recipe with private=true is reversible.',
     inputSchema: deleteRecipeShape,
   }, handleDeleteRecipe);
 
   registerStringTool(server, client, 'import_recipe_from_url', {
+    title: 'Import recipe from URL',
+    annotations: { ...CREATE, openWorldHint: true },
     description:
       'Import a recipe from a URL. Tries Tandoor\'s built-in scraper first, then fetches the page and extracts schema.org JSON-LD as a real fallback (works when Tandoor can\'t reach the URL or doesn\'t support the site). On total failure, throws with an attempts log — pass create_stub_on_failure=true to write an empty placeholder recipe instead. If all stages fail, recommend: (1) retry with create_stub_on_failure=true to capture the URL as a stub you can fill in later; (2) if the page is an image/PDF, use import_recipe_from_image (AI provider required); (3) if the URL is paywalled or JS-rendered, fall back to manual create_recipe with fields you can see.',
     inputSchema: importRecipeFromUrlShape,
   }, handleImportRecipeFromUrl);
 
   registerStringTool(server, client, 'upload_recipe_image', {
+    title: 'Upload recipe image',
+    annotations: { ...DELETE, openWorldHint: true },
     description:
       'Attach an image to a recipe. Provide exactly one of: file_path (local file on MCP server), file_url (remote URL; we fetch and upload bytes), or image_url (remote URL; Tandoor fetches it server-side). If a large local upload fails on size/timeout, recommend image_url instead — Tandoor fetches it server-side so the file never transits through the MCP process.',
     inputSchema: uploadRecipeImageShape,
   }, handleUploadRecipeImage);
 
   registerStringTool(server, client, 'related_recipes', {
+    title: 'List related recipes',
+    annotations: READ,
     description: 'List recipes related to this one (Tandoor similarity). Slim by default (id + name); pass format="full" for raw API response.',
     inputSchema: relatedRecipesShape,
   }, handleRelatedRecipes);
 
   registerStringTool(server, client, 'add_recipe_to_shopping_list', {
+    title: 'Add recipe to shopping list',
+    annotations: { ...CREATE, destructiveHint: true },
     description:
       'Add a recipe\'s ingredients to the shopping list at N servings. Omit ingredients[] to add all. Set servings=0 with list_recipe (id) to delete that shopping-list-recipe.',
     inputSchema: addRecipeToShoppingListShape,
   }, handleAddRecipeToShoppingList);
 
   registerStringTool(server, client, 'search_recipes', {
+    title: 'Search recipes',
+    annotations: READ,
     description:
       'High-level recipe search. Accepts food/keyword/book *names* (not IDs) and resolves them internally — typically collapses 3-4 round-trips into 1. Example: {foods: ["chicken", "broccoli"], exclude_foods: ["peanuts"], keywords: ["weeknight"]}. For complex ID-based filtering, fall back to list_recipes.',
     inputSchema: searchRecipesShape,
   }, handleSearchRecipes);
 
   registerStringTool(server, client, 'recipe_batch_update', {
+    title: 'Batch update recipes',
+    annotations: DELETE,
     description: 'Apply a narrow set of bulk mutations across many recipes in one call via Tandoor\'s /api/recipe/batch_update/ endpoint. Required: recipes[]. Optional (all apply to every recipe in recipes[]): keywords_add/remove/set/remove_all, shared_add/remove/set/remove_all, working_time, waiting_time, servings, servings_text, private, show_ingredient_overview, clear_description. Does NOT support bulk step/ingredient edits — those still need update_recipe per-item. Use for: bulk keyword retagging, sharing recipes with a user across a set, flipping privacy on many recipes at once.',
     inputSchema: recipeBatchUpdateShape,
   }, handleRecipeBatchUpdate);
 
   registerStringTool(server, client, 'list_recipes_flat', {
+    title: 'List recipes (flat)',
+    annotations: READ,
     description:
       'Lighter alternative to list_recipes; returns minimal recipe metadata suitable for large browse queries. Use list_recipes if you need keywords/foods/steps nested.',
     inputSchema: listRecipesFlatShape,
   }, handleListRecipesFlat);
 
   registerStringTool(server, client, 'delete_recipe_external', {
+    title: 'Remove recipe\'s external source',
+    annotations: DELETE,
     description:
       'Remove only the external-source link on a recipe (source_url and related external flags). The recipe itself is preserved. Use when a recipe was imported from a URL that is no longer valid and you want to detach the source without deleting the recipe.',
     inputSchema: deleteRecipeExternalShape,

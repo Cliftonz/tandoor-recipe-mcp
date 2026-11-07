@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleListCookLogs,
@@ -52,26 +52,36 @@ export type DeleteCookLogArgs = z.infer<z.ZodObject<typeof deleteCookLogShape>>;
 
 export function registerCookLogTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_cook_logs', {
+    title: 'List cook logs',
+    annotations: READ,
     description: 'List cook log entries (recipe cooking history). Optional: recipe (id filter), page, page_size.',
     inputSchema: listCookLogsShape,
   }, handleListCookLogs);
 
   registerStringTool(server, client, 'get_cook_log', {
+    title: 'Get cook log',
+    annotations: READ,
     description: 'Get a cook log entry by ID.',
     inputSchema: getCookLogShape,
   }, handleGetCookLog);
 
   registerStringTool(server, client, 'create_cook_log', {
+    title: 'Create cook log',
+    annotations: CREATE,
     description: 'Log that a recipe was cooked. Required: recipe (id). Optional: servings, rating, comment, created_at.',
     inputSchema: createCookLogShape,
   }, handleCreateCookLog);
 
   registerStringTool(server, client, 'update_cook_log', {
+    title: 'Update cook log',
+    annotations: UPDATE,
     description: 'Update a cook log entry (PATCH). Required: id.',
     inputSchema: updateCookLogShape,
   }, handleUpdateCookLog);
 
   registerStringTool(server, client, 'delete_cook_log', {
+    title: 'Delete cook log',
+    annotations: DELETE,
     description: 'Delete a cook log entry by ID.',
     inputSchema: deleteCookLogShape,
   }, handleDeleteCookLog);

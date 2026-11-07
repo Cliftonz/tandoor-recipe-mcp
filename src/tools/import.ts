@@ -5,7 +5,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleImportRecipes,
@@ -176,6 +176,8 @@ export function registerImportTools(server: McpServer, client: TandoorClient): v
   // ---------- General import ----------
 
   registerStringTool(server, client, 'import_recipes', {
+    title: 'Import recipes',
+    annotations: CREATE,
     description: 'Submit a raw recipe payload (text and/or uploaded file) to Tandoor for AI parsing into a Recipe. Requires ai_provider_id (see list_ai_providers). For URL scraping use import_recipe_from_url. For staged files already sitting in the recipe-import queue use import_pending_recipe. For the curated open-data seed set use run_open_data_import.',
     inputSchema: importRecipesShape,
   }, handleImportRecipes);
@@ -183,21 +185,29 @@ export function registerImportTools(server: McpServer, client: TandoorClient): v
   // ---------- Import log ----------
 
   registerStringTool(server, client, 'create_import_log', {
+    title: 'Create import log',
+    annotations: CREATE,
     description: 'Create an import-log entry. Required: type. Optional: msg, running, total_recipes, imported_recipes. Tandoor also writes these automatically during URL/AI/bookmarklet imports.',
     inputSchema: createImportLogShape,
   }, handleCreateImportLog);
 
   registerStringTool(server, client, 'get_import_log', {
+    title: 'Get import log',
+    annotations: READ,
     description: 'Get an import-log entry by ID.',
     inputSchema: getImportLogShape,
   }, handleGetImportLog);
 
   registerStringTool(server, client, 'update_import_log', {
+    title: 'Update import log',
+    annotations: UPDATE,
     description: 'Update an import-log entry (PATCH). Required: id.',
     inputSchema: updateImportLogShape,
   }, handleUpdateImportLog);
 
   registerStringTool(server, client, 'delete_import_log', {
+    title: 'Delete import log',
+    annotations: DELETE,
     description: 'Delete an import-log entry by ID.',
     inputSchema: deleteImportLogShape,
   }, handleDeleteImportLog);
@@ -205,11 +215,15 @@ export function registerImportTools(server: McpServer, client: TandoorClient): v
   // ---------- Import open data ----------
 
   registerStringTool(server, client, 'list_open_data_imports', {
+    title: 'List open data imports',
+    annotations: READ,
     description: 'List available versions and datatypes for the Tandoor open-data seed set (curated foods, units, categories, properties). Call before run_open_data_import to pick a version.',
     inputSchema: listOpenDataImportsShape,
   }, handleListOpenDataImports);
 
   registerStringTool(server, client, 'run_open_data_import', {
+    title: 'Run open data import',
+    annotations: { ...CREATE, destructiveHint: true },
     description: 'Import the Tandoor curated open-data seed set (foods, units, categories, properties, stores, conversions) for a chosen version. Required: selected_version, selected_datatypes[]. Optional: update_existing, use_metric. This is a bulk taxonomy seed; for a single recipe use import_recipes or import_recipe_from_url.',
     inputSchema: runOpenDataImportShape,
   }, handleRunOpenDataImport);
@@ -217,36 +231,50 @@ export function registerImportTools(server: McpServer, client: TandoorClient): v
   // ---------- Recipe-import queue ----------
 
   registerStringTool(server, client, 'list_recipe_imports', {
+    title: 'List recipe imports',
+    annotations: READ,
     description: 'List entries in the recipe-import staging queue (files uploaded but not yet imported as recipes). Optional: page, page_size.',
     inputSchema: listRecipeImportsShape,
   }, handleListRecipeImports);
 
   registerStringTool(server, client, 'create_recipe_import', {
+    title: 'Create recipe import',
+    annotations: CREATE,
     description: 'Add an entry to the recipe-import staging queue. Required: name, storage. Does not import; call import_pending_recipe or import_all_pending afterwards.',
     inputSchema: createRecipeImportShape,
   }, handleCreateRecipeImport);
 
   registerStringTool(server, client, 'get_recipe_import', {
+    title: 'Get recipe import',
+    annotations: READ,
     description: 'Get a pending recipe-import queue entry by ID.',
     inputSchema: getRecipeImportShape,
   }, handleGetRecipeImport);
 
   registerStringTool(server, client, 'update_recipe_import', {
+    title: 'Update recipe import',
+    annotations: UPDATE,
     description: 'Update a pending recipe-import queue entry (PATCH). Required: id.',
     inputSchema: updateRecipeImportShape,
   }, handleUpdateRecipeImport);
 
   registerStringTool(server, client, 'delete_recipe_import', {
+    title: 'Delete recipe import',
+    annotations: DELETE,
     description: 'Delete a pending recipe-import queue entry by ID.',
     inputSchema: deleteRecipeImportShape,
   }, handleDeleteRecipeImport);
 
   registerStringTool(server, client, 'import_all_pending', {
+    title: 'Import all pending',
+    annotations: CREATE,
     description: 'Trigger import of every entry currently in the recipe-import staging queue. For a single queued entry use import_pending_recipe.',
     inputSchema: importAllPendingShape,
   }, handleImportAllPending);
 
   registerStringTool(server, client, 'import_pending_recipe', {
+    title: 'Import pending recipe',
+    annotations: CREATE,
     description: 'Import one already-staged entry from the recipe-import queue into a real Recipe. Required: id (of the queue entry). For raw text/file that has NOT been staged yet use import_recipes. For a URL use import_recipe_from_url.',
     inputSchema: importPendingRecipeShape,
   }, handleImportPendingRecipe);
@@ -254,26 +282,36 @@ export function registerImportTools(server: McpServer, client: TandoorClient): v
   // ---------- Bookmarklet import ----------
 
   registerStringTool(server, client, 'list_bookmarklet_imports', {
+    title: 'List bookmarklet imports',
+    annotations: READ,
     description: 'List saved bookmarklet-import entries (raw HTML captured from the browser bookmarklet, awaiting parse). Optional: page, page_size.',
     inputSchema: listBookmarkletImportsShape,
   }, handleListBookmarkletImports);
 
   registerStringTool(server, client, 'create_bookmarklet_import', {
+    title: 'Create bookmarklet import',
+    annotations: CREATE,
     description: 'Save a bookmarklet-import entry (raw HTML from a recipe page). Required: html. Optional: url.',
     inputSchema: createBookmarkletImportShape,
   }, handleCreateBookmarkletImport);
 
   registerStringTool(server, client, 'get_bookmarklet_import', {
+    title: 'Get bookmarklet import',
+    annotations: READ,
     description: 'Get a bookmarklet-import entry by ID.',
     inputSchema: getBookmarkletImportShape,
   }, handleGetBookmarkletImport);
 
   registerStringTool(server, client, 'update_bookmarklet_import', {
+    title: 'Update bookmarklet import',
+    annotations: UPDATE,
     description: 'Update a bookmarklet-import entry (PATCH). Required: id.',
     inputSchema: updateBookmarkletImportShape,
   }, handleUpdateBookmarkletImport);
 
   registerStringTool(server, client, 'delete_bookmarklet_import', {
+    title: 'Delete bookmarklet import',
+    annotations: DELETE,
     description: 'Delete a bookmarklet-import entry by ID.',
     inputSchema: deleteBookmarkletImportShape,
   }, handleDeleteBookmarkletImport);
@@ -281,6 +319,8 @@ export function registerImportTools(server: McpServer, client: TandoorClient): v
   // ---------- FDC search ----------
 
   registerStringTool(server, client, 'fdc_search', {
+    title: 'Search USDA FDC foods',
+    annotations: READ,
     description: 'Search the USDA FoodData Central catalog for candidate foods. Required: query. Optional: dataType[] (Branded, Foundation, Survey (FNDDS), SR Legacy). Returns fdcId + description + dataType; pair the chosen fdcId with food_fdc_lookup to fetch nutrients.',
     inputSchema: fdcSearchShape,
   }, handleFdcSearch);
@@ -288,11 +328,15 @@ export function registerImportTools(server: McpServer, client: TandoorClient): v
   // ---------- Food inherit field ----------
 
   registerStringTool(server, client, 'list_food_inherit_fields', {
+    title: 'List food inherit fields',
+    annotations: READ,
     description: 'List the set of Food fields that child foods can inherit from a parent food (diet, supermarket category, etc.). Reference data used when configuring inheritance on the Food tree.',
     inputSchema: listFoodInheritFieldsShape,
   }, handleListFoodInheritFields);
 
   registerStringTool(server, client, 'get_food_inherit_field', {
+    title: 'Get food inherit field',
+    annotations: READ,
     description: 'Get a food-inherit-field definition by ID.',
     inputSchema: getFoodInheritFieldShape,
   }, handleGetFoodInheritField);

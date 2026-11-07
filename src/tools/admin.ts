@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleGetShareLink,
@@ -154,107 +154,148 @@ export type GetServerSettingsArgs = z.infer<z.ZodObject<typeof getServerSettings
 
 export function registerAdminTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'get_share_link', {
+    title: 'Get share link',
+    annotations: READ,
     description: 'Retrieve an existing share link by ID. Note: Tandoor\'s REST API does not expose create/list/delete for share links — create them via the web UI.',
     inputSchema: getShareLinkShape,
   }, handleGetShareLink);
 
   registerStringTool(server, client, 'list_user_preferences', {
+    title: 'List user preferences',
+    annotations: READ,
     description: 'List user preferences (typically just the current user).',
     inputSchema: listUserPreferencesShape,
   }, handleListUserPreferences);
 
   registerStringTool(server, client, 'get_user_preference', {
+    title: 'Get user preference',
+    annotations: READ,
     description: 'Get preferences for a user by their user ID.',
     inputSchema: getUserPreferenceShape,
   }, handleGetUserPreference);
 
   registerStringTool(server, client, 'update_user_preference', {
+    title: 'Update user preference',
+    annotations: UPDATE,
     description: 'Update user preferences (PATCH). Required: user_id. Common fields: theme, default_page (SEARCH/PLAN/BOOKS/SHOPPING), default_unit, use_fractions, use_kj, comments, ingredient_decimals, shopping_auto_sync, shopping_recent_days, mealplan_autoadd_shopping, mealplan_autoinclude_related, mealplan_autoexclude_onhand, filter_to_supermarket, left_handed, default_meal_type_id (the user\'s default meal type; null clears it), shopping_update_food_lists (a new shopping entry created without shopping lists gets its food\'s shopping lists).',
     inputSchema: updateUserPreferenceShape,
   }, handleUpdateUserPreference);
 
   registerStringTool(server, client, 'list_automations', {
+    title: 'List automations',
+    annotations: READ,
     description: 'List automation rules (auto-apply keyword aliases, food aliases, replace rules, etc.).',
     inputSchema: listAutomationsShape,
   }, handleListAutomations);
 
   registerStringTool(server, client, 'get_automation', {
+    title: 'Get automation',
+    annotations: READ,
     description: 'Get automation rule by ID.',
     inputSchema: getAutomationShape,
   }, handleGetAutomation);
 
   registerStringTool(server, client, 'create_automation', {
+    title: 'Create automation',
+    annotations: CREATE,
     description: 'Create an automation rule. Required: type (FOOD_ALIAS/UNIT_ALIAS/KEYWORD_ALIAS/DESCRIPTION_REPLACE/INSTRUCTION_REPLACE/NEVER_UNIT/TRANSPOSE_WORDS/FOOD_REPLACE/UNIT_REPLACE/NAME_REPLACE). params: param_1/2/3 carry rule-specific args (e.g. alias → canonical).',
     inputSchema: createAutomationShape,
   }, handleCreateAutomation);
 
   registerStringTool(server, client, 'update_automation', {
+    title: 'Update automation',
+    annotations: UPDATE,
     description: 'Update automation (PATCH). Required: id.',
     inputSchema: updateAutomationShape,
   }, handleUpdateAutomation);
 
   registerStringTool(server, client, 'delete_automation', {
+    title: 'Delete automation',
+    annotations: DELETE,
     description: 'Delete automation by ID.',
     inputSchema: deleteAutomationShape,
   }, handleDeleteAutomation);
 
   registerStringTool(server, client, 'list_user_files', {
+    title: 'List user files',
+    annotations: READ,
     description: 'List user-uploaded files (step attachments, etc.).',
     inputSchema: listUserFilesShape,
   }, handleListUserFiles);
 
   registerStringTool(server, client, 'get_user_file', {
+    title: 'Get user file',
+    annotations: READ,
     description: 'Get user file metadata by ID.',
     inputSchema: getUserFileShape,
   }, handleGetUserFile);
 
   registerStringTool(server, client, 'upload_user_file', {
+    title: 'Upload user file',
+    annotations: { ...CREATE, openWorldHint: true },
     description: 'Upload a user file. Required: name. Provide exactly one of file_path (local) or file_url (we fetch and upload bytes).',
     inputSchema: uploadUserFileShape,
   }, handleUploadUserFile);
 
   registerStringTool(server, client, 'update_user_file', {
+    title: 'Update user file',
+    annotations: UPDATE,
     description: 'Rename a user file (PATCH). Required: id, name.',
     inputSchema: updateUserFileShape,
   }, handleUpdateUserFile);
 
   registerStringTool(server, client, 'delete_user_file', {
+    title: 'Delete user file',
+    annotations: DELETE,
     description: 'Delete a user file by ID.',
     inputSchema: deleteUserFileShape,
   }, handleDeleteUserFile);
 
   registerStringTool(server, client, 'download_file', {
+    title: 'Download user file',
+    annotations: { ...READ, readOnlyHint: false, idempotentHint: false },
     description: 'Download a user file uploaded to Tandoor. Images come back as an image and other files as an embedded resource, up to 5 MiB; larger files need save: true.',
     inputSchema: downloadFileShape,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   }, handleDownloadFile);
 
   registerStringTool(server, client, 'list_view_logs', {
+    title: 'List view logs',
+    annotations: READ,
     description: 'List recipe view-log entries (which recipes have been viewed and when).',
     inputSchema: listViewLogsShape,
   }, handleListViewLogs);
 
   registerStringTool(server, client, 'list_import_logs', {
+    title: 'List import logs',
+    annotations: READ,
     description: 'List import-log entries (URL/AI/bookmarklet import history).',
     inputSchema: listImportLogsShape,
   }, handleListImportLogs);
 
   registerStringTool(server, client, 'list_ai_logs', {
+    title: 'List AI logs',
+    annotations: READ,
     description: 'List AI-log entries (AI usage history + credit cost).',
     inputSchema: listAiLogsShape,
   }, handleListAiLogs);
 
   registerStringTool(server, client, 'food_ai_properties', {
+    title: 'Generate food properties with AI',
+    annotations: CREATE,
     description: 'Enrich a food with AI-generated properties (fallback path when USDA FDC is incomplete). Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend: (1) prefer food_fdc_lookup when the food has an fdc_id — it is deterministic, free, and does not need AI setup; (2) otherwise ask the operator to add an AI provider in Tandoor Settings → AI (OpenAI/Anthropic/Ollama/etc.).',
     inputSchema: foodAiPropertiesShape,
   }, handleFoodAiProperties);
 
   registerStringTool(server, client, 'recipe_ai_properties', {
+    title: 'Generate recipe properties with AI',
+    annotations: CREATE,
     description: 'Have AI compute nutrition/properties for a full recipe. Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend the operator add one in Tandoor Settings → AI. For single-ingredient nutrition use food_fdc_lookup instead — deterministic and no AI setup required.',
     inputSchema: recipeAiPropertiesShape,
   }, handleRecipeAiProperties);
 
   registerStringTool(server, client, 'get_server_settings', {
+    title: 'Get server settings',
+    annotations: READ,
     description: 'Fetch current Tandoor server settings (feature flags, limits). Useful to check whether AI, sharing, or open-data import are enabled before calling those tools.',
     inputSchema: getServerSettingsShape,
   }, handleGetServerSettings);

@@ -155,7 +155,7 @@ describe('download_recipe_file over MCP', () => {
   it('is listed with the download annotations and replaces get_recipe_file_metadata', async () => {
     const { tools } = await mcp.listTools();
     expect(tools.find((t) => t.name === 'download_recipe_file')?.annotations).toEqual({
-      readOnlyHint: false, destructiveHint: false, idempotentHint: false,
+      readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false,
     });
     expect(tools.map((t) => t.name)).not.toContain('get_recipe_file_metadata');
   });

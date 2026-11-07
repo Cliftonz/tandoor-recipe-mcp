@@ -5,7 +5,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, registerStringTool } from '../lib/register.js';
 import { makeTreeSafetyHandler } from '../handlers/tree-safety.js';
 import type { TreeSafetyAction } from '../clients/tree-safety.js';
 
@@ -57,7 +57,7 @@ export function registerTreeSafetyTools(server: McpServer, client: TandoorClient
         server,
         client,
         name,
-        { description, inputSchema: shape },
+        { title: `Preview ${resource.replace(/_/g, ' ')} delete (${action})`, description, inputSchema: shape, annotations: READ },
         makeTreeSafetyHandler(slug, action),
       );
     }

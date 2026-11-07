@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import {
   handleListIngredients,
   handleGetIngredient,
@@ -65,31 +65,43 @@ export type ParseIngredientArgs = z.infer<z.ZodObject<typeof parseIngredientShap
 
 export function registerIngredientTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_ingredients', {
+    title: 'List ingredients',
+    annotations: READ,
     description: 'List ingredients. Optional filters: food (food id), unit (unit id), page, page_size',
     inputSchema: listIngredientsShape,
   }, handleListIngredients);
 
   registerStringTool(server, client, 'get_ingredient', {
+    title: 'Get ingredient',
+    annotations: READ,
     description: 'Get ingredient by ID',
     inputSchema: getIngredientShape,
   }, handleGetIngredient);
 
   registerStringTool(server, client, 'create_ingredient', {
+    title: 'Create ingredient',
+    annotations: CREATE,
     description: 'Create ingredient. Required: food_id. Optional: unit_id, amount, note, order, is_header, no_amount, original_text',
     inputSchema: createIngredientShape,
   }, handleCreateIngredient);
 
   registerStringTool(server, client, 'update_ingredient', {
+    title: 'Update ingredient',
+    annotations: UPDATE,
     description: 'Partially update ingredient (PATCH). Required: id. All other fields optional. Pass unit_id: null to clear unit',
     inputSchema: updateIngredientShape,
   }, handleUpdateIngredient);
 
   registerStringTool(server, client, 'delete_ingredient', {
+    title: 'Delete ingredient',
+    annotations: DELETE,
     description: 'Delete ingredient by ID',
     inputSchema: deleteIngredientShape,
   }, handleDeleteIngredient);
 
   registerStringTool(server, client, 'parse_ingredient', {
+    title: 'Parse ingredient',
+    annotations: UPDATE,
     description: 'Parse a free-form ingredient string (e.g. "2 cups flour") into amount, unit, unit_id, food, food_id, note. Writes to the database: Tandoor creates any Food or Unit row it does not already have. unit and food are the matched row names, so "cups" can come back as "cup". With no unit, unit is "" and unit_id is omitted. food_id and unit_id pass straight to create_ingredient. Blank text returns Tandoor\'s 400. Tandoor\'s parser is heuristic and can misfire on compound descriptions, brand names, or non-English units.',
     inputSchema: parseIngredientShape,
   }, handleParseIngredient);

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleListInviteLinks,
@@ -54,26 +54,36 @@ export type DeleteInviteLinkArgs = z.infer<z.ZodObject<typeof deleteInviteLinkSh
 
 export function registerInviteLinkTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_invite_links', {
+    title: 'List invite links',
+    annotations: READ,
     description: 'List space invite links. Optional: page, page_size, limit, query, unused, internal_note, updated_at. The returned uuid is the shareable invite token.',
     inputSchema: listInviteLinksShape,
   }, handleListInviteLinks);
 
   registerStringTool(server, client, 'get_invite_link', {
+    title: 'Get invite link',
+    annotations: READ,
     description: 'Get a space invite link by ID. The uuid field is the shareable invite token.',
     inputSchema: getInviteLinkShape,
   }, handleGetInviteLink);
 
   registerStringTool(server, client, 'create_invite_link', {
+    title: 'Create invite link',
+    annotations: { ...CREATE, destructiveHint: true },
     description: 'DESTRUCTIVE: Creating an invite link allows a new user to join your space. Required: email, group (Group id), valid_until (YYYY-MM-DD). Optional: reusable, internal_note. Response uuid is the shareable token; treat it as sensitive.',
     inputSchema: createInviteLinkShape,
   }, handleCreateInviteLink);
 
   registerStringTool(server, client, 'update_invite_link', {
+    title: 'Update invite link',
+    annotations: UPDATE,
     description: 'Update a space invite link (PATCH). Required: id. Changing valid_until or reusable alters who can still join your space.',
     inputSchema: updateInviteLinkShape,
   }, handleUpdateInviteLink);
 
   registerStringTool(server, client, 'delete_invite_link', {
+    title: 'Delete invite link',
+    annotations: DELETE,
     description: 'Delete a space invite link by ID. Revokes the invite so the uuid can no longer be redeemed.',
     inputSchema: deleteInviteLinkShape,
   }, handleDeleteInviteLink);

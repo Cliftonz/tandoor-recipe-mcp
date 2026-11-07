@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleListAccessTokens,
@@ -57,31 +57,43 @@ export type AuthenticateArgs = z.infer<z.ZodObject<typeof authenticateShape>>;
 
 export function registerAccessTokenTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_access_tokens', {
+    title: 'List access tokens',
+    annotations: { ...READ, readOnlyHint: false },
     description: `List Tandoor access tokens. ${ESCALATION_WARNING} Token strings redacted in slim; use format='full' to reveal.`,
     inputSchema: listAccessTokensShape,
   }, handleListAccessTokens);
 
   registerStringTool(server, client, 'get_access_token', {
+    title: 'Get access token',
+    annotations: { ...READ, readOnlyHint: false },
     description: `Get an access token by ID. ${ESCALATION_WARNING} Token strings redacted in slim; use format='full' to reveal.`,
     inputSchema: getAccessTokenShape,
   }, handleGetAccessToken);
 
   registerStringTool(server, client, 'create_access_token', {
+    title: 'Create access token',
+    annotations: CREATE,
     description: `Mint a new Tandoor access token. Required: scope, expires (UTC ISO 8601 datetime with seconds and Z suffix, e.g. 2026-12-01T10:00:00Z). ${ESCALATION_WARNING}`,
     inputSchema: createAccessTokenShape,
   }, handleCreateAccessToken);
 
   registerStringTool(server, client, 'update_access_token', {
+    title: 'Update access token',
+    annotations: UPDATE,
     description: `Update an access token (PATCH). Required: id. Optional: scope, expires (UTC ISO 8601 datetime with seconds and Z suffix, e.g. 2026-12-01T10:00:00Z). ${ESCALATION_WARNING} Token strings redacted in slim; use format='full' to reveal.`,
     inputSchema: updateAccessTokenShape,
   }, handleUpdateAccessToken);
 
   registerStringTool(server, client, 'delete_access_token', {
+    title: 'Delete access token',
+    annotations: DELETE,
     description: 'Revoke an access token by ID.',
     inputSchema: deleteAccessTokenShape,
   }, handleDeleteAccessToken);
 
   registerStringTool(server, client, 'authenticate', {
+    title: 'Get token from username and password',
+    annotations: UPDATE,
     description: `Trade username + password for a Tandoor bearer token via POST /api-token-auth/. ${ESCALATION_WARNING}`,
     inputSchema: authenticateShape,
   }, handleAuthenticate);

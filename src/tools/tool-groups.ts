@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { isHttpTransport, registerStringTool } from '../lib/register.js';
+import { isHttpTransport, READ, UPDATE, registerStringTool } from '../lib/register.js';
 import { saveSectionMode } from '../lib/section-store.js';
 import { ALWAYS_ON_GROUP, ALWAYS_ON_TOOLS, SECTIONS, SECTIONS_WITH_TOOLS, SECTION_ENV_VARS, modesOf, sectionSetting, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
 
@@ -104,6 +104,8 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
     client,
     'list_tool_groups',
     {
+      title: 'List tool groups',
+      annotations: READ,
       description: [
         'List every tool section with its current mode and the modes it accepts.',
         'Tiered sections (off / simple / full) and on/off sections can be widened with enable_tool_group and turned off with disable_tool_group.',
@@ -143,6 +145,8 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
     client,
     'enable_tool_group',
     {
+      title: 'Enable tool group',
+      annotations: UPDATE,
       description: [
         'Widen a section so its tools become visible in tools/list.',
         'For a tiered section, tier "simple" or "full" (default full) picks how much to show; on/off sections take no tier.',
@@ -169,6 +173,8 @@ export function registerToolGroupTools(server: McpServer, client: TandoorClient,
     client,
     'disable_tool_group',
     {
+      title: 'Disable tool group',
+      annotations: UPDATE,
       description: [
         'Turn a section off so all its tools disappear from tools/list.',
         'The SDK emits tools/list_changed automatically.',

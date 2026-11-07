@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import {
   handleListMealPlans,
   handleGetMealPlan,
@@ -87,41 +87,57 @@ export type BulkCreateMealPlansArgs = z.infer<z.ZodObject<typeof bulkCreateMealP
 
 export function registerMealPlanTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_meal_plans', {
+    title: 'List meal plans',
+    annotations: READ,
     description: 'List meal plans. Optional: from_date, to_date (YYYY-MM-DD), page, page_size',
     inputSchema: listMealPlansShape,
   }, handleListMealPlans);
 
   registerStringTool(server, client, 'get_meal_plan', {
+    title: 'Get meal plan',
+    annotations: READ,
     description: 'Get meal plan by ID',
     inputSchema: getMealPlanShape,
   }, handleGetMealPlan);
 
   registerStringTool(server, client, 'create_meal_plan', {
+    title: 'Create meal plan',
+    annotations: CREATE,
     description: 'Create meal plan. Required: from_date (ISO), meal_type_id, servings. Optional: recipe_id, title, note, addshopping',
     inputSchema: createMealPlanShape,
   }, handleCreateMealPlan);
 
   registerStringTool(server, client, 'update_meal_plan', {
+    title: 'Update meal plan',
+    annotations: UPDATE,
     description: 'Update meal plan. Required: id. All other fields optional',
     inputSchema: updateMealPlanShape,
   }, handleUpdateMealPlan);
 
   registerStringTool(server, client, 'delete_meal_plan', {
+    title: 'Delete meal plan',
+    annotations: DELETE,
     description: 'Delete meal plan by ID',
     inputSchema: deleteMealPlanShape,
   }, handleDeleteMealPlan);
 
   registerStringTool(server, client, 'auto_meal_plan', {
+    title: 'Auto-generate meal plans',
+    annotations: CREATE,
     description: 'Auto-generate meal plans from internal recipes the user can see. Required: start_date, end_date (YYYY-MM-DD), meal_type_id, servings, addshopping. Optional: keyword_ids[] (if omitted or empty, plans from all recipes), keyword_mode ("and" default: recipes must carry every keyword; "or": any keyword). Tandoor plans at most 14 days and ignores shared. When no recipe matches, Tandoor returns 400 "No recipes found."',
     inputSchema: autoMealPlanShape,
   }, handleAutoMealPlan);
 
   registerStringTool(server, client, 'list_meal_types', {
+    title: 'List meal types',
+    annotations: READ,
     description: 'List available meal types (breakfast, lunch, dinner, etc.)',
     inputSchema: listMealTypesShape,
   }, handleListMealTypes);
 
   registerStringTool(server, client, 'bulk_create_meal_plans', {
+    title: 'Bulk create meal plans',
+    annotations: CREATE,
     description: 'Client-side batched create_meal_plan. Tandoor has no server-side bulk endpoint — this handler dedupes meal_type_ids and recipe_ids across entries, hydrates each unique id once, then creates all entries in parallel. Use for "plan the week" (7+ entries) to avoid N×3 round-trips. Each entry takes the same args as create_meal_plan: {recipe_id?, title?, servings, from_date, to_date?, meal_type_id, note?, addshopping?}. Returns {count, created: [{index, id, recipe_id, meal_type_id, ...}], failed: [{index, error}]} — individual failures do NOT abort the batch so you can see partial success and retry the failures.',
     inputSchema: bulkCreateMealPlansShape,
   }, handleBulkCreateMealPlans);

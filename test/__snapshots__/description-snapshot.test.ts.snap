@@ -1055,7 +1055,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "search_recipes",
   },
   {
-    "description": "DESTRUCTIVE state change. Switches the API token's active space server-side; every subsequent tool call in this session operates against the new space until switched again. Required: spaceId.",
+    "description": "Changes which space this token works in. Switches the API token's active space server-side; every subsequent tool call in this session operates against the new space until switched again. Required: spaceId.",
     "name": "switch_active_space",
   },
   {

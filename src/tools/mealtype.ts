@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleCreateMealType,
@@ -40,21 +40,29 @@ export type DeleteMealTypeArgs = z.infer<z.ZodObject<typeof deleteMealTypeShape>
 
 export function registerMealTypeTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'create_meal_type', {
+    title: 'Create meal type',
+    annotations: { ...CREATE, idempotentHint: true },
     description: 'Create a meal type. Required: name. Optional: order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; returned as HH:MM:SS). Creating with an existing name returns the existing meal type unchanged and ignores the order, color and time passed. The name match ignores case and only finds meal types you created.',
     inputSchema: createMealTypeShape,
   }, handleCreateMealType);
 
   registerStringTool(server, client, 'get_meal_type', {
+    title: 'Get meal type',
+    annotations: READ,
     description: 'Get a meal type by ID.',
     inputSchema: getMealTypeShape,
   }, handleGetMealType);
 
   registerStringTool(server, client, 'update_meal_type', {
+    title: 'Update meal type',
+    annotations: UPDATE,
     description: 'Update a meal type (PATCH). Required: id. Optional: name, order, color (hex, max 7 chars), time (HH:MM or HH:MM:SS; null clears it).',
     inputSchema: updateMealTypeShape,
   }, handleUpdateMealType);
 
   registerStringTool(server, client, 'delete_meal_type', {
+    title: 'Delete meal type',
+    annotations: DELETE,
     description: 'Delete a meal type by ID.',
     inputSchema: deleteMealTypeShape,
   }, handleDeleteMealType);

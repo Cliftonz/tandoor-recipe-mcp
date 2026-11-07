@@ -16,7 +16,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { McpServer, ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { CallToolResult, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 import { ZodRawShape, z } from 'zod';
 import { TandoorClient } from '../clients/index.js';
@@ -219,11 +219,23 @@ function shortReqId(): string {
   return randomUUID().replace(/-/g, '').slice(0, 8);
 }
 
+export interface ToolHints {
+  readOnlyHint: boolean;
+  destructiveHint: boolean;
+  idempotentHint: boolean;
+  openWorldHint: boolean;
+}
+
+export const READ: ToolHints = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+export const CREATE: ToolHints = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
+export const UPDATE: ToolHints = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+export const DELETE: ToolHints = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false };
+
 export function registerStringTool<S extends ZodRawShape>(
   server: McpServer,
   client: TandoorClient,
   name: string,
-  config: { description: string; inputSchema?: S; title?: string; annotations?: ToolAnnotations },
+  config: { title: string; description: string; inputSchema?: S; annotations: ToolHints },
   handler: StringHandler<S>
 ): void {
   if (!isToolAllowed(name)) {

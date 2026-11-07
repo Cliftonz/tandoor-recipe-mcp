@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleListKeywords,
@@ -228,56 +228,58 @@ export type DeleteSupermarketCategoryRelationArgs = z.infer<z.ZodObject<typeof d
 export function registerMiscTools(server: McpServer, client: TandoorClient): void {
   // Keywords
   registerStringTool(server, client, 'list_keywords', {
+    title: 'List keywords',
+    annotations: READ,
     description: 'List keywords (recipe tags). Optional: query, root, tree, random, limit, page, page_size.',
     inputSchema: listKeywordsShape,
   }, handleListKeywords);
-  registerStringTool(server, client, 'get_keyword', { description: 'Get keyword by ID.', inputSchema: getKeywordShape }, handleGetKeyword);
-  registerStringTool(server, client, 'create_keyword', { description: 'Create keyword. Required: name. Optional: description.', inputSchema: createKeywordShape }, handleCreateKeyword);
-  registerStringTool(server, client, 'update_keyword', { description: 'Update keyword (PATCH). Required: id.', inputSchema: updateKeywordShape }, handleUpdateKeyword);
-  registerStringTool(server, client, 'delete_keyword', { description: 'Delete keyword by ID. Destructive + irreversible. Before calling, recommend: (1) check recipe usage via list_recipes({keywords: [id]}) so you know how many recipes lose the tag; (2) if the intent is merging duplicates (e.g., "weeknight" + "Weeknight"), use merge_keyword instead.', inputSchema: deleteKeywordShape }, handleDeleteKeyword);
-  registerStringTool(server, client, 'merge_keyword', { description: 'Merge keyword `id` into `target` keyword. Destructive + irreversible. All recipes tagged with id will be retagged to target. Before calling, recommend: (1) confirm both via get_keyword so you are sure which survives (target) and which is absorbed (id); (2) check numrecipe on each via list_keywords to understand the migration size.', inputSchema: mergeKeywordShape }, handleMergeKeyword);
-  registerStringTool(server, client, 'move_keyword', { description: 'Move keyword `id` under parent (parent=0 for root).', inputSchema: moveKeywordShape }, handleMoveKeyword);
+  registerStringTool(server, client, 'get_keyword', { title: 'Get keyword', annotations: READ, description: 'Get keyword by ID.', inputSchema: getKeywordShape }, handleGetKeyword);
+  registerStringTool(server, client, 'create_keyword', { title: 'Create keyword', annotations: CREATE, description: 'Create keyword. Required: name. Optional: description.', inputSchema: createKeywordShape }, handleCreateKeyword);
+  registerStringTool(server, client, 'update_keyword', { title: 'Update keyword', annotations: UPDATE, description: 'Update keyword (PATCH). Required: id.', inputSchema: updateKeywordShape }, handleUpdateKeyword);
+  registerStringTool(server, client, 'delete_keyword', { title: 'Delete keyword', annotations: DELETE, description: 'Delete keyword by ID. Destructive + irreversible. Before calling, recommend: (1) check recipe usage via list_recipes({keywords: [id]}) so you know how many recipes lose the tag; (2) if the intent is merging duplicates (e.g., "weeknight" + "Weeknight"), use merge_keyword instead.', inputSchema: deleteKeywordShape }, handleDeleteKeyword);
+  registerStringTool(server, client, 'merge_keyword', { title: 'Merge keyword', annotations: DELETE, description: 'Merge keyword `id` into `target` keyword. Destructive + irreversible. All recipes tagged with id will be retagged to target. Before calling, recommend: (1) confirm both via get_keyword so you are sure which survives (target) and which is absorbed (id); (2) check numrecipe on each via list_keywords to understand the migration size.', inputSchema: mergeKeywordShape }, handleMergeKeyword);
+  registerStringTool(server, client, 'move_keyword', { title: 'Move keyword', annotations: UPDATE, description: 'Move keyword `id` under parent (parent=0 for root).', inputSchema: moveKeywordShape }, handleMoveKeyword);
 
   // Supermarket categories
-  registerStringTool(server, client, 'list_supermarket_categories', { description: 'List supermarket categories (used to organize shopping list by aisle).', inputSchema: listSupermarketCategoriesShape }, handleListSupermarketCategories);
-  registerStringTool(server, client, 'get_supermarket_category', { description: 'Get supermarket category by ID.', inputSchema: getSupermarketCategoryShape }, handleGetSupermarketCategory);
-  registerStringTool(server, client, 'create_supermarket_category', { description: 'Create supermarket category. Required: name.', inputSchema: createSupermarketCategoryShape }, handleCreateSupermarketCategory);
-  registerStringTool(server, client, 'update_supermarket_category', { description: 'Update supermarket category (PATCH). Required: id.', inputSchema: updateSupermarketCategoryShape }, handleUpdateSupermarketCategory);
-  registerStringTool(server, client, 'delete_supermarket_category', { description: 'Delete supermarket category by ID.', inputSchema: deleteSupermarketCategoryShape }, handleDeleteSupermarketCategory);
-  registerStringTool(server, client, 'merge_supermarket_category', { description: 'Merge supermarket category `id` into `target`.', inputSchema: mergeSupermarketCategoryShape }, handleMergeSupermarketCategory);
+  registerStringTool(server, client, 'list_supermarket_categories', { title: 'List supermarket categories', annotations: READ, description: 'List supermarket categories (used to organize shopping list by aisle).', inputSchema: listSupermarketCategoriesShape }, handleListSupermarketCategories);
+  registerStringTool(server, client, 'get_supermarket_category', { title: 'Get supermarket category', annotations: READ, description: 'Get supermarket category by ID.', inputSchema: getSupermarketCategoryShape }, handleGetSupermarketCategory);
+  registerStringTool(server, client, 'create_supermarket_category', { title: 'Create supermarket category', annotations: CREATE, description: 'Create supermarket category. Required: name.', inputSchema: createSupermarketCategoryShape }, handleCreateSupermarketCategory);
+  registerStringTool(server, client, 'update_supermarket_category', { title: 'Update supermarket category', annotations: UPDATE, description: 'Update supermarket category (PATCH). Required: id.', inputSchema: updateSupermarketCategoryShape }, handleUpdateSupermarketCategory);
+  registerStringTool(server, client, 'delete_supermarket_category', { title: 'Delete supermarket category', annotations: DELETE, description: 'Delete supermarket category by ID.', inputSchema: deleteSupermarketCategoryShape }, handleDeleteSupermarketCategory);
+  registerStringTool(server, client, 'merge_supermarket_category', { title: 'Merge supermarket category', annotations: DELETE, description: 'Merge supermarket category `id` into `target`.', inputSchema: mergeSupermarketCategoryShape }, handleMergeSupermarketCategory);
 
   // Unit conversions
-  registerStringTool(server, client, 'list_unit_conversions', { description: 'List unit conversions. Optional: food_id (filter), query, page, page_size.', inputSchema: listUnitConversionsShape }, handleListUnitConversions);
-  registerStringTool(server, client, 'get_unit_conversion', { description: 'Get unit conversion by ID.', inputSchema: getUnitConversionShape }, handleGetUnitConversion);
-  registerStringTool(server, client, 'create_unit_conversion', { description: 'Create unit conversion. Required: base_amount, converted_amount, base_unit_id, converted_unit_id. Optional: food_id (for food-specific conversion).', inputSchema: createUnitConversionShape }, handleCreateUnitConversion);
-  registerStringTool(server, client, 'update_unit_conversion', { description: 'Update unit conversion (PATCH). Required: id.', inputSchema: updateUnitConversionShape }, handleUpdateUnitConversion);
-  registerStringTool(server, client, 'delete_unit_conversion', { description: 'Delete unit conversion by ID.', inputSchema: deleteUnitConversionShape }, handleDeleteUnitConversion);
+  registerStringTool(server, client, 'list_unit_conversions', { title: 'List unit conversions', annotations: READ, description: 'List unit conversions. Optional: food_id (filter), query, page, page_size.', inputSchema: listUnitConversionsShape }, handleListUnitConversions);
+  registerStringTool(server, client, 'get_unit_conversion', { title: 'Get unit conversion', annotations: READ, description: 'Get unit conversion by ID.', inputSchema: getUnitConversionShape }, handleGetUnitConversion);
+  registerStringTool(server, client, 'create_unit_conversion', { title: 'Create unit conversion', annotations: CREATE, description: 'Create unit conversion. Required: base_amount, converted_amount, base_unit_id, converted_unit_id. Optional: food_id (for food-specific conversion).', inputSchema: createUnitConversionShape }, handleCreateUnitConversion);
+  registerStringTool(server, client, 'update_unit_conversion', { title: 'Update unit conversion', annotations: UPDATE, description: 'Update unit conversion (PATCH). Required: id.', inputSchema: updateUnitConversionShape }, handleUpdateUnitConversion);
+  registerStringTool(server, client, 'delete_unit_conversion', { title: 'Delete unit conversion', annotations: DELETE, description: 'Delete unit conversion by ID.', inputSchema: deleteUnitConversionShape }, handleDeleteUnitConversion);
 
   // Property types
-  registerStringTool(server, client, 'list_property_types', { description: 'List property types. Optional: category[] (ALLERGEN/GOAL/NUTRITION/OTHER/PRICE).', inputSchema: listPropertyTypesShape }, handleListPropertyTypes);
-  registerStringTool(server, client, 'get_property_type', { description: 'Get property type by ID.', inputSchema: getPropertyTypeShape }, handleGetPropertyType);
-  registerStringTool(server, client, 'create_property_type', { description: 'Create property type. Required: name. Optional: unit, description, order, open_data_slug, fdc_id.', inputSchema: createPropertyTypeShape }, handleCreatePropertyType);
-  registerStringTool(server, client, 'update_property_type', { description: 'Update property type (PATCH). Required: id.', inputSchema: updatePropertyTypeShape }, handleUpdatePropertyType);
-  registerStringTool(server, client, 'delete_property_type', { description: 'Delete property type by ID.', inputSchema: deletePropertyTypeShape }, handleDeletePropertyType);
+  registerStringTool(server, client, 'list_property_types', { title: 'List property types', annotations: READ, description: 'List property types. Optional: category[] (ALLERGEN/GOAL/NUTRITION/OTHER/PRICE).', inputSchema: listPropertyTypesShape }, handleListPropertyTypes);
+  registerStringTool(server, client, 'get_property_type', { title: 'Get property type', annotations: READ, description: 'Get property type by ID.', inputSchema: getPropertyTypeShape }, handleGetPropertyType);
+  registerStringTool(server, client, 'create_property_type', { title: 'Create property type', annotations: CREATE, description: 'Create property type. Required: name. Optional: unit, description, order, open_data_slug, fdc_id.', inputSchema: createPropertyTypeShape }, handleCreatePropertyType);
+  registerStringTool(server, client, 'update_property_type', { title: 'Update property type', annotations: UPDATE, description: 'Update property type (PATCH). Required: id.', inputSchema: updatePropertyTypeShape }, handleUpdatePropertyType);
+  registerStringTool(server, client, 'delete_property_type', { title: 'Delete property type', annotations: DELETE, description: 'Delete property type by ID.', inputSchema: deletePropertyTypeShape }, handleDeletePropertyType);
 
   // Properties
-  registerStringTool(server, client, 'list_properties', { description: 'List properties.', inputSchema: listPropertiesShape }, handleListProperties);
-  registerStringTool(server, client, 'get_property', { description: 'Get property by ID.', inputSchema: getPropertyShape }, handleGetProperty);
-  registerStringTool(server, client, 'create_property', { description: 'Create property value. Required: property_type_id, property_amount.', inputSchema: createPropertyShape }, handleCreateProperty);
-  registerStringTool(server, client, 'update_property', { description: 'Update property (PATCH). Required: id.', inputSchema: updatePropertyShape }, handleUpdateProperty);
-  registerStringTool(server, client, 'delete_property', { description: 'Delete property by ID.', inputSchema: deletePropertyShape }, handleDeleteProperty);
+  registerStringTool(server, client, 'list_properties', { title: 'List properties', annotations: READ, description: 'List properties.', inputSchema: listPropertiesShape }, handleListProperties);
+  registerStringTool(server, client, 'get_property', { title: 'Get property', annotations: READ, description: 'Get property by ID.', inputSchema: getPropertyShape }, handleGetProperty);
+  registerStringTool(server, client, 'create_property', { title: 'Create property', annotations: CREATE, description: 'Create property value. Required: property_type_id, property_amount.', inputSchema: createPropertyShape }, handleCreateProperty);
+  registerStringTool(server, client, 'update_property', { title: 'Update property', annotations: UPDATE, description: 'Update property (PATCH). Required: id.', inputSchema: updatePropertyShape }, handleUpdateProperty);
+  registerStringTool(server, client, 'delete_property', { title: 'Delete property', annotations: DELETE, description: 'Delete property by ID.', inputSchema: deletePropertyShape }, handleDeleteProperty);
 
   // Custom filters
-  registerStringTool(server, client, 'list_custom_filters', { description: 'List saved custom filters. search field uses Tandoor filter DSL.', inputSchema: listCustomFiltersShape }, handleListCustomFilters);
-  registerStringTool(server, client, 'get_custom_filter', { description: 'Get custom filter by ID.', inputSchema: getCustomFilterShape }, handleGetCustomFilter);
-  registerStringTool(server, client, 'create_custom_filter', { description: 'Create a custom filter. Required: name, search (filter DSL string). Optional: shared_user_ids[].', inputSchema: createCustomFilterShape }, handleCreateCustomFilter);
-  registerStringTool(server, client, 'update_custom_filter', { description: 'Update custom filter (PATCH). Required: id.', inputSchema: updateCustomFilterShape }, handleUpdateCustomFilter);
-  registerStringTool(server, client, 'delete_custom_filter', { description: 'Delete custom filter by ID.', inputSchema: deleteCustomFilterShape }, handleDeleteCustomFilter);
+  registerStringTool(server, client, 'list_custom_filters', { title: 'List custom filters', annotations: READ, description: 'List saved custom filters. search field uses Tandoor filter DSL.', inputSchema: listCustomFiltersShape }, handleListCustomFilters);
+  registerStringTool(server, client, 'get_custom_filter', { title: 'Get custom filter', annotations: READ, description: 'Get custom filter by ID.', inputSchema: getCustomFilterShape }, handleGetCustomFilter);
+  registerStringTool(server, client, 'create_custom_filter', { title: 'Create custom filter', annotations: CREATE, description: 'Create a custom filter. Required: name, search (filter DSL string). Optional: shared_user_ids[].', inputSchema: createCustomFilterShape }, handleCreateCustomFilter);
+  registerStringTool(server, client, 'update_custom_filter', { title: 'Update custom filter', annotations: UPDATE, description: 'Update custom filter (PATCH). Required: id.', inputSchema: updateCustomFilterShape }, handleUpdateCustomFilter);
+  registerStringTool(server, client, 'delete_custom_filter', { title: 'Delete custom filter', annotations: DELETE, description: 'Delete custom filter by ID.', inputSchema: deleteCustomFilterShape }, handleDeleteCustomFilter);
 
   // Supermarket ↔ Category relations
-  registerStringTool(server, client, 'list_supermarket_category_relations', { description: 'List supermarket↔category orderings.', inputSchema: listSupermarketCategoryRelationsShape }, handleListSupermarketCategoryRelations);
-  registerStringTool(server, client, 'get_supermarket_category_relation', { description: 'Get relation by ID.', inputSchema: getSupermarketCategoryRelationShape }, handleGetSupermarketCategoryRelation);
-  registerStringTool(server, client, 'create_supermarket_category_relation', { description: 'Create relation. Required: category_id, supermarket (id). Optional: order.', inputSchema: createSupermarketCategoryRelationShape }, handleCreateSupermarketCategoryRelation);
-  registerStringTool(server, client, 'update_supermarket_category_relation', { description: 'Update relation (PATCH). Required: id.', inputSchema: updateSupermarketCategoryRelationShape }, handleUpdateSupermarketCategoryRelation);
-  registerStringTool(server, client, 'delete_supermarket_category_relation', { description: 'Delete relation by ID.', inputSchema: deleteSupermarketCategoryRelationShape }, handleDeleteSupermarketCategoryRelation);
+  registerStringTool(server, client, 'list_supermarket_category_relations', { title: 'List supermarket category relations', annotations: READ, description: 'List supermarket↔category orderings.', inputSchema: listSupermarketCategoryRelationsShape }, handleListSupermarketCategoryRelations);
+  registerStringTool(server, client, 'get_supermarket_category_relation', { title: 'Get supermarket category relation', annotations: READ, description: 'Get relation by ID.', inputSchema: getSupermarketCategoryRelationShape }, handleGetSupermarketCategoryRelation);
+  registerStringTool(server, client, 'create_supermarket_category_relation', { title: 'Create supermarket category relation', annotations: CREATE, description: 'Create relation. Required: category_id, supermarket (id). Optional: order.', inputSchema: createSupermarketCategoryRelationShape }, handleCreateSupermarketCategoryRelation);
+  registerStringTool(server, client, 'update_supermarket_category_relation', { title: 'Update supermarket category relation', annotations: UPDATE, description: 'Update relation (PATCH). Required: id.', inputSchema: updateSupermarketCategoryRelationShape }, handleUpdateSupermarketCategoryRelation);
+  registerStringTool(server, client, 'delete_supermarket_category_relation', { title: 'Delete supermarket category relation', annotations: DELETE, description: 'Delete relation by ID.', inputSchema: deleteSupermarketCategoryRelationShape }, handleDeleteSupermarketCategoryRelation);
 }

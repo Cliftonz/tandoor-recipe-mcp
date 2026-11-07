@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleListSyncs,
@@ -62,41 +62,57 @@ export type GetSyncLogArgs = z.infer<z.ZodObject<typeof getSyncLogShape>>;
 
 export function registerSyncTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_syncs', {
+    title: 'List syncs',
+    annotations: READ,
     description: 'List folder-to-storage syncs. Optional: page, page_size.',
     inputSchema: listSyncsShape,
   }, handleListSyncs);
 
   registerStringTool(server, client, 'get_sync', {
+    title: 'Get sync',
+    annotations: READ,
     description: 'Get a sync by ID.',
     inputSchema: getSyncShape,
   }, handleGetSync);
 
   registerStringTool(server, client, 'create_sync', {
+    title: 'Create sync',
+    annotations: CREATE,
     description: 'Create a sync linking a storage backend to a folder path. Required: storage_id, path. Optional: active, last_checked.',
     inputSchema: createSyncShape,
   }, handleCreateSync);
 
   registerStringTool(server, client, 'update_sync', {
+    title: 'Update sync',
+    annotations: UPDATE,
     description: 'Update a sync (PATCH). Required: id.',
     inputSchema: updateSyncShape,
   }, handleUpdateSync);
 
   registerStringTool(server, client, 'delete_sync', {
+    title: 'Delete sync',
+    annotations: DELETE,
     description: 'Delete a sync by ID.',
     inputSchema: deleteSyncShape,
   }, handleDeleteSync);
 
   registerStringTool(server, client, 'query_synced_folder', {
+    title: 'Scan synced folder',
+    annotations: CREATE,
     description: 'Trigger Tandoor to list files at the storage folder for the given sync. Required: id.',
     inputSchema: querySyncedFolderShape,
   }, handleQuerySyncedFolder);
 
   registerStringTool(server, client, 'list_sync_logs', {
+    title: 'List sync logs',
+    annotations: READ,
     description: 'List sync-log entries (read-only). Optional: page, page_size.',
     inputSchema: listSyncLogsShape,
   }, handleListSyncLogs);
 
   registerStringTool(server, client, 'get_sync_log', {
+    title: 'Get sync log',
+    annotations: READ,
     description: 'Get a sync-log entry by ID.',
     inputSchema: getSyncLogShape,
   }, handleGetSyncLog);
