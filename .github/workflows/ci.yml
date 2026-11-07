@@ -55,4 +55,23 @@ jobs:
         # missing or stale snapshots fail the build instead of silently
         # regenerating. GitHub Actions sets CI=true automatically, but the
         # explicit script makes the contract visible.
+        if: ${{ !(matrix.os == 'ubuntu-latest' && matrix.node-version == '24.x') }}
         run: npm run test:ci
+
+      - name: Test with coverage
+        id: coverage
+        # One leg measures coverage instead of running the plain suite, so
+        # the suite runs once per leg; thresholds live in vitest.config.ts.
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.node-version == '24.x' }}
+        shell: bash
+        run: npm run test:ci -- --coverage | tee test-output.txt
+
+      - name: Coverage summary
+        if: ${{ !cancelled() && (steps.coverage.outcome == 'success' || steps.coverage.outcome == 'failure') }}
+        shell: bash
+        run: |
+          {
+            echo '```'
+            sed 's/\x1b\[[0-9;]*m//g' test-output.txt | sed -n '/Coverage summary/,/^==*$/p'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
