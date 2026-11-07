@@ -9,6 +9,7 @@ import { openStore } from '../src/lib/oauth/store.js';
 import { registerStringTool } from '../src/lib/register.js';
 import { registerMealPlanTools } from '../src/tools/mealplan.js';
 import { registerRecipeTools } from '../src/tools/recipe.js';
+import { registerHouseholdTools } from '../src/tools/household.js';
 import type { TandoorClient } from '../src/clients/index.js';
 import { startStub, type Stub } from './helpers/stub-http.js';
 
@@ -263,6 +264,15 @@ describe('remote MCP path', () => {
     goneTokens.add('gone-token');
 
     expectReconnect(await rpcResult(await callTool('create_space', accessToken)));
+    expectChallenge(await listTools(accessToken));
+  });
+
+  it('ends the grant and asks for a reconnect when a household tool gets 403 for a token Tandoor no longer knows', async () => {
+    await startTransport(withTools(registerHouseholdTools));
+    const accessToken = await signIn('gone-token');
+    goneTokens.add('gone-token');
+
+    expectReconnect(await rpcResult(await callTool('list_households', accessToken)));
     expectChallenge(await listTools(accessToken));
   });
 
