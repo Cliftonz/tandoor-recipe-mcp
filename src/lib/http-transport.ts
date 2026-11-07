@@ -6,6 +6,8 @@ import express from 'express';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { httpLog, mintReqId } from './http-log.js';
+import { authRouter } from './oauth/server.js';
+import { dataDir, openStore } from './oauth/store.js';
 
 export interface HttpConfig {
   port: number;
@@ -26,6 +28,7 @@ interface RemoteConfig {
   secretKey: Buffer;
 }
 
+const OAUTH_ROUTES = ['/authorize', '/token', '/register', '/revoke', '/consent', '/.well-known'];
 const SECRET_KEY_HINT = 'Generate one with: openssl rand -hex 32';
 
 const DEFAULT_MAX_BODY_BYTES = 5_242_880;
@@ -49,6 +52,10 @@ function resolveRemoteConfig(httpPath: string, httpToken: string | undefined): R
   if (publicUrl.href.includes('#')) throw new Error('TANDOOR_MCP_PUBLIC_URL must not contain a fragment.');
   if (publicUrl.pathname !== httpPath) {
     throw new Error(`TANDOOR_MCP_PUBLIC_URL path "${publicUrl.pathname}" must equal TANDOOR_MCP_HTTP_PATH ("${httpPath}").`);
+  }
+  const lowerPath = httpPath.toLowerCase();
+  if (OAUTH_ROUTES.some((route) => lowerPath === route || lowerPath.startsWith(`${route}/`))) {
+    throw new Error(`TANDOOR_MCP_HTTP_PATH "${httpPath}" collides with the OAuth routes (${OAUTH_ROUTES.join(', ')}).`);
   }
   if (httpToken) throw new Error('TANDOOR_MCP_HTTP_TOKEN cannot be used with TANDOOR_MCP_PUBLIC_URL.');
   const secretKey = process.env.TANDOOR_MCP_SECRET_KEY?.trim();
@@ -177,7 +184,7 @@ export class FailedAuthLimiter {
   }
 }
 
-export function createHttpTransport(serve: 'remote' | (() => McpServer)): HttpTransportHandle {
+export function createHttpTransport(serve: 'remote' | (() => McpServer), tandoorUrl?: string): HttpTransportHandle {
   const cfg = resolveHttpConfig();
   const expected = cfg.token ?? '';
   const limiter = new FailedAuthLimiter();
@@ -197,6 +204,12 @@ export function createHttpTransport(serve: 'remote' | (() => McpServer)): HttpTr
 
   const app = express();
   app.disable('x-powered-by');
+  if (cfg.remote) {
+    if (!tandoorUrl) throw new Error('Remote mode needs the Tandoor URL.');
+    if (process.env.TANDOOR_MCP_TRUST_PROXY === '1') app.set('trust proxy', 1);
+    const { publicUrl, secretKey } = cfg.remote;
+    app.use(authRouter({ publicUrl, secretKey, tandoorUrl, store: openStore({ dir: dataDir(process.env), key: secretKey }) }));
+  }
   app.use(async (req, res) => {
     const reqId = mintReqId();
     res.setHeader('x-tandoor-req-id', reqId);

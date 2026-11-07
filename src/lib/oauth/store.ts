@@ -7,6 +7,7 @@ import type { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/share
 
 const ACCESS_TTL_MS = 60 * 60 * 1000;
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const UNUSED_CLIENT_TTL_MS = 24 * 60 * 60 * 1000;
 const KEY_CHECK_AAD = 'key-check';
 const KEY_CHECK_PLAINTEXT = 'tandoor-mcp';
 
@@ -24,11 +25,13 @@ const GrantSchema = z.object({
   exchangedRefreshHashes: z.array(z.object({ hash: z.string(), exchangedAt: z.number() })),
 });
 
+type StoredClient = OAuthClientInformationFull & { completed_grant?: boolean };
+
 const ClientShapeSchema = z.looseObject({ client_id: z.string(), redirect_uris: z.array(z.string()) });
 
 const StoreFileSchema = z.object({
   keyCheck: EncryptedSecretSchema,
-  clients: z.record(z.string(), z.custom<OAuthClientInformationFull>((value) => ClientShapeSchema.safeParse(value).success)),
+  clients: z.record(z.string(), z.custom<StoredClient>((value) => ClientShapeSchema.safeParse(value).success)),
   grants: z.record(z.string(), GrantSchema),
 });
 
@@ -102,6 +105,10 @@ export function openStore({ dir, key, now = Date.now }: { dir: string; key: Buff
       if (grant.refreshExpiresAt <= now()) delete state.grants[grantId];
       else grant.exchangedRefreshHashes = grant.exchangedRefreshHashes.filter(({ exchangedAt }) => exchangedAt + REFRESH_TTL_MS > now());
     }
+    for (const [clientId, client] of Object.entries(state.clients)) {
+      const old = client.client_id_issued_at !== undefined && client.client_id_issued_at * 1000 + UNUSED_CLIENT_TTL_MS <= now();
+      if (old && !client.completed_grant && !Object.values(state.grants).some((grant) => grant.clientId === clientId)) delete state.clients[clientId];
+    }
   }
 
   function save(): void {
@@ -142,12 +149,14 @@ export function openStore({ dir, key, now = Date.now }: { dir: string; key: Buff
       return state.clients[clientId];
     },
 
-    createGrant({ clientId, tandoorToken, scopes, resource }: NewGrant): TokenPair {
+    createGrant({ clientId, tandoorToken, scopes, resource }: NewGrant): TokenPair & { grantId: string } {
       const grantId = randomUUID();
       const { grant, pair } = issue({ clientId, tandoorToken: encrypt(key, tandoorToken, grantId), scopes, resource, exchangedRefreshHashes: [] });
       state.grants[grantId] = grant;
+      const client = state.clients[clientId];
+      if (client) client.completed_grant = true;
       save();
-      return pair;
+      return { ...pair, grantId };
     },
 
     lookupAccessToken(accessToken: string): AccessGrant | undefined {
@@ -182,6 +191,14 @@ export function openStore({ dir, key, now = Date.now }: { dir: string; key: Buff
       state.grants[grantId] = grant;
       save();
       return pair;
+    },
+
+    revokeToken(token: string, clientId: string): void {
+      const tokenHash = hash(token);
+      const entry = Object.entries(state.grants).find(([, grant]) => grant.clientId === clientId && (grant.accessHash === tokenHash || grant.refreshHash === tokenHash));
+      if (!entry) return;
+      delete state.grants[entry[0]];
+      save();
     },
 
     revokeGrant(grantId: string): void {

@@ -134,7 +134,7 @@ const stashLine = stashCfgAtBoot.enabled
   : 'stash=off';
 
 async function serveHttp(cfg: HttpConfig, serve: 'remote' | (() => McpServer)) {
-  const handle = createHttpTransport(serve);
+  const handle = createHttpTransport(serve, tandoor.origin);
   await handle.start().catch((error: NodeJS.ErrnoException) => {
     if (error.code !== 'EADDRINUSE') throw error;
     console.error(`[tandoor-mcp] Error: port ${cfg.port} is already in use (TANDOOR_MCP_HTTP_PORT).`);
