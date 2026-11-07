@@ -26,6 +26,12 @@ describe('Claude plugin directory listing', () => {
     expect(words.length).toBeGreaterThanOrEqual(40);
   });
 
+  it('README describes a local instance and gives the marketplace install command', () => {
+    const readme = readFileSync(path.join(pluginDir, 'README.md'), 'utf8');
+    expect(readme).toContain('your local Tandoor Recipes instance');
+    expect(readme).toContain('/plugin install tandoor-recipes-mcp --marketplace Cliftonz/tandoor-recipe-mcp');
+  });
+
   it('points icon at a square PNG the directory accepts', () => {
     const plugin = JSON.parse(readFileSync(path.join(pluginDir, '.claude-plugin/plugin.json'), 'utf8'));
     const png = readFileSync(path.join(pluginDir, plugin.icon));

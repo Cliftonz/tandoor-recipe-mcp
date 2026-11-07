@@ -1,6 +1,14 @@
 # Tandoor Recipes MCP
 
-Connects Claude to your own Tandoor Recipes instance: recipes, meal plans, shopping lists, pantry inventory, foods, cook logs, and AI import.
+Connects Claude to your local Tandoor Recipes instance: recipes, meal plans, shopping lists, pantry inventory, foods, cook logs, and AI import.
+
+## Install
+
+This command needs Claude Code 2.1.275 or later.
+
+```
+/plugin install tandoor-recipes-mcp --marketplace Cliftonz/tandoor-recipe-mcp
+```
 
 ## Requirements
 
