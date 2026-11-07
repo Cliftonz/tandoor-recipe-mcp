@@ -176,7 +176,7 @@ export class FailedAuthLimiter {
   }
 }
 
-export function createHttpTransport(buildServer: () => McpServer): HttpTransportHandle {
+export function createHttpTransport(serve: 'remote' | (() => McpServer)): HttpTransportHandle {
   const cfg = resolveHttpConfig();
   const expected = cfg.token ?? '';
   const limiter = new FailedAuthLimiter();
@@ -237,10 +237,14 @@ export function createHttpTransport(buildServer: () => McpServer): HttpTransport
 
     try {
       if (req.method === 'POST' && urlPath === cfg.path) {
+        if (serve === 'remote') {
+          jsonRpcError(res, 401, -32001, 'Unauthorized', undefined, { 'WWW-Authenticate': 'Bearer realm="tandoor-mcp"' });
+          return;
+        }
         try {
           const raw = await readBody(req, cfg.maxBodyBytes);
           const parsed = raw.length > 0 ? JSON.parse(raw) : undefined;
-          const server = buildServer();
+          const server = serve();
           const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
           live.add(server);
           res.on('close', () => {

@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { checkTandoorVersion, evaluateVersion } from '../src/lib/version-check.js';
+import { describe, it, expect, onTestFinished } from 'vitest';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { checkTandoorVersion, checkTandoorVersionWithoutToken, evaluateVersion } from '../src/lib/version-check.js';
 
 type GetCurrent = (opts?: { signal?: AbortSignal; maxRetries?: number }) => Promise<any>;
 
@@ -170,5 +172,52 @@ describe('checkTandoorVersion', () => {
     const r = await checkTandoorVersion(client, 20);
     expect(r.status).toBe('unknown');
     expect(r.detail).toMatch(/timed out after 20ms/);
+  });
+});
+
+describe('checkTandoorVersionWithoutToken', () => {
+  async function stubStatus(status: number): Promise<string> {
+    const stub = createServer((_req, res) => res.writeHead(status).end());
+    await new Promise<void>((done) => stub.listen(0, '127.0.0.1', done));
+    onTestFinished(() => new Promise<void>((done) => stub.close(() => done())));
+    return `http://127.0.0.1:${(stub.address() as AddressInfo).port}`;
+  }
+
+  it.each([401, 403])('does not blame a token when Tandoor answers %i', async (status) => {
+    const r = await checkTandoorVersionWithoutToken(await stubStatus(status));
+    expect(r.status).toBe('unknown');
+    expect(r.detail).not.toMatch(/TANDOOR_TOKEN|token/i);
+  });
+
+  it('reports a note when Tandoor never answers within 3 seconds', async () => {
+    const stub = createServer(() => {});
+    await new Promise<void>((done) => stub.listen(0, '127.0.0.1', done));
+    onTestFinished(() => new Promise<void>((done) => {
+      stub.closeAllConnections();
+      stub.close(() => done());
+    }));
+    const r = await checkTandoorVersionWithoutToken(`http://127.0.0.1:${(stub.address() as AddressInfo).port}`);
+    expect(r.status).toBe('unknown');
+    expect(r.level).toBe('note');
+    expect(r.detail).toMatch(/timed out after 3000ms/);
+  }, 10_000);
+
+  it('reports a note when the connection is refused', async () => {
+    const closed = createServer();
+    await new Promise<void>((done) => closed.listen(0, '127.0.0.1', done));
+    const { port } = closed.address() as AddressInfo;
+    await new Promise<void>((done) => closed.close(() => done()));
+
+    const r = await checkTandoorVersionWithoutToken(`http://127.0.0.1:${port}`);
+    expect(r.status).toBe('unknown');
+    expect(r.level).toBe('note');
+    expect(r.detail).toMatch(/Continuing anyway/);
+  });
+
+  it('reports 404 as a pre-2.x instance at the probed URL', async () => {
+    const origin = await stubStatus(404);
+    const r = await checkTandoorVersionWithoutToken(origin);
+    expect(r.status).toBe('unsupported');
+    expect(r.detail).toContain(`${origin}/api/server-settings/current/`);
   });
 });

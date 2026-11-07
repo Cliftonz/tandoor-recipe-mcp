@@ -1,5 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vitest';
 import { spawn } from 'node:child_process';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -176,30 +178,67 @@ function boot(env: Record<string, string>): Promise<BootResult> {
   });
 }
 
-const TANDOOR_ENV = { TANDOOR_URL: 'http://127.0.0.1:2', TANDOOR_TOKEN: 'tok' };
+const TANDOOR_URL_ENV = { TANDOOR_URL: 'http://127.0.0.1:2' };
 const REMOTE_ENV = { TANDOOR_MCP_TRANSPORT: 'http', TANDOOR_MCP_PUBLIC_URL: 'https://mcp.example.com/mcp', TANDOOR_MCP_SECRET_KEY: KEY };
+const TOKEN_IN_REMOTE_ERROR = 'Error: TANDOOR_TOKEN is not used in remote mode; remove it. Each user connects with their own Tandoor token.';
 
 describe('remote mode at boot', () => {
-  it('starts over HTTP with a valid remote configuration', async () => {
-    const result = await boot({ ...TANDOOR_ENV, ...REMOTE_ENV });
+  it('starts over HTTP with a valid remote configuration and no TANDOOR_TOKEN', async () => {
+    const result = await boot({ ...TANDOOR_URL_ENV, ...REMOTE_ENV });
+    expect(result.stderr).toContain('on http://127.0.0.1:0/mcp');
+    expect(result.stderr).toContain('| auth=oauth |');
+  }, 15_000);
+
+  it('starts when TANDOOR_TOKEN is only whitespace', async () => {
+    const result = await boot({ ...TANDOOR_URL_ENV, ...REMOTE_ENV, TANDOOR_TOKEN: '   ' });
     expect(result.stderr).toContain('on http://127.0.0.1:0/mcp');
   }, 15_000);
 
+  it.each(['TANDOOR_TOKEN', 'CLAUDE_PLUGIN_OPTION_TANDOOR_TOKEN'])('exits 1 when %s is set', async (name) => {
+    const result = await boot({ ...TANDOOR_URL_ENV, ...REMOTE_ENV, [name]: 'tok' });
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain(TOKEN_IN_REMOTE_ERROR);
+  }, 15_000);
+
   it('exits 1 with the validation error for an invalid remote setting', async () => {
-    const result = await boot({ ...TANDOOR_ENV, ...REMOTE_ENV, TANDOOR_MCP_PUBLIC_URL: 'http://mcp.example.com/mcp' });
+    const result = await boot({ ...TANDOOR_URL_ENV, ...REMOTE_ENV, TANDOOR_MCP_PUBLIC_URL: 'http://mcp.example.com/mcp' });
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain('Error: TANDOOR_MCP_PUBLIC_URL must use https (got http:).');
   }, 15_000);
 
   it('exits 1 when TANDOOR_MCP_PUBLIC_URL is set without the HTTP transport', async () => {
-    const result = await boot({ ...TANDOOR_ENV, TANDOOR_MCP_PUBLIC_URL: REMOTE_ENV.TANDOOR_MCP_PUBLIC_URL, TANDOOR_MCP_SECRET_KEY: KEY });
+    const result = await boot({ ...TANDOOR_URL_ENV, TANDOOR_MCP_PUBLIC_URL: REMOTE_ENV.TANDOOR_MCP_PUBLIC_URL, TANDOOR_MCP_SECRET_KEY: KEY });
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain('Error: TANDOOR_MCP_PUBLIC_URL requires TANDOOR_MCP_TRANSPORT=http.');
   }, 15_000);
 
-  it('still requires TANDOOR_URL in remote mode', async () => {
-    const result = await boot({ ...REMOTE_ENV, TANDOOR_TOKEN: 'tok' });
+  it('reports the missing HTTP transport before the TANDOOR_TOKEN error', async () => {
+    const result = await boot({ ...TANDOOR_URL_ENV, TANDOOR_TOKEN: 'tok', TANDOOR_MCP_PUBLIC_URL: REMOTE_ENV.TANDOOR_MCP_PUBLIC_URL, TANDOOR_MCP_SECRET_KEY: KEY });
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toContain('Error: TANDOOR_URL');
+    expect(result.stderr).toContain('Error: TANDOOR_MCP_PUBLIC_URL requires TANDOOR_MCP_TRANSPORT=http.');
+    expect(result.stderr).not.toContain('TANDOOR_TOKEN is not used');
+  }, 15_000);
+
+  it('still requires TANDOOR_URL in remote mode and does not ask for the token', async () => {
+    const result = await boot(REMOTE_ENV);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Error: TANDOOR_URL must be set in .env file (or set the plugin's Tandoor URL setting)");
+    expect(result.stderr).not.toContain('TANDOOR_TOKEN');
+  }, 15_000);
+
+  it('probes the Tandoor version without an Authorization header', async () => {
+    const probes: (string | undefined)[] = [];
+    const stub = createServer((req, res) => {
+      if (req.url === '/api/server-settings/current/') probes.push(req.headers.authorization);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ version: '2.6.0' }));
+    });
+    await new Promise<void>((done) => stub.listen(0, '127.0.0.1', done));
+    onTestFinished(() => new Promise<void>((done) => stub.close(() => done())));
+    const { port } = stub.address() as AddressInfo;
+
+    const result = await boot({ ...REMOTE_ENV, TANDOOR_URL: `http://127.0.0.1:${port}` });
+    expect(result.stderr).toContain('tandoor=2.6.0');
+    expect(probes).toEqual([undefined]);
   }, 15_000);
 });

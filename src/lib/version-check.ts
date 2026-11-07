@@ -70,21 +70,46 @@ function flatten(msg: string): string {
   return msg.replace(/\s*\n+\s*/g, ' ').slice(0, 300);
 }
 
+export function checkTandoorVersion(client: TandoorClient, timeoutMs = 3000): Promise<VersionCheckResult> {
+  return probeVersion({
+    origin: client.getBaseUrl(),
+    getSettings: (signal) => client.serverSettings.getCurrent({ signal, maxRetries: 0 }),
+    timeoutMs,
+    blameTokenOnAuthError: true,
+  });
+}
+
+export function checkTandoorVersionWithoutToken(origin: string): Promise<VersionCheckResult> {
+  return probeVersion({
+    origin,
+    getSettings: async (signal) => {
+      const response = await fetch(`${origin}/api/server-settings/current/`, { signal });
+      if (!response.ok) throw new Error(`Tandoor API error: ${response.status}`);
+      return response.json();
+    },
+    timeoutMs: 3000,
+    blameTokenOnAuthError: false,
+  });
+}
+
 /**
  * Probes /api/server-settings/current/ to verify the connected Tandoor speaks
  * the 2.x API. The endpoint only exists on 2.x, so a 404 is treated as a
- * pre-2.x instance. Network failures and timeouts are inconclusive — the
+ * pre-2.x instance. Network failures and timeouts are inconclusive; the
  * server still starts, status is just 'unknown'.
+ *
+ * A boot-time best-effort probe should never retry, and the timeout must
+ * actually cancel the request (not just abandon it to base.ts's retry loop).
  */
-export async function checkTandoorVersion(
-  client: TandoorClient,
-  timeoutMs = 3000,
-): Promise<VersionCheckResult> {
-  // A boot-time best-effort probe should never retry, and the timeout must
-  // actually cancel the request (not just abandon it to base.ts's retry loop).
+async function probeVersion({ origin, getSettings, timeoutMs, blameTokenOnAuthError }: {
+  origin: string;
+  getSettings: (signal: AbortSignal) => Promise<{ version?: unknown } | undefined>;
+  timeoutMs: number;
+  blameTokenOnAuthError: boolean;
+}): Promise<VersionCheckResult> {
   const signal = AbortSignal.timeout(timeoutMs);
   try {
-    const settings = await client.serverSettings.getCurrent({ signal, maxRetries: 0 });
+    const settings = await getSettings(signal);
     return evaluateVersion(settings?.version);
   } catch (err) {
     if (signal.aborted) {
@@ -100,13 +125,13 @@ export async function checkTandoorVersion(
         status: 'unsupported',
         level: 'warning',
         detail:
-          `GET ${client.getBaseUrl()}/api/server-settings/current/ returned 404 — this ` +
+          `GET ${origin}/api/server-settings/current/ returned 404; this ` +
           'endpoint exists only on Tandoor 2.x+, so the instance is likely 1.x, or ' +
           "TANDOOR_URL (or the plugin's Tandoor URL setting) points at the wrong root (any path in TANDOOR_URL is stripped " +
           `to the origin). ${UNSUPPORTED_ADVICE}`,
       };
     }
-    if (/^Tandoor API error: 40[13]\b/.test(msg)) {
+    if (blameTokenOnAuthError && /^Tandoor API error: 40[13]\b/.test(msg)) {
       return {
         status: 'unknown',
         level: 'warning',
