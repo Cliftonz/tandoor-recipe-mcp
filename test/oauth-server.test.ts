@@ -47,7 +47,7 @@ const cimdDoc = (overrides: Record<string, unknown> = {}) => ({
 async function startServer({ trustProxy = false, tandoorPublicUrl = tandoor.url } = {}): Promise<void> {
   const app = express();
   if (trustProxy) app.set('trust proxy', 1);
-  app.use(authRouter({ publicUrl: new URL(PUBLIC_URL), secretKey: key, tandoorUrl: tandoor.url, tandoorPublicUrl, store, verifier: accessTokenVerifier(store, `${ISSUER}.well-known/oauth-protected-resource/mcp`), now }));
+  app.use(authRouter({ publicUrl: new URL(PUBLIC_URL), secretKey: key, tandoorUrl: tandoor.url, tandoorPublicUrl, store, verifier: accessTokenVerifier(store, `${ISSUER}.well-known/oauth-protected-resource/mcp`, tandoor.url), now }));
   server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;

@@ -314,7 +314,7 @@ export function registerStringTool<S extends ZodRawShape>(
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       const grant = extra?.authInfo?.extra as RemoteGrant | undefined;
-      if (grant && hasTandoorStatus(err, 401)) {
+      if (grant && (hasTandoorStatus(err, 401) || (hasTandoorStatus(err, 403) && (await grant.checkToken()) === 'rejected'))) {
         grant.revoke();
         return { content: [{ type: 'text', text: TANDOOR_REJECTED_TOKEN }], isError: true, _meta: { 'mcp/www_authenticate': [grant.wwwAuthenticate] } };
       }

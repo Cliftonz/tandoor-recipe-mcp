@@ -271,7 +271,7 @@ export function createHttpTransport(serve: { remote: (client: TandoorClient) => 
     const { secretKey } = cfg.remote;
     const store = openStore({ dir: dataDir(process.env), key: secretKey });
     const resourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(publicUrl);
-    const verifier = accessTokenVerifier(store, resourceMetadataUrl);
+    const verifier = accessTokenVerifier(store, resourceMetadataUrl, tandoorUrl);
     app.use(authRouter({ publicUrl, secretKey, tandoorUrl, tandoorPublicUrl: tandoorPublicUrl ?? tandoorUrl, store, verifier }));
     const bearerAuth = requireBearerAuth({ verifier, requiredScopes: ['tandoor'], resourceMetadataUrl, expectedResource: publicUrl });
     app.use((req, res, next) => {

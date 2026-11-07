@@ -26,6 +26,8 @@ let base: string;
 let seenTokens: string[];
 let deadTokens: Set<string>;
 let deadWrites: Set<string>;
+let goneTokens: Set<string>;
+let brokenChecks: Map<string, 'reset' | 'error'>;
 
 function buildServer(client: TandoorClient): McpServer {
   const server = new McpServer({ name: 'test', version: '0.0.0' });
@@ -49,10 +51,16 @@ beforeEach(async () => {
   seenTokens = [];
   deadTokens = new Set();
   deadWrites = new Set();
+  goneTokens = new Set();
+  brokenChecks = new Map();
   tandoor = await startStub((req, res) => {
     const token = (req.headers.authorization ?? '').replace(/^Bearer /, '');
     seenTokens.push(token);
     if (deadTokens.has(token) || (deadWrites.has(token) && req.method !== 'GET')) return void res.writeHead(401).end();
+    if (goneTokens.has(token)) return void res.writeHead(403, { 'Content-Type': 'application/json' }).end('{"detail":"Authentication credentials were not provided."}');
+    const brokenCheck = req.url === '/api/space/current/' ? brokenChecks.get(token) : undefined;
+    if (brokenCheck === 'reset') return void res.socket!.destroy();
+    if (brokenCheck === 'error') return void res.writeHead(503).end();
     if (/^\/api\/(recipe|meal-type)\/\d+\/$/.test(req.url ?? '')) return void res.writeHead(200, { 'Content-Type': 'application/json' }).end('{"id":1,"name":"ref"}');
     if (req.method !== 'GET') return void res.writeHead(403, { 'Content-Type': 'application/json' }).end('{"detail":"read-only token"}');
     res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ owner: token }));
@@ -246,6 +254,36 @@ describe('remote MCP path', () => {
     expect(result.content[0].text).toBe(
       'Error: Tandoor API error: 403 Forbidden\nDetail: read-only token\n\nAccess forbidden. Your API token may not have the required permissions.',
     );
+    expect((await listTools(accessToken)).status).toBe(200);
+  });
+
+  it('ends the grant and asks for a reconnect when Tandoor answers 403 for a token it no longer knows', async () => {
+    await startTransport();
+    const accessToken = await signIn('gone-token');
+    goneTokens.add('gone-token');
+
+    expectReconnect(await rpcResult(await callTool('create_space', accessToken)));
+    expectChallenge(await listTools(accessToken));
+  });
+
+  it('checks the token once with the user\'s own token after a Tandoor 403', async () => {
+    await startTransport();
+    const accessToken = await signIn('alice-token');
+    seenTokens = [];
+
+    await rpcResult(await callTool('create_space', accessToken));
+    expect(seenTokens).toEqual(['alice-token', 'alice-token']);
+  });
+
+  it.each(['reset', 'error'] as const)('keeps a Tandoor 403 an ordinary tool error and the grant alive when the token check fails with a %s', async (failure) => {
+    await startTransport();
+    const accessToken = await signIn('alice-token');
+    brokenChecks.set('alice-token', failure);
+
+    const result = await rpcResult(await callTool('create_space', accessToken));
+    expect(result._meta).toBeUndefined();
+    expect(result.content[0].text).toMatch(/^Error: Tandoor API error: 403 Forbidden\nDetail: read-only token/);
+    brokenChecks.clear();
     expect((await listTools(accessToken)).status).toBe(200);
   });
 

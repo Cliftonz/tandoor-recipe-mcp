@@ -14,7 +14,7 @@ import { safeFetchBytes } from '../safe-fetch.js';
 import { httpLog, mintReqId } from '../http-log.js';
 import { renderConsent, renderExpired } from './consent-page.js';
 import type { openStore, TokenPair } from './store.js';
-import { TANDOOR_REJECTED_TOKEN, type RemoteGrant } from './remote-grant.js';
+import { TANDOOR_REJECTED_TOKEN, type RemoteGrant, type TokenStatus } from './remote-grant.js';
 
 const SCOPE = 'tandoor';
 const CODE_TTL_MS = 5 * 60_000;
@@ -172,7 +172,7 @@ export function consentLimiter(now: () => number): (visitor: string | undefined)
   };
 }
 
-async function checkTandoorToken(tandoorUrl: string, token: string): Promise<'valid' | 'rejected' | 'unreachable'> {
+async function checkTandoorToken(tandoorUrl: string, token: string): Promise<TokenStatus> {
   let res: Response;
   try {
     res = await fetch(`${tandoorUrl}/api/space/current/`, {
@@ -202,7 +202,7 @@ const tokenResponse = (pair: TokenPair): OAuthTokens => ({
   scope: SCOPE,
 });
 
-export function accessTokenVerifier(store: Store, resourceMetadataUrl: string): OAuthTokenVerifier {
+export function accessTokenVerifier(store: Store, resourceMetadataUrl: string, tandoorUrl: string): OAuthTokenVerifier {
   const wwwAuthenticate = `Bearer resource_metadata="${resourceMetadataUrl}", error="invalid_token", error_description="${TANDOOR_REJECTED_TOKEN}"`;
   return {
     async verifyAccessToken(token) {
@@ -215,7 +215,8 @@ export function accessTokenVerifier(store: Store, resourceMetadataUrl: string): 
           httpLog(mintReqId(), 'error', 'revoke_failed', { error: errorMessage(error) });
         }
       };
-      const extra = { tandoorToken: grant.tandoorToken, revoke, wwwAuthenticate } satisfies RemoteGrant;
+      const checkToken = () => checkTandoorToken(tandoorUrl, grant.tandoorToken);
+      const extra = { tandoorToken: grant.tandoorToken, revoke, wwwAuthenticate, checkToken } satisfies RemoteGrant;
       return { token, clientId: grant.clientId, scopes: grant.scopes, expiresAt: Math.ceil(grant.expiresAt / 1000), resource: new URL(grant.resource), extra };
     },
   };
