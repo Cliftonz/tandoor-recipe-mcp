@@ -1,0 +1,130 @@
+name: Docker Smoke
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Detect image-affecting changes
+        id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" != pull_request ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only HEAD^1 HEAD \
+            | grep -qE '^(Dockerfile|\.dockerignore|src/.*|package\.json|package-lock\.json|tsconfig\.json|LICENSE|\.github/workflows/docker-smoke\.yml)$'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  smoke:
+    needs: changes
+    if: needs.changes.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      IMAGE: tandoor-mcp:smoke
+      REMOTE: smoke-remote
+      PORT: '18737'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build Docker image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ${{ env.IMAGE }}
+
+      - name: Start remote mode
+        run: |
+          docker run -d --name "$REMOTE" -p "127.0.0.1:$PORT:3737" \
+            -e TANDOOR_URL=http://127.0.0.1:9 \
+            -e TANDOOR_MCP_PUBLIC_URL=https://mcp.test/mcp \
+            -e TANDOOR_MCP_SECRET_KEY="$(openssl rand -hex 32)" \
+            "$IMAGE"
+
+      - name: Wait for remote mode to report healthy
+        run: |
+          for _ in $(seq 90); do
+            health=$(docker inspect -f '{{.State.Health.Status}}' "$REMOTE")
+            [ "$health" = healthy ] && break
+            sleep 1
+          done
+          echo "$REMOTE: $health"
+          [ "$health" = healthy ]
+
+      - name: Remote mode serves /healthz
+        run: test "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/healthz")" = 200
+
+      - name: Remote mode runs as non-root
+        run: test "$(docker exec "$REMOTE" id -u)" != 0
+
+      - name: Remote mode stops cleanly on SIGTERM
+        run: |
+          docker stop -t 15 "$REMOTE"
+          code=$(docker inspect -f '{{.State.ExitCode}}' "$REMOTE")
+          echo "exit code $code"
+          [ "$code" = 0 ]
+
+      - name: Remote mode logs auth=oauth
+        run: docker logs "$REMOTE" 2>&1 | grep -F 'auth=oauth'
+
+      - name: Stdio mode answers MCP initialize
+        run: |
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"docker-smoke","version":"0"}}}' \
+            | timeout 30 docker run -i --rm \
+              -e TANDOOR_MCP_TRANSPORT=stdio \
+              -e TANDOOR_URL=http://127.0.0.1:9 \
+              -e TANDOOR_TOKEN=smoke-token \
+              "$IMAGE" \
+            | grep '"serverInfo"' | grep -F '@cliftonz/tandoor-recipes-mcp'
+
+      - name: Dump remote mode logs
+        if: failure()
+        run: docker logs "$REMOTE" 2>&1 || true
+
+      - name: Remove remote mode container
+        if: always()
+        run: docker rm -f "$REMOTE"
+
+  docker-smoke-gate:
+    needs: [changes, smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require smoke success or an unchanged skip
+        env:
+          RESULT: ${{ needs.smoke.result }}
+          CHANGED: ${{ needs.changes.outputs.changed }}
+        run: |
+          echo "smoke: $RESULT, changed: $CHANGED"
+          [ "$RESULT" = success ] || { [ "$RESULT" = skipped ] && [ "$CHANGED" = false ]; }

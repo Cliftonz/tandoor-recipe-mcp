@@ -68,6 +68,8 @@ jobs:
   e2e:
     needs: detect
     if: needs.detect.outputs.changed == 'true'
+    permissions:
+      contents: read
     uses: ./.github/workflows/e2e.yml
 
   publish:

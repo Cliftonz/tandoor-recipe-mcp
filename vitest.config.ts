@@ -23,5 +23,17 @@ export default defineConfig({
     // vitest 4: pool options are top-level; forks.maxForks → maxWorkers.
     pool: 'forks',
     maxWorkers: process.env.CI ? 2 : undefined,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**'],
+      exclude: ['src/types/**'],
+      reporter: ['text-summary'],
+      thresholds: {
+        lines: 85,
+        statements: 82,
+        functions: 72,
+        branches: 73,
+      },
+    },
   },
 });
