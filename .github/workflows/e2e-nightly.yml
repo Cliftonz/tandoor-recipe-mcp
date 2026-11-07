@@ -1,0 +1,62 @@
+name: E2E Nightly
+
+# Runs the e2e workflow nightly and keeps one open `e2e-nightly` issue while it
+# fails. Kept apart from e2e.yml so release.yml can call e2e.yml with only
+# contents: read; the issue-writing permissions live on the report job here.
+on:
+  schedule:
+    - cron: '23 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/e2e.yml
+
+  # Jobs of a called workflow are named "<caller job> / <called job>" in this
+  # run, so the matrix legs appear as "e2e / e2e (tandoor <version>)" and the
+  # change check as "e2e / changes".
+  report:
+    needs: e2e
+    if: always() && needs.e2e.result != 'cancelled'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      RUN_ID: ${{ github.run_id }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Open or update the nightly failure issue
+        if: needs.e2e.result != 'success'
+        run: |
+          gh label create e2e-nightly --color B60205 --description "Nightly e2e run is failing" || true
+          changes="$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/jobs" --paginate \
+            --jq '.jobs[] | select(.name == "e2e / changes") | .conclusion')"
+          if [ "$changes" = failure ]; then
+            summary='The change check failed, so no Tandoor versions ran.'
+          else
+            failing="$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/jobs" --paginate \
+              --jq '.jobs[] | select(.name | startswith("e2e / e2e (tandoor ")) | select(.conclusion != "success") | .name')"
+            summary="$(printf 'Failing:\n%s' "$failing")"
+          fi
+          body="$(printf '%s\n\nRun: %s' "$summary" "$RUN_URL")"
+          issue="$(gh issue list --label e2e-nightly --state open --json number --jq '.[0].number')"
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "$body"
+          else
+            gh issue create --title 'Nightly e2e failing' --label e2e-nightly --body "$body"
+          fi
+
+      - name: Close the nightly failure issue
+        if: needs.e2e.result == 'success'
+        run: |
+          for issue in $(gh issue list --label e2e-nightly --state open --json number --jq '.[].number'); do
+            gh issue close "$issue" --comment "Nightly e2e is green again: $RUN_URL"
+          done

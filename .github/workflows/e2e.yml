@@ -1,11 +1,16 @@
 name: E2E
 
-# Dispatch-triggered: spins up a disposable Tandoor instance via Docker,
-# provisions an admin user + OAuth2 token, and runs the live-Tandoor suite
-# against it. No long-lived secrets needed — every run gets a fresh stack.
+# Spins up a disposable Tandoor instance via Docker, provisions an admin user
+# + OAuth2 token, and runs the live-Tandoor suite against it, once per
+# supported Tandoor version. No long-lived secrets needed; every run gets a
+# fresh stack.
 #
-# Also `workflow_call`-callable so publish.yml gates a release on this job.
+# Runs on PRs that touch relevant files, on dispatch, and via workflow_call so
+# release.yml gates a release on it and e2e-nightly.yml runs it nightly.
+# `e2e-gate` is the single required check.
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch:
   workflow_call:
 
@@ -19,8 +24,40 @@ permissions:
   contents: read
 
 jobs:
-  e2e:
+  changes:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+    steps:
+      # On pull_request the checkout is the PR merge commit, so HEAD^1 is the
+      # base branch tip and depth 2 is enough to diff against it.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Detect relevant changes
+        id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" != pull_request ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only HEAD^1 HEAD | grep -qE '^(src/|test/e2e/|test/helpers/|test/global-config-home\.ts$|tsconfig\.json$|scripts/tandoor-bootstrap\.sh$|package\.json$|package-lock\.json$|vitest\.e2e\.config\.ts$|\.github/workflows/e2e\.yml$)'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  e2e:
+    name: e2e (tandoor ${{ matrix.tandoor }})
+    needs: changes
+    if: needs.changes.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tandoor: ['2.6.0', 'latest']
     # Hard timeout so a stuck Tandoor / Postgres cannot wedge the runner for
     # the workflow default of 6 hours (Perf F8).
     timeout-minutes: 20
@@ -47,6 +84,8 @@ jobs:
       # Boots Tandoor in Docker, creates admin user + OAuth2 token, writes
       # TANDOOR_URL + TANDOOR_TOKEN + TANDOOR_COMPOSE_FILE into $GITHUB_ENV.
       - name: Bootstrap Tandoor
+        env:
+          TANDOOR_IMAGE_TAG: ${{ matrix.tandoor }}
         run: ./scripts/tandoor-bootstrap.sh
 
       - name: Run E2E tests
@@ -76,7 +115,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: tandoor-bootstrap-diag-${{ github.run_id }}
+          name: tandoor-bootstrap-diag-${{ github.run_id }}-${{ matrix.tandoor }}
           # Paths sourced from bootstrap script's $GITHUB_ENV writes — keeps
           # them in sync with TANDOOR_TEST_DIR overrides (Observability F13).
           path: |
@@ -89,3 +128,14 @@ jobs:
         if: always()
         run: docker compose -f "${{ env.TANDOOR_COMPOSE_FILE }}" down -v
         continue-on-error: true
+
+  e2e-gate:
+    needs: [changes, e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require a green or intentionally skipped matrix
+        env:
+          RESULT: ${{ needs.e2e.result }}
+          CHANGED: ${{ needs.changes.outputs.changed }}
+        run: '[ "$RESULT" = success ] || { [ "$RESULT" = skipped ] && [ "$CHANGED" = false ]; }'
