@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi, onTestFinished } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { createHttpTransport, resolveHttpConfig, bearerMatches, FailedAuthLimiter, type HttpTransportHandle } from '../src/lib/http-transport.js';
+import { createHttpTransport, resolveHttpConfig, bearerMatches, FailedAuthLimiter, jsonRpcErrorHandler, type HttpTransportHandle } from '../src/lib/http-transport.js';
 import { request as httpRequest, type Server } from 'node:http';
+import type { Request, Response } from 'express';
 import { createServer as createNetServer, type AddressInfo } from 'node:net';
 
 function captureStderr(): { lines: string[]; restore: () => void; joined(): string } {
@@ -302,6 +303,26 @@ describe('createHttpTransport round-trip', () => {
     expect(res.status).toBe(401);
   });
 
+  it('returns 401 for a multibyte bearer guess with the same character length as the token', async () => {
+    process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    const port = handle.address()!.port;
+
+    const status = await new Promise<number>((resolve, reject) => {
+      const req = httpRequest(
+        { host: '127.0.0.1', port, path: '/mcp', method: 'POST', headers: { Authorization: 'Bearer sekr\u00e9', 'Content-Type': 'application/json' } },
+        (r) => {
+          r.resume();
+          resolve(r.statusCode ?? 0);
+        },
+      );
+      req.on('error', reject);
+      req.end('{}');
+    });
+    expect(status).toBe(401);
+  });
+
   it('accepts the correct bearer token', async () => {
     process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
     handle = createHttpTransport(buildServer);
@@ -440,39 +461,6 @@ describe('createHttpTransport round-trip', () => {
     expect(await res.json()).toEqual({ status: 'ok' });
   });
 
-  it('answers an unexpected error outside the MCP try block with a JSON-RPC 500 and keeps serving', async () => {
-    process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
-    handle = createHttpTransport(buildServer);
-    await handle.start();
-    const port = handle.address()!.port;
-    const cap = captureStderr();
-
-    const res = await new Promise<{ status: number; contentType: string; body: string }>((resolve, reject) => {
-      const req = httpRequest(
-        { host: '127.0.0.1', port, path: '/mcp', method: 'POST', headers: { Authorization: 'Bearer sekr\u00e9', 'Content-Type': 'application/json' } },
-        (r) => {
-          let body = '';
-          r.setEncoding('utf8');
-          r.on('data', (c: string) => (body += c));
-          r.on('end', () => resolve({ status: r.statusCode ?? 0, contentType: String(r.headers['content-type']), body }));
-        },
-      );
-      req.on('error', reject);
-      req.end('{}');
-    });
-    cap.restore();
-
-    expect(res.status).toBe(500);
-    expect(res.contentType).toContain('application/json');
-    expect(JSON.parse(res.body)).toEqual({ jsonrpc: '2.0', id: null, error: { code: -32603, message: 'Internal error' } });
-    expect(res.body).not.toContain('<html');
-    expect(res.body).not.toMatch(/\bat\s.+:\d+:\d+/);
-    expect(cap.joined()).toContain('event=internal_error');
-
-    const health = await fetch(`http://127.0.0.1:${port}/healthz`);
-    expect(health.status).toBe(200);
-  });
-
   it('does not advertise the server framework in an X-Powered-By header', async () => {
     handle = createHttpTransport(buildServer);
     await handle.start();
@@ -597,8 +585,39 @@ describe('bearerMatches', () => {
     expect(bearerMatches('Bearer abcdef', 'ghijkl')).toBe(false);
   });
 
+  it('returns false for a multibyte guess with the same character length but a different byte length', () => {
+    expect(bearerMatches('Bearer sekr\u00e9t', 'sekret')).toBe(false);
+  });
+
   it('returns false when scheme is missing', () => {
     expect(bearerMatches('sekret', 'sekret')).toBe(false);
+  });
+});
+
+describe('jsonRpcErrorHandler', () => {
+  it('answers an unexpected error with a JSON-RPC 500 and one internal_error log line without a stack', () => {
+    const sent: { status?: number; headers?: Record<string, string>; body?: string } = {};
+    const res = {
+      getHeader: () => 'abcd1234',
+      writeHead(status: number, headers: Record<string, string>) {
+        sent.status = status;
+        sent.headers = headers;
+        return this;
+      },
+      end(body: string) {
+        sent.body = body;
+        return this;
+      },
+    } as unknown as Response;
+    const cap = captureStderr();
+
+    jsonRpcErrorHandler(new Error('boom'), {} as Request, res, () => {});
+    cap.restore();
+
+    expect(sent.status).toBe(500);
+    expect(sent.headers?.['Content-Type']).toBe('application/json');
+    expect(JSON.parse(sent.body!)).toEqual({ jsonrpc: '2.0', id: null, error: { code: -32603, message: 'Internal error' } });
+    expect(cap.lines).toEqual(['[tandoor-mcp] http reqId=abcd1234 level=error event=internal_error msg=boom\n']);
   });
 });
 

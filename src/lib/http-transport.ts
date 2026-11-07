@@ -137,11 +137,9 @@ export function bearerMatches(header: string | undefined, expected: string): boo
   if (!header) return false;
   const prefix = 'Bearer ';
   if (!header.startsWith(prefix)) return false;
-  const supplied = header.slice(prefix.length);
-  if (supplied.length !== expected.length) return false;
-  const a = Buffer.from(supplied);
-  const b = Buffer.from(expected);
-  return timingSafeEqual(a, b);
+  const supplied = Buffer.from(header.slice(prefix.length));
+  const wanted = Buffer.from(expected);
+  return supplied.length === wanted.length && timingSafeEqual(supplied, wanted);
 }
 
 function jsonRpcError(res: ServerResponse, status: number, code: number, message: string, data?: unknown, extraHeaders: Record<string, string> = {}): void {
@@ -149,6 +147,17 @@ function jsonRpcError(res: ServerResponse, status: number, code: number, message
   if (data !== undefined) (payload.error as Record<string, unknown>).data = data;
   res.writeHead(status, { 'Content-Type': 'application/json', ...extraHeaders });
   res.end(JSON.stringify(payload));
+}
+
+export function jsonRpcErrorHandler(err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction): void {
+  const { status, statusCode } = err as { status?: unknown; statusCode?: unknown };
+  const clientStatus = [status, statusCode].find((s): s is number => typeof s === 'number' && s >= 400 && s < 500);
+  if (clientStatus) {
+    jsonRpcError(res, clientStatus, -32600, 'Invalid Request');
+    return;
+  }
+  httpLog(String(res.getHeader('x-tandoor-req-id')), 'error', 'internal_error', { msg: err instanceof Error ? err.message : String(err) });
+  jsonRpcError(res, 500, -32603, 'Internal error');
 }
 
 interface Bucket {
@@ -299,10 +308,7 @@ export function createHttpTransport(serve: 'remote' | (() => McpServer), tandoor
       }
     }
   });
-  app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    httpLog(String(res.getHeader('x-tandoor-req-id')), 'error', 'internal_error', { msg: err instanceof Error ? err.message : String(err) });
-    jsonRpcError(res, 500, -32603, 'Internal error');
-  });
+  app.use(jsonRpcErrorHandler);
 
   const httpServer: Server = createServer(app);
   httpServer.maxConnections = cfg.maxConnections;

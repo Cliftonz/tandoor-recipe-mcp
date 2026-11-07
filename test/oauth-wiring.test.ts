@@ -74,6 +74,23 @@ describe('OAuth wiring', () => {
     expect((await register(base, '10.0.0.99, 203.0.113.1')).status).toBe(429);
     expect((await register(base, '10.0.0.1, 203.0.113.2')).status).toBe(201);
   });
+
+  it.each([
+    ['an unsupported Content-Encoding', 415, { 'Content-Encoding': 'bogus' }, 'a=b'],
+    ['an oversize form', 413, {}, `a=${'x'.repeat(200_000)}`],
+  ])('answers POST /consent with %s as %i JSON and keeps serving', async (_label, status, headers, body) => {
+    remoteEnv();
+    const base = await start('remote', 'https://recipes.example.com');
+
+    const res = await fetch(`${base}/consent`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...headers }, body });
+    const text = await res.text();
+    expect(res.status).toBe(status);
+    expect(res.headers.get('content-type')).toContain('application/json');
+    expect(JSON.parse(text)).toEqual({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid Request' } });
+    expect(text).not.toContain('<html');
+    expect(text).not.toMatch(/\bat\s.+:\d+:\d+/);
+    expect((await fetch(`${base}/healthz`)).status).toBe(200);
+  });
 });
 
 describe('remote HTTP path', () => {
