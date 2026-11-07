@@ -17,7 +17,7 @@ describe('Claude Desktop extension manifest', () => {
 
   it('mirrors the Claude plugin user config and env mapping', () => {
     const manifest = readJson('manifest.json');
-    const plugin = readJson('.claude-plugin/plugin.json');
+    const plugin = readJson('plugins/claude/.claude-plugin/plugin.json');
     expect(manifest.user_config).toEqual(plugin.userConfig);
     expect(manifest.server.mcp_config.env).toEqual(plugin.mcpServers.tandoor.env);
   });

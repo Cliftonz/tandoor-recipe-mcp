@@ -1,7 +1,7 @@
 // Guards against version drift across the five files that must agree before
 // a release is tagged:
 //   - package.json
-//   - .claude-plugin/plugin.json
+//   - plugins/claude/.claude-plugin/plugin.json
 //   - .claude-plugin/marketplace.json
 //   - .codex-plugin/plugin.json
 //   - manifest.json
@@ -26,7 +26,7 @@ function readJson(rel: string): any {
 
 describe('plugin version sync', () => {
   const pkg = readJson('package.json');
-  const plugin = readJson('.claude-plugin/plugin.json');
+  const plugin = readJson('plugins/claude/.claude-plugin/plugin.json');
   const marketplace = readJson('.claude-plugin/marketplace.json');
 
   it('package.json and plugin.json agree on version', () => {
@@ -59,7 +59,7 @@ describe('plugin version sync', () => {
     const files = [
       'package.json',
       'scripts/sync-plugin-version.js',
-      '.claude-plugin/plugin.json',
+      'plugins/claude/.claude-plugin/plugin.json',
       '.claude-plugin/marketplace.json',
       '.codex-plugin/plugin.json',
       'manifest.json',
@@ -71,7 +71,7 @@ describe('plugin version sync', () => {
     writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ ...pkg, version: '9.8.7' }));
     execFileSync('node', [path.join(dir, 'scripts/sync-plugin-version.js')]);
     const readTmp = (rel: string) => JSON.parse(readFileSync(path.join(dir, rel), 'utf8'));
-    const claudeArgs = readTmp('.claude-plugin/plugin.json').mcpServers.tandoor.args;
+    const claudeArgs = readTmp('plugins/claude/.claude-plugin/plugin.json').mcpServers.tandoor.args;
     const codexArgs = readTmp('.codex-plugin/plugin.json').mcpServers.tandoor.args;
     rmSync(dir, { recursive: true });
     expect(claudeArgs).toEqual(['-y', `${pkg.name}@9.8.7`]);
