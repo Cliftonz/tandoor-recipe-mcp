@@ -287,6 +287,19 @@ describe('remote MCP path', () => {
     expect((await listTools(accessToken)).status).toBe(200);
   });
 
+  it('answers a signed-in malformed JSON body with a 400 JSON-RPC parse error', async () => {
+    await startTransport();
+    const accessToken = await signIn('alice-token');
+
+    const res = await fetch(`${base}/mcp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', Authorization: `Bearer ${accessToken}` },
+      body: '{not json',
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } });
+  });
+
   it('keeps /healthz open', async () => {
     await startTransport();
     expect((await fetch(`${base}/healthz`)).status).toBe(200);

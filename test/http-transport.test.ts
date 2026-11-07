@@ -505,7 +505,7 @@ describe('createHttpTransport round-trip', () => {
     });
   });
 
-  it('malformed JSON body is caught by outer wrap → 500 JSON-RPC envelope + stderr internal_error', async () => {
+  it('answers a malformed JSON body with a 400 JSON-RPC parse error logged as a client error', async () => {
     handle = createHttpTransport(buildServer);
     await handle.start();
     const port = handle.address()!.port;
@@ -518,11 +518,10 @@ describe('createHttpTransport round-trip', () => {
     });
     const body = await res.text();
     cap.restore();
-    expect(res.status).toBe(500);
-    const parsed = JSON.parse(body);
-    expect(parsed.jsonrpc).toBe('2.0');
-    expect(parsed.error.code).toBe(-32603);
-    expect(cap.joined()).toContain('event=internal_error');
+    expect(res.status).toBe(400);
+    expect(JSON.parse(body)).toEqual({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } });
+    expect(cap.joined()).toContain('level=info event=parse_error');
+    expect(cap.joined()).not.toContain('event=internal_error');
   });
 
   it('serves parallel requests without transport-layer crashes and stamps distinct reqIds', async () => {

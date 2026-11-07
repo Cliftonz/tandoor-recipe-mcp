@@ -333,7 +333,14 @@ export function createHttpTransport(serve: { remote: (client: TandoorClient) => 
       if (req.method === 'POST' && urlPath === cfg.path) {
         try {
           const raw = await readBody(req, cfg.maxBodyBytes);
-          const parsed = raw.length > 0 ? JSON.parse(raw) : undefined;
+          let parsed: unknown;
+          try {
+            parsed = raw.length > 0 ? JSON.parse(raw) : undefined;
+          } catch {
+            httpLog(reqId, 'info', 'parse_error');
+            jsonRpcError(res, 400, -32700, 'Parse error');
+            return;
+          }
           const server = typeof serve === 'function' ? serve() : serve.remote(new TandoorClient({ url: tandoorUrl!, token: (req.auth!.extra as RemoteGrant).tandoorToken }));
           const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: Boolean(cfg.remote) });
           live.add(server);
