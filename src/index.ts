@@ -19,7 +19,8 @@ import { getStashConfig } from './lib/stash.js';
 import { checkTandoorVersion } from './lib/version-check.js';
 import { buildInstructions } from './lib/instructions.js';
 import { registerAllTools } from './lib/register-all.js';
-import { createHttpTransport, resolveHttpConfig } from './lib/http-transport.js';
+import { createHttpTransport, resolveHttpConfig, type HttpConfig } from './lib/http-transport.js';
+import { isRemoteMode } from './lib/register.js';
 import { loadSavedSections } from './lib/section-store.js';
 import { SECTION_ENV_VARS, SectionSettingsError, formatSectionModes, parseSectionModes, type SectionModes } from './lib/sections.js';
 
@@ -69,7 +70,20 @@ function resolveTransportMode(raw: string | undefined): 'stdio' | 'http' {
   return (raw || '').toLowerCase() === 'http' ? 'http' : 'stdio';
 }
 const transportMode = resolveTransportMode(process.env.TANDOOR_MCP_TRANSPORT);
-const httpCfg = transportMode === 'http' ? resolveHttpConfig() : undefined;
+if (isRemoteMode() && transportMode !== 'http') {
+  console.error('Error: TANDOOR_MCP_PUBLIC_URL requires TANDOOR_MCP_TRANSPORT=http.');
+  process.exit(1);
+}
+
+function resolveHttpConfigOrExit(): HttpConfig {
+  try {
+    return resolveHttpConfig();
+  } catch (error) {
+    console.error(`Error: ${(error as Error).message}`);
+    process.exit(1);
+  }
+}
+const httpCfg = transportMode === 'http' ? resolveHttpConfigOrExit() : undefined;
 
 // Resolve once at startup so the instructions string (sent to the client on
 // initialize) and the operator-facing startup log show the same effective

@@ -91,6 +91,13 @@ describe('resolveHttpConfig', () => {
     expect(cfg.token).toBe('sekret');
   });
 
+  it('treats a whitespace-only TANDOOR_MCP_HTTP_TOKEN as unset', () => {
+    process.env.TANDOOR_MCP_HTTP_TOKEN = '   ';
+    const cfg = resolveHttpConfig();
+    expect(cfg.requireAuth).toBe(false);
+    expect(cfg.token).toBeUndefined();
+  });
+
   it('defaults path to /mcp and maxBodyBytes to 5MB', () => {
     const cfg = resolveHttpConfig();
     expect(cfg.path).toBe('/mcp');

@@ -30,6 +30,10 @@ export function isHttpTransport(): boolean {
   return (process.env.TANDOOR_MCP_TRANSPORT || '').toLowerCase() === 'http';
 }
 
+export function isRemoteMode(): boolean {
+  return Boolean(process.env.TANDOOR_MCP_PUBLIC_URL?.trim());
+}
+
 export function shouldStash(structured: unknown, sizeBytes: number, cfg: StashConfig): boolean {
   if (isHttpTransport()) return false;
   return baseShouldStash(structured, sizeBytes, cfg);

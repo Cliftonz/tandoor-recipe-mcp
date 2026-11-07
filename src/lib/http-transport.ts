@@ -17,7 +17,15 @@ export interface HttpConfig {
   headersTimeoutMs: number;
   requestTimeoutMs: number;
   drainMs: number;
+  remote: RemoteConfig | undefined;
 }
+
+interface RemoteConfig {
+  publicUrl: URL;
+  secretKey: Buffer;
+}
+
+const SECRET_KEY_HINT = 'Generate one with: openssl rand -hex 32';
 
 const DEFAULT_MAX_BODY_BYTES = 5_242_880;
 const DEFAULT_MAX_CONNS = 128;
@@ -29,24 +37,48 @@ const REQUEST_TIMEOUT_MS = 30_000;
 const RL_BURST = 20;
 const RL_REFILL_PER_SEC = 10;
 
+function resolveRemoteConfig(httpPath: string, httpToken: string | undefined): RemoteConfig | undefined {
+  const rawUrl = process.env.TANDOOR_MCP_PUBLIC_URL?.trim();
+  if (!rawUrl) return undefined;
+  if (!URL.canParse(rawUrl)) throw new Error('TANDOOR_MCP_PUBLIC_URL is not a valid URL.');
+  const publicUrl = new URL(rawUrl);
+  if (publicUrl.protocol !== 'https:') throw new Error(`TANDOOR_MCP_PUBLIC_URL must use https (got ${publicUrl.protocol}).`);
+  if (publicUrl.username || publicUrl.password) throw new Error('TANDOOR_MCP_PUBLIC_URL must not contain a username or password.');
+  if (publicUrl.href.includes('?')) throw new Error('TANDOOR_MCP_PUBLIC_URL must not contain a query string.');
+  if (publicUrl.href.includes('#')) throw new Error('TANDOOR_MCP_PUBLIC_URL must not contain a fragment.');
+  if (publicUrl.pathname !== httpPath) {
+    throw new Error(`TANDOOR_MCP_PUBLIC_URL path "${publicUrl.pathname}" must equal TANDOOR_MCP_HTTP_PATH ("${httpPath}").`);
+  }
+  if (httpToken) throw new Error('TANDOOR_MCP_HTTP_TOKEN cannot be used with TANDOOR_MCP_PUBLIC_URL.');
+  const secretKey = process.env.TANDOOR_MCP_SECRET_KEY?.trim();
+  if (!secretKey) throw new Error(`TANDOOR_MCP_SECRET_KEY is required when TANDOOR_MCP_PUBLIC_URL is set. ${SECRET_KEY_HINT}`);
+  if (!/^[0-9a-f]{64}$/i.test(secretKey)) {
+    throw new Error(`TANDOOR_MCP_SECRET_KEY must be exactly 64 hex characters (32 bytes). ${SECRET_KEY_HINT}`);
+  }
+  return { publicUrl, secretKey: Buffer.from(secretKey, 'hex') };
+}
+
 export function resolveHttpConfig(): HttpConfig {
   const portRaw = process.env.TANDOOR_MCP_HTTP_PORT;
-  const token = process.env.TANDOOR_MCP_HTTP_TOKEN;
+  const rawToken = process.env.TANDOOR_MCP_HTTP_TOKEN;
+  const token = rawToken?.trim() ? rawToken : undefined;
   const pathRaw = process.env.TANDOOR_MCP_HTTP_PATH;
   const maxBodyRaw = process.env.TANDOOR_MCP_HTTP_MAX_BODY_BYTES;
   const maxConnsRaw = process.env.TANDOOR_MCP_HTTP_MAX_CONNS;
   const drainRaw = process.env.TANDOOR_MCP_HTTP_DRAIN_MS;
+  const path = pathRaw || '/mcp';
   return {
     port: portRaw ? Number(portRaw) : 3737,
     host: '127.0.0.1',
     requireAuth: Boolean(token),
     token,
-    path: pathRaw || '/mcp',
+    path,
     maxBodyBytes: maxBodyRaw ? Number(maxBodyRaw) : DEFAULT_MAX_BODY_BYTES,
     maxConnections: maxConnsRaw ? Number(maxConnsRaw) : DEFAULT_MAX_CONNS,
     headersTimeoutMs: HEADERS_TIMEOUT_MS,
     requestTimeoutMs: REQUEST_TIMEOUT_MS,
     drainMs: drainRaw ? Number(drainRaw) : DEFAULT_DRAIN_MS,
+    remote: resolveRemoteConfig(path, token),
   };
 }
 
