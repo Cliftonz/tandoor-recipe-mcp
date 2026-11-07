@@ -48,8 +48,8 @@ describe('dataDir', () => {
   });
 
   it('falls back to XDG_DATA_HOME/tandoor-mcp when the override is unset or relative', () => {
-    expect(dataDir({ XDG_DATA_HOME: '/xdg' })).toBe('/xdg/tandoor-mcp');
-    expect(dataDir({ TANDOOR_MCP_DATA_DIR: 'rel', XDG_DATA_HOME: '/xdg' })).toBe('/xdg/tandoor-mcp');
+    expect(dataDir({ XDG_DATA_HOME: '/xdg' })).toBe(join('/xdg', 'tandoor-mcp'));
+    expect(dataDir({ TANDOOR_MCP_DATA_DIR: 'rel', XDG_DATA_HOME: '/xdg' })).toBe(join('/xdg', 'tandoor-mcp'));
   });
 
   it('falls back to ~/.local/share/tandoor-mcp when XDG_DATA_HOME is unset or relative', () => {

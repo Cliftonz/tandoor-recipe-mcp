@@ -18,7 +18,7 @@ const PRM_URL = 'https://mcp.example.com/.well-known/oauth-protected-resource/mc
 const SECRET = 'ab'.repeat(32);
 const REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
 const RECONNECT = 'Tandoor rejected your token. Reconnect this connector to sign in again.';
-const VARS = ['TANDOOR_MCP_PUBLIC_URL', 'TANDOOR_MCP_SECRET_KEY', 'TANDOOR_MCP_DATA_DIR', 'TANDOOR_MCP_HTTP_PORT', 'TANDOOR_MCP_TEST_SKIP_URL_CHECK'];
+const VARS = ['TANDOOR_MCP_PUBLIC_URL', 'TANDOOR_MCP_SECRET_KEY', 'TANDOOR_MCP_DATA_DIR', 'TANDOOR_MCP_HTTP_PORT', 'TANDOOR_MCP_TEST_SKIP_URL_CHECK', 'TANDOOR_MCP_TRUST_PROXY'];
 
 let root: string;
 let tandoor: Stub;
@@ -393,6 +393,29 @@ describe('remote MCP path', () => {
     expect((await listTools()).status).toBe(429);
     expect((await listTools(accessToken)).status).toBe(200);
   });
+
+  it('answers a visitor\'s 301st MCP request in a minute with a JSON-RPC 429, spares other visitors, and resets after the window', async () => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = '1';
+    await startTransport();
+    const accessToken = await signIn('alice-token');
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.now() });
+    const from = (visitor: string) => fetch(`${base}/mcp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', Authorization: `Bearer ${accessToken}`, 'X-Forwarded-For': visitor },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+    });
+
+    for (let i = 0; i < 300; i++) expect((await from('203.0.113.1')).status).toBe(200);
+    const limited = await from('203.0.113.1');
+    expect(limited.status).toBe(429);
+    expect(Number(limited.headers.get('retry-after'))).toBeGreaterThan(0);
+    expect(limited.headers.get('content-type')).toContain('application/json');
+    expect(await limited.json()).toEqual({ jsonrpc: '2.0', id: null, error: { code: -32000, message: 'Too many requests' } });
+    expect((await from('203.0.113.2')).status).toBe(200);
+
+    vi.setSystemTime(Date.now() + 60_000);
+    expect((await from('203.0.113.1')).status).toBe(200);
+  }, 30_000);
 
   it('answers 503 before checking the token while draining', async () => {
     let release!: () => void;

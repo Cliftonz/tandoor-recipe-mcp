@@ -118,10 +118,10 @@ describe('OAuth wiring', () => {
 
 describe('remote HTTP path', () => {
   it.each(['/authorize', '/token', '/register', '/revoke', '/consent', '/.well-known/mcp', '/Token', '/authorize/mcp'])(
-    'refuses TANDOOR_MCP_HTTP_PATH %s because it collides with the OAuth routes',
+    'refuses TANDOOR_MCP_HTTP_PATH %s because it collides with an OAuth route',
     (path) => {
       remoteEnv(path);
-      expect(() => resolveHttpConfig()).toThrow(`TANDOOR_MCP_HTTP_PATH "${path}" collides with the OAuth routes`);
+      expect(() => resolveHttpConfig()).toThrow(new Error(`TANDOOR_MCP_HTTP_PATH "${path}" collides with an OAuth route; use a different path such as /mcp.`));
     },
   );
 

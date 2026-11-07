@@ -3,6 +3,7 @@ import { isIP, type AddressInfo } from 'node:net';
 import { timingSafeEqual } from 'node:crypto';
 import { StringDecoder } from 'node:string_decoder';
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { TandoorClient } from '../clients/index.js';
@@ -47,6 +48,8 @@ const REQUEST_TIMEOUT_MS = 30_000;
 const RL_BURST = 20;
 const RL_REFILL_PER_SEC = 10;
 
+const REMOTE_MCP_REQUESTS_PER_MINUTE = 300;
+
 function resolveRemoteConfig(httpPath: string, httpToken: string | undefined): RemoteConfig | undefined {
   const rawUrl = process.env.TANDOOR_MCP_PUBLIC_URL?.trim();
   if (!rawUrl) return undefined;
@@ -61,7 +64,7 @@ function resolveRemoteConfig(httpPath: string, httpToken: string | undefined): R
   }
   const lowerPath = httpPath.toLowerCase();
   if (OAUTH_ROUTES.some((route) => lowerPath === route || lowerPath.startsWith(`${route}/`))) {
-    throw new Error(`TANDOOR_MCP_HTTP_PATH "${httpPath}" collides with the OAuth routes (${OAUTH_ROUTES.join(', ')}).`);
+    throw new Error(`TANDOOR_MCP_HTTP_PATH "${httpPath}" collides with an OAuth route; use a different path such as /mcp.`);
   }
   if (httpToken) throw new Error('TANDOOR_MCP_HTTP_TOKEN cannot be used with TANDOOR_MCP_PUBLIC_URL.');
   const secretKey = process.env.TANDOOR_MCP_SECRET_KEY?.trim();
@@ -274,9 +277,18 @@ export function createHttpTransport(serve: { remote: (client: TandoorClient) => 
     const verifier = accessTokenVerifier(store, resourceMetadataUrl, tandoorUrl);
     app.use(authRouter({ publicUrl, secretKey, tandoorUrl, tandoorPublicUrl: tandoorPublicUrl ?? tandoorUrl, store, verifier }));
     const bearerAuth = requireBearerAuth({ verifier, requiredScopes: ['tandoor'], resourceMetadataUrl, expectedResource: publicUrl });
+    const visitorLimit = rateLimit({
+      windowMs: 60_000,
+      limit: REMOTE_MCP_REQUESTS_PER_MINUTE,
+      handler: (_req, res) => jsonRpcError(res, 429, -32000, 'Too many requests'),
+    });
     app.use((req, res, next) => {
       if (req.method !== 'POST' || req.path !== cfg.path) return next();
       if (draining) return jsonRpcError(res, 503, -32000, 'Shutting down');
+      return visitorLimit(req, res, next);
+    });
+    app.use((req, res, next) => {
+      if (req.method !== 'POST' || req.path !== cfg.path) return next();
       const setHeader = res.setHeader.bind(res);
       res.setHeader = (name, value) => setHeader(name, name.toLowerCase() === 'www-authenticate' ? String(value).replace('Bearer ', 'Bearer realm="tandoor-mcp", ') : value);
       const status = res.status.bind(res);

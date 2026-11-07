@@ -542,6 +542,18 @@ describe('createHttpTransport round-trip', () => {
     expect(idA).not.toBe(idB);
   });
 
+  it('has no per-visitor request limit on the local MCP path', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.now() });
+    onTestFinished(() => vi.useRealTimers());
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    const port = handle.address()!.port;
+
+    const statuses = new Set<number>();
+    for (let i = 0; i < 301; i++) statuses.add((await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc())).status);
+    expect([...statuses]).toEqual([200]);
+  }, 30_000);
+
   it('stop() enters draining mode: subsequent requests return 503 shutdown envelope', async () => {
     const h = createHttpTransport(buildServer);
     await h.start();
