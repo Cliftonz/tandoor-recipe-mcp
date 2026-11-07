@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { isIP, type AddressInfo } from 'node:net';
 import { timingSafeEqual } from 'node:crypto';
 import { StringDecoder } from 'node:string_decoder';
 import express from 'express';
@@ -24,6 +24,7 @@ export interface HttpConfig {
   headersTimeoutMs: number;
   requestTimeoutMs: number;
   drainMs: number;
+  trustProxy: number | string[];
   remote: RemoteConfig | undefined;
 }
 
@@ -32,6 +33,7 @@ interface RemoteConfig {
   secretKey: Buffer;
 }
 
+const LOOPBACK_HOSTNAMES = ['localhost', '127.0.0.1', '[::1]'];
 const OAUTH_ROUTES = ['/authorize', '/token', '/register', '/revoke', '/consent', '/.well-known'];
 const SECRET_KEY_HINT = 'Generate one with: openssl rand -hex 32';
 
@@ -70,6 +72,23 @@ function resolveRemoteConfig(httpPath: string, httpToken: string | undefined): R
   return { publicUrl, secretKey: Buffer.from(secretKey, 'hex') };
 }
 
+function isProxyAddress(entry: string): boolean {
+  const [address = '', prefix, extra] = entry.split('/');
+  const maxPrefix = isIP(address) === 4 ? 32 : 128;
+  return isIP(address) > 0 && extra === undefined && (prefix === undefined || (/^\d+$/.test(prefix) && Number(prefix) > 0 && Number(prefix) <= maxPrefix));
+}
+
+function resolveTrustProxy(): number | string[] {
+  const raw = process.env.TANDOOR_MCP_TRUST_PROXY?.trim() ?? '';
+  if (!raw) return 0;
+  if (/^\d+$/.test(raw)) return Number(raw);
+  const entries = raw.split(',').map((entry) => entry.trim());
+  if (!entries.every(isProxyAddress)) {
+    throw new Error(`TANDOOR_MCP_TRUST_PROXY must be a hop count or a comma-separated list of IP addresses and CIDR ranges (got "${raw}").`);
+  }
+  return entries;
+}
+
 export function resolveHttpConfig(): HttpConfig {
   const portRaw = process.env.TANDOOR_MCP_HTTP_PORT;
   const rawToken = process.env.TANDOOR_MCP_HTTP_TOKEN;
@@ -81,7 +100,7 @@ export function resolveHttpConfig(): HttpConfig {
   const path = pathRaw || '/mcp';
   return {
     port: portRaw ? Number(portRaw) : 3737,
-    host: '127.0.0.1',
+    host: process.env.TANDOOR_MCP_HTTP_HOST?.trim() || '127.0.0.1',
     requireAuth: Boolean(token),
     token,
     path,
@@ -90,6 +109,7 @@ export function resolveHttpConfig(): HttpConfig {
     headersTimeoutMs: HEADERS_TIMEOUT_MS,
     requestTimeoutMs: REQUEST_TIMEOUT_MS,
     drainMs: drainRaw ? Number(drainRaw) : DEFAULT_DRAIN_MS,
+    trustProxy: resolveTrustProxy(),
     remote: resolveRemoteConfig(path, token),
   };
 }
@@ -144,6 +164,11 @@ export function bearerMatches(header: string | undefined, expected: string): boo
   const supplied = Buffer.from(header.slice(prefix.length));
   const wanted = Buffer.from(expected);
   return supplied.length === wanted.length && timingSafeEqual(supplied, wanted);
+}
+
+function forbid(res: ServerResponse, event: string, meta: Record<string, string>): void {
+  httpLog(mintReqId(), 'warn', event, Object.fromEntries(Object.entries(meta).map(([k, v]) => [k, v.slice(0, 64)])));
+  jsonRpcError(res, 403, -32000, 'Forbidden');
 }
 
 function jsonRpcError(res: ServerResponse, status: number, code: number, message: string, data?: unknown, extraHeaders: Record<string, string> = {}): void {
@@ -217,10 +242,33 @@ export function createHttpTransport(serve: { remote: (client: TandoorClient) => 
 
   const app = express();
   app.disable('x-powered-by');
-  if (cfg.remote) {
+  app.set('trust proxy', cfg.trustProxy);
+  const publicUrl = cfg.remote?.publicUrl;
+  if (publicUrl) {
+    app.use((req, res, next) => {
+      const host = URL.parse(`${publicUrl.protocol}//${req.headers.host}`);
+      if (host?.host === publicUrl.host || LOOPBACK_HOSTNAMES.includes(host?.hostname ?? '')) return next();
+      forbid(res, 'host_rejected', { host: String(req.headers.host), hint: 'if behind nginx, set proxy_set_header Host $host' });
+    });
+  }
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (req.path !== cfg.path || origin === undefined) return next();
+    const allowed = publicUrl ? origin === publicUrl.origin : LOOPBACK_HOSTNAMES.includes(URL.parse(origin)?.hostname ?? '');
+    if (allowed) return next();
+    forbid(res, 'origin_rejected', { origin });
+  });
+  let warnedUntrustedForward = false;
+  app.use((req, _res, next) => {
+    if (cfg.trustProxy === 0 && !warnedUntrustedForward && req.headers['x-forwarded-for']) {
+      warnedUntrustedForward = true;
+      httpLog(mintReqId(), 'warn', 'forwarded_header_untrusted', { hint: 'X-Forwarded-For seen but TANDOOR_MCP_TRUST_PROXY is not set, so all visitors may share one rate-limit bucket' });
+    }
+    next();
+  });
+  if (cfg.remote && publicUrl) {
     if (!tandoorUrl) throw new Error('Remote mode needs the Tandoor URL.');
-    if (process.env.TANDOOR_MCP_TRUST_PROXY === '1') app.set('trust proxy', 1);
-    const { publicUrl, secretKey } = cfg.remote;
+    const { secretKey } = cfg.remote;
     const store = openStore({ dir: dataDir(process.env), key: secretKey });
     const resourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(publicUrl);
     const verifier = accessTokenVerifier(store, resourceMetadataUrl);
@@ -261,13 +309,13 @@ export function createHttpTransport(serve: { remote: (client: TandoorClient) => 
     if (cfg.requireAuth) {
       const header = req.headers.authorization;
       if (!header) {
-        httpLog(reqId, 'info', 'auth_missing', { remote: req.socket.remoteAddress });
+        httpLog(reqId, 'info', 'auth_missing', { remote: req.ip });
         res.writeHead(401, { 'WWW-Authenticate': 'Bearer realm="tandoor-mcp"', 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ jsonrpc: '2.0', error: { code: -32001, message: 'Unauthorized' }, id: null }));
         return;
       }
       if (!bearerMatches(header, expected)) {
-        const remote = req.socket.remoteAddress ?? 'unknown';
+        const remote = req.ip ?? 'unknown';
         const allowed = limiter.consume(remote);
         if (!allowed) {
           httpLog(reqId, 'warn', 'auth_rate_limited', { remote });
@@ -287,7 +335,7 @@ export function createHttpTransport(serve: { remote: (client: TandoorClient) => 
           const raw = await readBody(req, cfg.maxBodyBytes);
           const parsed = raw.length > 0 ? JSON.parse(raw) : undefined;
           const server = typeof serve === 'function' ? serve() : serve.remote(new TandoorClient({ url: tandoorUrl!, token: (req.auth!.extra as RemoteGrant).tandoorToken }));
-          const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+          const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: Boolean(cfg.remote) });
           live.add(server);
           res.on('close', () => {
             live.delete(server);

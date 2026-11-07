@@ -29,6 +29,8 @@ function resetEnv() {
   delete process.env.TANDOOR_MCP_HTTP_MAX_BODY_BYTES;
   delete process.env.TANDOOR_MCP_HTTP_MAX_CONNS;
   delete process.env.TANDOOR_MCP_HTTP_DRAIN_MS;
+  delete process.env.TANDOOR_MCP_HTTP_HOST;
+  delete process.env.TANDOOR_MCP_TRUST_PROXY;
 }
 
 function buildServer(): McpServer {
@@ -105,6 +107,16 @@ describe('resolveHttpConfig', () => {
     expect(cfg.maxBodyBytes).toBe(5_242_880);
   });
 
+  it('honors a trimmed TANDOOR_MCP_HTTP_HOST', () => {
+    process.env.TANDOOR_MCP_HTTP_HOST = ' 0.0.0.0 ';
+    expect(resolveHttpConfig().host).toBe('0.0.0.0');
+  });
+
+  it('treats a whitespace-only TANDOOR_MCP_HTTP_HOST as unset', () => {
+    process.env.TANDOOR_MCP_HTTP_HOST = '   ';
+    expect(resolveHttpConfig().host).toBe('127.0.0.1');
+  });
+
   it('honors TANDOOR_MCP_HTTP_PATH and TANDOOR_MCP_HTTP_MAX_BODY_BYTES', () => {
     process.env.TANDOOR_MCP_HTTP_PATH = '/custom';
     process.env.TANDOOR_MCP_HTTP_MAX_BODY_BYTES = '1024';
@@ -149,6 +161,15 @@ describe('createHttpTransport round-trip', () => {
     // SSE or JSON both acceptable; both carry the JSON-RPC id
     expect(res.body).toContain('"jsonrpc"');
     expect(res.body).toContain('"result"');
+  });
+
+  it('streams local POST responses as SSE', async () => {
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    const port = handle.address()!.port;
+
+    const res = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc());
+    expect(res.headers.get('content-type')).toBe('text/event-stream');
   });
 
   it('answers every sequential POST, not only the first', async () => {
@@ -339,6 +360,13 @@ describe('createHttpTransport round-trip', () => {
       id: null,
       error: { code: -32600, message: 'payload too large', data: { max_bytes: 128 } },
     });
+  });
+
+  it('binds the address in TANDOOR_MCP_HTTP_HOST', async () => {
+    process.env.TANDOOR_MCP_HTTP_HOST = '::1';
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    expect(handle.address()!.address).toBe('::1');
   });
 
   it('binds loopback only, not 0.0.0.0', async () => {
@@ -598,5 +626,93 @@ describe('FailedAuthLimiter', () => {
     const limiter = new FailedAuthLimiter();
     for (let i = 0; i < 20; i++) expect(limiter.consume('127.0.0.1')).toBe(true);
     expect(limiter.consume('127.0.0.1')).toBe(false);
+  });
+});
+
+describe('TANDOOR_MCP_TRUST_PROXY', () => {
+  let handle: HttpTransportHandle | undefined;
+
+  beforeEach(() => {
+    resetEnv();
+    process.env.TANDOOR_MCP_HTTP_PORT = '0';
+    process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+  });
+  afterEach(async () => {
+    vi.useRealTimers();
+    await handle?.stop();
+    handle = undefined;
+    resetEnv();
+    Object.assign(process.env, ORIGINAL_ENV);
+  });
+
+  async function start(): Promise<number> {
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    return handle.address()!.port;
+  }
+
+  const wrongBearer = (port: number, forwardedFor: string) =>
+    postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc(), { Authorization: 'Bearer wrong', 'X-Forwarded-For': forwardedFor });
+
+  async function exhaustThenTryOther(port: number, forwardedFor: (i: number) => string, other: string): Promise<number> {
+    for (let i = 0; i < 20; i++) expect((await wrongBearer(port, forwardedFor(i))).status).toBe(401);
+    expect((await wrongBearer(port, forwardedFor(99))).status).toBe(429);
+    return (await wrongBearer(port, other)).status;
+  }
+
+  it('keys the shared-password limiter on the trusted visitor address', async () => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = '1';
+    const port = await start();
+    expect(await exhaustThenTryOther(port, () => '203.0.113.1', '203.0.113.2')).toBe(401);
+  });
+
+  it('with 2 hops, the visitor is the second-from-right X-Forwarded-For entry', async () => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = '2';
+    const port = await start();
+    expect(await exhaustThenTryOther(port, (i) => `198.51.100.${i}, 203.0.113.1, 10.0.0.${i}`, '198.51.100.1, 203.0.113.2, 10.0.0.1')).toBe(401);
+  });
+
+  it.each([
+    ['honors', '10.0.0.0/8, 127.0.0.0/8, ::1', 401],
+    ['ignores', '10.0.0.0/8, 172.16.0.0/12, ::1', 429],
+  ])('%s X-Forwarded-For when the socket peer is inside the proxy list %s', async (_label, list, expected) => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = list;
+    const port = await start();
+    expect(await exhaustThenTryOther(port, () => '203.0.113.1', '203.0.113.2')).toBe(expected);
+  });
+
+  it.each(['0', '', '   '])('ignores X-Forwarded-For when the value is %j', async (value) => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = value;
+    const port = await start();
+    expect(await exhaustThenTryOther(port, () => '203.0.113.1', '203.0.113.2')).toBe(429);
+  });
+
+  it.each(['true', 'abc', '-1', '1.5', '10.0.0.0/33', '::1/129', '10.0.0.1/8/8', '10.0.0.1,', 'localhost', '0.0.0.0/0', '::/0', '10.0.0.0/8, ::/0'])('refuses %j', (value) => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = value;
+    expect(() => resolveHttpConfig()).toThrow(`TANDOOR_MCP_TRUST_PROXY must be a hop count or a comma-separated list of IP addresses and CIDR ranges (got "${value}").`);
+  });
+
+  it('logs the trusted visitor address on auth_missing', async () => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = '1';
+    const port = await start();
+    const cap = captureStderr();
+    await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc(), { 'X-Forwarded-For': '203.0.113.7' });
+    cap.restore();
+    expect(cap.lines.find((line) => line.includes('event=auth_missing'))).toContain('remote=203.0.113.7');
+  });
+
+  it('warns once when X-Forwarded-For arrives while trust is off', async () => {
+    delete process.env.TANDOOR_MCP_HTTP_TOKEN;
+    const port = await start();
+    const cap = captureStderr();
+    await fetch(`http://127.0.0.1:${port}/healthz`, { headers: { 'X-Forwarded-For': '203.0.113.1' } });
+    await fetch(`http://127.0.0.1:${port}/healthz`, { headers: { 'X-Forwarded-For': '203.0.113.2' } });
+    cap.restore();
+    const warnings = cap.lines.filter((line) => line.includes('TANDOOR_MCP_TRUST_PROXY'));
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('level=warn');
+    expect(warnings[0]).toContain('all visitors may share one rate-limit bucket');
   });
 });

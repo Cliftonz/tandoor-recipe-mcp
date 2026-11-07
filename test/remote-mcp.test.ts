@@ -145,6 +145,18 @@ function expectChallenge(res: Response): void {
 }
 
 describe('remote MCP path', () => {
+  it('answers a signed-in tools/list and tools/call with plain JSON, not an SSE stream', async () => {
+    await startTransport();
+    const accessToken = await signIn('alice-token');
+
+    const list = await listTools(accessToken);
+    expect(list.headers.get('content-type')).toMatch(/^application\/json/);
+    expect(JSON.parse(await list.text()).result.tools.map((tool: { name: string }) => tool.name)).toEqual(['whoami', 'create_space']);
+    const call = await callTool('whoami', accessToken);
+    expect(call.headers.get('content-type')).toMatch(/^application\/json/);
+    expect(JSON.parse(await call.text()).result.structuredContent).toEqual({ owner: 'alice-token' });
+  });
+
   it('answers a request without a token with 401, the realm and the resource metadata URL', async () => {
     await startTransport();
     expectChallenge(await listTools());
