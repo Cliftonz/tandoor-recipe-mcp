@@ -20,6 +20,7 @@
 # Env overrides:
 #   TANDOOR_TEST_DIR   — where docker-compose.yml lives (default: /tmp/tandoor-test)
 #   TANDOOR_TEST_PORT  — host port to expose (default: 8088)
+#   TANDOOR_IMAGE_TAG: vabene1111/recipes image tag, [0-9A-Za-z._-] only (default: latest)
 
 set -euo pipefail
 
@@ -29,6 +30,11 @@ umask 077
 
 TEST_DIR="${TANDOOR_TEST_DIR:-/tmp/tandoor-test}"
 PORT="${TANDOOR_TEST_PORT:-8088}"
+IMAGE_TAG="${TANDOOR_IMAGE_TAG:-latest}"
+if ! [[ "$IMAGE_TAG" =~ ^[0-9A-Za-z._-]+$ ]]; then
+  echo "[tandoor-bootstrap] TANDOOR_IMAGE_TAG must match ^[0-9A-Za-z._-]+\$ (got: $IMAGE_TAG)" >&2
+  exit 1
+fi
 URL="http://127.0.0.1:${PORT}"
 COMPOSE_FILE="$TEST_DIR/docker-compose.yml"
 LOCAL_FIXTURES="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/test/e2e/fixtures/local-storage"
@@ -60,7 +66,7 @@ services:
       retries: 20
   web_recipes:
     restart: unless-stopped
-    image: vabene1111/recipes:latest
+    image: vabene1111/recipes:$IMAGE_TAG
     environment:
       - SECRET_KEY=$SECRET_KEY
       - DB_ENGINE=django.db.backends.postgresql
