@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleListSteps,
@@ -71,26 +71,36 @@ export type DeleteStepArgs = z.infer<z.ZodObject<typeof deleteStepShape>>;
 
 export function registerStepTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_steps', {
+    title: 'List steps',
+    annotations: READ,
     description: 'List recipe steps (standalone). Optional: recipe (array of recipe ids), query, page, page_size.',
     inputSchema: listStepsShape,
   }, handleListSteps);
 
   registerStringTool(server, client, 'get_step', {
+    title: 'Get step',
+    annotations: READ,
     description: 'Get a step by ID.',
     inputSchema: getStepShape,
   }, handleGetStep);
 
   registerStringTool(server, client, 'create_step', {
+    title: 'Create step',
+    annotations: CREATE,
     description: 'Create a step (standalone). Required: instruction. Optional: name, time, order, show_as_header, show_ingredients_table, step_recipe (nested recipe id), ingredients[]. Ingredients take food/food_id and unit/unit_id.',
     inputSchema: createStepShape,
   }, handleCreateStep);
 
   registerStringTool(server, client, 'update_step', {
+    title: 'Update step',
+    annotations: { ...UPDATE, destructiveHint: true },
     description: 'Update a step (PATCH). Required: id. Any field provided replaces. ingredients[] is a full replacement of the step\'s ingredients.',
     inputSchema: updateStepShape,
   }, handleUpdateStep);
 
   registerStringTool(server, client, 'delete_step', {
+    title: 'Delete step',
+    annotations: DELETE,
     description: 'Delete a step by ID.',
     inputSchema: deleteStepShape,
   }, handleDeleteStep);

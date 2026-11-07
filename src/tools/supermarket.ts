@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleListSupermarkets,
@@ -47,26 +47,36 @@ export type DeleteSupermarketArgs = z.infer<z.ZodObject<typeof deleteSupermarket
 
 export function registerSupermarketTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_supermarkets', {
+    title: 'List supermarkets',
+    annotations: READ,
     description: 'List supermarkets (physical stores). Optional: query (name substring), limit, page, page_size.',
     inputSchema: listSupermarketsShape,
   }, handleListSupermarkets);
 
   registerStringTool(server, client, 'get_supermarket', {
+    title: 'Get supermarket',
+    annotations: READ,
     description: 'Get supermarket by ID.',
     inputSchema: getSupermarketShape,
   }, handleGetSupermarket);
 
   registerStringTool(server, client, 'create_supermarket', {
+    title: 'Create supermarket',
+    annotations: CREATE,
     description: 'Create a supermarket. Required: name. Optional: description, open_data_slug.',
     inputSchema: createSupermarketShape,
   }, handleCreateSupermarket);
 
   registerStringTool(server, client, 'update_supermarket', {
+    title: 'Update supermarket',
+    annotations: UPDATE,
     description: 'Update a supermarket (PATCH). Required: id.',
     inputSchema: updateSupermarketShape,
   }, handleUpdateSupermarket);
 
   registerStringTool(server, client, 'delete_supermarket', {
+    title: 'Delete supermarket',
+    annotations: DELETE,
     description: 'Delete a supermarket by ID.',
     inputSchema: deleteSupermarketShape,
   }, handleDeleteSupermarket);

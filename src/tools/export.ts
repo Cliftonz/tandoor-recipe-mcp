@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleExportRecipes,
@@ -61,31 +61,43 @@ export type DeleteExportLogArgs = z.infer<z.ZodObject<typeof deleteExportLogShap
 
 export function registerExportTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'export_recipes', {
+    title: 'Export recipes',
+    annotations: { ...READ, readOnlyHint: false, idempotentHint: false },
     description: 'Trigger a recipe export job. Required: type (e.g. json, zip, pdf; depends on Tandoor build). Provide recipes[] (ids), all=true, or custom_filter (saved filter id); recipes[] cannot be combined with custom_filter, even when all=true. all=true overrides custom_filter. Filters reachable only via a shared recipe book return 404. A deleted or empty filter exports every recipe. Returns the ExportLog for the queued job.',
     inputSchema: exportRecipesShape,
   }, handleExportRecipes);
 
   registerStringTool(server, client, 'list_export_logs', {
+    title: 'List export logs',
+    annotations: READ,
     description: 'List export-log rows. Optional: page, page_size.',
     inputSchema: listExportLogsShape,
   }, handleListExportLogs);
 
   registerStringTool(server, client, 'get_export_log', {
+    title: 'Get export log',
+    annotations: READ,
     description: 'Get export log by ID.',
     inputSchema: getExportLogShape,
   }, handleGetExportLog);
 
   registerStringTool(server, client, 'create_export_log', {
+    title: 'Create export log',
+    annotations: CREATE,
     description: 'Create an export log row directly. Rare; the export job normally creates one. Required: type.',
     inputSchema: createExportLogShape,
   }, handleCreateExportLog);
 
   registerStringTool(server, client, 'update_export_log', {
+    title: 'Update export log',
+    annotations: UPDATE,
     description: 'Update an export log (PATCH). Required: id.',
     inputSchema: updateExportLogShape,
   }, handleUpdateExportLog);
 
   registerStringTool(server, client, 'delete_export_log', {
+    title: 'Delete export log',
+    annotations: DELETE,
     description: 'Delete an export log by ID.',
     inputSchema: deleteExportLogShape,
   }, handleDeleteExportLog);

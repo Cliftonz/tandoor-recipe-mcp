@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleListStorages,
@@ -60,26 +60,36 @@ export type DeleteStorageArgs = z.infer<z.ZodObject<typeof deleteStorageShape>>;
 
 export function registerStorageTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_storages', {
+    title: 'List storages',
+    annotations: READ,
     description: `List external file-storage backends. ${credentialNote}`,
     inputSchema: listStoragesShape,
   }, handleListStorages);
 
   registerStringTool(server, client, 'get_storage', {
+    title: 'Get storage',
+    annotations: { ...READ, readOnlyHint: false },
     description: `Get a storage backend by ID. ${credentialNote}`,
     inputSchema: getStorageShape,
   }, handleGetStorage);
 
   registerStringTool(server, client, 'create_storage', {
+    title: 'Create storage',
+    annotations: CREATE,
     description: `Create a storage backend. Required: name, method (DB/NEXTCLOUD/LOCAL), path. Optional: username, password, token, url. ${credentialNote}`,
     inputSchema: createStorageShape,
   }, handleCreateStorage);
 
   registerStringTool(server, client, 'update_storage', {
+    title: 'Update storage',
+    annotations: UPDATE,
     description: `Update a storage backend (PATCH). Required: id. ${credentialNote}`,
     inputSchema: updateStorageShape,
   }, handleUpdateStorage);
 
   registerStringTool(server, client, 'delete_storage', {
+    title: 'Delete storage',
+    annotations: DELETE,
     description: 'Delete a storage backend by ID.',
     inputSchema: deleteStorageShape,
   }, handleDeleteStorage);

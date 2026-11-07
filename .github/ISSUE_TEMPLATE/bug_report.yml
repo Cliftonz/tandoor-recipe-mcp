@@ -1,0 +1,76 @@
+name: Bug report
+description: Something in the server does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Never paste tokens.** Redact Tandoor API tokens, OAuth tokens, shared HTTP tokens, and cookies from everything below.
+  - type: input
+    id: server-version
+    attributes:
+      label: Server version
+      placeholder: e.g. 3.3.0
+    validations:
+      required: true
+  - type: input
+    id: tandoor-version
+    attributes:
+      label: Tandoor version
+      placeholder: e.g. 2.0.3
+    validations:
+      required: true
+  - type: dropdown
+    id: transport
+    attributes:
+      label: Transport
+      options:
+        - stdio
+        - local HTTP
+        - remote OAuth
+    validations:
+      required: true
+  - type: dropdown
+    id: client
+    attributes:
+      label: Client
+      options:
+        - Claude Code
+        - Claude Desktop
+        - claude.ai
+        - ChatGPT
+        - Codex
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: sections
+    attributes:
+      label: Section settings
+      description: Which tool sections are enabled or disabled.
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (redacted)
+      description: Remove every token before pasting.
+      render: text

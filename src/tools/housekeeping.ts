@@ -5,7 +5,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import { INLINE_CAP_BYTES } from '../lib/download.js';
 import {
@@ -170,26 +170,36 @@ export function registerHousekeepingTools(server: McpServer, client: TandoorClie
   // ---------- Connector-config ----------
 
   registerStringTool(server, client, 'list_connectors', {
+    title: 'List connectors',
+    annotations: READ,
     description: "List external connector configurations (Home Assistant / MQTT / etc). Paginated. Connector token redacted in slim; use format='full' to reveal.",
     inputSchema: listConnectorsShape,
   }, handleListConnectors);
 
   registerStringTool(server, client, 'get_connector', {
+    title: 'Get connector',
+    annotations: { ...READ, readOnlyHint: false },
     description: "Get a connector configuration by ID. Connector token redacted in slim; use format='full' to reveal.",
     inputSchema: getConnectorShape,
   }, handleGetConnector);
 
   registerStringTool(server, client, 'create_connector', {
+    title: 'Create connector',
+    annotations: CREATE,
     description: 'Create a connector configuration. Required: name, type (currently only HomeAssistant). Optional: url, token, todo_entity, enabled, per-event toggles.',
     inputSchema: createConnectorShape,
   }, handleCreateConnector);
 
   registerStringTool(server, client, 'update_connector', {
+    title: 'Update connector',
+    annotations: UPDATE,
     description: "Update a connector configuration (PATCH). Required: id. Connector token redacted in slim; use format='full' to reveal.",
     inputSchema: updateConnectorShape,
   }, handleUpdateConnector);
 
   registerStringTool(server, client, 'delete_connector', {
+    title: 'Delete connector',
+    annotations: DELETE,
     description: 'Delete a connector configuration by ID.',
     inputSchema: deleteConnectorShape,
   }, handleDeleteConnector);
@@ -197,16 +207,22 @@ export function registerHousekeepingTools(server: McpServer, client: TandoorClie
   // ---------- View-log ----------
 
   registerStringTool(server, client, 'get_view_log', {
+    title: 'Get view log',
+    annotations: READ,
     description: 'Get a recipe view-log entry by ID.',
     inputSchema: getViewLogShape,
   }, handleGetViewLog);
 
   registerStringTool(server, client, 'update_view_log', {
+    title: 'Update view log',
+    annotations: UPDATE,
     description: 'Update a view-log entry (PATCH). Required: id. Typically used to correct the linked recipe.',
     inputSchema: updateViewLogShape,
   }, handleUpdateViewLog);
 
   registerStringTool(server, client, 'delete_view_log', {
+    title: 'Delete view log',
+    annotations: DELETE,
     description: 'Delete a view-log entry by ID.',
     inputSchema: deleteViewLogShape,
   }, handleDeleteViewLog);
@@ -214,16 +230,22 @@ export function registerHousekeepingTools(server: McpServer, client: TandoorClie
   // ---------- Search preferences ----------
 
   registerStringTool(server, client, 'list_search_fields', {
+    title: 'List search fields',
+    annotations: READ,
     description: 'List available searchable fields (used when configuring search preferences).',
     inputSchema: listSearchFieldsShape,
   }, handleListSearchFields);
 
   registerStringTool(server, client, 'list_search_preferences', {
+    title: 'List search preferences',
+    annotations: READ,
     description: 'List search preferences (typically just the current user).',
     inputSchema: listSearchPreferencesShape,
   }, handleListSearchPreferences);
 
   registerStringTool(server, client, 'update_search_preference', {
+    title: 'Update search preference',
+    annotations: UPDATE,
     description: 'Update a user\'s search preference (PATCH). Required: user (id). Field arrays (unaccent, icontains, istartswith, trigram, fulltext) accept SearchFields IDs.',
     inputSchema: updateSearchPreferenceShape,
   }, handleUpdateSearchPreference);
@@ -231,6 +253,8 @@ export function registerHousekeepingTools(server: McpServer, client: TandoorClie
   // ---------- Localization ----------
 
   registerStringTool(server, client, 'get_localization', {
+    title: 'Get localization',
+    annotations: READ,
     description: 'Fetch the list of available Tandoor UI languages (code + display name).',
     inputSchema: getLocalizationShape,
   }, handleGetLocalization);
@@ -238,11 +262,15 @@ export function registerHousekeepingTools(server: McpServer, client: TandoorClie
   // ---------- Groups ----------
 
   registerStringTool(server, client, 'list_groups', {
+    title: 'List groups',
+    annotations: READ,
     description: 'List permission groups defined on the Tandoor server.',
     inputSchema: listGroupsShape,
   }, handleListGroups);
 
   registerStringTool(server, client, 'get_group', {
+    title: 'Get group',
+    annotations: READ,
     description: 'Get a permission group by ID.',
     inputSchema: getGroupShape,
   }, handleGetGroup);
@@ -250,16 +278,22 @@ export function registerHousekeepingTools(server: McpServer, client: TandoorClie
   // ---------- Users ----------
 
   registerStringTool(server, client, 'list_users', {
+    title: 'List users',
+    annotations: READ,
     description: 'List users visible to the current user. Optional filter_list of user IDs.',
     inputSchema: listUsersShape,
   }, handleListUsers);
 
   registerStringTool(server, client, 'get_user', {
+    title: 'Get user',
+    annotations: READ,
     description: 'Get a user by ID.',
     inputSchema: getUserShape,
   }, handleGetUser);
 
   registerStringTool(server, client, 'update_user', {
+    title: 'Update user',
+    annotations: UPDATE,
     description: 'Update a user (PATCH). Required: id. Writable fields: first_name, last_name (username / staff flags are read-only).',
     inputSchema: updateUserShape,
   }, handleUpdateUser);
@@ -267,6 +301,8 @@ export function registerHousekeepingTools(server: McpServer, client: TandoorClie
   // ---------- Meal-plan iCal ----------
 
   registerStringTool(server, client, 'export_meal_plan_ical', {
+    title: 'Export meal plans as iCal',
+    annotations: READ,
     description: 'Export meal plans as an iCalendar (.ics) feed. Returns raw text/calendar body. Optional: from_date, to_date (YYYY-MM-DD, inclusive), meal_type (IDs).',
     inputSchema: exportMealPlanIcalShape,
   }, handleExportMealPlanIcal);
@@ -274,14 +310,16 @@ export function registerHousekeepingTools(server: McpServer, client: TandoorClie
   // ---------- Recipe file / external link ----------
 
   registerStringTool(server, client, 'get_external_recipe_file_link', {
+    title: 'Get external recipe file link',
+    annotations: { ...READ, readOnlyHint: false },
     description: 'Get the public share link for a recipe whose file lives on an external storage backend (Nextcloud or Dropbox). Takes a recipe id and returns the link as plain text. The first call for a recipe may create a public share link on the storage backend and save it to the recipe.',
     inputSchema: getExternalRecipeFileLinkShape,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   }, handleGetExternalRecipeFileLink);
 
   registerStringTool(server, client, 'download_recipe_file', {
+    title: 'Download recipe file',
+    annotations: { ...READ, readOnlyHint: false, idempotentHint: false },
     description: `Download the file Tandoor stored for a recipe synced from a Storage backend (Dropbox, Nextcloud or Local). Images come back as an image, other files as an embedded resource, up to ${INLINE_CAP_MIB} MiB. Larger files need save: true.`,
     inputSchema: downloadRecipeFileShape,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   }, handleDownloadRecipeFile);
 }

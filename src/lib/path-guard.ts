@@ -32,6 +32,7 @@ import { realpath, lstat, open as fsOpen, type FileHandle } from 'node:fs/promis
 import { constants as fsConstants, type BigIntStats } from 'node:fs';
 import path from 'node:path';
 import { tmpdir, homedir } from 'node:os';
+import { isRemoteMode } from './register.js';
 
 const DELIM = process.platform === 'win32' ? ';' : ':';
 const HOME_REF = /\$HOME\b/g;
@@ -140,6 +141,9 @@ export interface ValidatedPath {
  * `readFile` — to keep the TOCTOU defense intact.**
  */
 export async function assertSafeUploadPath(userPath: string): Promise<ValidatedPath> {
+  if (isRemoteMode()) {
+    throw new Error('file_path is not available on a remote server; use file_url instead.');
+  }
   if (typeof userPath !== 'string' || userPath.length === 0) {
     throw new PathGuardError(String(userPath), 'file_path is required and must be a non-empty string');
   }

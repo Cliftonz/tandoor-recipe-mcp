@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleListBooks,
@@ -79,46 +79,64 @@ export type DeleteBookEntryArgs = z.infer<z.ZodObject<typeof deleteBookEntryShap
 
 export function registerRecipeBookTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_recipe_books', {
+    title: 'List recipe books',
+    annotations: READ,
     description: 'List recipe books (collections). Optional: order_field (id/name/order), order_direction (asc/desc), limit, page, page_size.',
     inputSchema: listBooksShape,
   }, handleListBooks);
 
   registerStringTool(server, client, 'get_recipe_book', {
+    title: 'Get recipe book',
+    annotations: READ,
     description: 'Get recipe book by ID.',
     inputSchema: getBookShape,
   }, handleGetBook);
 
   registerStringTool(server, client, 'create_recipe_book', {
+    title: 'Create recipe book',
+    annotations: CREATE,
     description: 'Create a recipe book. Required: name. Optional: description, order, filter_id (CustomFilter id), shared_user_ids[].',
     inputSchema: createBookShape,
   }, handleCreateBook);
 
   registerStringTool(server, client, 'update_recipe_book', {
+    title: 'Update recipe book',
+    annotations: UPDATE,
     description: 'Update a recipe book (PATCH). Required: id.',
     inputSchema: updateBookShape,
   }, handleUpdateBook);
 
   registerStringTool(server, client, 'delete_recipe_book', {
+    title: 'Delete recipe book',
+    annotations: DELETE,
     description: 'Delete a recipe book by ID.',
     inputSchema: deleteBookShape,
   }, handleDeleteBook);
 
   registerStringTool(server, client, 'list_recipe_book_entries', {
+    title: 'List recipe book entries',
+    annotations: READ,
     description: 'List recipe-book-entry rows (recipe ↔ book links). Optional: book (id), page, page_size.',
     inputSchema: listBookEntriesShape,
   }, handleListBookEntries);
 
   registerStringTool(server, client, 'get_recipe_book_entry', {
+    title: 'Get recipe book entry',
+    annotations: READ,
     description: 'Get a recipe-book-entry by ID.',
     inputSchema: getBookEntryShape,
   }, handleGetBookEntry);
 
   registerStringTool(server, client, 'add_recipe_to_book', {
+    title: 'Add recipe to book',
+    annotations: CREATE,
     description: 'Add a recipe to a recipe book. Required: book (id), recipe (id).',
     inputSchema: createBookEntryShape,
   }, handleCreateBookEntry);
 
   registerStringTool(server, client, 'remove_recipe_from_book', {
+    title: 'Remove recipe from book',
+    annotations: DELETE,
     description: 'Remove a recipe from a book by entry ID.',
     inputSchema: deleteBookEntryShape,
   }, handleDeleteBookEntry);

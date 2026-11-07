@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi, onTestFinished } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { createHttpTransport, resolveHttpConfig, bearerMatches, FailedAuthLimiter, type HttpTransportHandle } from '../src/lib/http-transport.js';
-import type { Server } from 'node:http';
+import { createHttpTransport, resolveHttpConfig, bearerMatches, FailedAuthLimiter, jsonRpcErrorHandler, type HttpTransportHandle } from '../src/lib/http-transport.js';
+import { request as httpRequest, type Server } from 'node:http';
+import type { Request, Response } from 'express';
 import { createServer as createNetServer, type AddressInfo } from 'node:net';
 
 function captureStderr(): { lines: string[]; restore: () => void; joined(): string } {
@@ -28,6 +29,8 @@ function resetEnv() {
   delete process.env.TANDOOR_MCP_HTTP_MAX_BODY_BYTES;
   delete process.env.TANDOOR_MCP_HTTP_MAX_CONNS;
   delete process.env.TANDOOR_MCP_HTTP_DRAIN_MS;
+  delete process.env.TANDOOR_MCP_HTTP_HOST;
+  delete process.env.TANDOOR_MCP_TRUST_PROXY;
 }
 
 function buildServer(): McpServer {
@@ -91,10 +94,27 @@ describe('resolveHttpConfig', () => {
     expect(cfg.token).toBe('sekret');
   });
 
+  it('treats a whitespace-only TANDOOR_MCP_HTTP_TOKEN as unset', () => {
+    process.env.TANDOOR_MCP_HTTP_TOKEN = '   ';
+    const cfg = resolveHttpConfig();
+    expect(cfg.requireAuth).toBe(false);
+    expect(cfg.token).toBeUndefined();
+  });
+
   it('defaults path to /mcp and maxBodyBytes to 5MB', () => {
     const cfg = resolveHttpConfig();
     expect(cfg.path).toBe('/mcp');
     expect(cfg.maxBodyBytes).toBe(5_242_880);
+  });
+
+  it('honors a trimmed TANDOOR_MCP_HTTP_HOST', () => {
+    process.env.TANDOOR_MCP_HTTP_HOST = ' 0.0.0.0 ';
+    expect(resolveHttpConfig().host).toBe('0.0.0.0');
+  });
+
+  it('treats a whitespace-only TANDOOR_MCP_HTTP_HOST as unset', () => {
+    process.env.TANDOOR_MCP_HTTP_HOST = '   ';
+    expect(resolveHttpConfig().host).toBe('127.0.0.1');
   });
 
   it('honors TANDOOR_MCP_HTTP_PATH and TANDOOR_MCP_HTTP_MAX_BODY_BYTES', () => {
@@ -141,6 +161,15 @@ describe('createHttpTransport round-trip', () => {
     // SSE or JSON both acceptable; both carry the JSON-RPC id
     expect(res.body).toContain('"jsonrpc"');
     expect(res.body).toContain('"result"');
+  });
+
+  it('streams local POST responses as SSE', async () => {
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    const port = handle.address()!.port;
+
+    const res = await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc());
+    expect(res.headers.get('content-type')).toBe('text/event-stream');
   });
 
   it('answers every sequential POST, not only the first', async () => {
@@ -267,6 +296,26 @@ describe('createHttpTransport round-trip', () => {
     expect(res.status).toBe(401);
   });
 
+  it('returns 401 for a multibyte bearer guess with the same character length as the token', async () => {
+    process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    const port = handle.address()!.port;
+
+    const status = await new Promise<number>((resolve, reject) => {
+      const req = httpRequest(
+        { host: '127.0.0.1', port, path: '/mcp', method: 'POST', headers: { Authorization: 'Bearer sekr\u00e9', 'Content-Type': 'application/json' } },
+        (r) => {
+          r.resume();
+          resolve(r.statusCode ?? 0);
+        },
+      );
+      req.on('error', reject);
+      req.end('{}');
+    });
+    expect(status).toBe(401);
+  });
+
   it('accepts the correct bearer token', async () => {
     process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
     handle = createHttpTransport(buildServer);
@@ -311,6 +360,13 @@ describe('createHttpTransport round-trip', () => {
       id: null,
       error: { code: -32600, message: 'payload too large', data: { max_bytes: 128 } },
     });
+  });
+
+  it('binds the address in TANDOOR_MCP_HTTP_HOST', async () => {
+    process.env.TANDOOR_MCP_HTTP_HOST = '::1';
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    expect(handle.address()!.address).toBe('::1');
   });
 
   it('binds loopback only, not 0.0.0.0', async () => {
@@ -405,6 +461,15 @@ describe('createHttpTransport round-trip', () => {
     expect(await res.json()).toEqual({ status: 'ok' });
   });
 
+  it('does not advertise the server framework in an X-Powered-By header', async () => {
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    const port = handle.address()!.port;
+
+    const res = await fetch(`http://127.0.0.1:${port}/healthz`);
+    expect(res.headers.has('x-powered-by')).toBe(false);
+  });
+
   it('sets maxConnections, headersTimeout, requestTimeout on the underlying server', async () => {
     process.env.TANDOOR_MCP_HTTP_MAX_CONNS = '64';
     handle = createHttpTransport(buildServer);
@@ -440,7 +505,7 @@ describe('createHttpTransport round-trip', () => {
     });
   });
 
-  it('malformed JSON body is caught by outer wrap → 500 JSON-RPC envelope + stderr internal_error', async () => {
+  it('answers a malformed JSON body with a 400 JSON-RPC parse error logged as a client error', async () => {
     handle = createHttpTransport(buildServer);
     await handle.start();
     const port = handle.address()!.port;
@@ -453,11 +518,10 @@ describe('createHttpTransport round-trip', () => {
     });
     const body = await res.text();
     cap.restore();
-    expect(res.status).toBe(500);
-    const parsed = JSON.parse(body);
-    expect(parsed.jsonrpc).toBe('2.0');
-    expect(parsed.error.code).toBe(-32603);
-    expect(cap.joined()).toContain('event=internal_error');
+    expect(res.status).toBe(400);
+    expect(JSON.parse(body)).toEqual({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } });
+    expect(cap.joined()).toContain('level=info event=parse_error');
+    expect(cap.joined()).not.toContain('event=internal_error');
   });
 
   it('serves parallel requests without transport-layer crashes and stamps distinct reqIds', async () => {
@@ -477,6 +541,18 @@ describe('createHttpTransport round-trip', () => {
     expect(idB).toMatch(/^[0-9a-f]{8}$/);
     expect(idA).not.toBe(idB);
   });
+
+  it('has no per-visitor request limit on the local MCP path', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.now() });
+    onTestFinished(() => vi.useRealTimers());
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    const port = handle.address()!.port;
+
+    const statuses = new Set<number>();
+    for (let i = 0; i < 301; i++) statuses.add((await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc())).status);
+    expect([...statuses]).toEqual([200]);
+  }, 30_000);
 
   it('stop() enters draining mode: subsequent requests return 503 shutdown envelope', async () => {
     const h = createHttpTransport(buildServer);
@@ -520,8 +596,39 @@ describe('bearerMatches', () => {
     expect(bearerMatches('Bearer abcdef', 'ghijkl')).toBe(false);
   });
 
+  it('returns false for a multibyte guess with the same character length but a different byte length', () => {
+    expect(bearerMatches('Bearer sekr\u00e9t', 'sekret')).toBe(false);
+  });
+
   it('returns false when scheme is missing', () => {
     expect(bearerMatches('sekret', 'sekret')).toBe(false);
+  });
+});
+
+describe('jsonRpcErrorHandler', () => {
+  it('answers an unexpected error with a JSON-RPC 500 and one internal_error log line without a stack', () => {
+    const sent: { status?: number; headers?: Record<string, string>; body?: string } = {};
+    const res = {
+      getHeader: () => 'abcd1234',
+      writeHead(status: number, headers: Record<string, string>) {
+        sent.status = status;
+        sent.headers = headers;
+        return this;
+      },
+      end(body: string) {
+        sent.body = body;
+        return this;
+      },
+    } as unknown as Response;
+    const cap = captureStderr();
+
+    jsonRpcErrorHandler(new Error('boom'), {} as Request, res, () => {});
+    cap.restore();
+
+    expect(sent.status).toBe(500);
+    expect(sent.headers?.['Content-Type']).toBe('application/json');
+    expect(JSON.parse(sent.body!)).toEqual({ jsonrpc: '2.0', id: null, error: { code: -32603, message: 'Internal error' } });
+    expect(cap.lines).toEqual(['[tandoor-mcp] http reqId=abcd1234 level=error event=internal_error msg=boom\n']);
   });
 });
 
@@ -530,5 +637,93 @@ describe('FailedAuthLimiter', () => {
     const limiter = new FailedAuthLimiter();
     for (let i = 0; i < 20; i++) expect(limiter.consume('127.0.0.1')).toBe(true);
     expect(limiter.consume('127.0.0.1')).toBe(false);
+  });
+});
+
+describe('TANDOOR_MCP_TRUST_PROXY', () => {
+  let handle: HttpTransportHandle | undefined;
+
+  beforeEach(() => {
+    resetEnv();
+    process.env.TANDOOR_MCP_HTTP_PORT = '0';
+    process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+  });
+  afterEach(async () => {
+    vi.useRealTimers();
+    await handle?.stop();
+    handle = undefined;
+    resetEnv();
+    Object.assign(process.env, ORIGINAL_ENV);
+  });
+
+  async function start(): Promise<number> {
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    return handle.address()!.port;
+  }
+
+  const wrongBearer = (port: number, forwardedFor: string) =>
+    postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc(), { Authorization: 'Bearer wrong', 'X-Forwarded-For': forwardedFor });
+
+  async function exhaustThenTryOther(port: number, forwardedFor: (i: number) => string, other: string): Promise<number> {
+    for (let i = 0; i < 20; i++) expect((await wrongBearer(port, forwardedFor(i))).status).toBe(401);
+    expect((await wrongBearer(port, forwardedFor(99))).status).toBe(429);
+    return (await wrongBearer(port, other)).status;
+  }
+
+  it('keys the shared-password limiter on the trusted visitor address', async () => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = '1';
+    const port = await start();
+    expect(await exhaustThenTryOther(port, () => '203.0.113.1', '203.0.113.2')).toBe(401);
+  });
+
+  it('with 2 hops, the visitor is the second-from-right X-Forwarded-For entry', async () => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = '2';
+    const port = await start();
+    expect(await exhaustThenTryOther(port, (i) => `198.51.100.${i}, 203.0.113.1, 10.0.0.${i}`, '198.51.100.1, 203.0.113.2, 10.0.0.1')).toBe(401);
+  });
+
+  it.each([
+    ['honors', '10.0.0.0/8, 127.0.0.0/8, ::1', 401],
+    ['ignores', '10.0.0.0/8, 172.16.0.0/12, ::1', 429],
+  ])('%s X-Forwarded-For when the socket peer is inside the proxy list %s', async (_label, list, expected) => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = list;
+    const port = await start();
+    expect(await exhaustThenTryOther(port, () => '203.0.113.1', '203.0.113.2')).toBe(expected);
+  });
+
+  it.each(['0', '', '   '])('ignores X-Forwarded-For when the value is %j', async (value) => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = value;
+    const port = await start();
+    expect(await exhaustThenTryOther(port, () => '203.0.113.1', '203.0.113.2')).toBe(429);
+  });
+
+  it.each(['true', 'abc', '-1', '1.5', '10.0.0.0/33', '::1/129', '10.0.0.1/8/8', '10.0.0.1,', 'localhost', '0.0.0.0/0', '::/0', '10.0.0.0/8, ::/0'])('refuses %j', (value) => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = value;
+    expect(() => resolveHttpConfig()).toThrow(`TANDOOR_MCP_TRUST_PROXY must be a hop count or a comma-separated list of IP addresses and CIDR ranges (got "${value}").`);
+  });
+
+  it('logs the trusted visitor address on auth_missing', async () => {
+    process.env.TANDOOR_MCP_TRUST_PROXY = '1';
+    const port = await start();
+    const cap = captureStderr();
+    await postJson(`http://127.0.0.1:${port}/mcp`, initializeRpc(), { 'X-Forwarded-For': '203.0.113.7' });
+    cap.restore();
+    expect(cap.lines.find((line) => line.includes('event=auth_missing'))).toContain('remote=203.0.113.7');
+  });
+
+  it('warns once when X-Forwarded-For arrives while trust is off', async () => {
+    delete process.env.TANDOOR_MCP_HTTP_TOKEN;
+    const port = await start();
+    const cap = captureStderr();
+    await fetch(`http://127.0.0.1:${port}/healthz`, { headers: { 'X-Forwarded-For': '203.0.113.1' } });
+    await fetch(`http://127.0.0.1:${port}/healthz`, { headers: { 'X-Forwarded-For': '203.0.113.2' } });
+    cap.restore();
+    const warnings = cap.lines.filter((line) => line.includes('TANDOOR_MCP_TRUST_PROXY'));
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('level=warn');
+    expect(warnings[0]).toContain('all visitors may share one rate-limit bucket');
   });
 });

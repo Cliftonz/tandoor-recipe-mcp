@@ -4,7 +4,7 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, registerStringTool } from '../lib/register.js';
 import type { VersionCheckResult } from '../lib/version-check.js';
 
 export const getVersionShape = {} as const;
@@ -16,6 +16,8 @@ export function registerVersionTools(
   versionCheck: VersionCheckResult,
 ): void {
   registerStringTool(server, client, 'get_version', {
+    title: 'Get version',
+    annotations: READ,
     description:
       'Report this MCP server\'s name/version and the Tandoor server version + compatibility status detected at startup (ok | unsupported | unknown). No arguments; answers from cached startup state without a network call.',
     inputSchema: getVersionShape,

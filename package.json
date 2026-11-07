@@ -1,6 +1,7 @@
 {
   "name": "@cliftonz/tandoor-recipes-mcp",
   "version": "3.3.0",
+  "mcpName": "io.github.Cliftonz/tandoor-recipe-mcp",
   "description": "Model Context Protocol server for Tandoor — recipes, meal plans, shopping lists, ingredients, cook logs, nutrition, AI import, and more.",
   "type": "module",
   "main": "./build/index.js",
@@ -24,7 +25,7 @@
     "mcpb": "npx --yes @anthropic-ai/mcpb@2.1.2",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build && npm run test:ci",
-    "version": "node scripts/sync-plugin-version.js && git add plugins/claude/.claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json manifest.json"
+    "version": "node scripts/sync-plugin-version.js && git add plugins/claude/.claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json manifest.json server.json"
   },
   "keywords": [
     "mcp",
@@ -56,11 +57,14 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",
+    "express": "5.2.1",
+    "express-rate-limit": "8.5.2",
     "jq-wasm": "3.0.0-jq-1.8.2",
     "undici": "^8.12.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@types/express": "5.0.6",
     "@types/node": "^26.6.5",
     "cross-env": "^10.1.0",
     "dotenv": "^18.0.8",

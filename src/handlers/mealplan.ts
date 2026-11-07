@@ -25,6 +25,7 @@
 // keeps the default retry budget.
 
 import { TandoorClient } from '../clients/index.js';
+import { hasTandoorStatus } from '../clients/base.js';
 import type { HandlerContext } from '../lib/register.js';
 import type {
   ListMealPlansArgs,
@@ -64,7 +65,7 @@ function labelHydrationError<T>(
 ): Promise<T> {
   return p.catch((err) => {
     const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(`${label}: ${msg}`);
+    throw new Error(`${label}: ${msg}`, { cause: err });
   });
 }
 
@@ -308,12 +309,12 @@ export async function handleBulkCreateMealPlans(
   const [recipeList, mealTypeList] = await Promise.all([
     Promise.all(recipeIds.map((id) =>
       client.recipes.getRecipe(id, hydrateOpts).catch((err) => {
-        throw new Error(`Failed to hydrate recipe ${id} for bulk_create_meal_plans: ${err instanceof Error ? err.message : String(err)}`);
+        throw new Error(`Failed to hydrate recipe ${id} for bulk_create_meal_plans: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
       })
     )),
     Promise.all(mealTypeIds.map((id) =>
       client.mealPlans.getMealType(id, hydrateOpts).catch((err) => {
-        throw new Error(`Failed to hydrate meal_type ${id} for bulk_create_meal_plans: ${err instanceof Error ? err.message : String(err)}`);
+        throw new Error(`Failed to hydrate meal_type ${id} for bulk_create_meal_plans: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
       })
     )),
   ]);
@@ -354,6 +355,9 @@ export async function handleBulkCreateMealPlans(
       return client.mealPlans.createMealPlan(body);
     })
   );
+
+  const unauthorized = results.find((r) => r.status === 'rejected' && hasTandoorStatus(r.reason, 401));
+  if (unauthorized?.status === 'rejected') throw unauthorized.reason;
 
   const created: Array<Record<string, unknown> & { index: number }> = [];
   const failed: Array<{ index: number; error: string }> = [];

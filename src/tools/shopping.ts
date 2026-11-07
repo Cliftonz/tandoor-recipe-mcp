@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleListShoppingEntries,
@@ -190,91 +190,127 @@ export type BulkCreateShoppingListRecipeEntriesArgs = z.infer<z.ZodObject<typeof
 
 export function registerShoppingTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_shopping_lists', {
+    title: 'List shopping lists',
+    annotations: READ,
     description: 'List the named shopping lists of this space (for example one per store), as {id, name, description, color}. Every member of the space sees the same lists. Optional: page, page_size.',
     inputSchema: listShoppingListsShape,
   }, handleListShoppingLists);
 
   registerStringTool(server, client, 'get_shopping_list', {
+    title: 'Get shopping list',
+    annotations: READ,
     description: 'Get a named shopping list by ID.',
     inputSchema: getShoppingListShape,
   }, handleGetShoppingList);
 
   registerStringTool(server, client, 'create_shopping_list', {
+    title: 'Create shopping list',
+    annotations: { ...CREATE, idempotentHint: true },
     description: 'Create a named shopping list. Required: name (1 to 32 characters). Optional: description, color (#rrggbb or null). If a list with the same name already exists (case-insensitive), Tandoor returns that list instead of creating a new one, and does not change its description or color.',
     inputSchema: createShoppingListShape,
   }, handleCreateShoppingList);
 
   registerStringTool(server, client, 'update_shopping_list', {
+    title: 'Update shopping list',
+    annotations: UPDATE,
     description: 'Update a named shopping list (PATCH). Required: id and at least one of name (1 to 32 characters), description, color (#rrggbb, or null to clear it). A new name that another list already has (ignoring case and surrounding spaces) is refused, because Tandoor would accept it and then fail every create_shopping_list with that name. Renaming a list to its own name is always allowed.',
     inputSchema: updateShoppingListShape,
   }, handleUpdateShoppingList);
 
   registerStringTool(server, client, 'delete_shopping_list', {
+    title: 'Delete shopping list',
+    annotations: DELETE,
     description: 'Delete a named shopping list by ID. This only removes the links to the list: foods, shopping entries and supermarkets that used it keep existing. To see the links first, use preview_shopping_list_delete_cascading.',
     inputSchema: deleteShoppingListShape,
   }, handleDeleteShoppingList);
 
   registerStringTool(server, client, 'list_shopping_entries', {
+    title: 'List shopping entries',
+    annotations: READ,
     description: 'List shopping list entries (auto-filtered to unchecked + recent by Tandoor). Optional: mealplan, updated_after (ISO), page, page_size, format. Entries cannot be filtered by shopping list; use the shopping_lists field of the results.',
     inputSchema: listShoppingEntriesShape,
   }, handleListShoppingEntries);
 
   registerStringTool(server, client, 'get_shopping_entry', {
+    title: 'Get shopping entry',
+    annotations: READ,
     description: 'Get a shopping list entry by ID.',
     inputSchema: getShoppingEntryShape,
   }, handleGetShoppingEntry);
 
   registerStringTool(server, client, 'create_shopping_entry', {
+    title: 'Create shopping entry',
+    annotations: CREATE,
     description: `Create a shopping list entry. Required: amount, food_id. Optional: unit_id, checked, list_recipe, ingredient, order, delay_until, mealplan_id (links to existing/new ShoppingListRecipe for that mealplan), shopping_list_ids. ${ENTRY_LISTS}`,
     inputSchema: createShoppingEntryShape,
   }, handleCreateShoppingEntry);
 
   registerStringTool(server, client, 'update_shopping_entry', {
+    title: 'Update shopping entry',
+    annotations: UPDATE,
     description: `Update a shopping entry (PATCH). Required: id. Other fields optional. When checked is omitted, the tool reads the entry and sends its current checked value again, so a checked entry keeps its completed_at. A check made elsewhere between that read and the write is undone (last write wins). shopping_list_ids puts the entry on exactly those lists; [] clears them; omit it to keep them. ${LIST_IDS_CHECKED} ${LISTS_APPLIED}`,
     inputSchema: updateShoppingEntryShape,
   }, handleUpdateShoppingEntry);
 
   registerStringTool(server, client, 'delete_shopping_entry', {
+    title: 'Delete shopping entry',
+    annotations: DELETE,
     description: 'Delete a shopping entry by ID.',
     inputSchema: deleteShoppingEntryShape,
   }, handleDeleteShoppingEntry);
 
   registerStringTool(server, client, 'bulk_check_shopping_entries', {
+    title: 'Bulk check shopping entries',
+    annotations: UPDATE,
     description: 'Bulk check or uncheck many shopping entries by ID list.',
     inputSchema: bulkCheckShoppingEntriesShape,
   }, handleBulkCheckShoppingEntries);
 
   registerStringTool(server, client, 'bulk_update_shopping_entries', {
+    title: 'Bulk update shopping entries',
+    annotations: UPDATE,
     description: `Update many shopping entries in one call. Required: ids (entry ids; ids that do not exist or are not visible to you are skipped). Give checked, a list change, or both. checked: true checks every entry and sets completed_at to now, also on entries already checked; without checked, checked and completed_at stay as they are. List changes do not update the entries' updated_at. List changes: ${LIST_OPERATIONS}`,
     inputSchema: bulkUpdateShoppingEntriesShape,
   }, handleBulkUpdateShoppingEntries);
 
   registerStringTool(server, client, 'list_shopping_list_recipes', {
+    title: 'List shopping list recipes',
+    annotations: READ,
     description: 'List shopping-list-recipe groupings (a recipe added to the shopping list).',
     inputSchema: listShoppingListRecipesShape,
   }, handleListShoppingListRecipes);
 
   registerStringTool(server, client, 'get_shopping_list_recipe', {
+    title: 'Get shopping list recipe',
+    annotations: READ,
     description: 'Get a shopping-list-recipe by ID.',
     inputSchema: getShoppingListRecipeShape,
   }, handleGetShoppingListRecipe);
 
   registerStringTool(server, client, 'create_shopping_list_recipe', {
+    title: 'Create shopping list recipe',
+    annotations: CREATE,
     description: 'Create a shopping-list-recipe. Required: servings. Optional: name, recipe (id), mealplan (id).',
     inputSchema: createShoppingListRecipeShape,
   }, handleCreateShoppingListRecipe);
 
   registerStringTool(server, client, 'update_shopping_list_recipe', {
+    title: 'Update shopping list recipe',
+    annotations: UPDATE,
     description: 'Update a shopping-list-recipe (PATCH). Required: id.',
     inputSchema: updateShoppingListRecipeShape,
   }, handleUpdateShoppingListRecipe);
 
   registerStringTool(server, client, 'delete_shopping_list_recipe', {
+    title: 'Delete shopping list recipe',
+    annotations: DELETE,
     description: 'Delete a shopping-list-recipe by ID.',
     inputSchema: deleteShoppingListRecipeShape,
   }, handleDeleteShoppingListRecipe);
 
   registerStringTool(server, client, 'bulk_create_shopping_list_recipe_entries', {
+    title: 'Bulk create shopping list recipe entries',
+    annotations: CREATE,
     description: `Append many shopping entries to an existing shopping-list-recipe in one call. Tandoor answers 404 when the shopping-list-recipe has no entries yet. Optional: shopping_list_ids puts every new entry on those lists. When shopping_list_ids is omitted, each new entry gets its food's lists, whatever the user preference. An empty shopping_list_ids is rejected. ${LIST_IDS_CHECKED}`,
     inputSchema: bulkCreateShoppingListRecipeEntriesShape,
   }, handleBulkCreateShoppingListRecipeEntries);

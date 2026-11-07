@@ -771,6 +771,7 @@ export async function handleImportRecipeFromUrl(
   const { url } = args;
   const signal = ctx?.signal;
   const attempts: string[] = [];
+  const failures: unknown[] = [];
   const checkAbort = () => {
     if (signal?.aborted) throw signal.reason instanceof Error ? signal.reason : new Error('Aborted');
   };
@@ -791,6 +792,7 @@ export async function handleImportRecipeFromUrl(
     }
     attempts.push(`tandoor-url: ${resp?.msg || 'no usable recipe returned'}`);
   } catch (err) {
+    failures.push(err);
     attempts.push(`tandoor-url: ${err instanceof Error ? err.message : String(err)}`);
   }
 
@@ -812,6 +814,7 @@ export async function handleImportRecipeFromUrl(
         }
         attempts.push('json-ld: recipe object found but unusable (missing name or steps)');
       } catch (err) {
+        failures.push(err);
         attempts.push(`json-ld: ${err instanceof Error ? err.message : String(err)}`);
       }
     } else {
@@ -851,7 +854,8 @@ export async function handleImportRecipeFromUrl(
   // Default: surface the failure. No silent writes.
   throw new Error(
     `Could not import ${url}. Retry with create_stub_on_failure=true to write an empty placeholder.\n` +
-    `Attempts:\n- ${attempts.join('\n- ')}`
+    `Attempts:\n- ${attempts.join('\n- ')}`,
+    { cause: new AggregateError(failures) },
   );
 }
 

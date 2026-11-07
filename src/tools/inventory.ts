@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleListInventoryLocations,
@@ -126,71 +126,99 @@ export type GetInventoryLogArgs = z.infer<z.ZodObject<typeof getInventoryLogShap
 
 export function registerInventoryTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_inventory_locations', {
+    title: 'List inventory locations',
+    annotations: READ,
     description: 'List inventory locations (pantry, fridge, freezer and so on). Optional: page, page_size.',
     inputSchema: listInventoryLocationsShape,
   }, handleListInventoryLocations);
 
   registerStringTool(server, client, 'get_inventory_location', {
+    title: 'Get inventory location',
+    annotations: READ,
     description: 'Get an inventory location by ID.',
     inputSchema: getInventoryLocationShape,
   }, handleGetInventoryLocation);
 
   registerStringTool(server, client, 'create_inventory_location', {
+    title: 'Create inventory location',
+    annotations: CREATE,
     description: 'Create an inventory location in your household. Required: name. Optional: is_freezer. Fails if you are not in a household in this space; create one with create_household and assign yourself with assign_household (household-space section, space owner only), or ask the space owner.',
     inputSchema: createInventoryLocationShape,
   }, handleCreateInventoryLocation);
 
   registerStringTool(server, client, 'update_inventory_location', {
+    title: 'Update inventory location',
+    annotations: UPDATE,
     description: 'Update an inventory location (PATCH). Required: id. Optional: name, is_freezer.',
     inputSchema: updateInventoryLocationShape,
   }, handleUpdateInventoryLocation);
 
   registerStringTool(server, client, 'delete_inventory_location', {
+    title: 'Delete inventory location',
+    annotations: DELETE,
     description: 'Delete an inventory location by ID. This also deletes every inventory entry in it and the log rows of every entry that ever passed through it, including entries since moved elsewhere. Use preview_inventory_location_delete_cascading to see the full cascade first.',
     inputSchema: deleteInventoryLocationShape,
   }, handleDeleteInventoryLocation);
 
   registerStringTool(server, client, 'list_inventory_entries', {
+    title: 'List inventory entries',
+    annotations: READ,
     description: 'List inventory entries (what is on hand, where). Optional: location_id, food_id, include_empty (entries with amount 0 or less are hidden unless true), page, page_size.',
     inputSchema: listInventoryEntriesShape,
   }, handleListInventoryEntries);
 
   registerStringTool(server, client, 'get_inventory_entry', {
+    title: 'Get inventory entry',
+    annotations: READ,
     description: 'Get an inventory entry by ID.',
     inputSchema: getInventoryEntryShape,
   }, handleGetInventoryEntry);
 
   registerStringTool(server, client, 'add_inventory_item', {
+    title: 'Add inventory item',
+    annotations: CREATE,
     description: 'Add food to inventory. Required: food_id, unit_id, amount (> 0), location_id. Optional: expires (YYYY-MM-DD), sub_location, note, code. Always creates a new entry, even when the same food already has an entry at that location.',
     inputSchema: addInventoryItemShape,
   }, handleAddInventoryItem);
 
   registerStringTool(server, client, 'update_inventory_entry', {
+    title: 'Update inventory entry',
+    annotations: UPDATE,
     description: 'Update an inventory entry (PATCH). Required: id. Optional: food_id, unit_id, amount (>= 0), location_id, expires (YYYY-MM-DD; null clears it), sub_location (null clears it), note (null clears it), code.',
     inputSchema: updateInventoryEntryShape,
   }, handleUpdateInventoryEntry);
 
   registerStringTool(server, client, 'delete_inventory_entry', {
+    title: 'Delete inventory entry',
+    annotations: DELETE,
     description: 'Delete an inventory entry by ID. This also deletes its log rows.',
     inputSchema: deleteInventoryEntryShape,
   }, handleDeleteInventoryEntry);
 
   registerStringTool(server, client, 'consume_inventory_item', {
+    title: 'Consume inventory item',
+    annotations: CREATE,
     description: 'Use up some or all of an inventory entry. Identify it by entry_id, or by food_id with optional location_id (errors listing the candidates when several entries match). Give exactly one of amount (> 0) or all: true. Optional unit_id must match the entry unit; there is no unit conversion. The amount never goes below 0: consuming more than is on hand sets it to 0 and returns a warning. Never deletes the entry; at 0 (including after all: true) it is hidden from list_inventory_entries unless include_empty is true. Not atomic: two concurrent consumes of one entry can lose an update.',
     inputSchema: consumeInventoryItemShape,
   }, handleConsumeInventoryItem);
 
   registerStringTool(server, client, 'move_inventory_item', {
+    title: 'Move inventory item',
+    annotations: UPDATE,
     description: 'Move a whole inventory entry to another location. Required: entry_id, to_location_id. Optional: sub_location (null clears it).',
     inputSchema: moveInventoryItemShape,
   }, handleMoveInventoryItem);
 
   registerStringTool(server, client, 'list_inventory_logs', {
+    title: 'List inventory logs',
+    annotations: READ,
     description: 'List inventory log rows (read-only history of amount and location changes). Optional: entry_id, food_id, page, page_size. booking_type is add on creation, move when the location changed (even if the amount changed too), and remove for any other amount change, even an increase.',
     inputSchema: listInventoryLogsShape,
   }, handleListInventoryLogs);
 
   registerStringTool(server, client, 'get_inventory_log', {
+    title: 'Get inventory log',
+    annotations: READ,
     description: 'Get an inventory log row by ID.',
     inputSchema: getInventoryLogShape,
   }, handleGetInventoryLog);

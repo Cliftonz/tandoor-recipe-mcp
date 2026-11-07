@@ -6,7 +6,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, registerStringTool } from '../lib/register.js';
 import { handleJqQuery, handleJqStashStats, handleGuardStats } from '../handlers/jq.js';
 
 // Handles are `stash_${randomUUID()}`. Pinning the regex stops the LLM
@@ -37,6 +37,8 @@ export const jqStashStatsShape = {} as const;
 
 export function registerJqTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'jq_query', {
+    title: 'Query stashed result with jq',
+    annotations: READ,
     description: [
       'Run a jq filter against a previously stashed tool result and return the focused subset.',
       'Use this when a prior tool returned `{stashed:true, handle, shape, sample_filters}` instead of the full payload.',
@@ -47,11 +49,15 @@ export function registerJqTools(server: McpServer, client: TandoorClient): void 
   }, handleJqQuery);
 
   registerStringTool(server, client, 'jq_stash_stats', {
+    title: 'Show stash stats',
+    annotations: READ,
     description: 'Inspect the in-memory stash (count + total bytes). Diagnostic; not normally needed.',
     inputSchema: jqStashStatsShape,
   }, handleJqStashStats);
 
   registerStringTool(server, client, 'get_guard_stats', {
+    title: 'Get guard stats',
+    annotations: READ,
     description: 'Inspect security-guard rejection counters (PathGuardError, SsrfBlockedError) since process start. Useful for dashboards and "is anything probing me?" checks.',
     inputSchema: jqStashStatsShape,
   }, handleGuardStats);

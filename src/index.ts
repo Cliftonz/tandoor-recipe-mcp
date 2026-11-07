@@ -16,11 +16,12 @@ const pkg = JSON.parse(readFileSync(join(thisDir, '..', 'package.json'), 'utf8')
   version: string;
 };
 import { getStashConfig } from './lib/stash.js';
-import { checkTandoorVersion } from './lib/version-check.js';
+import { checkTandoorVersion, checkTandoorVersionWithoutToken } from './lib/version-check.js';
 import { buildInstructions } from './lib/instructions.js';
 import { registerAllTools } from './lib/register-all.js';
-import { createHttpTransport, resolveHttpConfig } from './lib/http-transport.js';
-import { loadSavedSections } from './lib/section-store.js';
+import { createHttpTransport, resolveHttpConfig, type HttpConfig } from './lib/http-transport.js';
+import { isRemoteMode } from './lib/register.js';
+import { instanceKey, loadSavedSections } from './lib/section-store.js';
 import { SECTION_ENV_VARS, SectionSettingsError, formatSectionModes, parseSectionModes, type SectionModes } from './lib/sections.js';
 
 // dotenv is a dev convenience — only load it if it's available (it's a
@@ -38,10 +39,55 @@ const pluginOptionOr = (pluginOption: string, envVar: string): string | undefine
 const TANDOOR_URL = pluginOptionOr('CLAUDE_PLUGIN_OPTION_TANDOOR_URL', 'TANDOOR_URL');
 const TANDOOR_TOKEN = pluginOptionOr('CLAUDE_PLUGIN_OPTION_TANDOOR_TOKEN', 'TANDOOR_TOKEN');
 
-if (!TANDOOR_URL || !TANDOOR_TOKEN) {
-  console.error("Error: TANDOOR_URL and TANDOOR_TOKEN must be set in .env file (or set the plugin's Tandoor URL and Tandoor API Token settings)");
-  process.exit(1);
+function resolveTransportMode(raw: string | undefined): 'stdio' | 'http' {
+  return (raw || '').toLowerCase() === 'http' ? 'http' : 'stdio';
 }
+const transportMode = resolveTransportMode(process.env.TANDOOR_MCP_TRANSPORT);
+
+function resolveHttpConfigOrExit(): HttpConfig {
+  try {
+    return resolveHttpConfig();
+  } catch (error) {
+    console.error(`Error: ${(error as Error).message}`);
+    process.exit(1);
+  }
+}
+
+function resolveTandoorPublicOrigin(): string | undefined {
+  const raw = process.env.TANDOOR_MCP_TANDOOR_PUBLIC_URL?.trim();
+  if (!raw) return undefined;
+  try {
+    return instanceKey(raw);
+  } catch {
+    console.error('Error: TANDOOR_MCP_TANDOOR_PUBLIC_URL does not parse as a URL (check scheme and host).');
+    process.exit(1);
+  }
+}
+
+function resolveTandoor() {
+  if (isRemoteMode()) {
+    if (transportMode !== 'http') {
+      console.error('Error: TANDOOR_MCP_PUBLIC_URL requires TANDOOR_MCP_TRANSPORT=http.');
+      process.exit(1);
+    }
+    if (!TANDOOR_URL) {
+      console.error("Error: TANDOOR_URL must be set in .env file (or set the plugin's Tandoor URL setting)");
+      process.exit(1);
+    }
+    if (TANDOOR_TOKEN?.trim()) {
+      console.error('Error: TANDOOR_TOKEN is not used in remote mode; remove it. Each user connects with their own Tandoor token.');
+      process.exit(1);
+    }
+    return { remote: true as const, origin: instanceKey(TANDOOR_URL), publicOrigin: resolveTandoorPublicOrigin(), httpCfg: resolveHttpConfigOrExit() };
+  }
+  if (!TANDOOR_URL || !TANDOOR_TOKEN) {
+    console.error("Error: TANDOOR_URL and TANDOOR_TOKEN must be set in .env file (or set the plugin's Tandoor URL and Tandoor API Token settings)");
+    process.exit(1);
+  }
+  const client = new TandoorClient({ url: TANDOOR_URL, token: TANDOOR_TOKEN });
+  return { remote: false as const, origin: client.getBaseUrl(), client };
+}
+const tandoor = resolveTandoor();
 
 if (process.env.TANDOOR_MCP_PROFILE?.trim()) {
   console.error(
@@ -51,40 +97,32 @@ if (process.env.TANDOOR_MCP_PROFILE?.trim()) {
 
 function readSections(): SectionModes {
   try {
-    return parseSectionModes(process.env, loadSavedSections(process.env, tandoorClient.getBaseUrl()));
+    return parseSectionModes(process.env, loadSavedSections(process.env, tandoor.origin));
   } catch (error) {
     if (!(error instanceof SectionSettingsError)) throw error;
     console.error(`Error: ${error.message}`);
     process.exit(1);
   }
 }
-
-const tandoorClient = new TandoorClient({
-  url: TANDOOR_URL,
-  token: TANDOOR_TOKEN,
-});
 const sections = readSections();
 
-function resolveTransportMode(raw: string | undefined): 'stdio' | 'http' {
-  return (raw || '').toLowerCase() === 'http' ? 'http' : 'stdio';
-}
-const transportMode = resolveTransportMode(process.env.TANDOOR_MCP_TRANSPORT);
-const httpCfg = transportMode === 'http' ? resolveHttpConfig() : undefined;
+const localHttpCfg = !tandoor.remote && transportMode === 'http' ? resolveHttpConfigOrExit() : undefined;
+const httpCfg = tandoor.remote ? tandoor.httpCfg : localHttpCfg;
 
 // Resolve once at startup so the instructions string (sent to the client on
 // initialize) and the operator-facing startup log show the same effective
 // numbers — including any overrides from TANDOOR_MCP_STASH_*.
 const stashCfgAtBoot = getStashConfig();
 
-// Probe the Tandoor version before building the server so an incompatibility
+// Probe the Tandoor version at startup so an incompatibility
 // warning can ride along in the instructions string (the LLM sees it) as well
 // as stderr (the operator sees it). Inconclusive results never block startup.
-const versionCheck = await checkTandoorVersion(tandoorClient);
+const versionCheck = await (tandoor.remote ? checkTandoorVersionWithoutToken(tandoor.origin) : checkTandoorVersion(tandoor.client));
 if (versionCheck.status !== 'ok') {
   console.error(`[tandoor-mcp] ${versionCheck.level === 'warning' ? 'WARNING' : 'NOTE'}: ${versionCheck.detail}`);
 }
 
-function buildServer(): McpServer {
+function buildServer(client: TandoorClient): McpServer {
   const server = new McpServer(
     {
       name: pkg.name,
@@ -98,38 +136,42 @@ function buildServer(): McpServer {
       }),
     }
   );
-  registerAllTools(server, tandoorClient, { sections, pkg, versionCheck });
+  registerAllTools(server, client, { sections, pkg, versionCheck });
   return server;
 }
 
-async function main() {
-  const stashLine = stashCfgAtBoot.enabled
-    ? `stash=on(>${stashCfgAtBoot.thresholdBytes}B, ttl=${stashCfgAtBoot.ttlMs}ms, max=${stashCfgAtBoot.maxEntries}, maxBytes=${stashCfgAtBoot.maxBytes})`
-    : 'stash=off';
+const stashLine = stashCfgAtBoot.enabled
+  ? `stash=on(>${stashCfgAtBoot.thresholdBytes}B, ttl=${stashCfgAtBoot.ttlMs}ms, max=${stashCfgAtBoot.maxEntries}, maxBytes=${stashCfgAtBoot.maxBytes})`
+  : 'stash=off';
 
-  if (transportMode === 'http' && httpCfg) {
-    const handle = createHttpTransport(buildServer);
-    await handle.start().catch((error: NodeJS.ErrnoException) => {
-      if (error.code !== 'EADDRINUSE') throw error;
-      console.error(`[tandoor-mcp] Error: port ${httpCfg.port} is already in use (TANDOOR_MCP_HTTP_PORT).`);
-      process.exit(1);
-    });
-    console.error(
-      `[tandoor-mcp] ${pkg.name}@${pkg.version} on http://${httpCfg.host}:${httpCfg.port}${httpCfg.path} | auth=${httpCfg.requireAuth ? 'required' : 'disabled'} | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${formatSectionModes(sections)} | ${stashLine} | max_body=${httpCfg.maxBodyBytes}B | max_conns=${httpCfg.maxConnections} | drain=${httpCfg.drainMs}ms | dynamic-gating=disabled`,
-    );
-    const shutdown = (signal: string) => {
-      console.error(`[tandoor-mcp] ${signal} received, draining`);
-      handle.stop().then(() => process.exit(0));
-    };
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
-    return;
-  }
+async function serveHttp(cfg: HttpConfig, serve: Parameters<typeof createHttpTransport>[0]) {
+  const handle = createHttpTransport(serve, tandoor.origin, tandoor.remote ? tandoor.publicOrigin : undefined);
+  await handle.start().catch((error: NodeJS.ErrnoException) => {
+    if (error.code !== 'EADDRINUSE') throw error;
+    console.error(`[tandoor-mcp] Error: port ${cfg.port} is already in use (TANDOOR_MCP_HTTP_PORT).`);
+    process.exit(1);
+  });
+  const auth = tandoor.remote ? 'oauth' : cfg.requireAuth ? 'required' : 'disabled';
+  console.error(
+    `[tandoor-mcp] ${pkg.name}@${pkg.version} on http://${cfg.host}:${cfg.port}${cfg.path}${cfg.remote ? ` | public=${cfg.remote.publicUrl.href}` : ''} | auth=${auth} | api=${tandoor.origin} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${formatSectionModes(sections)} | ${stashLine} | max_body=${cfg.maxBodyBytes}B | max_conns=${cfg.maxConnections} | drain=${cfg.drainMs}ms | dynamic-gating=disabled`,
+  );
+  const shutdown = (signal: string) => {
+    console.error(`[tandoor-mcp] ${signal} received, draining`);
+    handle.stop().then(() => process.exit(0));
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+}
+
+async function main() {
+  if (tandoor.remote) return serveHttp(tandoor.httpCfg, { remote: buildServer });
+  const { client } = tandoor;
+  if (localHttpCfg) return serveHttp(localHttpCfg, () => buildServer(client));
 
   const transport = new StdioServerTransport();
-  await buildServer().connect(transport);
+  await buildServer(client).connect(transport);
   console.error(
-    `[tandoor-mcp] ${pkg.name}@${pkg.version} on stdio | api=${tandoorClient.getBaseUrl()} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${formatSectionModes(sections)} | ${stashLine}`,
+    `[tandoor-mcp] ${pkg.name}@${pkg.version} on stdio | api=${tandoor.origin} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${formatSectionModes(sections)} | ${stashLine}`,
   );
 }
 

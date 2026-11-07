@@ -16,9 +16,12 @@
 
 import { randomUUID } from 'node:crypto';
 import { McpServer, ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { CallToolResult, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 import { ZodRawShape, z } from 'zod';
 import { TandoorClient } from '../clients/index.js';
+import { hasTandoorStatus } from '../clients/base.js';
+import { TANDOOR_REJECTED_TOKEN, type RemoteGrant } from './oauth/remote-grant.js';
 import { getStashConfig, shouldStash as baseShouldStash, stashPut, type StashConfig } from './stash.js';
 import { summarize } from './schema-summary.js';
 
@@ -28,6 +31,10 @@ import { summarize } from './schema-summary.js';
 // inline to its originating request.
 export function isHttpTransport(): boolean {
   return (process.env.TANDOOR_MCP_TRANSPORT || '').toLowerCase() === 'http';
+}
+
+export function isRemoteMode(): boolean {
+  return Boolean(process.env.TANDOOR_MCP_PUBLIC_URL?.trim());
 }
 
 export function shouldStash(structured: unknown, sizeBytes: number, cfg: StashConfig): boolean {
@@ -212,11 +219,23 @@ function shortReqId(): string {
   return randomUUID().replace(/-/g, '').slice(0, 8);
 }
 
+export interface ToolHints {
+  readOnlyHint: boolean;
+  destructiveHint: boolean;
+  idempotentHint: boolean;
+  openWorldHint: boolean;
+}
+
+export const READ: ToolHints = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+export const CREATE: ToolHints = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
+export const UPDATE: ToolHints = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+export const DELETE: ToolHints = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false };
+
 export function registerStringTool<S extends ZodRawShape>(
   server: McpServer,
   client: TandoorClient,
   name: string,
-  config: { description: string; inputSchema?: S; title?: string; annotations?: ToolAnnotations },
+  config: { title: string; description: string; inputSchema?: S; annotations: ToolHints },
   handler: StringHandler<S>
 ): void {
   if (!isToolAllowed(name)) {
@@ -224,7 +243,7 @@ export function registerStringTool<S extends ZodRawShape>(
     return;
   }
   _registeredNames.add(name);
-  const cb = async (args: InferShape<S>, extra: { signal?: AbortSignal; requestId?: string | number }): Promise<CallToolResult> => {
+  const cb = async (args: InferShape<S>, extra: { signal?: AbortSignal; requestId?: string | number; authInfo?: AuthInfo }): Promise<CallToolResult> => {
     const signal = extra?.signal ?? NEVER_ABORTED;
     // Prefer the SDK's request id (varies by transport — usually a number)
     // and fall back to a server-side short uuid so the field is always
@@ -294,6 +313,11 @@ export function registerStringTool<S extends ZodRawShape>(
         : { content: [{ type: 'text', text: result }] };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      const grant = extra?.authInfo?.extra as RemoteGrant | undefined;
+      if (grant && (hasTandoorStatus(err, 401) || (hasTandoorStatus(err, 403) && (await grant.checkToken()) === 'rejected'))) {
+        grant.revoke();
+        return { content: [{ type: 'text', text: TANDOOR_REJECTED_TOKEN }], isError: true, _meta: { 'mcp/www_authenticate': [grant.wwwAuthenticate] } };
+      }
       // Distinguish security-guard rejections so an operator can grep
       // server stderr for `guard rejection` to see probing / misconfig
       // signals — previously these were silent server-side and only
@@ -317,5 +341,6 @@ export function registerStringTool<S extends ZodRawShape>(
   // TypeScript can't match `z.infer<z.ZodObject<S>>` to the SDK's internal
   // `ShapeOutput<S>` across the helper boundary, so we narrow via the SDK's
   // own exported callback type. Still a cast, but typed — not `any`.
-  server.registerTool(name, config, cb as unknown as ToolCallback<S>);
+  const remoteConfig = { ...config, _meta: { securitySchemes: [{ type: 'oauth2', scopes: ['tandoor'] }] } };
+  server.registerTool(name, isRemoteMode() ? remoteConfig : config, cb as unknown as ToolCallback<S>);
 }

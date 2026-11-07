@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
-import { registerStringTool } from '../lib/register.js';
+import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
   handleListAiProviders,
@@ -71,37 +71,51 @@ export type AiStepSortArgs = z.infer<z.ZodObject<typeof aiStepSortShape>>;
 
 export function registerAiTools(server: McpServer, client: TandoorClient): void {
   registerStringTool(server, client, 'list_ai_providers', {
+    title: 'List AI providers',
+    annotations: READ,
     description: 'List configured AI providers (used by ai-import). Slim default.',
     inputSchema: listAiProvidersShape,
   }, handleListAiProviders);
 
   registerStringTool(server, client, 'import_recipe_from_image', {
+    title: 'Import recipe from image',
+    annotations: { ...CREATE, openWorldHint: true },
     description:
       'Import a recipe from an image, PDF, or text via Tandoor AI provider. Provide one of: file_path (local file readable by the MCP server), file_url (remote URL we fetch then upload), or text. By default the parsed recipe is saved to Tandoor; pass save=false to only return the parse result. ai_provider_id is auto-picked if omitted. If no AI provider is configured, this tool cannot work — recommend: (1) ask the operator to add one in Tandoor Settings → AI; (2) for web recipes, fall back to import_recipe_from_url (uses Tandoor scraper + JSON-LD, no AI required); (3) for text-only input, type up the structure manually via create_recipe.',
     inputSchema: aiImportRecipeShape,
   }, handleAiImportRecipe);
 
   registerStringTool(server, client, 'get_ai_provider', {
+    title: 'Get AI provider',
+    annotations: { ...READ, readOnlyHint: false },
     description: "Get AI provider by ID. Contains provider API key. Slim mode redacts api_key; use format='full' only when necessary.",
     inputSchema: getAiProviderShape,
   }, handleGetAiProvider);
 
   registerStringTool(server, client, 'create_ai_provider', {
+    title: 'Create AI provider',
+    annotations: CREATE,
     description: 'Create an AI provider. Required: name, model_name. Optional: api_key, description, url, log_credit_cost, space. Response slim by default (api_key redacted).',
     inputSchema: createAiProviderShape,
   }, handleCreateAiProvider);
 
   registerStringTool(server, client, 'update_ai_provider', {
+    title: 'Update AI provider',
+    annotations: UPDATE,
     description: "Update an AI provider (PATCH). Required: id. Contains provider API key. Slim mode redacts api_key; use format='full' only when necessary.",
     inputSchema: updateAiProviderShape,
   }, handleUpdateAiProvider);
 
   registerStringTool(server, client, 'delete_ai_provider', {
+    title: 'Delete AI provider',
+    annotations: DELETE,
     description: 'Delete an AI provider by ID.',
     inputSchema: deleteAiProviderShape,
   }, handleDeleteAiProvider);
 
   registerStringTool(server, client, 'ai_step_sort', {
+    title: 'Sort recipe steps with AI',
+    annotations: CREATE,
     description: 'Bulk-sort a recipe steps via AI. Required: recipe_id.',
     inputSchema: aiStepSortShape,
   }, handleAiStepSort);

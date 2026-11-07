@@ -1,0 +1,41 @@
+# Runs tandoor-mcp in remote mode next to an existing Tandoor stack.
+# Merge this service into your Tandoor compose file so both share a network.
+
+services:
+  tandoor-mcp:
+    image: ghcr.io/cliftonz/tandoor-recipes-mcp:latest
+    # build: .
+    restart: unless-stopped
+    environment:
+      # "web_recipes" must match the name of your Tandoor service.
+      TANDOOR_URL: http://web_recipes:8080
+      # The address users open Tandoor at; the sign-in page shows it and
+      # links to its API token page. Defaults to TANDOOR_URL.
+      TANDOOR_MCP_TANDOOR_PUBLIC_URL: https://recipes.example.com
+      # The public https URL clients connect to; its path must be /mcp.
+      TANDOOR_MCP_PUBLIC_URL: https://mcp.example.com/mcp
+      # Generate with: openssl rand -hex 32
+      TANDOOR_MCP_SECRET_KEY: replace-with-64-hex-characters
+      # Set when a reverse proxy or tunnel sits in front of the server.
+      TANDOOR_MCP_TRUST_PROXY: "1"
+    volumes:
+      - tandoor-mcp-data:/data
+    ports:
+      - 127.0.0.1:3737:3737
+    # Longer than the server's 10s drain so in-flight requests finish.
+    stop_grace_period: 15s
+
+  # Optional: expose the server through a Cloudflare Tunnel instead of
+  # opening a port. Create a tunnel in the Cloudflare dashboard, route your
+  # public hostname to http://tandoor-mcp:3737, and paste its token below.
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run
+  #   environment:
+  #     TUNNEL_TOKEN: replace-with-your-tunnel-token
+  #   depends_on:
+  #     - tandoor-mcp
+
+volumes:
+  tandoor-mcp-data:

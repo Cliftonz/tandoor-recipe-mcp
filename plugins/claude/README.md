@@ -23,6 +23,15 @@ In the settings, set each tool section to off, simple, or full. During a chat, C
 
 It sends your data only to the Tandoor URL you configure. When you import a recipe or file from a web address, it downloads that page or file. Private and local network addresses are blocked. The saved file holds only the Tandoor URL and section settings.
 
+## Network access
+
+The plugin talks only to these places:
+
+- The npm registry, when `npx` downloads the server package.
+- The Tandoor URL you configure.
+- Web addresses you ask it to import a recipe or file from. Private and local network addresses are blocked.
+- Your computer's download folder, only if you set `TANDOOR_MCP_DOWNLOAD_ROOT` and ask it to save a file. This is a local folder, not a network address.
+
 ## Where it runs
 
 This plugin runs in Claude Code. For Claude Desktop Chat and Cowork, use the desktop extension (.mcpb) instead. It is not available on claude.ai web.
