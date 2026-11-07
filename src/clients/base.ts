@@ -124,7 +124,7 @@ async function sleep(ms: number): Promise<void> {
 }
 
 function statusGuidance(status: number): string {
-  if (status === 401) return '\n\nAuthentication failed. Please check your TANDOOR_TOKEN is valid.';
+  if (status === 401) return "\n\nAuthentication failed. Please check your TANDOOR_TOKEN (or the plugin's Tandoor API Token setting) is valid.";
   if (status === 403) return '\n\nAccess forbidden. Your API token may not have the required permissions.';
   if (status === 404) return '\n\nResource not found. Please check the ID or URL is correct.';
   if (status === 500) return '\n\nServer error. Please check your Tandoor instance logs for details.';
@@ -190,7 +190,7 @@ export class BaseClient {
       // Do NOT interpolate config.url — operators sometimes paste URLs
       // containing basic-auth credentials, and the error gets pasted into
       // bug reports / crash logs.
-      throw new Error('Invalid TANDOOR_URL: value does not parse as a URL (check scheme and host).');
+      throw new Error("Invalid TANDOOR_URL (or the plugin's Tandoor URL setting): value does not parse as a URL (check scheme and host).");
     }
     this.token = config.token;
   }
@@ -285,7 +285,7 @@ export class BaseClient {
           // Wrap other errors (e.g. fetch TypeError on DNS failure).
           throw new Error(
             redactToken(
-              `Failed to connect to Tandoor: ${error.message}\nPlease check TANDOOR_URL is correct and the server is accessible.`,
+              `Failed to connect to Tandoor: ${error.message}\nPlease check TANDOOR_URL (or the plugin's Tandoor URL setting) is correct and the server is accessible.`,
               this.token
             )
           );
@@ -383,7 +383,7 @@ export class BaseClient {
         }
         throw new Error(
           redactToken(
-            `Failed to connect to Tandoor: ${(error as Error).message}\nPlease check TANDOOR_URL is correct and the server is accessible.`,
+            `Failed to connect to Tandoor: ${(error as Error).message}\nPlease check TANDOOR_URL (or the plugin's Tandoor URL setting) is correct and the server is accessible.`,
             this.token
           )
         );

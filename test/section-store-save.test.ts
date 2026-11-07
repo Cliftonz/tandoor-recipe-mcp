@@ -12,7 +12,7 @@ import { parseSectionModes } from '../src/lib/sections.js';
 import { loadSavedSections } from '../src/lib/section-store.js';
 
 const INSTANCE = 'https://tandoor.example.com';
-const prior = { xdg: process.env.XDG_CONFIG_HOME, cooklog: process.env.TANDOOR_MCP_COOKLOG };
+const prior = { xdg: process.env.XDG_CONFIG_HOME, cooklog: process.env.TANDOOR_MCP_COOKLOG, pluginCooklog: process.env.CLAUDE_PLUGIN_OPTION_COOKLOG };
 let configHome: string;
 let dir: string;
 let file: string;
@@ -23,10 +23,11 @@ beforeEach(() => {
   file = join(dir, 'sections.json');
   process.env.XDG_CONFIG_HOME = configHome;
   delete process.env.TANDOOR_MCP_COOKLOG;
+  delete process.env.CLAUDE_PLUGIN_OPTION_COOKLOG;
 });
 
 afterEach(() => {
-  for (const [key, value] of [['XDG_CONFIG_HOME', prior.xdg], ['TANDOOR_MCP_COOKLOG', prior.cooklog]] as const) {
+  for (const [key, value] of [['XDG_CONFIG_HOME', prior.xdg], ['TANDOOR_MCP_COOKLOG', prior.cooklog], ['CLAUDE_PLUGIN_OPTION_COOKLOG', prior.pluginCooklog]] as const) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
@@ -124,6 +125,20 @@ describe('saving section changes', () => {
     process.env.TANDOOR_MCP_COOKLOG = 'off';
     const result = JSON.parse(await call(await start(), 'enable_tool_group', { group: 'cooklog' }));
     expect(saved()).toEqual({ [INSTANCE]: { cooklog: 'on' } });
+    expect(result.envOverride).toBe('TANDOOR_MCP_COOKLOG is set and will override the saved value on restart.');
+  });
+
+  it('names the plugin option in the setting note when the plugin option supplied the value', async () => {
+    process.env.CLAUDE_PLUGIN_OPTION_COOKLOG = 'off';
+    process.env.TANDOOR_MCP_COOKLOG = 'off';
+    const result = JSON.parse(await call(await start(), 'enable_tool_group', { group: 'cooklog' }));
+    expect(result.envOverride).toBe('CLAUDE_PLUGIN_OPTION_COOKLOG is set and will override the saved value on restart.');
+  });
+
+  it('names the old variable in the setting note when the plugin option is blank', async () => {
+    process.env.CLAUDE_PLUGIN_OPTION_COOKLOG = '  ';
+    process.env.TANDOOR_MCP_COOKLOG = 'off';
+    const result = JSON.parse(await call(await start(), 'enable_tool_group', { group: 'cooklog' }));
     expect(result.envOverride).toBe('TANDOOR_MCP_COOKLOG is set and will override the saved value on restart.');
   });
 

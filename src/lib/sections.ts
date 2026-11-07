@@ -20,6 +20,7 @@ export type SectionMode = (typeof TIERED_MODES)[number] | (typeof TOGGLE_MODES)[
 interface SectionBase {
   name: string;
   envVar: string;
+  pluginOption: string;
   description: string;
 }
 
@@ -48,6 +49,7 @@ export const SECTIONS: readonly Section[] = [
     kind: 'tiered',
     name: 'recipes',
     envVar: 'TANDOOR_MCP_RECIPES',
+    pluginOption: 'CLAUDE_PLUGIN_OPTION_RECIPES',
     description: 'Recipes, steps, ingredients, keywords, custom filters, recipe files and share links.',
     simple: [
       'list_recipes', 'list_recipes_flat', 'search_recipes', 'get_recipe', 'related_recipes',
@@ -68,6 +70,7 @@ export const SECTIONS: readonly Section[] = [
     kind: 'tiered',
     name: 'meal-plan',
     envVar: 'TANDOOR_MCP_MEAL_PLAN',
+    pluginOption: 'CLAUDE_PLUGIN_OPTION_MEAL_PLAN',
     description: 'Meal plans and meal types.',
     simple: [
       'list_meal_plans', 'get_meal_plan', 'list_meal_types', 'get_meal_type',
@@ -84,6 +87,7 @@ export const SECTIONS: readonly Section[] = [
     kind: 'tiered',
     name: 'shopping',
     envVar: 'TANDOOR_MCP_SHOPPING',
+    pluginOption: 'CLAUDE_PLUGIN_OPTION_SHOPPING',
     description: 'Named shopping lists, shopping list entries, shopping-list recipes, supermarkets and their categories.',
     simple: [
       'list_shopping_lists',
@@ -107,6 +111,7 @@ export const SECTIONS: readonly Section[] = [
     kind: 'tiered',
     name: 'inventory',
     envVar: 'TANDOOR_MCP_INVENTORY',
+    pluginOption: 'CLAUDE_PLUGIN_OPTION_INVENTORY',
     description: 'Pantry inventory: locations, entries (add, consume, move) and the inventory log.',
     simple: [
       'list_inventory_locations', 'list_inventory_entries', 'add_inventory_item', 'consume_inventory_item', 'move_inventory_item',
@@ -123,6 +128,7 @@ export const SECTIONS: readonly Section[] = [
     kind: 'tiered',
     name: 'foods',
     envVar: 'TANDOOR_MCP_FOODS',
+    pluginOption: 'CLAUDE_PLUGIN_OPTION_FOODS',
     description: 'Foods, units, unit conversions, properties and property types, FDC nutrition lookup.',
     simple: ['list_foods', 'get_food', 'parse_ingredient', 'create_food', 'update_food', 'list_units'],
     full: [
@@ -141,6 +147,7 @@ export const SECTIONS: readonly Section[] = [
     kind: 'toggle',
     name: 'cooklog',
     envVar: 'TANDOOR_MCP_COOKLOG',
+    pluginOption: 'CLAUDE_PLUGIN_OPTION_COOKLOG',
     description: 'Cook-log entries: when and how often a recipe was made.',
     tools: crud('cook_log'),
   },
@@ -148,6 +155,7 @@ export const SECTIONS: readonly Section[] = [
     kind: 'toggle',
     name: 'recipe-books',
     envVar: 'TANDOOR_MCP_RECIPE_BOOKS',
+    pluginOption: 'CLAUDE_PLUGIN_OPTION_RECIPE_BOOKS',
     description: 'Recipe books (collections) and their entries.',
     tools: [
       ...crud('recipe_book'),
@@ -159,6 +167,7 @@ export const SECTIONS: readonly Section[] = [
     kind: 'toggle',
     name: 'ai',
     envVar: 'TANDOOR_MCP_AI',
+    pluginOption: 'CLAUDE_PLUGIN_OPTION_AI',
     description: 'AI providers, AI recipe import from images, AI step sort and property estimation, AI logs.',
     tools: [
       ...crud('ai_provider'),
@@ -169,6 +178,7 @@ export const SECTIONS: readonly Section[] = [
     kind: 'toggle',
     name: 'import-export',
     envVar: 'TANDOOR_MCP_IMPORT_EXPORT',
+    pluginOption: 'CLAUDE_PLUGIN_OPTION_IMPORT_EXPORT',
     description: 'Recipe import and export, import queues, bookmarklet and open-data imports, their logs.',
     tools: [
       'export_recipes', ...crud('export_log'),
@@ -183,6 +193,7 @@ export const SECTIONS: readonly Section[] = [
     kind: 'toggle',
     name: 'household-space',
     envVar: 'TANDOOR_MCP_HOUSEHOLD_SPACE',
+    pluginOption: 'CLAUDE_PLUGIN_OPTION_HOUSEHOLD_SPACE',
     description: 'Spaces, space memberships, households, users, groups, invite links, user preferences.',
     tools: [
       'list_spaces', 'get_space', 'create_space', 'update_space',
@@ -198,6 +209,7 @@ export const SECTIONS: readonly Section[] = [
     kind: 'toggle',
     name: 'admin',
     envVar: 'TANDOOR_MCP_ADMIN',
+    pluginOption: 'CLAUDE_PLUGIN_OPTION_ADMIN',
     description: 'Server settings, automations, user files, view logs, access tokens, storages, connectors, syncs, search settings.',
     tools: [
       'get_server_settings',
@@ -225,17 +237,25 @@ export function modesOf(section: Section): readonly SectionMode[] {
 
 export class SectionSettingsError extends Error {}
 
+export function sectionSetting(section: Section, env: Record<string, string | undefined>): { name: string; value: string } | undefined {
+  return [section.pluginOption, section.envVar]
+    .map((name) => ({ name, value: (env[name] ?? '').trim() }))
+    .find((setting) => setting.value);
+}
+
 export function parseSectionModes(env: Record<string, string | undefined>, saved: Partial<Record<string, SectionMode>> = {}): SectionModes {
   const modes: SectionModes = new Map();
   const problems: string[] = [];
   for (const section of SECTIONS) {
+    const setting = sectionSetting(section, env);
+    if (!setting) {
+      modes.set(section.name, saved[section.name] ?? DEFAULT_MODE[section.kind]);
+      continue;
+    }
     const valid = modesOf(section);
-    const value = (env[section.envVar] ?? '').trim();
-    const mode = value
-      ? valid.find((m) => m === value.toLowerCase())
-      : (saved[section.name] ?? DEFAULT_MODE[section.kind]);
+    const mode = valid.find((m) => m === setting.value.toLowerCase());
     if (mode) modes.set(section.name, mode);
-    else problems.push(`${section.envVar}=${value} is not valid. Valid values: ${valid.join(', ')}.`);
+    else problems.push(`${setting.name}=${setting.value} is not valid. Valid values: ${valid.join(', ')}.`);
   }
   if (problems.length > 0) throw new SectionSettingsError(problems.join('\n'));
   return modes;

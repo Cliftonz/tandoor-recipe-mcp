@@ -102,7 +102,7 @@ export async function checkTandoorVersion(
         detail:
           `GET ${client.getBaseUrl()}/api/server-settings/current/ returned 404 — this ` +
           'endpoint exists only on Tandoor 2.x+, so the instance is likely 1.x, or ' +
-          'TANDOOR_URL points at the wrong root (any path in TANDOOR_URL is stripped ' +
+          "TANDOOR_URL (or the plugin's Tandoor URL setting) points at the wrong root (any path in TANDOOR_URL is stripped " +
           `to the origin). ${UNSUPPORTED_ADVICE}`,
       };
     }
@@ -112,7 +112,7 @@ export async function checkTandoorVersion(
         level: 'warning',
         detail:
           `Tandoor rejected the version probe (${msg}) — the token is likely invalid ` +
-          'and ALL tool calls will fail. Check TANDOOR_TOKEN.',
+          "and ALL tool calls will fail. Check TANDOOR_TOKEN (or the plugin's Tandoor API Token setting).",
       };
     }
     return {

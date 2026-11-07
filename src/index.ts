@@ -33,11 +33,13 @@ try {
   // dotenv not installed — fine in production installs.
 }
 
-const TANDOOR_URL = process.env.TANDOOR_URL;
-const TANDOOR_TOKEN = process.env.TANDOOR_TOKEN;
+const pluginOptionOr = (pluginOption: string, envVar: string): string | undefined =>
+  process.env[pluginOption]?.trim() ? process.env[pluginOption] : process.env[envVar];
+const TANDOOR_URL = pluginOptionOr('CLAUDE_PLUGIN_OPTION_TANDOOR_URL', 'TANDOOR_URL');
+const TANDOOR_TOKEN = pluginOptionOr('CLAUDE_PLUGIN_OPTION_TANDOOR_TOKEN', 'TANDOOR_TOKEN');
 
 if (!TANDOOR_URL || !TANDOOR_TOKEN) {
-  console.error('Error: TANDOOR_URL and TANDOOR_TOKEN must be set in .env file');
+  console.error("Error: TANDOOR_URL and TANDOOR_TOKEN must be set in .env file (or set the plugin's Tandoor URL and Tandoor API Token settings)");
   process.exit(1);
 }
 

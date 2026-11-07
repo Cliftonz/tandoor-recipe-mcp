@@ -3,7 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TandoorClient } from '../clients/index.js';
 import { isHttpTransport, registerStringTool } from '../lib/register.js';
 import { saveSectionMode } from '../lib/section-store.js';
-import { ALWAYS_ON_GROUP, ALWAYS_ON_TOOLS, SECTIONS, SECTIONS_WITH_TOOLS, SECTION_ENV_VARS, modesOf, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
+import { ALWAYS_ON_GROUP, ALWAYS_ON_TOOLS, SECTIONS, SECTIONS_WITH_TOOLS, SECTION_ENV_VARS, modesOf, sectionSetting, sectionTools, visibleTools, type Section, type SectionMode, type SectionModes } from '../lib/sections.js';
 
 interface RegisteredToolEntry {
   enabled: boolean;
@@ -59,9 +59,8 @@ function persist(client: TandoorClient, section: Section, mode: SectionMode): { 
   } catch (error) {
     return { notSaved: `This change applies to this session only; it was not saved: ${(error as Error).message}` };
   }
-  return process.env[section.envVar]?.trim()
-    ? { envOverride: `${section.envVar} is set and will override the saved value on restart.` }
-    : {};
+  const setting = sectionSetting(section, process.env);
+  return setting ? { envOverride: `${setting.name} is set and will override the saved value on restart.` } : {};
 }
 
 function widen(section: Section, current: SectionMode, tier: 'simple' | 'full' | undefined): SectionMode {

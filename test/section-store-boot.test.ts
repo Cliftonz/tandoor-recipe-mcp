@@ -87,7 +87,7 @@ describe('saved sections at startup', () => {
 
   it('still reports an unparseable TANDOOR_URL with the client error', async () => {
     const log = await bootLog({ TANDOOR_URL: 'http://' });
-    expect(log).toContain('Invalid TANDOOR_URL: value does not parse as a URL');
+    expect(log).toContain("Invalid TANDOOR_URL (or the plugin's Tandoor URL setting): value does not parse as a URL");
     expect(log).not.toContain('TypeError');
   }, 15_000);
 

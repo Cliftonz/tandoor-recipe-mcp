@@ -101,7 +101,7 @@ describe('requestStream', () => {
   });
 
   it.each([
-    [401, 'Unauthorized', 'Authentication failed. Please check your TANDOOR_TOKEN is valid.'],
+    [401, 'Unauthorized', "Authentication failed. Please check your TANDOOR_TOKEN (or the plugin's Tandoor API Token setting) is valid."],
     [403, 'Forbidden', 'Access forbidden. Your API token may not have the required permissions.'],
     [404, 'Not Found', 'Resource not found. Please check the ID or URL is correct.'],
     [500, 'Internal Server Error', 'Server error. Please check your Tandoor instance logs for details.'],
@@ -212,8 +212,23 @@ describe('requestStream', () => {
       vi.runOnlyPendingTimers();
     }
 
-    expect((await settled).message).toBe('Failed to connect to Tandoor: fetch failed\nPlease check TANDOOR_URL is correct and the server is accessible.');
+    expect((await settled).message).toBe("Failed to connect to Tandoor: fetch failed\nPlease check TANDOOR_URL (or the plugin's Tandoor URL setting) is correct and the server is accessible.");
     expect(hits).toBe(4);
+  });
+
+  it('wraps a request() connection failure naming the URL setting both ways', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    stub = await startStub((req) => {
+      req.socket.destroy();
+    });
+
+    const settled = makeClient(stub.url, 'tok-secret').json('/api/thing/').catch((e: Error) => e);
+    for (let backoff = 0; backoff < 3; backoff++) {
+      await vi.waitFor(() => expect(vi.getTimerCount()).toBeGreaterThan(0));
+      vi.runOnlyPendingTimers();
+    }
+
+    expect((await settled).message).toBe("Failed to connect to Tandoor: fetch failed\nPlease check TANDOOR_URL (or the plugin's Tandoor URL setting) is correct and the server is accessible.");
   });
 
   it('rejects without contacting Tandoor when the signal is already aborted', async () => {
