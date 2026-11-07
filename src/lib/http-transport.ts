@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { AddressInfo } from 'node:net';
 import { timingSafeEqual } from 'node:crypto';
 import { StringDecoder } from 'node:string_decoder';
+import express from 'express';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { httpLog, mintReqId } from './http-log.js';
@@ -194,7 +195,9 @@ export function createHttpTransport(serve: 'remote' | (() => McpServer)): HttpTr
     });
   }
 
-  const httpServer: Server = createServer(async (req, res) => {
+  const app = express();
+  app.disable('x-powered-by');
+  app.use(async (req, res) => {
     const reqId = mintReqId();
     res.setHeader('x-tandoor-req-id', reqId);
     trackStart(res);
@@ -283,7 +286,12 @@ export function createHttpTransport(serve: 'remote' | (() => McpServer)): HttpTr
       }
     }
   });
+  app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    httpLog(String(res.getHeader('x-tandoor-req-id')), 'error', 'internal_error', { msg: err instanceof Error ? err.message : String(err) });
+    jsonRpcError(res, 500, -32603, 'Internal error');
+  });
 
+  const httpServer: Server = createServer(app);
   httpServer.maxConnections = cfg.maxConnections;
   httpServer.headersTimeout = cfg.headersTimeoutMs;
   httpServer.requestTimeout = cfg.requestTimeoutMs;

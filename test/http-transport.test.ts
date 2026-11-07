@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi, onTestFinished } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createHttpTransport, resolveHttpConfig, bearerMatches, FailedAuthLimiter, type HttpTransportHandle } from '../src/lib/http-transport.js';
-import type { Server } from 'node:http';
+import { request as httpRequest, type Server } from 'node:http';
 import { createServer as createNetServer, type AddressInfo } from 'node:net';
 
 function captureStderr(): { lines: string[]; restore: () => void; joined(): string } {
@@ -438,6 +438,48 @@ describe('createHttpTransport round-trip', () => {
     const res = await fetch(`http://127.0.0.1:${port}/healthz`, { method: 'GET' });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: 'ok' });
+  });
+
+  it('answers an unexpected error outside the MCP try block with a JSON-RPC 500 and keeps serving', async () => {
+    process.env.TANDOOR_MCP_HTTP_TOKEN = 'sekret';
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    const port = handle.address()!.port;
+    const cap = captureStderr();
+
+    const res = await new Promise<{ status: number; contentType: string; body: string }>((resolve, reject) => {
+      const req = httpRequest(
+        { host: '127.0.0.1', port, path: '/mcp', method: 'POST', headers: { Authorization: 'Bearer sekr\u00e9', 'Content-Type': 'application/json' } },
+        (r) => {
+          let body = '';
+          r.setEncoding('utf8');
+          r.on('data', (c: string) => (body += c));
+          r.on('end', () => resolve({ status: r.statusCode ?? 0, contentType: String(r.headers['content-type']), body }));
+        },
+      );
+      req.on('error', reject);
+      req.end('{}');
+    });
+    cap.restore();
+
+    expect(res.status).toBe(500);
+    expect(res.contentType).toContain('application/json');
+    expect(JSON.parse(res.body)).toEqual({ jsonrpc: '2.0', id: null, error: { code: -32603, message: 'Internal error' } });
+    expect(res.body).not.toContain('<html');
+    expect(res.body).not.toMatch(/\bat\s.+:\d+:\d+/);
+    expect(cap.joined()).toContain('event=internal_error');
+
+    const health = await fetch(`http://127.0.0.1:${port}/healthz`);
+    expect(health.status).toBe(200);
+  });
+
+  it('does not advertise the server framework in an X-Powered-By header', async () => {
+    handle = createHttpTransport(buildServer);
+    await handle.start();
+    const port = handle.address()!.port;
+
+    const res = await fetch(`http://127.0.0.1:${port}/healthz`);
+    expect(res.headers.has('x-powered-by')).toBe(false);
   });
 
   it('sets maxConnections, headersTimeout, requestTimeout on the underlying server', async () => {
