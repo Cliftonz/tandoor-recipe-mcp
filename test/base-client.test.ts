@@ -115,7 +115,9 @@ describe('BaseClient.request', () => {
   });
 
   it('throws a clear error for an unparseable URL', () => {
-    expect(() => new TestClient({ url: 'http://', token: 't' })).toThrow(/Invalid TANDOOR_URL/);
+    expect(() => new TestClient({ url: 'http://', token: 't' })).toThrow(
+      new Error("Invalid TANDOOR_URL (or the plugin's Tandoor URL setting): value does not parse as a URL (check scheme and host)."),
+    );
   });
 
   it('does NOT echo the raw URL into the error (may carry pasted credentials)', () => {

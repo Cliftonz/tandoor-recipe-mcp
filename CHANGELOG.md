@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 3.3.0 / 2026-11-06
+
+### Added
+- **The server reads `CLAUDE_PLUGIN_OPTION_*` settings.** The Claude plugin and the desktop extension now pass their settings as `CLAUDE_PLUGIN_OPTION_<KEY>`, such as `CLAUDE_PLUGIN_OPTION_TANDOOR_URL`, `CLAUDE_PLUGIN_OPTION_TANDOOR_TOKEN`, and `CLAUDE_PLUGIN_OPTION_MEAL_PLAN`, as the Claude plugin directory asks. Errors and the `enable_tool_group` and `disable_tool_group` override note name the variable that supplied the value.
+
+### Notes
+- `TANDOOR_URL`, `TANDOOR_TOKEN`, and the `TANDOOR_MCP_<SECTION>` variables still work. A non-empty `CLAUDE_PLUGIN_OPTION_*` value wins over the old name. An empty or whitespace value counts as unset, so the server falls back to the old name, then the saved sections file, then the default.
+
 ## 3.2.0 / 2026-11-06
 
 ### Added

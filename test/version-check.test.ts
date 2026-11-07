@@ -114,6 +114,7 @@ describe('checkTandoorVersion', () => {
     expect(r.detail).toMatch(/likely 1\.x/);
     expect(r.detail).toContain('https://tandoor.test/api/server-settings/current/');
     expect(r.detail).toMatch(/stripped to the origin/);
+    expect(r.detail).toContain("TANDOOR_URL (or the plugin's Tandoor URL setting) points at the wrong root");
   });
 
   it('500 whose body mentions 404 is unknown, not unsupported', async () => {
@@ -136,6 +137,7 @@ describe('checkTandoorVersion', () => {
       expect(r.level).toBe('warning');
       expect(r.detail).toMatch(/TANDOOR_TOKEN/);
       expect(r.detail).toMatch(/ALL tool calls will fail/);
+      expect(r.detail).toContain("Check TANDOOR_TOKEN (or the plugin's Tandoor API Token setting).");
     }
   });
 

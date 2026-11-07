@@ -93,4 +93,31 @@ describe('parseSectionModes', () => {
     }
     expect(caught).toBeInstanceOf(SectionSettingsError);
   });
+
+  it('prefers a set plugin option over the old variable', () => {
+    const modes = parseSectionModes({ CLAUDE_PLUGIN_OPTION_RECIPE_BOOKS: 'on', TANDOOR_MCP_RECIPE_BOOKS: 'off' });
+    expect(modes.get('recipe-books')).toBe('on');
+  });
+
+  it('falls back to the old variable when the plugin option is empty or whitespace', () => {
+    const modes = parseSectionModes({
+      CLAUDE_PLUGIN_OPTION_RECIPES: '',
+      TANDOOR_MCP_RECIPES: 'full',
+      CLAUDE_PLUGIN_OPTION_MEAL_PLAN: '  ',
+      TANDOOR_MCP_MEAL_PLAN: 'off',
+    });
+    expect(modes.get('recipes')).toBe('full');
+    expect(modes.get('meal-plan')).toBe('off');
+  });
+
+  it('falls back to the saved value when the plugin option and old variable are empty', () => {
+    const modes = parseSectionModes({ CLAUDE_PLUGIN_OPTION_COOKLOG: ' ', TANDOOR_MCP_COOKLOG: '' }, { cooklog: 'on' });
+    expect(modes.get('cooklog')).toBe('on');
+  });
+
+  it('names the plugin option when its value is invalid', () => {
+    expect(() => parseSectionModes({ CLAUDE_PLUGIN_OPTION_HOUSEHOLD_SPACE: 'full', TANDOOR_MCP_HOUSEHOLD_SPACE: 'on' })).toThrow(
+      new SectionSettingsError('CLAUDE_PLUGIN_OPTION_HOUSEHOLD_SPACE=full is not valid. Valid values: off, on.'),
+    );
+  });
 });

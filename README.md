@@ -87,7 +87,7 @@ Claude Desktop can also add the plugin:
 2. Enter `Cliftonz/tandoor-recipe-mcp`.
 3. Open **Customize > Plugins > Discover**, select the plugin, and select **Add**.
 
-This path does not give you a working server in Chat or Cowork. Chat and Cowork do not prompt for plugin settings, so `TANDOOR_URL` and `TANDOOR_TOKEN` stay empty. Chat ignores local MCP servers from plugins. Cowork loads them only when the session runs on your computer. Use the [desktop extension](#claude-desktop-desktop-extension) or the [manual config](#claude-desktop--claude-code-manual-config) instead. Use the plugin from the Claude Code CLI.
+This path does not give you a working server in Chat or Cowork. Chat and Cowork do not prompt for plugin settings, so the plugin's Tandoor URL and API token settings stay empty. Chat ignores local MCP servers from plugins. Cowork loads them only when the session runs on your computer. Use the [desktop extension](#claude-desktop-desktop-extension) or the [manual config](#claude-desktop--claude-code-manual-config) instead. Use the plugin from the Claude Code CLI.
 
 ### Claude Desktop / Claude Code, manual config
 
@@ -249,6 +249,8 @@ If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: B
 `INCLUDE_ONLY` and `EXCLUDE` run before the section settings and give finer control ("give me only read tools" or "hide destructive ops from this agent").
 
 Section values can also come from [saved sections](#saved-sections).
+
+The Claude plugin and the desktop extension pass their settings as `CLAUDE_PLUGIN_OPTION_<KEY>`, such as `CLAUDE_PLUGIN_OPTION_TANDOOR_URL` or `CLAUDE_PLUGIN_OPTION_RECIPES`. A non-empty plugin setting wins over the variable it replaces. An empty one falls back to that variable.
 
 ## Downloading files
 

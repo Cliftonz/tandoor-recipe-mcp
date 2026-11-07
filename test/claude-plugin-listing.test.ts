@@ -38,4 +38,11 @@ describe('Claude plugin directory listing', () => {
     expect(width).toBeLessThanOrEqual(2048);
     expect(png.length).toBeLessThan(2 * 1024 * 1024);
   });
+
+  it('hands every user option to the server only under its CLAUDE_PLUGIN_OPTION name', () => {
+    const plugin = JSON.parse(readFileSync(path.join(pluginDir, '.claude-plugin/plugin.json'), 'utf8'));
+    expect(plugin.mcpServers.tandoor.env).toEqual(
+      Object.fromEntries(Object.keys(plugin.userConfig).map((key) => [`CLAUDE_PLUGIN_OPTION_${key.toUpperCase()}`, `\${user_config.${key}}`])),
+    );
+  });
 });
