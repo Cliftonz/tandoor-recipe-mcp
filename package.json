@@ -20,6 +20,7 @@
     "lint": "oxlint --deny-warnings src test scripts vitest.config.ts vitest.e2e.config.ts",
     "test": "vitest run",
     "test:ci": "cross-env CI=1 vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "mcpb": "npx --yes @anthropic-ai/mcpb@2.1.2",
@@ -66,6 +67,7 @@
   "devDependencies": {
     "@types/express": "5.0.6",
     "@types/node": "^26.6.5",
+    "@vitest/coverage-v8": "5.0.5",
     "cross-env": "^10.1.0",
     "dotenv": "^18.0.8",
     "oxlint": "1.90.0",

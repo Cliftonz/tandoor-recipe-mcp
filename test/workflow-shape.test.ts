@@ -76,6 +76,68 @@ describe('release-gating workflow shape', () => {
     expect(testIdx).toBeGreaterThan(bootstrapIdx);
   });
 
+  describe('e2e Tandoor version matrix', () => {
+    const triggers = () => e2e.on ?? e2e.true;
+
+    it('runs on PRs to main, on dispatch and when called, with no schedule of its own', () => {
+      expect(triggers().pull_request.branches).toEqual(['main']);
+      expect(triggers()).not.toHaveProperty('schedule');
+      expect(triggers()).toHaveProperty('workflow_dispatch');
+      expect(triggers()).toHaveProperty('workflow_call');
+    });
+
+    it('detects PR changes from the merge commit with a shallow, credential-free checkout', () => {
+      const changes = e2e.jobs.changes;
+      expect(changes.steps[0].with).toEqual({ 'fetch-depth': 2, 'persist-credentials': false });
+      const run = changes.steps.map((s: any) => s.run ?? '').join('\n').replaceAll('\\', '');
+      expect(run).toContain('git diff --name-only HEAD^1 HEAD');
+      expect(run).toMatch(/"\$EVENT" != pull_request/);
+      for (const p of ['src/', 'test/e2e/', 'test/helpers/', 'test/global-config-home.ts', 'tsconfig.json', 'scripts/tandoor-bootstrap.sh', 'vitest.e2e.config.ts', '.github/workflows/e2e.yml']) {
+        expect(run).toContain(p);
+      }
+    });
+
+    it('tests Tandoor 2.6.0 and latest without failing fast, passing the tag to bootstrap', () => {
+      const job = e2e.jobs.e2e;
+      expect(job.strategy['fail-fast']).toBe(false);
+      expect(job.strategy.matrix.tandoor).toEqual(['2.6.0', 'latest']);
+      expect(job.name).toBe('e2e (tandoor ${{ matrix.tandoor }})');
+      const steps = job.steps as any[];
+      expect(steps[stepIndex(steps, 'Bootstrap Tandoor')].env.TANDOOR_IMAGE_TAG).toBe('${{ matrix.tandoor }}');
+    });
+
+    it('runs the matrix only when the changes job reports relevant changes', () => {
+      expect(needsIncludes(e2e.jobs.e2e.needs, 'changes')).toBe(true);
+      expect(e2e.jobs.e2e.if).toBe("needs.changes.outputs.changed == 'true'");
+    });
+
+    it('gives each leg a unique diagnostic artifact name', () => {
+      const steps = e2e.jobs.e2e.steps as any[];
+      expect(steps[stepIndex(steps, 'Upload diagnostic artifacts on failure')].with.name).toContain('${{ matrix.tandoor }}');
+    });
+
+    it('has an always-running e2e-gate job that tolerates a skipped matrix only when nothing changed', () => {
+      const gate = e2e.jobs['e2e-gate'];
+      expect(gate.if).toBe('always()');
+      expect(needsIncludes(gate.needs, 'e2e')).toBe(true);
+      expect(needsIncludes(gate.needs, 'changes')).toBe(true);
+      const run = gate.steps.map((s: any) => s.run ?? '').join('\n');
+      expect(run).toMatch(/success/);
+      expect(run).toMatch(/skipped.*CHANGED.*false/);
+    });
+
+    it('requests only contents: read and leaves nightly reporting to e2e-nightly.yml', () => {
+      expect(e2e.permissions).toEqual({ contents: 'read' });
+      expect(Object.keys(e2e.jobs).sort()).toEqual(['changes', 'e2e', 'e2e-gate']);
+      for (const job of Object.values(e2e.jobs) as any[]) expect(job.permissions).toBeUndefined();
+    });
+
+    it('release grants the called e2e workflow only contents: read', () => {
+      expect(release.jobs.e2e.permissions).toEqual({ contents: 'read' });
+      expect(release.jobs.e2e.permissions).not.toHaveProperty('issues');
+    });
+  });
+
   it('publish job tags the commit and pushes the tag before npm publish', () => {
     // The merged workflow is the only thing that creates the tag, so the
     // ordering matters: tag → push tag → npm publish ensures provenance and
@@ -238,5 +300,134 @@ describe('release-gating workflow shape', () => {
       );
       expect(install.run).toContain('--certificate-oidc-issuer "https://token.actions.githubusercontent.com"');
     });
+  });
+});
+
+describe('nightly e2e workflow shape', () => {
+  let wf: any;
+  let report: any;
+  let script: string;
+
+  beforeAll(() => {
+    wf = readWorkflow('e2e-nightly.yml');
+    report = wf.jobs.report;
+    script = (report.steps as any[]).map((s) => s.run ?? '').join('\n');
+  });
+
+  it('runs nightly and on dispatch', () => {
+    const triggers = wf.on ?? wf.true;
+    expect(Object.keys(triggers).sort()).toEqual(['schedule', 'workflow_dispatch']);
+    expect(triggers.schedule[0].cron).toMatch(/^\d+ \d+ \* \* \*$/);
+  });
+
+  it('calls e2e.yml with only contents: read', () => {
+    expect(wf.jobs.e2e.uses).toBe('./.github/workflows/e2e.yml');
+    expect(wf.jobs.e2e.permissions).toEqual({ contents: 'read' });
+    expect(wf.permissions).toEqual({ contents: 'read' });
+  });
+
+  it('scopes actions: read and issues: write to the report job', () => {
+    expect(needsIncludes(report.needs, 'e2e')).toBe(true);
+    expect(report.permissions).toEqual({ actions: 'read', issues: 'write' });
+  });
+
+  it('reports nothing when the e2e run was cancelled', () => {
+    expect(report.if).toContain('always()');
+    expect(report.if).toContain("needs.e2e.result != 'cancelled'");
+  });
+
+  it('lists failing matrix legs under their called-workflow names', () => {
+    expect(script).toContain('startswith("e2e / e2e (tandoor ")');
+  });
+
+  it('says the change check failed instead of listing no failing versions', () => {
+    expect(script).toContain('.name == "e2e / changes"');
+    expect(script).toMatch(/change check failed/i);
+  });
+
+  it('opens or comments on the e2e-nightly issue on failure and closes it on success', () => {
+    expect(script).toMatch(/gh issue create --title 'Nightly e2e failing' --label e2e-nightly/);
+    expect(script).toMatch(/gh issue comment/);
+    expect(script).toMatch(/gh issue close/);
+  });
+});
+
+describe('docker smoke workflow shape', () => {
+  let wf: any;
+  let smoke: any;
+  let script: string;
+
+  beforeAll(() => {
+    wf = readWorkflow('docker-smoke.yml');
+    smoke = wf.jobs.smoke;
+    script = (smoke.steps as any[]).map((s) => s.run ?? '').join('\n');
+  });
+
+  it('runs on pull requests to main and on manual dispatch with read-only contents', () => {
+    const triggers = wf.on ?? wf.true;
+    expect(triggers.pull_request.branches).toEqual(['main']);
+    expect(triggers).toHaveProperty('workflow_dispatch');
+    expect(wf.permissions).toEqual({ contents: 'read' });
+  });
+
+  it('gates the smoke job on a changes job that diffs the PR merge commit and counts other events as changed', () => {
+    expect(wf.jobs.changes.steps[0].with).toEqual({ 'fetch-depth': 2, 'persist-credentials': false });
+    const changes = wf.jobs.changes.steps.map((s: any) => s.run ?? '').join('\n').replaceAll('\\', '');
+    expect(changes).toContain('git diff --name-only HEAD^1 HEAD');
+    expect(changes).toMatch(/"\$EVENT" != pull_request/);
+    expect(JSON.stringify(wf.jobs.changes)).not.toContain('base.sha');
+    for (const p of ['Dockerfile', '.dockerignore', 'src/', 'package.json', 'package-lock.json', 'tsconfig.json', 'LICENSE', '.github/workflows/docker-smoke.yml']) {
+      expect(changes).toContain(p);
+    }
+    expect(needsIncludes(smoke.needs, 'changes')).toBe(true);
+    expect(smoke.if).toMatch(/needs\.changes\.outputs\.changed == 'true'/);
+  });
+
+  it('builds linux/amd64 with buildx, loads the image and never pushes', () => {
+    const build = (smoke.steps as any[]).find((s) => typeof s.uses === 'string' && s.uses.startsWith('docker/build-push-action@'));
+    expect(build.with.platforms).toBe('linux/amd64');
+    expect(build.with.load).toBe(true);
+    expect(build.with.push).toBe(false);
+    expect(build.with.tags).toBe('${{ env.IMAGE }}');
+    expect((smoke.steps as any[]).some((s) => typeof s.uses === 'string' && s.uses.startsWith('docker/setup-buildx-action@'))).toBe(true);
+  });
+
+  it('proves remote mode is healthy, serves /healthz, runs non-root, stops cleanly and uses oauth', () => {
+    expect(script).toMatch(/docker inspect .*Health\.Status/);
+    expect(script).toMatch(/healthy/);
+    expect(script).toMatch(/curl .*http:\/\/127\.0\.0\.1:.*\/healthz/);
+    expect(script).toMatch(/id -u/);
+    expect(script).toMatch(/docker stop -t 15/);
+    expect(script).not.toMatch(/elapsed/);
+    expect(script).toMatch(/auth=oauth/);
+  });
+
+  it('proves stdio mode answers an MCP initialize handshake within a bounded time', () => {
+    const steps = smoke.steps as any[];
+    const run = steps[stepIndex(steps, 'Stdio mode answers MCP initialize')].run as string;
+    expect(run).toMatch(/"method":"initialize"/);
+    expect(run).toMatch(/\| timeout \d+ docker run -i --rm /);
+    expect(run).toMatch(/TANDOOR_MCP_TRANSPORT=stdio/);
+    expect(run).toMatch(/TANDOOR_URL=/);
+    expect(run).toMatch(/TANDOOR_TOKEN=/);
+    expect(run).toContain('"serverInfo"');
+    expect(run).toContain('@cliftonz/tandoor-recipes-mcp');
+    expect(script).not.toMatch(/docker run -d -i/);
+  });
+
+  it('dumps logs on failure and always removes containers', () => {
+    const steps = smoke.steps as any[];
+    expect(steps.some((s) => s.if === 'failure()' && /docker logs/.test(s.run ?? ''))).toBe(true);
+    expect(steps.some((s) => s.if === 'always()' && /docker rm -f/.test(s.run ?? ''))).toBe(true);
+  });
+
+  it('exposes one docker-smoke-gate required check that tolerates a skipped smoke job', () => {
+    const gate = wf.jobs['docker-smoke-gate'];
+    expect(gate.if).toBe('always()');
+    expect(needsIncludes(gate.needs, 'smoke')).toBe(true);
+    expect(needsIncludes(gate.needs, 'changes')).toBe(true);
+    const run = gate.steps.map((s: any) => s.run ?? '').join('\n');
+    expect(run).toMatch(/success/);
+    expect(run).toMatch(/skipped.*CHANGED.*false/);
   });
 });
