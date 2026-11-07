@@ -187,6 +187,7 @@ describe('remote mode at boot', () => {
     const result = await boot({ ...TANDOOR_URL_ENV, ...REMOTE_ENV });
     expect(result.stderr).toContain('on http://127.0.0.1:0/mcp');
     expect(result.stderr).toContain('| auth=oauth |');
+    expect(result.stderr).toContain('| public=https://mcp.example.com/mcp |');
   }, 15_000);
 
   it('starts when TANDOOR_TOKEN is only whitespace', async () => {

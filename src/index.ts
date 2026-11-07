@@ -133,16 +133,16 @@ const stashLine = stashCfgAtBoot.enabled
   ? `stash=on(>${stashCfgAtBoot.thresholdBytes}B, ttl=${stashCfgAtBoot.ttlMs}ms, max=${stashCfgAtBoot.maxEntries}, maxBytes=${stashCfgAtBoot.maxBytes})`
   : 'stash=off';
 
-async function serveHttp(cfg: HttpConfig, serve: 'remote' | (() => McpServer)) {
+async function serveHttp(cfg: HttpConfig, serve: Parameters<typeof createHttpTransport>[0]) {
   const handle = createHttpTransport(serve, tandoor.origin);
   await handle.start().catch((error: NodeJS.ErrnoException) => {
     if (error.code !== 'EADDRINUSE') throw error;
     console.error(`[tandoor-mcp] Error: port ${cfg.port} is already in use (TANDOOR_MCP_HTTP_PORT).`);
     process.exit(1);
   });
-  const auth = serve === 'remote' ? 'oauth' : cfg.requireAuth ? 'required' : 'disabled';
+  const auth = tandoor.remote ? 'oauth' : cfg.requireAuth ? 'required' : 'disabled';
   console.error(
-    `[tandoor-mcp] ${pkg.name}@${pkg.version} on http://${cfg.host}:${cfg.port}${cfg.path} | auth=${auth} | api=${tandoor.origin} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${formatSectionModes(sections)} | ${stashLine} | max_body=${cfg.maxBodyBytes}B | max_conns=${cfg.maxConnections} | drain=${cfg.drainMs}ms | dynamic-gating=disabled`,
+    `[tandoor-mcp] ${pkg.name}@${pkg.version} on http://${cfg.host}:${cfg.port}${cfg.path}${cfg.remote ? ` | public=${cfg.remote.publicUrl.href}` : ''} | auth=${auth} | api=${tandoor.origin} | tandoor=${versionCheck.version ?? versionCheck.status} | sections=${formatSectionModes(sections)} | ${stashLine} | max_body=${cfg.maxBodyBytes}B | max_conns=${cfg.maxConnections} | drain=${cfg.drainMs}ms | dynamic-gating=disabled`,
   );
   const shutdown = (signal: string) => {
     console.error(`[tandoor-mcp] ${signal} received, draining`);
@@ -153,7 +153,7 @@ async function serveHttp(cfg: HttpConfig, serve: 'remote' | (() => McpServer)) {
 }
 
 async function main() {
-  if (tandoor.remote) return serveHttp(tandoor.httpCfg, 'remote');
+  if (tandoor.remote) return serveHttp(tandoor.httpCfg, { remote: buildServer });
   const { client } = tandoor;
   if (localHttpCfg) return serveHttp(localHttpCfg, () => buildServer(client));
 

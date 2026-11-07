@@ -207,34 +207,6 @@ describe('createHttpTransport round-trip', () => {
     await call;
   });
 
-  it('in remote mode, challenges every POST on the MCP path with 401 Bearer without reading the body', async () => {
-    handle = createHttpTransport('remote');
-    await handle.start();
-    const port = handle.address()!.port;
-
-    const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{not json' });
-    expect(res.status).toBe(401);
-    expect(res.headers.get('www-authenticate')).toBe('Bearer realm="tandoor-mcp"');
-  });
-
-  it('in remote mode, /healthz still returns 200', async () => {
-    handle = createHttpTransport('remote');
-    await handle.start();
-    const port = handle.address()!.port;
-
-    const res = await fetch(`http://127.0.0.1:${port}/healthz`);
-    expect(res.status).toBe(200);
-  });
-
-  it.each(['GET', 'DELETE', 'PUT'])('in remote mode, %s on the MCP path still returns 405', async (method) => {
-    handle = createHttpTransport('remote');
-    await handle.start();
-    const port = handle.address()!.port;
-
-    const res = await fetch(`http://127.0.0.1:${port}/mcp`, { method });
-    expect(res.status).toBe(405);
-  });
-
   it.each(['GET', 'DELETE', 'PUT'])('%s on the MCP path returns 405 with Allow: POST and a JSON-RPC error body', async (method) => {
     handle = createHttpTransport(buildServer);
     await handle.start();

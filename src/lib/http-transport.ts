@@ -5,8 +5,12 @@ import { StringDecoder } from 'node:string_decoder';
 import express from 'express';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { TandoorClient } from '../clients/index.js';
 import { httpLog, mintReqId } from './http-log.js';
-import { authRouter } from './oauth/server.js';
+import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
+import { getOAuthProtectedResourceMetadataUrl } from '@modelcontextprotocol/sdk/server/auth/router.js';
+import { accessTokenVerifier, authRouter } from './oauth/server.js';
+import type { RemoteGrant } from './oauth/remote-grant.js';
 import { dataDir, openStore } from './oauth/store.js';
 
 export interface HttpConfig {
@@ -193,7 +197,7 @@ export class FailedAuthLimiter {
   }
 }
 
-export function createHttpTransport(serve: 'remote' | (() => McpServer), tandoorUrl?: string): HttpTransportHandle {
+export function createHttpTransport(serve: { remote: (client: TandoorClient) => McpServer } | (() => McpServer), tandoorUrl?: string): HttpTransportHandle {
   const cfg = resolveHttpConfig();
   const expected = cfg.token ?? '';
   const limiter = new FailedAuthLimiter();
@@ -217,7 +221,24 @@ export function createHttpTransport(serve: 'remote' | (() => McpServer), tandoor
     if (!tandoorUrl) throw new Error('Remote mode needs the Tandoor URL.');
     if (process.env.TANDOOR_MCP_TRUST_PROXY === '1') app.set('trust proxy', 1);
     const { publicUrl, secretKey } = cfg.remote;
-    app.use(authRouter({ publicUrl, secretKey, tandoorUrl, store: openStore({ dir: dataDir(process.env), key: secretKey }) }));
+    const store = openStore({ dir: dataDir(process.env), key: secretKey });
+    const resourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(publicUrl);
+    const verifier = accessTokenVerifier(store, resourceMetadataUrl);
+    app.use(authRouter({ publicUrl, secretKey, tandoorUrl, store, verifier }));
+    const bearerAuth = requireBearerAuth({ verifier, requiredScopes: ['tandoor'], resourceMetadataUrl, expectedResource: publicUrl });
+    app.use((req, res, next) => {
+      if (req.method !== 'POST' || req.path !== cfg.path) return next();
+      if (draining) return jsonRpcError(res, 503, -32000, 'Shutting down');
+      const setHeader = res.setHeader.bind(res);
+      res.setHeader = (name, value) => setHeader(name, name.toLowerCase() === 'www-authenticate' ? String(value).replace('Bearer ', 'Bearer realm="tandoor-mcp", ') : value);
+      const status = res.status.bind(res);
+      res.status = (code) => {
+        if (code !== 401 || limiter.consume(req.ip ?? 'unknown')) return status(code);
+        res.setHeader('Retry-After', '5');
+        return status(429);
+      };
+      return bearerAuth(req, res, next);
+    });
   }
   app.use(async (req, res) => {
     const reqId = mintReqId();
@@ -262,14 +283,10 @@ export function createHttpTransport(serve: 'remote' | (() => McpServer), tandoor
 
     try {
       if (req.method === 'POST' && urlPath === cfg.path) {
-        if (serve === 'remote') {
-          jsonRpcError(res, 401, -32001, 'Unauthorized', undefined, { 'WWW-Authenticate': 'Bearer realm="tandoor-mcp"' });
-          return;
-        }
         try {
           const raw = await readBody(req, cfg.maxBodyBytes);
           const parsed = raw.length > 0 ? JSON.parse(raw) : undefined;
-          const server = serve();
+          const server = typeof serve === 'function' ? serve() : serve.remote(new TandoorClient({ url: tandoorUrl!, token: (req.auth!.extra as RemoteGrant).tandoorToken }));
           const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
           live.add(server);
           res.on('close', () => {

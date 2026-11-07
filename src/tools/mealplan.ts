@@ -24,6 +24,8 @@ export const listMealPlansShape = {
 
 export const getMealPlanShape = { id: z.number() } as const;
 
+export const listMealTypesShape = {} as const;
+
 export const createMealPlanShape = {
   recipe_id: z.number().optional(),
   title: z.string().optional(),
@@ -116,6 +118,7 @@ export function registerMealPlanTools(server: McpServer, client: TandoorClient):
 
   registerStringTool(server, client, 'list_meal_types', {
     description: 'List available meal types (breakfast, lunch, dinner, etc.)',
+    inputSchema: listMealTypesShape,
   }, handleListMealTypes);
 
   registerStringTool(server, client, 'bulk_create_meal_plans', {

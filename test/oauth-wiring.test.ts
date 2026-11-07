@@ -35,6 +35,8 @@ async function start(serve: Parameters<typeof createHttpTransport>[0], tandoorUr
   return `http://127.0.0.1:${handle.address()!.port}`;
 }
 
+const remote = { remote: () => new McpServer({ name: 'test', version: '0.0.0' }) };
+
 const register = (base: string, forwardedFor: string) =>
   fetch(`${base}/register`, {
     method: 'POST',
@@ -43,16 +45,16 @@ const register = (base: string, forwardedFor: string) =>
   });
 
 describe('OAuth wiring', () => {
-  it('mounts the authorization server in remote mode and keeps the MCP path challenge', async () => {
+  it('mounts the authorization server in remote mode and challenges the MCP path', async () => {
     remoteEnv();
-    const base = await start('remote', 'https://recipes.example.com');
+    const base = await start(remote, 'https://recipes.example.com');
 
     const metadata = await fetch(`${base}/.well-known/oauth-authorization-server`);
     expect(metadata.status).toBe(200);
     expect(await metadata.json()).toMatchObject({ issuer: 'https://mcp.example.com/' });
     const mcp = await fetch(`${base}/mcp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     expect(mcp.status).toBe(401);
-    expect(mcp.headers.get('www-authenticate')).toBe('Bearer realm="tandoor-mcp"');
+    expect(mcp.headers.get('www-authenticate')).toMatch(/^Bearer realm="tandoor-mcp", /);
   });
 
   it('mounts nothing new outside remote mode', async () => {
@@ -63,13 +65,13 @@ describe('OAuth wiring', () => {
 
   it('refuses to create a remote-mode transport without the Tandoor URL', () => {
     remoteEnv();
-    expect(() => createHttpTransport('remote')).toThrow('Remote mode needs the Tandoor URL.');
+    expect(() => createHttpTransport(remote)).toThrow('Remote mode needs the Tandoor URL.');
   });
 
   it('keys the SDK endpoint limits per rightmost X-Forwarded-For entry when TANDOOR_MCP_TRUST_PROXY=1', async () => {
     remoteEnv();
     process.env.TANDOOR_MCP_TRUST_PROXY = '1';
-    const base = await start('remote', 'https://recipes.example.com');
+    const base = await start(remote, 'https://recipes.example.com');
     for (let i = 0; i < 20; i++) expect((await register(base, `10.0.0.${i}, 203.0.113.1`)).status).toBe(201);
     expect((await register(base, '10.0.0.99, 203.0.113.1')).status).toBe(429);
     expect((await register(base, '10.0.0.1, 203.0.113.2')).status).toBe(201);
@@ -80,7 +82,7 @@ describe('OAuth wiring', () => {
     ['an oversize form', 413, {}, `a=${'x'.repeat(200_000)}`],
   ])('answers POST /consent with %s as %i JSON and keeps serving', async (_label, status, headers, body) => {
     remoteEnv();
-    const base = await start('remote', 'https://recipes.example.com');
+    const base = await start(remote, 'https://recipes.example.com');
 
     const res = await fetch(`${base}/consent`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...headers }, body });
     const text = await res.text();

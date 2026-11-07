@@ -7,7 +7,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import express from 'express';
-import { authRouter, consentLimiter } from '../src/lib/oauth/server.js';
+import { accessTokenVerifier, authRouter, consentLimiter } from '../src/lib/oauth/server.js';
 import { openStore } from '../src/lib/oauth/store.js';
 import { startStub, type Stub } from './helpers/stub-http.js';
 
@@ -47,7 +47,7 @@ const cimdDoc = (overrides: Record<string, unknown> = {}) => ({
 async function startServer({ trustProxy = false } = {}): Promise<void> {
   const app = express();
   if (trustProxy) app.set('trust proxy', 1);
-  app.use(authRouter({ publicUrl: new URL(PUBLIC_URL), secretKey: key, tandoorUrl: tandoor.url, store, now }));
+  app.use(authRouter({ publicUrl: new URL(PUBLIC_URL), secretKey: key, tandoorUrl: tandoor.url, store, verifier: accessTokenVerifier(store, `${ISSUER}.well-known/oauth-protected-resource/mcp`), now }));
   server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;

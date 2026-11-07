@@ -201,6 +201,11 @@ export function openStore({ dir, key, now = Date.now }: { dir: string; key: Buff
       save();
     },
 
+    revokeTandoorToken(tandoorToken: string): void {
+      for (const [grantId, grant] of Object.entries(state.grants)) if (decrypt(key, grant.tandoorToken, grantId) === tandoorToken) delete state.grants[grantId];
+      save();
+    },
+
     revokeGrant(grantId: string): void {
       delete state.grants[grantId];
       save();

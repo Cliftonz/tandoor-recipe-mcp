@@ -6,14 +6,15 @@ import { authorizationHandler } from '@modelcontextprotocol/sdk/server/auth/hand
 import { tokenHandler } from '@modelcontextprotocol/sdk/server/auth/handlers/token.js';
 import { clientRegistrationHandler } from '@modelcontextprotocol/sdk/server/auth/handlers/register.js';
 import { revocationHandler } from '@modelcontextprotocol/sdk/server/auth/handlers/revoke.js';
-import { CustomOAuthError, InvalidClientMetadataError, InvalidGrantError, InvalidRequestError, InvalidTargetError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
-import type { OAuthServerProvider } from '@modelcontextprotocol/sdk/server/auth/provider.js';
+import { CustomOAuthError, InvalidClientMetadataError, InvalidGrantError, InvalidRequestError, InvalidTargetError, InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
+import type { OAuthServerProvider, OAuthTokenVerifier } from '@modelcontextprotocol/sdk/server/auth/provider.js';
 import type { OAuthRegisteredClientsStore } from '@modelcontextprotocol/sdk/server/auth/clients.js';
 import { OAuthClientInformationFullSchema, type OAuthClientInformationFull, type OAuthTokens } from '@modelcontextprotocol/sdk/shared/auth.js';
 import { safeFetchBytes } from '../safe-fetch.js';
 import { httpLog, mintReqId } from '../http-log.js';
 import { renderConsent, renderExpired } from './consent-page.js';
 import type { openStore, TokenPair } from './store.js';
+import { TANDOOR_REJECTED_TOKEN, type RemoteGrant } from './remote-grant.js';
 
 const SCOPE = 'tandoor';
 const CODE_TTL_MS = 5 * 60_000;
@@ -41,6 +42,7 @@ interface AuthServerOptions {
   secretKey: Buffer;
   tandoorUrl: string;
   store: Store;
+  verifier: OAuthTokenVerifier;
   now?: () => number;
 }
 
@@ -199,7 +201,26 @@ const tokenResponse = (pair: TokenPair): OAuthTokens => ({
   scope: SCOPE,
 });
 
-export function authRouter({ publicUrl, secretKey, tandoorUrl, store, now = Date.now }: AuthServerOptions): express.Router {
+export function accessTokenVerifier(store: Store, resourceMetadataUrl: string): OAuthTokenVerifier {
+  const wwwAuthenticate = `Bearer resource_metadata="${resourceMetadataUrl}", error="invalid_token", error_description="${TANDOOR_REJECTED_TOKEN}"`;
+  return {
+    async verifyAccessToken(token) {
+      const grant = store.lookupAccessToken(token);
+      if (!grant) throw new InvalidTokenError('Invalid or expired access token.');
+      const revoke = () => {
+        try {
+          store.revokeTandoorToken(grant.tandoorToken);
+        } catch (error) {
+          httpLog(mintReqId(), 'error', 'revoke_failed', { error: errorMessage(error) });
+        }
+      };
+      const extra = { tandoorToken: grant.tandoorToken, revoke, wwwAuthenticate } satisfies RemoteGrant;
+      return { token, clientId: grant.clientId, scopes: grant.scopes, expiresAt: Math.ceil(grant.expiresAt / 1000), resource: new URL(grant.resource), extra };
+    },
+  };
+}
+
+export function authRouter({ publicUrl, secretKey, tandoorUrl, store, verifier, now = Date.now }: AuthServerOptions): express.Router {
   const codes = new Map<string, PendingCode>();
   const redeemedCodes = new Map<string, { grantId: string; expiresAt: number }>();
   const usedNonces = new Map<string, number>();
@@ -309,9 +330,7 @@ export function authRouter({ publicUrl, secretKey, tandoorUrl, store, now = Date
       return tokenResponse(pair);
     },
 
-    async verifyAccessToken() {
-      throw new Error('The authorization server does not verify access tokens.');
-    },
+    verifyAccessToken: verifier.verifyAccessToken,
 
     async revokeToken(client, { token }) {
       store.revokeToken(token, client.client_id);

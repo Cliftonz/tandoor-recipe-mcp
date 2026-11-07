@@ -94,6 +94,21 @@ export function redactToken(text: string, token: string): string {
     .split(token).join('***REDACTED***');
 }
 
+export class TandoorApiError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+export function hasTandoorStatus(error: unknown, status: number): boolean {
+  if (!(error instanceof Error)) return false;
+  if (error instanceof TandoorApiError && error.status === status) return true;
+  const nested = error instanceof AggregateError ? [...error.errors, error.cause] : [error.cause];
+  return nested.some((inner) => hasTandoorStatus(inner, status));
+}
+
 export function explainOwnerOnly403<T>(call: Promise<T>): Promise<T> {
   return call.catch((e: Error) => {
     if (!e.message.startsWith('Tandoor API error: 403')) throw e;
@@ -249,7 +264,7 @@ export class BaseClient {
         logResponse(method, url, response.status, redactToken(bodyText, this.token), bodyPreview);
 
         if (!response.ok) {
-          throw new Error(redactToken(apiErrorMessage(response, bodyText), this.token));
+          throw new TandoorApiError(redactToken(apiErrorMessage(response, bodyText), this.token), response.status);
         }
 
         // Handle 204 No Content and any other empty body (e.g. DELETE)
@@ -343,7 +358,7 @@ export class BaseClient {
         logResponse(method, url, response.status, redactToken(bodyText, this.token), bodyPreview);
 
         if (!response.ok) {
-          throw new Error(redactToken(apiErrorMessage(response, bodyText), this.token));
+          throw new TandoorApiError(redactToken(apiErrorMessage(response, bodyText), this.token), response.status);
         }
         return bodyText;
       } catch (error) {
@@ -398,7 +413,7 @@ export class BaseClient {
       }
       if (!response.ok) {
         logResponse('GET', url, response.status, redactToken(await response.text(), this.token));
-        throw new Error(redactToken(`Tandoor API error: ${response.status} ${response.statusText}${statusGuidance(response.status)}`, this.token));
+        throw new TandoorApiError(redactToken(`Tandoor API error: ${response.status} ${response.statusText}${statusGuidance(response.status)}`, this.token), response.status);
       }
       logResponse('GET', url, response.status, '');
       return response;
