@@ -29,8 +29,8 @@ afterEach(async () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-async function start(serve: Parameters<typeof createHttpTransport>[0], tandoorUrl?: string): Promise<string> {
-  handle = createHttpTransport(serve, tandoorUrl);
+async function start(serve: Parameters<typeof createHttpTransport>[0], tandoorUrl?: string, tandoorPublicUrl?: string): Promise<string> {
+  handle = createHttpTransport(serve, tandoorUrl, tandoorPublicUrl);
   await handle.start();
   return `http://127.0.0.1:${handle.address()!.port}`;
 }
@@ -55,6 +55,27 @@ describe('OAuth wiring', () => {
     const mcp = await fetch(`${base}/mcp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     expect(mcp.status).toBe(401);
     expect(mcp.headers.get('www-authenticate')).toMatch(/^Bearer realm="tandoor-mcp", /);
+  });
+
+  it.each([
+    ['the public Tandoor URL when given', 'https://recipes.public.example', 'https://recipes.public.example'],
+    ['TANDOOR_URL without it', undefined, 'https://recipes.example.com'],
+  ])('links the sign-in page to %s', async (_label, tandoorPublicUrl, shown) => {
+    remoteEnv();
+    const base = await start(remote, 'https://recipes.example.com', tandoorPublicUrl);
+    const { client_id } = (await (await register(base, '203.0.113.1')).json()) as { client_id: string };
+    const query = new URLSearchParams({
+      response_type: 'code',
+      client_id,
+      redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
+      code_challenge: 'a'.repeat(43),
+      code_challenge_method: 'S256',
+      resource: 'https://mcp.example.com/mcp',
+      scope: 'tandoor',
+    });
+    const html = await (await fetch(`${base}/authorize?${query}`)).text();
+    expect(html).toContain(`<strong>${shown}</strong>`);
+    expect(html).toContain(`href="${shown}/settings/api"`);
   });
 
   it('mounts nothing new outside remote mode', async () => {

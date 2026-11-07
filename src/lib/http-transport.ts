@@ -222,7 +222,7 @@ export class FailedAuthLimiter {
   }
 }
 
-export function createHttpTransport(serve: { remote: (client: TandoorClient) => McpServer } | (() => McpServer), tandoorUrl?: string): HttpTransportHandle {
+export function createHttpTransport(serve: { remote: (client: TandoorClient) => McpServer } | (() => McpServer), tandoorUrl?: string, tandoorPublicUrl?: string): HttpTransportHandle {
   const cfg = resolveHttpConfig();
   const expected = cfg.token ?? '';
   const limiter = new FailedAuthLimiter();
@@ -272,7 +272,7 @@ export function createHttpTransport(serve: { remote: (client: TandoorClient) => 
     const store = openStore({ dir: dataDir(process.env), key: secretKey });
     const resourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(publicUrl);
     const verifier = accessTokenVerifier(store, resourceMetadataUrl);
-    app.use(authRouter({ publicUrl, secretKey, tandoorUrl, store, verifier }));
+    app.use(authRouter({ publicUrl, secretKey, tandoorUrl, tandoorPublicUrl: tandoorPublicUrl ?? tandoorUrl, store, verifier }));
     const bearerAuth = requireBearerAuth({ verifier, requiredScopes: ['tandoor'], resourceMetadataUrl, expectedResource: publicUrl });
     app.use((req, res, next) => {
       if (req.method !== 'POST' || req.path !== cfg.path) return next();

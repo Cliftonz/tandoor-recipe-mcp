@@ -9,6 +9,9 @@ services:
     environment:
       # "web_recipes" must match the name of your Tandoor service.
       TANDOOR_URL: http://web_recipes:8080
+      # The address users open Tandoor at; the sign-in page shows it and
+      # links to its API token page. Defaults to TANDOOR_URL.
+      TANDOOR_MCP_TANDOOR_PUBLIC_URL: https://recipes.example.com
       # The public https URL clients connect to; its path must be /mcp.
       TANDOOR_MCP_PUBLIC_URL: https://mcp.example.com/mcp
       # Generate with: openssl rand -hex 32

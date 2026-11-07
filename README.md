@@ -1,6 +1,9 @@
 # Tandoor Recipes MCP
 
 [![npm version](https://img.shields.io/npm/v/@cliftonz/tandoor-recipes-mcp.svg)](https://www.npmjs.com/package/@cliftonz/tandoor-recipes-mcp)
+[![CI](https://github.com/Cliftonz/tandoor-recipe-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Cliftonz/tandoor-recipe-mcp/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Cliftonz/tandoor-recipe-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/Cliftonz/tandoor-recipe-mcp)
+[![License: MIT](https://img.shields.io/github/license/Cliftonz/tandoor-recipe-mcp)](LICENSE)
 
 A Model Context Protocol (MCP) server that gives LLM agents full read/write access to a [Tandoor Recipes](https://tandoor.dev) instance: recipes, meal plans, ingredients, shopping lists, cook logs, nutrition, AI-powered URL/image imports, invite/access tokens, storages, sync, spaces, exports, imports, and more.
 
@@ -26,13 +29,13 @@ A Model Context Protocol (MCP) server that gives LLM agents full read/write acce
 ## Why this server
 
 - **Full Tandoor 2.6 API coverage.** 307 typed tools, spanning every domain the Tandoor OpenAPI exposes.
-- **Resources + prompts, not just tools.** Read-only subscribable resources like `tandoor://meal-plan/this-week` and `tandoor://pantry/on-hand`, plus ready-made prompts (`plan_week`, `grocery_list_for_plan`, `what_can_i_make_tonight`). Most Tandoor MCP forks ship tools only.
+- **Resources + prompts, not just tools.** Read-only resources like `tandoor://meal-plan/this-week` and `tandoor://pantry/on-hand`, plus ready-made prompts (`plan_week`, `grocery_list_for_plan`, `what_can_i_make_tonight`). Most Tandoor MCP forks ship tools only.
 - **Slim-by-default responses.** A full recipe GET shrinks from ~20k characters to ~2k by stripping substitute trees, readonly timestamps, image URLs, etc. Pass `format: "full"` anywhere for the raw Tandoor response.
 - **Per-section tool settings.** One env var per section (recipes, meal plan, shopping, and so on) sets it. Tiered sections take `off`, `simple`, or `full`. Toggle sections take `off` or `on`. In stdio mode the LLM can turn a hidden section on mid-session with `enable_tool_group`. See [Tool sections](#tool-sections).
 - **jq stash for large payloads.** Responses larger than 5KB return a stash handle plus a schema summary; the LLM follows up with `jq_query` to project just the fields it needs.
 - **3-stage URL import with a real fallback.** Tries Tandoor's native scraper first, then extracts schema.org JSON-LD from the page directly (works when Tandoor can't reach the URL or doesn't support the site), with an optional stub-on-failure escape hatch.
 - **AI import from images / PDFs.** Multipart upload to Tandoor's `ai-import/` endpoint, saves the parsed recipe.
-- **Two transport modes.** Stdio (default, for Claude Desktop / Claude Code) or stateless HTTP (for out-of-Claude callers).
+- **Local or remote.** Stdio (default, for Claude Desktop / Claude Code), stateless HTTP (for out-of-Claude callers), or [remote mode](#remote-mode): a self-hosted server with OAuth sign-in that Claude and ChatGPT connect to as a custom connector.
 - **Destructive-action safety layer.** Every tree-shaped delete has a `preview_*` sibling that projects the cascade before it runs; every token-mint tool leads with an ESCALATION SURFACE warning.
 
 ## Install
@@ -48,6 +51,13 @@ npx -y @cliftonz/tandoor-recipes-mcp
 ```
 
 Node 24 or later is required (see `engines.node` in `package.json`).
+
+Other ways to get it:
+
+- **Claude Desktop extension:** `tandoor-recipes-mcp.mcpb` from the [latest GitHub release](https://github.com/Cliftonz/tandoor-recipe-mcp/releases/latest). It needs no Node install. See [Claude Desktop, desktop extension](#claude-desktop-desktop-extension).
+- **Docker image:** `ghcr.io/cliftonz/tandoor-recipes-mcp`, for linux/amd64 and linux/arm64, tagged with each version and `latest`. The image starts in [remote mode](#remote-mode) by default.
+- **MCP Registry:** listed as `io.github.Cliftonz/tandoor-recipe-mcp` in the [MCP Registry](https://registry.modelcontextprotocol.io), with the npm package, the `.mcpb` file and the Docker image.
+- **Claude Code plugin and Codex plugin:** see [Configure](#configure).
 
 ## Configure
 
@@ -202,12 +212,13 @@ The repo ships a `.claude/settings.json` that auto-allows read tools and prompts
 
 ## Transport modes
 
-The server ships two transports. Default is `stdio`; opt in to HTTP with an env var.
+The server ships two transports. Default is `stdio`; opt in to HTTP with an env var. HTTP also has a remote mode for Claude and ChatGPT custom connectors.
 
 | Mode | When to use | Auth |
 |---|---|---|
 | `stdio` (default) | Claude Desktop, Claude Code, any MCP client that spawns the server as a subprocess. | Inherited from parent process. |
 | `http` (stateless) | Out-of-Claude callers, local scripts, other agents on the same host. | Optional bearer via `TANDOOR_MCP_HTTP_TOKEN`. |
+| `http` with `TANDOOR_MCP_PUBLIC_URL` ([remote mode](#remote-mode)) | Claude (web, mobile, Desktop, Cowork, Code) and ChatGPT, through your own HTTPS URL. | OAuth sign-in. Each user pastes their own Tandoor API token. |
 
 ### HTTP mode
 
@@ -220,21 +231,280 @@ TANDOOR_MCP_HTTP_TOKEN=some-long-random-string \
 npx -y @cliftonz/tandoor-recipes-mcp
 ```
 
-The server listens on `http://127.0.0.1:${TANDOOR_MCP_HTTP_PORT:-3737}/mcp` (POST only for JSON-RPC requests). Any other method on that path gets a 405 with `Allow: POST` and a JSON-RPC error body. Auth is checked first, so a request without a valid token gets a 401 instead. The bind is loopback-only; expose it to another host only through an operator-managed reverse proxy.
+The server listens on `http://127.0.0.1:${TANDOOR_MCP_HTTP_PORT:-3737}/mcp` (POST only for JSON-RPC requests). Any other method on that path gets a 405 with `Allow: POST` and a JSON-RPC error body. Auth is checked first, so a request without a valid token gets a 401 instead. The server binds to `127.0.0.1` unless you set `TANDOOR_MCP_HTTP_HOST`. To reach it from another host, put a reverse proxy in front of it, or use [remote mode](#remote-mode).
 
 If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: Bearer <token>`. Missing or wrong tokens get a 401 with `WWW-Authenticate: Bearer`.
 
 **HTTP-mode constraints:** the jq stash and dynamic tool gating both assume a single long-lived session. In HTTP mode both are auto-disabled: `enable_tool_group` and `disable_tool_group` throw, and every tool response is inlined rather than stashed. The [section settings](#tool-sections) fix the tool list at startup, so set every section you need before you start the server.
+
+## Remote mode
+
+Remote mode runs the server on your own host, next to your Tandoor, with a built-in OAuth sign-in. You add it to Claude or ChatGPT as a custom connector, by its HTTPS URL. It works in Claude on the web, mobile, Desktop chat, Cowork and Claude Code, and in ChatGPT. Each person signs in by pasting their own Tandoor API token, so each person acts in Tandoor as themselves.
+
+Why you host it yourself, and why it is not in a connector directory: every Tandoor is a separate, self-hosted server, so there is no single URL a directory listing could point to. A shared hosted copy would also have to hold everyone's Tandoor tokens. In remote mode the tokens stay on your server, encrypted with your key.
+
+How a connection works:
+
+1. The app (Claude or ChatGPT) calls your public URL and gets a `401` that points to the server's OAuth metadata.
+2. The app identifies itself with its published client document, or registers itself automatically.
+3. The app opens the sign-in page in your browser. You paste a Tandoor API token and select **Approve**.
+4. The server checks the token against Tandoor, stores it encrypted, and gives the app its own tokens. The app never sees your Tandoor token.
+
+### Remote mode settings
+
+Remote mode turns on when `TANDOOR_MCP_PUBLIC_URL` is set. These settings apply to remote mode, and the HTTP ones also apply to plain HTTP mode.
+
+| Variable | Default | Rules |
+|---|---|---|
+| `TANDOOR_URL` | none (required) | Your Tandoor. It only has to be reachable from the server, so an internal address such as `http://web_recipes:8080` works. The server uses only the scheme, host and port. |
+| `TANDOOR_MCP_TANDOOR_PUBLIC_URL` | `TANDOOR_URL` | The address users open Tandoor at, such as `https://recipes.example.com`. The sign-in page shows it and links to its `/settings/api` page for creating a token. Set it when `TANDOOR_URL` is an internal address. The server still calls Tandoor only at `TANDOOR_URL`. It uses only the scheme, host and port, and adds `https://` when the scheme is missing. Ignored outside remote mode. |
+| `TANDOOR_MCP_TRANSPORT` | `stdio` (`http` in the Docker image) | Must be `http`. The server refuses to start in remote mode otherwise. |
+| `TANDOOR_MCP_PUBLIC_URL` | none | The HTTPS URL clients connect to, such as `https://mcp.example.com/mcp`. Must use `https`. Its path must equal `TANDOOR_MCP_HTTP_PATH`. No query string, fragment, username or password. |
+| `TANDOOR_MCP_SECRET_KEY` | none (required in remote mode) | Exactly 64 hex characters (32 bytes). Generate one with `openssl rand -hex 32`. It encrypts the stored Tandoor tokens and signs the sign-in form. |
+| `TANDOOR_MCP_DATA_DIR` | `$XDG_DATA_HOME/tandoor-mcp`, else `~/.local/share/tandoor-mcp` (`/data` in the Docker image) | The folder for `oauth.json`. Must be an absolute path; a relative path is ignored. |
+| `TANDOOR_MCP_TRUST_PROXY` | none (no proxy trusted) | Set it when a reverse proxy or tunnel sits in front. A hop count such as `1`, or a comma-separated list of IP addresses and CIDR ranges. A `/0` range is refused. The server uses it to find each visitor's IP address for rate limits. |
+| `TANDOOR_MCP_HTTP_HOST` | `127.0.0.1` (`0.0.0.0` in the Docker image) | The address the server listens on. |
+| `TANDOOR_MCP_HTTP_PORT` | `3737` | The port the server listens on. |
+| `TANDOOR_MCP_HTTP_PATH` | `/mcp` | The MCP endpoint path. It cannot be, or start with, `/authorize`, `/token`, `/register`, `/revoke`, `/consent` or `/.well-known`. |
+| `TANDOOR_MCP_HTTP_DRAIN_MS` | `10000` | On `SIGTERM` or `SIGINT`, how long the server waits for requests in progress. New requests get a `503` meanwhile. |
+| `TANDOOR_MCP_HTTP_MAX_BODY_BYTES` | `5242880` | Larger request bodies get a `413`. |
+| `TANDOOR_MCP_HTTP_MAX_CONNS` | `128` | The most open connections the server accepts. |
+
+Header and request timeouts are fixed at 10 and 30 seconds.
+
+Rules and behavior in remote mode:
+
+- **`TANDOOR_TOKEN` is refused.** The server will not start while it is set. Each user brings their own token.
+- **`TANDOOR_MCP_HTTP_TOKEN` is refused.** It belongs to the shared-password HTTP mode and cannot be combined with remote mode.
+- **Tool sections apply to every connected user.** The [section settings](#tool-sections) are read once at startup, and `enable_tool_group` is off in HTTP mode, so everyone sees the same tools.
+- **`file_path` uploads are refused.** The server's disk is not the user's disk. Use `file_url` instead. Saving downloads with `save: true` is also stdio only.
+- **A read-only Tandoor token works for reads only.** Write tools return Tandoor's error. The connection stays.
+- **Host and Origin are checked.** A request must carry the public URL's host in its `Host` header, or `localhost`, `127.0.0.1` or `[::1]`. Anything else gets a `403`, logged as `host_rejected`. A browser `Origin` header on the MCP path must equal the public URL's origin, or the request gets a `403`, logged as `origin_rejected`.
+- **Responses are plain JSON.** The server does not hold event streams open, so proxies need no streaming or buffering settings. `GET` on the MCP path returns `405`.
+
+### Run with Docker
+
+The image is `ghcr.io/cliftonz/tandoor-recipes-mcp`. It defaults to `TANDOOR_MCP_TRANSPORT=http`, `TANDOOR_MCP_HTTP_HOST=0.0.0.0` and `TANDOOR_MCP_DATA_DIR=/data`, and runs as the `node` user.
+
+1. Generate a secret key:
+
+   ```bash
+   openssl rand -hex 32
+   ```
+
+2. Copy the `tandoor-mcp` service and the `tandoor-mcp-data` volume from [`docker-compose.example.yml`](docker-compose.example.yml) into your Tandoor compose file, so both services share a network.
+3. Set the environment:
+   - `TANDOOR_URL`: your Tandoor service on the internal network. The example uses `http://web_recipes:8080`; replace `web_recipes` with the name of your Tandoor service.
+   - `TANDOOR_MCP_TANDOOR_PUBLIC_URL`: the address users open Tandoor at, such as `https://recipes.example.com`.
+   - `TANDOOR_MCP_PUBLIC_URL`: your public HTTPS URL, ending in `/mcp`.
+   - `TANDOOR_MCP_SECRET_KEY`: the key from step 1.
+   - `TANDOOR_MCP_TRUST_PROXY`: `"1"` when one proxy or tunnel sits in front, as in the example.
+4. Start it:
+
+   ```bash
+   docker compose up -d tandoor-mcp
+   ```
+
+Notes on the example file:
+
+- **The `/data` volume holds `oauth.json`.** Keep the volume across upgrades, or everyone has to reconnect.
+- **The port is published on `127.0.0.1` only** (`127.0.0.1:3737:3737`), so only a proxy or tunnel on the same host can reach it. Remove the `ports:` entry if your proxy reaches the container over the Docker network.
+- **Keep `TANDOOR_MCP_HTTP_HOST=0.0.0.0` inside the container.** Binding a specific address inside the container is not supported: the image's health check calls `127.0.0.1`, so the container reports unhealthy. Limit exposure with the port mapping instead.
+- **`stop_grace_period: 15s`** is longer than the 10-second drain, so requests in progress can finish on `docker compose down`.
+
+The sign-in page shows your Tandoor address and links to its `/settings/api` page for creating a token. With an internal `TANDOOR_URL` such as `http://web_recipes:8080`, set `TANDOOR_MCP_TANDOOR_PUBLIC_URL` to the address users open Tandoor at, so the link opens from a browser.
+
+Without Docker, run the npm package with the same settings:
+
+```bash
+TANDOOR_URL=https://tandoor.example.com \
+TANDOOR_MCP_TRANSPORT=http \
+TANDOOR_MCP_PUBLIC_URL=https://mcp.example.com/mcp \
+TANDOOR_MCP_SECRET_KEY=<64 hex characters> \
+TANDOOR_MCP_TRUST_PROXY=1 \
+npx -y @cliftonz/tandoor-recipes-mcp
+```
+
+### Expose it over HTTPS
+
+Claude and ChatGPT need a public HTTPS URL. Put a reverse proxy or a tunnel in front of the server. Whatever you use must:
+
+- Forward the whole host, not only `/mcp`. The OAuth routes live at the root.
+- Pass the original `Host` header through.
+- Set `X-Forwarded-For`, and you set `TANDOOR_MCP_TRUST_PROXY` to match.
+
+#### Caddy
+
+```caddyfile
+mcp.example.com {
+	reverse_proxy 127.0.0.1:3737
+}
+```
+
+Caddy passes `Host` through unchanged and sets `X-Forwarded-For`. Set `TANDOOR_MCP_TRUST_PROXY=1`. If Caddy runs in the same compose network, use `reverse_proxy tandoor-mcp:3737`.
+
+#### nginx
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name mcp.example.com;
+    # ssl_certificate and ssl_certificate_key go here
+
+    location / {
+        proxy_pass http://127.0.0.1:3737;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+`proxy_set_header Host $host;` is required. Without it, nginx sends the upstream name as `Host`, and the server answers `403` unless that name is `localhost` or a loopback address. The log line `host_rejected` includes a hint about this. Responses are plain JSON, so no SSE or buffering settings are needed. Set `TANDOOR_MCP_TRUST_PROXY=1`.
+
+#### Cloudflare Tunnel
+
+A tunnel needs no open port. The example compose file has an optional `cloudflared` service.
+
+1. In the Cloudflare dashboard, go to **Networking > Tunnels** and select **Create a tunnel**. Copy the tunnel token.
+2. Uncomment the `cloudflared` service and set `TUNNEL_TOKEN` to the token.
+3. In the tunnel's **Routes** tab, select **Add route > Published application**. Choose your subdomain and domain, and set **Service URL** to `http://tandoor-mcp:3737`.
+4. Leave **HTTP Host Header** empty, so the server sees your public hostname.
+
+Set `TANDOOR_MCP_TRUST_PROXY=1`. You can remove the `ports:` entry from `tandoor-mcp`.
+
+#### Tailscale Funnel
+
+On the host where port 3737 is published on `127.0.0.1`:
+
+```bash
+tailscale funnel --bg 3737
+```
+
+The public URL is `https://<device-name>.<tailnet-name>.ts.net`, so set `TANDOOR_MCP_PUBLIC_URL` to `https://<device-name>.<tailnet-name>.ts.net/mcp`. Funnel keeps the `Host` header and sets `X-Forwarded-For`. Set `TANDOOR_MCP_TRUST_PROXY=1`. `tailscale funnel reset` turns it off.
+
+#### Access gateways
+
+> **Warning:** If you put an access gateway in front, such as Cloudflare Access, Authelia or another forward-auth proxy, it must let these routes through without its own login. Otherwise Claude and ChatGPT cannot connect.
+>
+> - `POST /mcp` (your `TANDOOR_MCP_HTTP_PATH`)
+> - `GET /.well-known/oauth-protected-resource/mcp`
+> - `GET /.well-known/oauth-authorization-server`
+> - `POST /register`
+> - `POST /token`
+> - `POST /revoke`
+> - `GET` and `POST /authorize`
+> - `POST /consent`
+>
+> `/authorize` and `/consent` open in the user's own browser. The others are called by the app's servers. The simplest rule is to bypass the gateway for `/mcp`, `/register`, `/token`, `/revoke`, `/authorize`, `/consent` and `/.well-known/*`.
+
+### Connect a client
+
+Use your public URL, for example `https://mcp.example.com/mcp`.
+
+#### Claude
+
+On a Free, Pro, Max or Ultra plan:
+
+1. Go to **Customize > Connectors**.
+2. Click **Add custom connector**.
+3. Enter the URL.
+4. If the dialog asks for the **OAuth client**, choose **Use Claude's published identity** or **Register automatically**. The server supports both. Do not enter a client ID or secret.
+5. Click **Add**. When you connect, the sign-in page opens in your browser.
+
+On a Team or Enterprise plan, an Owner adds it under **Organization settings > Connectors**: select **Add**, then **Custom**, enter the URL, and click **Add**. Each member then finds it under **Customize > Connectors** and clicks **Connect**.
+
+You can also share a link that opens the dialog with the name and URL filled in. Percent-encode the URL:
+
+```text
+https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Tandoor&connectorUrl=https%3A%2F%2Fmcp.example.com%2Fmcp
+```
+
+Owners can use the same parameters on `https://claude.ai/admin-settings/connectors`. The user still reviews and confirms before anything is added.
+
+#### Claude Code
+
+```bash
+claude mcp add --transport http tandoor https://mcp.example.com/mcp
+```
+
+Then run `/mcp` in Claude Code and follow the sign-in steps in your browser.
+
+#### ChatGPT
+
+1. Go to [chatgpt.com/plugins](https://chatgpt.com/plugins).
+2. Select the plus button, then **Add custom MCP server**.
+3. Enter a name and description.
+4. Under **Connection**, enter the URL, including `/mcp`.
+5. Configure authentication. The server uses OAuth and supports both ways ChatGPT registers itself: a client ID metadata document and dynamic client registration. Review the risk warning and select **I understand and want to continue**.
+6. Select **Create as a plugin**.
+
+Your ChatGPT account or workspace policies decide whether you can add custom MCP servers.
+
+#### The sign-in page
+
+The page is titled **Connect to Tandoor**. It names the app that wants access and the Tandoor URL, and shows where you return after you approve. Paste a Tandoor API token into **Tandoor API token** and select **Approve**, or **Deny**.
+
+Create the token on your Tandoor's API settings page, `/settings/api`. The token decides what the app can do: a read-write token allows changes, a read-only token allows reads only.
+
+If Tandoor rejects the token, the page says so and you can try again. The form expires after 10 minutes, and each IP address gets 10 attempts a minute.
+
+### Operate it
+
+- **Back up `oauth.json` and the secret key separately.** `oauth.json` in the data folder holds the registered apps, the connections, the encrypted Tandoor tokens and hashes of the tokens the server issued. Anyone with both the file and the key can read the stored Tandoor tokens.
+- **Revoke everyone:** stop the server, delete `oauth.json`, and start it again. Every user has to reconnect.
+- **Revoke one user's access:** delete their API token in Tandoor. Their tool calls then fail in Tandoor.
+- **Rotate the secret key:** the server refuses to start when the key cannot decrypt `oauth.json` (`cannot read OAuth store`). Rotation means stopping the server, deleting `oauth.json`, setting the new key and starting again. Every user has to reconnect.
+- **Connections end on their own** after 30 days without use, or when Tandoor rejects the stored token with a `401`. In the second case the server ends every connection that uses that token, and the tool call returns "Tandoor rejected your token. Reconnect this connector to sign in again." along with a sign-in challenge for the app. App registrations that never finish signing in are removed after 24 hours.
+- **Run one server process per data folder.** Each process keeps `oauth.json` in memory and rewrites it on every change, so two processes overwrite each other.
+- **Health check:** `GET /healthz` returns `{"status":"ok"}` without auth. The Docker image checks it every 30 seconds.
+- **Logs** go to standard error (`docker compose logs tandoor-mcp`). The startup line shows the public URL, `auth=oauth`, the Tandoor URL and version, and the sections. Request events look like `[tandoor-mcp] http reqId=... level=warn event=host_rejected ...`. Other events include `origin_rejected`, `forwarded_header_untrusted` (a proxy sent `X-Forwarded-For` but `TANDOOR_MCP_TRUST_PROXY` is not set), `tandoor_check_failed`, `cimd_fetch_failed`, `payload_too_large` and `shutdown`. [PRIVACY.md](PRIVACY.md) lists what the logs contain.
+- **Rate limits** are per IP address: failed access tokens, sign-in form submissions, and the OAuth routes. Behind a proxy, set `TANDOOR_MCP_TRUST_PROXY`, or every visitor shares one limit.
+
+### Firewall allowlisting
+
+You can limit who reaches the server-to-server routes (`/mcp`, `/.well-known/*`, `/register`, `/token`, `/revoke`):
+
+- **Claude:** Anthropic's outbound IP ranges, listed at [platform.claude.com/docs/en/api/ip-addresses](https://platform.claude.com/docs/en/api/ip-addresses). On 2026-11-07 they were `160.79.104.0/21` and `153.61.208.0/20`.
+- **ChatGPT:** OpenAI's ranges for connectors, published at [openai.com/chatgpt-connectors.json](https://openai.com/chatgpt-connectors.json). The list is long and changes; OpenAI recommends fetching it regularly and updating your allowlist automatically.
+
+Do not limit `/authorize` and `/consent` this way. They come from each user's own browser. Claude Code and the MCP Inspector also run on the user's computer, so their requests come from the user's address.
+
+The server itself makes outbound requests to your Tandoor, to the app's client document (such as one on `claude.ai` or `chatgpt.com`) when an app uses its published identity, and to web addresses users import from.
+
+### Test it
+
+Check the health endpoint and the metadata:
+
+```bash
+curl https://mcp.example.com/healthz
+curl https://mcp.example.com/.well-known/oauth-protected-resource/mcp
+```
+
+Then connect with the MCP Inspector. It runs the sign-in flow in your browser:
+
+```bash
+npx @modelcontextprotocol/inspector --server-url https://mcp.example.com/mcp --transport http
+```
+
+### Remote mode security
+
+- The sign-in routes are reachable from the internet. Anyone who can reach the URL can start signing in, but only a valid Tandoor token completes it.
+- The Tandoor token is the real credential. Whoever signs in with a token gets that token's full Tandoor access.
+- The secret key protects the stored tokens. The server stores only hashes of the tokens it issues.
+- Removing a connection in Claude or ChatGPT does not delete the Tandoor token. Delete it in Tandoor too.
+- Tandoor content is untrusted input to the assistant.
+
+[SECURITY.md](SECURITY.md) has the full threat model and how to report a problem.
 
 ## Environment variables
 
 | Var | Required | Default | Purpose |
 |---|---|---|---|
 | `TANDOOR_URL` | yes | none | Base URL of your Tandoor instance. |
-| `TANDOOR_TOKEN` | yes | none | API token with write access. |
+| `TANDOOR_TOKEN` | yes, except in remote mode | none | API token with write access. Remote mode refuses to start when it is set. |
 | `TANDOOR_MCP_TRANSPORT` | no | `stdio` | `stdio` or `http`. |
 | `TANDOOR_MCP_HTTP_PORT` | no | `3737` | HTTP-mode port. |
-| `TANDOOR_MCP_HTTP_TOKEN` | no | none | HTTP-mode bearer token. If unset, HTTP transport runs open (loopback-only, still). |
+| `TANDOOR_MCP_HTTP_TOKEN` | no | none | HTTP-mode bearer token. If unset, HTTP transport runs without auth. Not allowed in remote mode. |
 | `TANDOOR_MCP_<SECTION>` | no | per section | One variable per tool section, such as `TANDOOR_MCP_RECIPES`. See [Tool sections](#tool-sections) for every variable, its values, and its default. |
 | `TANDOOR_MCP_INCLUDE_ONLY` | no | none | Comma-separated allowlist (glob `*` supported). E.g. `list_*,get_*,create_meal_plan`. |
 | `TANDOOR_MCP_EXCLUDE` | no | none | Comma-separated denylist. E.g. `merge_*,delete_*` to hide destructive tools. |
@@ -245,6 +515,8 @@ If `TANDOOR_MCP_HTTP_TOKEN` is set, every request must include `Authorization: B
 | `TANDOOR_MCP_STASH_MAX_BYTES` | no | `32000000` | Total-bytes cap on the stash; LRU eviction kicks in past this budget. |
 | `TANDOOR_MCP_STASH_TTL_MS` | no | `600000` | Per-entry TTL in milliseconds (default 10 minutes). |
 | `TANDOOR_MCP_DOWNLOAD_ROOT` | no | none | Existing folder that `save: true` writes downloads into. Stdio mode only. See [Downloading files](#downloading-files). |
+
+The other HTTP settings and the remote-mode settings are in [Remote mode settings](#remote-mode-settings).
 
 `INCLUDE_ONLY` and `EXCLUDE` run before the section settings and give finer control ("give me only read tools" or "hide destructive ops from this agent").
 
@@ -477,6 +749,12 @@ npm run test:e2e
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how pull requests are reviewed, credited, and merged.
 
+## Support, security and privacy
+
+- [SUPPORT.md](SUPPORT.md): where to ask questions and what to include in a bug report.
+- [SECURITY.md](SECURITY.md): supported versions, how to report a vulnerability, and the remote-mode threat model.
+- [PRIVACY.md](PRIVACY.md): what the server stores, where data goes, and what it logs.
+
 ## Security posture
 
 This server treats the configured Tandoor instance as **trusted enough to read+write on your behalf**; you provide the bearer token. It does NOT treat the instance as fully trusted for content:
@@ -486,7 +764,8 @@ This server treats the configured Tandoor instance as **trusted enough to read+w
 - **Keyword payloads are capped at 50 entries and projected to `{id, name}`** before being forwarded into writes; stops amplification and mass-assignment exposure.
 - **Every mint-a-token / grant-access tool description leads with an ESCALATION SURFACE warning.** `create_access_token`, `update_access_token`, `create_invite_link`, `update_invite_link`, and `authenticate` all warn in-context that the returned token bypasses this MCP's own bearer redaction.
 - **Bearer tokens are redacted** from every error message and log line.
-- **HTTP transport binds loopback-only** (`127.0.0.1`) with optional bearer auth and stateless session handling. No per-connection state accumulates across requests.
+- **HTTP transport binds to `127.0.0.1` by default.** `TANDOOR_MCP_HTTP_HOST` changes the address. Each request gets a fresh MCP session, so no session state builds up across requests.
+- **Remote mode uses OAuth with per-user Tandoor tokens.** Stored Tandoor tokens are encrypted with `TANDOOR_MCP_SECRET_KEY`, issued tokens are stored only as hashes, and `Host` and `Origin` headers are checked. See [Remote mode security](#remote-mode-security) and [SECURITY.md](SECURITY.md).
 
 If your Tandoor deployment is single-tenant and you own every recipe, the posture is conservative for your case. If you share a Tandoor instance with untrusted users, or run one exposed to the public internet with anonymous sharing, the hardening above matters.
 

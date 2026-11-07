@@ -41,6 +41,7 @@ interface AuthServerOptions {
   publicUrl: URL;
   secretKey: Buffer;
   tandoorUrl: string;
+  tandoorPublicUrl: string;
   store: Store;
   verifier: OAuthTokenVerifier;
   now?: () => number;
@@ -220,7 +221,7 @@ export function accessTokenVerifier(store: Store, resourceMetadataUrl: string): 
   };
 }
 
-export function authRouter({ publicUrl, secretKey, tandoorUrl, store, verifier, now = Date.now }: AuthServerOptions): express.Router {
+export function authRouter({ publicUrl, secretKey, tandoorUrl, tandoorPublicUrl, store, verifier, now = Date.now }: AuthServerOptions): express.Router {
   const codes = new Map<string, PendingCode>();
   const redeemedCodes = new Map<string, { grantId: string; expiresAt: number }>();
   const usedNonces = new Map<string, number>();
@@ -253,7 +254,7 @@ export function authRouter({ publicUrl, secretKey, tandoorUrl, store, verifier, 
     renderConsent(res, status, {
       ...describeApp(fields),
       redirectUri: fields.redirect_uri,
-      tandoorUrl,
+      tandoorUrl: tandoorPublicUrl,
       hidden: {
         client_id: fields.client_id,
         client_name: fields.client_name,

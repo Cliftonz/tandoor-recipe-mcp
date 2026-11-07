@@ -207,6 +207,12 @@ describe('remote mode at boot', () => {
     expect(result.stderr).toContain('Error: TANDOOR_MCP_PUBLIC_URL must use https (got http:).');
   }, 15_000);
 
+  it('exits 1 naming TANDOOR_MCP_TANDOOR_PUBLIC_URL when it does not parse', async () => {
+    const result = await boot({ ...TANDOOR_URL_ENV, ...REMOTE_ENV, TANDOOR_MCP_TANDOOR_PUBLIC_URL: 'http://[bad' });
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('Error: TANDOOR_MCP_TANDOOR_PUBLIC_URL does not parse as a URL (check scheme and host).');
+  }, 15_000);
+
   it('exits 1 when TANDOOR_MCP_PUBLIC_URL is set without the HTTP transport', async () => {
     const result = await boot({ ...TANDOOR_URL_ENV, TANDOOR_MCP_PUBLIC_URL: REMOTE_ENV.TANDOOR_MCP_PUBLIC_URL, TANDOOR_MCP_SECRET_KEY: KEY });
     expect(result.exitCode).toBe(1);

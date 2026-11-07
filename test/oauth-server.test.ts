@@ -44,10 +44,10 @@ const cimdDoc = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-async function startServer({ trustProxy = false } = {}): Promise<void> {
+async function startServer({ trustProxy = false, tandoorPublicUrl = tandoor.url } = {}): Promise<void> {
   const app = express();
   if (trustProxy) app.set('trust proxy', 1);
-  app.use(authRouter({ publicUrl: new URL(PUBLIC_URL), secretKey: key, tandoorUrl: tandoor.url, store, verifier: accessTokenVerifier(store, `${ISSUER}.well-known/oauth-protected-resource/mcp`), now }));
+  app.use(authRouter({ publicUrl: new URL(PUBLIC_URL), secretKey: key, tandoorUrl: tandoor.url, tandoorPublicUrl, store, verifier: accessTokenVerifier(store, `${ISSUER}.well-known/oauth-protected-resource/mcp`), now }));
   server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -433,6 +433,16 @@ describe('consent page', () => {
     expect(html).toContain(`href="${tandoor.url}/settings/api"`);
     expect(html).toContain('value="approve"');
     expect(html).toContain('value="deny"');
+  });
+
+  it('shows the public Tandoor address and its API settings link while checking the token against TANDOOR_URL', async () => {
+    await stopServer();
+    await startServer({ tandoorPublicUrl: 'https://recipes.invalid' });
+    const { consent, location } = await obtainCode();
+    expect(consent.html).toContain('wants to access your Tandoor account at <strong>https://recipes.invalid</strong>');
+    expect(consent.html).toContain('href="https://recipes.invalid/settings/api"');
+    expect(consent.html).not.toContain(tandoor.url);
+    expect(location.searchParams.get('code')).toBeTruthy();
   });
 
   it('escapes a hostile client name', async () => {

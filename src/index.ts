@@ -53,6 +53,17 @@ function resolveHttpConfigOrExit(): HttpConfig {
   }
 }
 
+function resolveTandoorPublicOrigin(): string | undefined {
+  const raw = process.env.TANDOOR_MCP_TANDOOR_PUBLIC_URL?.trim();
+  if (!raw) return undefined;
+  try {
+    return instanceKey(raw);
+  } catch {
+    console.error('Error: TANDOOR_MCP_TANDOOR_PUBLIC_URL does not parse as a URL (check scheme and host).');
+    process.exit(1);
+  }
+}
+
 function resolveTandoor() {
   if (isRemoteMode()) {
     if (transportMode !== 'http') {
@@ -67,7 +78,7 @@ function resolveTandoor() {
       console.error('Error: TANDOOR_TOKEN is not used in remote mode; remove it. Each user connects with their own Tandoor token.');
       process.exit(1);
     }
-    return { remote: true as const, origin: instanceKey(TANDOOR_URL), httpCfg: resolveHttpConfigOrExit() };
+    return { remote: true as const, origin: instanceKey(TANDOOR_URL), publicOrigin: resolveTandoorPublicOrigin(), httpCfg: resolveHttpConfigOrExit() };
   }
   if (!TANDOOR_URL || !TANDOOR_TOKEN) {
     console.error("Error: TANDOOR_URL and TANDOOR_TOKEN must be set in .env file (or set the plugin's Tandoor URL and Tandoor API Token settings)");
@@ -134,7 +145,7 @@ const stashLine = stashCfgAtBoot.enabled
   : 'stash=off';
 
 async function serveHttp(cfg: HttpConfig, serve: Parameters<typeof createHttpTransport>[0]) {
-  const handle = createHttpTransport(serve, tandoor.origin);
+  const handle = createHttpTransport(serve, tandoor.origin, tandoor.remote ? tandoor.publicOrigin : undefined);
   await handle.start().catch((error: NodeJS.ErrnoException) => {
     if (error.code !== 'EADDRINUSE') throw error;
     console.error(`[tandoor-mcp] Error: port ${cfg.port} is already in use (TANDOOR_MCP_HTTP_PORT).`);
