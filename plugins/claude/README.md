@@ -19,6 +19,15 @@ This command needs Claude Code 2.1.275 or later.
 
 In the settings, set each tool section to off, simple, or full. During a chat, Claude can turn a section on with `enable_tool_group`. Those changes are saved to `~/.config/tandoor-mcp/sections.json`, or under `$XDG_CONFIG_HOME` when it is set.
 
+## Skills
+
+- plan-week: plan meals for the coming days from your recipes and pantry
+- shopping-from-plan: build one shopping list from planned meals, skipping what you have
+- import-recipes: import from web pages, photos or PDFs, then tidy units, foods and keywords
+- tandoor-setup: turn on the right tool sections, fix token problems, check remote mode
+
+Each skill names tools in backticks by their exact name, and sections by their section name. A test checks that every named tool and section exists.
+
 ## Data
 
 It sends your data only to the Tandoor URL you configure. When you import a recipe or file from a web address, it downloads that page or file. Private and local network addresses are blocked. The saved file holds only the Tandoor URL and section settings.
