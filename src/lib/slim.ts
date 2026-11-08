@@ -18,7 +18,7 @@ export function assertNonEmptyBody(body: Record<string, unknown>): void {
  * Shared `format` input shape used by every list/get tool: `slim` (default,
  * projected shape) or `full` (raw API response).
  */
-export const formatEnum = z.enum(['slim', 'full']).optional();
+export const formatEnum = z.enum(['slim', 'full']).optional().describe('slim (default) returns a compact shape. full returns the raw Tandoor object.');
 
 /**
  * JSON-serialize compactly. Pretty-printing costs ~40% more tokens on the

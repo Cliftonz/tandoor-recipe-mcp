@@ -234,7 +234,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'get_shopping_entry', {
     title: 'Get shopping entry',
     annotations: READ,
-    description: 'Get a shopping list entry by ID, including old checked entries that list_shopping_entries hides. format=full returns the raw Tandoor object.',
+    description: 'Get a shopping list entry by ID, including old checked entries that list_shopping_entries hides.',
     inputSchema: getShoppingEntryShape,
   }, handleGetShoppingEntry);
 
@@ -255,7 +255,7 @@ export function registerShoppingTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'delete_shopping_entry', {
     title: 'Delete shopping entry',
     annotations: DELETE,
-    description: 'Delete a shopping entry by ID. To mark an item as bought, use update_shopping_entry or bulk_check_shopping_entries instead.',
+    description: 'Delete a shopping entry by ID. To mark bought, use update_shopping_entry or bulk_check_shopping_entries.',
     inputSchema: deleteShoppingEntryShape,
   }, handleDeleteShoppingEntry);
 
