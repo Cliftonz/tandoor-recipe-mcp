@@ -96,7 +96,7 @@ export function registerMealPlanTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'get_meal_plan', {
     title: 'Get meal plan',
     annotations: READ,
-    description: 'Get meal plan by ID, with its dates, meal type, recipe and servings. Not found if the plan ends over 90 days ago or over 360 days ahead. Find IDs with list_meal_plans.',
+    description: 'Get meal plan by ID, with its dates, meal type, recipe and servings. Find IDs with list_meal_plans.',
     inputSchema: getMealPlanShape,
   }, handleGetMealPlan);
 
@@ -117,7 +117,7 @@ export function registerMealPlanTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'delete_meal_plan', {
     title: 'Delete meal plan',
     annotations: DELETE,
-    description: 'Delete meal plan by ID. Also deletes the shopping entries linked to it. Not found if the plan ends over 90 days ago or over 360 days ahead.',
+    description: 'Delete meal plan by ID. Also deletes the shopping entries linked to it.',
     inputSchema: deleteMealPlanShape,
   }, handleDeleteMealPlan);
 
