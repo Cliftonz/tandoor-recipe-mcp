@@ -2,13 +2,32 @@
 
 All notable changes to this project are documented in this file.
 
+## 3.5.0 / 2026-11-08
+
+### Added
+- **Agent Skills in the Claude and Codex plugins.** `plan-week` plans meals for the coming days from your recipes and pantry. `shopping-from-plan` builds one shopping list from planned meals and skips what you have. `import-recipes` imports from web pages, photos or PDFs, then tidies units, foods and keywords. `tandoor-setup` turns on the right tool sections, fixes token problems and checks remote mode. The skills are in `plugins/claude/skills`, and the Codex plugin points to the same folder. They ship with the plugins, not the npm package. They first shipped in the 3.4.2 plugin files and are announced here.
+- **`add_recipe_to_shopping_list` takes an optional `mealplan` id.** The new shopping entries are linked to that meal plan. This option also first shipped in 3.4.2.
+
+### Fixed
+- **`food_shopping_update` returned an MCP error on every call,** even when Tandoor applied the change. It now returns a short confirmation.
+- **`food_shopping_update` with `delete` added an entry instead of removing it.** The server sent `delete`, but Tandoor reads `_delete`.
+- **`update_user_file` always failed with 415.** It now sends multipart form data.
+- **`export_recipes` with a `recipes` list failed with a Tandoor 500.** It now always sends `custom_filter`.
+- **`update_ai_provider` as a superuser made a space provider global when `space` was omitted.** It now keeps the provider's current space.
+- **The `add_recipe_to_shopping_list` description said `servings: 0` deletes.** A negative value, such as -1, deletes. The `shopping-from-plan` skill is corrected too.
+- **`authenticate` failed on Tandoor 2.7,** which removed `/api-token-auth/`. It now logs in through Tandoor's allauth login and creates a read write token that is valid for one year and owned by the user who logged in. Accounts that need MFA or email verification get a message that points to Settings > API. This also works when a reverse proxy rewrites the login redirect to a full URL. Tandoor 2.6 and earlier still use `/api-token-auth/`.
+
+### Notes
+- End-to-end tests now call every write tool against real Tandoor 2.6.0 and the latest Tandoor. A reviewed skip list covers tools that need outbound internet, an AI provider, a public URL, Nextcloud or Dropbox storage, or a writable local storage folder.
+- `llms-install.md` is new. It tells agents such as Cline how to install the server.
+
 ## 3.4.2 / 2026-11-08
 
 ### Changed
 - **Clearer descriptions for 16 tools:** `list_units`, `create_meal_plan`, `get_food`, `get_keyword`, `get_meal_plan`, `list_foods`, `list_keywords`, `list_meal_plans`, `delete_meal_plan`, `delete_shopping_entry`, `get_meal_type`, `get_shopping_entry`, `list_inventory_locations`, `create_recipe`, `get_current_space` and `update_recipe`. They now say what `format=full` returns, how the list filters and date defaults work, what a delete or update also changes, and which related tool to use instead.
 
 ### Notes
-- No behavior, parameter or schema changes.
+- This release also shipped the Agent Skills in the plugins and the `mealplan` option on `add_recipe_to_shopping_list`. Both are described under 3.5.0.
 
 ## 3.4.1 / 2026-11-08
 
