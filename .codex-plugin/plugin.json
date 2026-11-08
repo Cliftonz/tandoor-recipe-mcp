@@ -16,6 +16,7 @@
     "cooking",
     "mcp"
   ],
+  "skills": "./plugins/claude/skills/",
   "mcpServers": {
     "tandoor": {
       "command": "npx",

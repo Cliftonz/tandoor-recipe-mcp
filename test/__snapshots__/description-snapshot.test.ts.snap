@@ -11,7 +11,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "add_recipe_to_book",
   },
   {
-    "description": "Add a recipe's ingredients to the shopping list at N servings. Omit ingredients[] to add all. Set servings=0 with list_recipe (id) to delete that shopping-list-recipe.",
+    "description": "Add a recipe's ingredients to the shopping list at N servings. Omit ingredients[] to add all. Pass mealplan (id) to link the entries to that meal plan. Set servings=0 with list_recipe (id) to delete that shopping-list-recipe.",
     "name": "add_recipe_to_shopping_list",
   },
   {
@@ -1334,6 +1334,10 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
             "number",
             "null",
           ],
+        },
+        "mealplan": {
+          "description": "Meal plan id to link the entries to",
+          "type": "number",
         },
         "servings": {
           "description": "Default 1. Use 0 with list_recipe to delete.",

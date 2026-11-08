@@ -14,6 +14,7 @@ import {
   handleBulkUpdateShoppingEntries,
   handleBulkCreateShoppingListRecipeEntries,
 } from '../src/handlers/shopping.js';
+import { handleAddRecipeToShoppingList } from '../src/handlers/recipe.js';
 import { handleGetFood, handleCreateFood, handleUpdateFood, handleFoodBatchUpdate, handleMoveFood, handleMergeFood } from '../src/handlers/foodunit.js';
 
 type Sent = { method: string; path: string; body?: unknown };
@@ -663,5 +664,19 @@ describe('remove_all false', () => {
     await handleFoodBatchUpdate(client(), { foods: [1], on_hand: false, child_inherit_fields_remove_all: false, shopping_lists_remove_all: false });
     await handleBulkUpdateShoppingEntries(client(), { ids: [7], checked: false, shopping_lists_remove_all: false });
     expect(sent.map((s) => s.body)).toEqual([{ foods: [1], on_hand: false }, { ids: [7], checked: false }]);
+  });
+});
+
+describe('add_recipe_to_shopping_list mealplan', () => {
+  it('links the entries to the meal plan by sending mealplan as {id}', async () => {
+    const sent = stubTandoor({ 'PUT /api/recipe/5/shopping/': { list_recipe: 9 } });
+    await handleAddRecipeToShoppingList(client(), { id: 5, servings: 4, mealplan: 12 });
+    expect(sent[0].body).toEqual({ ingredients: [], list_recipe: null, servings: 4, mealplan: { id: 12 } });
+  });
+
+  it('sends no mealplan when none is given', async () => {
+    const sent = stubTandoor({ 'PUT /api/recipe/5/shopping/': { list_recipe: 9 } });
+    await handleAddRecipeToShoppingList(client(), { id: 5, servings: 4 });
+    expect(sent[0].body).toEqual({ ingredients: [], list_recipe: null, servings: 4 });
   });
 });
