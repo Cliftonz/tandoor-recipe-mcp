@@ -111,7 +111,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "create_keyword",
   },
   {
-    "description": "Create meal plan. Required: from_date (ISO), meal_type_id, servings. Optional: recipe_id, title, note, addshopping",
+    "description": "Create meal plan. Required: from_date (ISO), meal_type_id (from list_meal_types), servings, and recipe_id or title. Optional: to_date (default from_date), note, addshopping (adds the recipe ingredients to the shopping list).",
     "name": "create_meal_plan",
   },
   {
@@ -127,7 +127,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "create_property_type",
   },
   {
-    "description": "Create recipe. Required: name, steps[{instruction, ingredients[{food, amount, unit?}]}]. Optional: description, servings, working_time, waiting_time, keywords[]",
+    "description": "Create recipe. Required: name, steps[{instruction, ingredients[{food, amount, unit?}]}]. Optional: description, servings, working_time, waiting_time, keywords[], source_url, private, nutrition, properties[]. Foods, units and keywords are matched by name or created. To import a web page, use import_recipe_from_url.",
     "name": "create_recipe",
   },
   {
@@ -251,7 +251,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "delete_keyword",
   },
   {
-    "description": "Delete meal plan by ID",
+    "description": "Delete meal plan by ID. Also deletes the shopping entries linked to it. To reschedule, use update_meal_plan.",
     "name": "delete_meal_plan",
   },
   {
@@ -283,7 +283,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "delete_recipe_import",
   },
   {
-    "description": "Delete a shopping entry by ID.",
+    "description": "Delete a shopping entry by ID. To mark an item as bought, use update_shopping_entry or bulk_check_shopping_entries instead.",
     "name": "delete_shopping_entry",
   },
   {
@@ -407,7 +407,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_cook_log",
   },
   {
-    "description": "Get the space currently active for this API token.",
+    "description": "Get the space currently active for this API token. Other tools read and write in this space. format=full returns the raw Tandoor object.",
     "name": "get_current_space",
   },
   {
@@ -423,7 +423,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_external_recipe_file_link",
   },
   {
-    "description": "Get food by ID.",
+    "description": "Get one food (ingredient) by ID. format=full returns the raw Tandoor object. Find IDs with list_foods.",
     "name": "get_food",
   },
   {
@@ -467,7 +467,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_invite_link",
   },
   {
-    "description": "Get keyword by ID.",
+    "description": "Get one recipe keyword (tag) by ID. format=full returns the raw Tandoor object. Find IDs with list_keywords.",
     "name": "get_keyword",
   },
   {
@@ -475,11 +475,11 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_localization",
   },
   {
-    "description": "Get meal plan by ID",
+    "description": "Get meal plan by ID, with its dates, meal type, recipe and servings. Find IDs with list_meal_plans.",
     "name": "get_meal_plan",
   },
   {
-    "description": "Get a meal type by ID.",
+    "description": "Get a meal type by ID: name, order, color and default time. format=full returns the raw Tandoor object. Find IDs with list_meal_types.",
     "name": "get_meal_type",
   },
   {
@@ -515,7 +515,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_share_link",
   },
   {
-    "description": "Get a shopping list entry by ID.",
+    "description": "Get a shopping list entry by ID, including old checked entries that list_shopping_entries hides. format=full returns the raw Tandoor object.",
     "name": "get_shopping_entry",
   },
   {
@@ -663,7 +663,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_food_inherit_fields",
   },
   {
-    "description": "List foods. Optional: query (case-insensitive name match), root (parent id, 0 for top-level), tree (id), random, limit, page, page_size.",
+    "description": "List foods (ingredients). Optional: query (case-insensitive name match), root (parent id, 0 for top-level), tree (id, with its descendants), root_tree, random, limit, updated_at, page, page_size, format. root, tree and root_tree ignore query, random and limit.",
     "name": "list_foods",
   },
   {
@@ -687,7 +687,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_inventory_entries",
   },
   {
-    "description": "List inventory locations (pantry, fridge, freezer and so on). Optional: page, page_size.",
+    "description": "List inventory locations (pantry, fridge, freezer and so on). Optional: page, page_size, format. Use the IDs as location_id in the other inventory tools. The full inventory tier adds tools to update and delete entries.",
     "name": "list_inventory_locations",
   },
   {
@@ -699,11 +699,11 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_invite_links",
   },
   {
-    "description": "List keywords (recipe tags). Optional: query, root, tree, random, limit, page, page_size.",
+    "description": "List keywords (recipe tags). Optional: query, root (parent id, 0 for top-level), tree (id, with its descendants), root_tree, random, limit, updated_at, page, page_size, format. root, tree and root_tree ignore query, random and limit.",
     "name": "list_keywords",
   },
   {
-    "description": "List meal plans. Optional: from_date, to_date (YYYY-MM-DD), page, page_size",
+    "description": "List meal plans made by you or your household. Optional: from_date, to_date (YYYY-MM-DD, matched on the end date of each entry; default 90 days ago to 360 days ahead), page, page_size.",
     "name": "list_meal_plans",
   },
   {
@@ -803,7 +803,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_unit_conversions",
   },
   {
-    "description": "List units. Optional: query, limit, page, page_size, random.",
+    "description": "List measurement units. Optional: query (name match), limit, random, updated_at, page, page_size, format. Returns {count, next, previous, results}, 50 per page by default.",
     "name": "list_units",
   },
   {
@@ -1139,7 +1139,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "update_property_type",
   },
   {
-    "description": "Update recipe metadata and content. Only provide fields you want to update. All fields optional except id.",
+    "description": "Update recipe metadata and content. Only provide fields you want to update. All fields optional except id. steps, keywords and properties each replace the whole existing list, so read the recipe with get_recipe first and send every item to keep.",
     "name": "update_recipe",
   },
   {

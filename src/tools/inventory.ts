@@ -128,7 +128,7 @@ export function registerInventoryTools(server: McpServer, client: TandoorClient)
   registerStringTool(server, client, 'list_inventory_locations', {
     title: 'List inventory locations',
     annotations: READ,
-    description: 'List inventory locations (pantry, fridge, freezer and so on). Optional: page, page_size.',
+    description: 'List inventory locations (pantry, fridge, freezer and so on). Optional: page, page_size, format. Use the IDs as location_id in the other inventory tools. The full inventory tier adds tools to update and delete entries.',
     inputSchema: listInventoryLocationsShape,
   }, handleListInventoryLocations);
 

@@ -1,6 +1,6 @@
 {
   "name": "tandoor-recipes-mcp",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "description": "Tandoor Recipes MCP server — recipes, meal plans, shopping lists, ingredients, cook logs, nutrition, AI import.",
   "author": {
     "name": "Zac Clifton",
@@ -103,7 +103,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@cliftonz/tandoor-recipes-mcp@3.4.1"
+        "@cliftonz/tandoor-recipes-mcp@3.4.2"
       ],
       "env": {
         "CLAUDE_PLUGIN_OPTION_TANDOOR_URL": "${user_config.tandoor_url}",

@@ -173,14 +173,14 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'list_foods', {
     title: 'List foods',
     annotations: READ,
-    description: 'List foods. Optional: query (case-insensitive name match), root (parent id, 0 for top-level), tree (id), random, limit, page, page_size.',
+    description: 'List foods (ingredients). Optional: query (case-insensitive name match), root (parent id, 0 for top-level), tree (id, with its descendants), root_tree, random, limit, updated_at, page, page_size, format. root, tree and root_tree ignore query, random and limit.',
     inputSchema: listFoodsShape,
   }, handleListFoods);
 
   registerStringTool(server, client, 'get_food', {
     title: 'Get food',
     annotations: READ,
-    description: 'Get food by ID.',
+    description: 'Get one food (ingredient) by ID. format=full returns the raw Tandoor object. Find IDs with list_foods.',
     inputSchema: getFoodShape,
   }, handleGetFood);
 
@@ -236,7 +236,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'list_units', {
     title: 'List units',
     annotations: READ,
-    description: 'List units. Optional: query, limit, page, page_size, random.',
+    description: 'List measurement units. Optional: query (name match), limit, random, updated_at, page, page_size, format. Returns {count, next, previous, results}, 50 per page by default.',
     inputSchema: listUnitsShape,
   }, handleListUnits);
 
