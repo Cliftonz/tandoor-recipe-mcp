@@ -2,7 +2,7 @@
 
 These steps register `@cliftonz/tandoor-recipes-mcp` as a stdio MCP server in Cline. For Claude, Codex, and other clients, see [README.md](README.md).
 
-Register the server through Cline's own MCP settings. Do not clone or build this repository; `npx` runs the published npm package. Do not write a custom MCP client script. Cline must start the server and call its tools itself.
+Register the server through Cline's own MCP settings. Do not write a custom MCP client script. Cline must start the server and call its tools itself.
 
 ## Prerequisites
 
@@ -18,6 +18,8 @@ Ask the user for these two values. Do not guess them.
 - `TANDOOR_TOKEN`: an API token with write access. The user creates it in Tandoor at **Settings, API Tokens, Create new token**.
 
 ## Step 2: Register the server
+
+**Do not clone or build this repository, because `npx` runs the published npm package.**
 
 Use the step for the Cline that you run in.
 
@@ -72,9 +74,14 @@ To choose which tool sections load, add `TANDOOR_MCP_*` variables to `env`. The 
 
 ## Step 3: Verify the server
 
-1. Confirm that `tandoor` is in Cline's list of connected MCP servers.
-2. Call the `list_recipes` tool on the `tandoor` server through Cline's MCP tool call. Do not use a script or `curl` for this check.
-3. Confirm that the result lists recipes from the user's Tandoor instance. An empty list is correct for an instance that has no recipes.
+Cline loads a server that you add during a session as native MCP tools only in the next session. Verify the server in a new session.
+
+1. After you save the settings file, start a new Cline task or session.
+2. In the new session, confirm that `tandoor` is in Cline's list of connected MCP servers.
+3. Call the `list_recipes` tool on the `tandoor` server as a native MCP tool. Do not use a script or `curl` for this check.
+4. Confirm that the result lists recipes from the user's Tandoor instance. An empty list is correct for an instance that has no recipes.
+
+If `tandoor` is not in the list, do not write a script to test the server. Check the `tandoor` entry in the settings file from Step 2, then see [Troubleshooting](#troubleshooting).
 
 ## Troubleshooting
 
