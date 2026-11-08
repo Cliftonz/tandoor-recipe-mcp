@@ -153,11 +153,6 @@ export class RecipeClient extends BaseClient {
     return this.request(`/api/recipe/${id}/related/`);
   }
 
-  /**
-   * Add a recipe's ingredients to the shopping list at N servings. Omit
-   * `ingredients` to add them all. Set `servings=0` with a `list_recipe` id
-   * to delete the shopping-list-recipe.
-   */
   async recipeShoppingUpdate(
     id: number,
     body: { list_recipe?: number | null; ingredients?: number[]; servings?: number; mealplan?: number }

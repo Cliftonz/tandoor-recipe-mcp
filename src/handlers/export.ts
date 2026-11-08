@@ -36,6 +36,7 @@ export async function handleExportRecipes(
     recipes: Array.isArray(args.recipes) ? args.recipes.map((id: number) => ({ id })) : [],
     type: args.type,
     all: args.all ?? false,
+    custom_filter: null,
   };
   if (args.custom_filter != null) {
     const { id, name } = await client.customFilters.getFilter(args.custom_filter, { signal: ctx?.signal });
