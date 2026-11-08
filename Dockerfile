@@ -1,11 +1,11 @@
-FROM node:24-slim AS builder
+FROM node:24-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9 AS builder
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
 RUN npm ci --ignore-scripts
 COPY src ./src
 RUN npm run build
 
-FROM node:24-slim
+FROM node:24-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9
 LABEL io.modelcontextprotocol.server.name="io.github.Cliftonz/tandoor-recipe-mcp"
 ENV NODE_ENV=production \
     TANDOOR_MCP_TRANSPORT=http \

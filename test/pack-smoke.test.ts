@@ -14,7 +14,7 @@
 // jq_query throws MODULE_NOT_FOUND and the stderr filter catches it.
 
 import { describe, it, expect, beforeAll, afterAll, onTestFailed } from 'vitest';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -52,18 +52,16 @@ beforeAll(async () => {
   try {
     installDir = mkdtempSync(path.join(tmpdir(), 'tandoor-mcp-pack-'));
 
-    execSync(`npm pack --ignore-scripts --pack-destination "${installDir}"`, {
-      cwd: REPO,
-      encoding: 'utf8',
+    const npm = (args: string[], cwd: string) => execFileSync(process.execPath, [process.env.npm_execpath!, ...args], {
+      cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
+    npm(['pack', '--ignore-scripts', '--pack-destination', installDir], REPO);
     const tarballName = readdirSync(installDir).find((f) => f.endsWith('.tgz'));
     if (!tarballName) throw new Error(`packed tarball not found in ${installDir}`);
 
-    execSync(
-      `npm init -y && npm install --no-audit --no-fund --ignore-scripts "./${tarballName}"`,
-      { cwd: installDir, stdio: ['ignore', 'pipe', 'pipe'] },
-    );
+    npm(['init', '-y'], installDir);
+    npm(['install', '--no-audit', '--no-fund', '--ignore-scripts', `./${tarballName}`], installDir);
     installedBin = path.join(installDir, 'node_modules', '@cliftonz', 'tandoor-recipes-mcp', 'build', 'index.js');
     if (!existsSync(installedBin)) {
       throw new Error(`installed binary not found at ${installedBin}`);

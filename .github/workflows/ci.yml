@@ -33,13 +33,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        # `npm install --no-save` tolerates the platform-specific lock
-        # drift introduced by vitest's optional @rolldown WASM bindings
-        # (the macOS-generated lock can't carry every Linux variant of
-        # the transitive @emnapi entries that `npm ci` validates strictly).
-        # --no-save keeps the committed lock pristine; --no-audit + --no-fund
-        # match what `npm ci` would do for noise.
-        run: npm install --no-save --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Audit dependencies
         run: npm audit --audit-level=high

@@ -45,7 +45,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install --no-save --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Bootstrap Tandoor
         run: ./scripts/tandoor-bootstrap.sh

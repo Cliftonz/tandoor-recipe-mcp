@@ -74,9 +74,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        # See ci.yml: `npm install --no-save` tolerates platform-specific
-        # optional-dep lock drift while keeping the committed lock pristine.
-        run: npm install --no-save --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Build
         run: npm run build
