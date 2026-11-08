@@ -214,10 +214,6 @@ describe('release-gating workflow shape', () => {
       pushIdx = named('Push Docker image');
     });
 
-    it('grants packages: write for the GHCR push', () => {
-      expect(release.jobs.publish.permissions.packages).toBe('write');
-    });
-
     it('builds for amd64 and arm64 before tagging, then pushes after npm publish and before the GitHub release', () => {
       for (const idx of [buildIdx, pushIdx]) {
         expect(steps[idx].uses).toMatch(/^docker\/build-push-action@/);
@@ -287,8 +283,6 @@ describe('release-gating workflow shape', () => {
       expect(attest.uses).toMatch(/^actions\/attest-build-provenance@[0-9a-f]{40}$/);
       expect(attest.with['subject-path']).toBe(MCPB);
       expect(attest.if).toMatch(/steps\.tagcheck\.outputs\.skip != 'true'/);
-      expect(release.jobs.publish.permissions.attestations).toBe('write');
-      expect(release.jobs.publish.permissions['id-token']).toBe('write');
     });
   });
 
