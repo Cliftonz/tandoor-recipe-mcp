@@ -99,7 +99,7 @@ describe('skills reference tools in backticks by exact name, and sections by nam
     for (const skill of readdirSync(skillsDir)) {
       mkdirSync(path.join(dir, skill), { recursive: true });
       const text = readFileSync(path.join(skillsDir, skill, 'SKILL.md'), 'utf8');
-      writeFileSync(path.join(dir, skill, 'SKILL.md'), text.replace(/\n/g, '\r\n'));
+      writeFileSync(path.join(dir, skill, 'SKILL.md'), text.replace(/\r?\n/g, '\r\n'));
     }
     expect(checkSkills(dir, tools)).toEqual([]);
   });
