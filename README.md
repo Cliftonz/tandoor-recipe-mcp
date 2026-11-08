@@ -1,30 +1,41 @@
-# Tandoor Recipes MCP
+<p align="center"><img src="assets/logo.png" alt="Tandoor Recipes MCP" width="520"></p>
 
-[![npm version](https://img.shields.io/npm/v/@cliftonz/tandoor-recipes-mcp.svg)](https://www.npmjs.com/package/@cliftonz/tandoor-recipes-mcp)
-[![CI](https://github.com/Cliftonz/tandoor-recipe-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Cliftonz/tandoor-recipe-mcp/actions/workflows/ci.yml)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Cliftonz/tandoor-recipe-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/Cliftonz/tandoor-recipe-mcp)
-[![License: MIT](https://img.shields.io/github/license/Cliftonz/tandoor-recipe-mcp)](LICENSE)
+<p align="center"><strong>Turn "plan the week and make me a grocery list" into one prompt.</strong></p>
+
+<p align="center">Recipes, meal plans, shopping lists and more for your local or self-hosted Tandoor instance.</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@cliftonz/tandoor-recipes-mcp"><img src="https://img.shields.io/npm/v/@cliftonz/tandoor-recipes-mcp.svg" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@cliftonz/tandoor-recipes-mcp"><img src="https://img.shields.io/npm/dm/@cliftonz/tandoor-recipes-mcp" alt="npm downloads"></a>
+  <a href="https://github.com/Cliftonz/tandoor-recipe-mcp/pkgs/container/tandoor-recipes-mcp"><img src="https://img.shields.io/github/v/release/Cliftonz/tandoor-recipe-mcp?label=docker&logo=docker" alt="Docker image"></a>
+  <a href="https://registry.modelcontextprotocol.io/v0/servers?search=io.github.Cliftonz/tandoor-recipe-mcp"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0%2Fservers%3Fsearch%3Dio.github.Cliftonz%2Ftandoor-recipe-mcp&query=%24.servers%5B0%5D.server.version&label=MCP%20Registry" alt="MCP Registry"></a>
+  <a href="https://github.com/Cliftonz/tandoor-recipe-mcp/actions/workflows/ci.yml"><img src="https://github.com/Cliftonz/tandoor-recipe-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/Cliftonz/tandoor-recipe-mcp"><img src="https://api.scorecard.dev/projects/github.com/Cliftonz/tandoor-recipe-mcp/badge" alt="OpenSSF Scorecard"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Cliftonz/tandoor-recipe-mcp" alt="License: MIT"></a>
+</p>
+
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#configure">Configure</a> ·
+  <a href="#remote-mode">Remote mode</a> ·
+  <a href="#tool-sections">Tool sections</a> ·
+  <a href="#example-conversations">Example conversations</a> ·
+  <a href="#contributing">Contributing</a>
+</p>
+
+<p align="center"><sub>Unofficial community project, not affiliated with Tandoor. Tandoor logo © TandoorRecipes, used to show compatibility.</sub></p>
 
 A Model Context Protocol (MCP) server that gives LLM agents full read/write access to a [Tandoor Recipes](https://tandoor.dev) instance: recipes, meal plans, ingredients, shopping lists, cook logs, nutrition, AI-powered URL/image imports, invite/access tokens, storages, sync, spaces, exports, imports, and more.
 
-> Turn "plan the week and make me a grocery list" into one prompt.
+## What's new in 3.4
 
-## New in 3.1.0
+- **Remote mode for Claude and ChatGPT.** Host the server next to your Tandoor and add it as a custom connector in Claude or ChatGPT. Each person signs in with their own Tandoor API token. See [Remote mode](#remote-mode).
+- **Docker image on GHCR.** Each release pushes a signed multi-arch image to `ghcr.io/cliftonz/tandoor-recipes-mcp`. See [Run with Docker](#run-with-docker).
+- **MCP Registry listing.** Stable releases publish `server.json` to the MCP Registry, with the npm package, the `.mcpb` file and the Docker image.
+- **Titles and annotations on every tool.** All 307 tools declare a title and the read-only, destructive, idempotent and open-world hints.
+- **Host and Origin checks, plus rate limits.** Remote mode checks the Host and Origin headers and rate limits each visitor on `/mcp`. See [Remote mode security](#remote-mode-security).
 
-- **File downloads** ([#10](https://github.com/Cliftonz/tandoor-recipe-mcp/issues/10)): `download_recipe_file` and `download_file` return a Tandoor file inline, or save it to `TANDOOR_MCP_DOWNLOAD_ROOT` with `save: true`. See [Downloading files](#downloading-files).
-- **`get_external_recipe_file_link` works again.** `get_recipe_file_metadata` is removed; use `download_recipe_file` instead.
-
-## New in 3.0.0
-
-- **Per-section tool settings** replace `TANDOOR_MCP_PROFILE`. One env var per section: tiered sections take `off`, `simple`, or `full`, and toggle sections take `off` or `on`. See [Tool sections](#tool-sections) and [Migration from 2.x](#migration-from-2x).
-- **Pantry and freezer inventory tools** in the `inventory` section, plus a combined `tandoor://pantry/on-hand` resource.
-- **Households:** list, get, create, update, and delete households, and `assign_household` to move user-spaces between them.
-- **Named shopping lists**, such as one per store. Foods and shopping entries take `shopping_lists`.
-- **Tandoor 2.6 API alignment.** Requires Tandoor 2.6.0 or later.
-- **HTTP transport fix** ([#12](https://github.com/Cliftonz/tandoor-recipe-mcp/issues/12)): the HTTP transport now answers every request, not only the first.
-- **oxlint** for linting.
-
-307 tools in total; 46 are visible at startup with the default settings. The [CHANGELOG](CHANGELOG.md) has the full list of changes and breaking changes.
+See [CHANGELOG.md](CHANGELOG.md) for earlier releases.
 
 ## Why this server
 
