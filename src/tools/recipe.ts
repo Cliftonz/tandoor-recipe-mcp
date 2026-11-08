@@ -166,6 +166,7 @@ export const addRecipeToShoppingListShape = {
   servings: z.number().optional().describe('Default 1. Use 0 with list_recipe to delete.'),
   ingredients: z.array(z.number()).optional().describe('Ingredient IDs to include. Omit for all.'),
   list_recipe: z.number().nullable().optional().describe('Existing shopping-list-recipe id to update'),
+  mealplan: z.number().optional().describe('Meal plan id to link the entries to'),
 } as const;
 
 export const searchRecipesShape = {
@@ -291,7 +292,7 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
     title: 'Add recipe to shopping list',
     annotations: { ...CREATE, destructiveHint: true },
     description:
-      'Add a recipe\'s ingredients to the shopping list at N servings. Omit ingredients[] to add all. Set servings=0 with list_recipe (id) to delete that shopping-list-recipe.',
+      'Add a recipe\'s ingredients to the shopping list at N servings. Omit ingredients[] to add all. Pass mealplan (id) to link the entries to that meal plan. Set servings=0 with list_recipe (id) to delete that shopping-list-recipe.',
     inputSchema: addRecipeToShoppingListShape,
   }, handleAddRecipeToShoppingList);
 

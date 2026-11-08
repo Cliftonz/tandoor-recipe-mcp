@@ -709,6 +709,7 @@ export async function handleAddRecipeToShoppingList(
     servings: args.servings,
     ingredients: args.ingredients,
     list_recipe: args.list_recipe,
+    mealplan: args.mealplan,
   });
   return `Recipe ${args.id} added to shopping list.\n\n${JSON.stringify(r)}`;
 }

@@ -160,7 +160,7 @@ export class RecipeClient extends BaseClient {
    */
   async recipeShoppingUpdate(
     id: number,
-    body: { list_recipe?: number | null; ingredients?: number[]; servings?: number }
+    body: { list_recipe?: number | null; ingredients?: number[]; servings?: number; mealplan?: number }
   ): Promise<any> {
     return this.request(`/api/recipe/${id}/shopping/`, {
       method: 'PUT',
@@ -168,6 +168,7 @@ export class RecipeClient extends BaseClient {
         ingredients: body.ingredients ?? [],
         list_recipe: body.list_recipe ?? null,
         servings: body.servings ?? 1,
+        ...(body.mealplan !== undefined && { mealplan: { id: body.mealplan } }),
       }),
     });
   }
