@@ -83,7 +83,7 @@ Call `add_recipe_to_shopping_list` once per plan that is not already on the list
 
 - Pass the plan's recipe id as id, the plan's servings, and the plan id as mealplan. Tandoor scales every amount from the recipe's own servings to the number you pass. Servings default to 1 if you omit them, so always pass them. The mealplan link lets the next run find these entries in step 3.
 - To leave foods off, pass ingredients with the ids of the ingredients to keep. Omit ingredients to add all of them.
-- Never pass servings 0. With a list_recipe id, servings 0 deletes that shopping-list-recipe.
+- Never pass servings 0 or a negative number. With a list_recipe id, a negative servings value deletes that shopping-list-recipe.
 - Tandoor copies each food's shopping lists onto the new entries. You cannot choose the list in this call. To put the new entries on the list the user picked, collect their ids from `list_shopping_entries` (each entry has a list_recipe) and call `bulk_update_shopping_entries` with shopping_lists_add. The list the user picked is approval for this.
 
 The same recipe planned twice gets two separate groups on the list. That is correct.

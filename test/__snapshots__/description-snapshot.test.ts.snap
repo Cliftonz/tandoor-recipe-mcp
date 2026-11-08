@@ -11,7 +11,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "add_recipe_to_book",
   },
   {
-    "description": "Add a recipe's ingredients to the shopping list at N servings. Omit ingredients[] to add all. Pass mealplan (id) to link the entries to that meal plan. Set servings=0 with list_recipe (id) to delete that shopping-list-recipe.",
+    "description": "Add a recipe's ingredients to the shopping list at N servings. Omit ingredients[] to add all. Pass mealplan (id) to link the entries to that meal plan. Set servings to a negative value (e.g. -1) with list_recipe (id) to delete that shopping-list-recipe.",
     "name": "add_recipe_to_shopping_list",
   },
   {
@@ -1340,7 +1340,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "servings": {
-          "description": "Default 1. Use 0 with list_recipe to delete.",
+          "description": "Default 1. Use a negative value (e.g. -1) with list_recipe to delete.",
           "type": "number",
         },
       },
