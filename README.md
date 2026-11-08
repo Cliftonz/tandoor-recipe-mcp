@@ -11,6 +11,7 @@
   <a href="https://www.npmjs.com/package/@cliftonz/tandoor-recipes-mcp"><img src="https://img.shields.io/npm/dm/@cliftonz/tandoor-recipes-mcp" alt="npm downloads"></a>
   <a href="https://github.com/Cliftonz/tandoor-recipe-mcp/pkgs/container/tandoor-recipes-mcp"><img src="https://img.shields.io/github/v/release/Cliftonz/tandoor-recipe-mcp?label=docker&logo=docker" alt="Docker image"></a>
   <a href="https://registry.modelcontextprotocol.io/v0/servers?search=io.github.Cliftonz/tandoor-recipe-mcp"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0%2Fservers%3Fsearch%3Dio.github.Cliftonz%2Ftandoor-recipe-mcp&query=%24.servers%5B0%5D.server.version&label=MCP%20Registry" alt="MCP Registry"></a>
+  <a href="https://glama.ai/mcp/servers/Cliftonz/tandoor-recipe-mcp"><img src="https://glama.ai/mcp/servers/Cliftonz/tandoor-recipe-mcp/badges/score.svg" alt="Glama score"></a>
   <a href="https://github.com/Cliftonz/tandoor-recipe-mcp/actions/workflows/ci.yml"><img src="https://github.com/Cliftonz/tandoor-recipe-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/Cliftonz/tandoor-recipe-mcp"><img src="https://api.scorecard.dev/projects/github.com/Cliftonz/tandoor-recipe-mcp/badge" alt="OpenSSF Scorecard"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/Cliftonz/tandoor-recipe-mcp" alt="License: MIT"></a>
