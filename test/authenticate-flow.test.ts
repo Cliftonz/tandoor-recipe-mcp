@@ -65,6 +65,16 @@ describe('authenticate on Tandoor 2.7 (/api-token-auth/ redirects to login)', ()
     expect(JSON.parse(String(mint.init.body))).toEqual({ scope: 'read write', expires: '2027-11-08T12:00:00.000Z' });
   });
 
+  it('follows an absolute login Location the same way', async () => {
+    serve({
+      '/api-token-auth/': () => new Response(null, { status: 302, headers: { Location: 'https://tandoor.example.com/account/login/?next=/api-token-auth/' } }),
+      '/_allauth/app/v1/auth/login': () => json(200, { status: 200, meta: { is_authenticated: true, session_token: 'sess-abs' } }),
+      '/api/access-token/': () => json(201, { id: 8, token: 'tda_abs', scope: 'read write' }),
+    });
+    const res = await handleAuthenticate(client(), creds);
+    expect(res).toBe('Bearer token minted (text-only, not mirrored to structuredContent):\ntda_abs');
+  });
+
   it('asks for a Settings > API token when the account needs an extra login step', async () => {
     serve({
       '/api-token-auth/': loginRedirect,
@@ -86,8 +96,11 @@ describe('authenticate on Tandoor 2.7 (/api-token-auth/ redirects to login)', ()
 });
 
 describe('authenticate when /api-token-auth/ redirects somewhere other than login', () => {
-  it('does not start the allauth flow', async () => {
-    serve({ '/api-token-auth/': () => new Response(null, { status: 302, headers: { Location: '/elsewhere/' } }) });
+  it.each([
+    '/elsewhere/',
+    'https://tandoor.example.com/elsewhere/?next=/account/login/',
+  ])('does not start the allauth flow for %s', async (location) => {
+    serve({ '/api-token-auth/': () => new Response(null, { status: 302, headers: { Location: location } }) });
     await expect(handleAuthenticate(client(), creds)).rejects.toThrow('302');
     expect(calls.map((c) => c.path)).toEqual(['/api-token-auth/']);
   });
