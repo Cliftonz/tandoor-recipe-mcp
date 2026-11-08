@@ -249,47 +249,81 @@ describe('release-gating workflow shape', () => {
   });
 
   describe('MCP Registry publish', () => {
+    let registry: any;
     let steps: any[];
     const named = (name: string) => stepIndex(steps, name);
     const isRegistryStep = (s: any) => typeof s.run === 'string' && /mcp-publisher|fileSha256/.test(s.run);
 
     beforeAll(() => {
-      steps = release.jobs.publish.steps;
+      registry = readWorkflow('registry-publish.yml');
+      steps = registry.jobs.publish.steps;
     });
 
-    it('writes the packed mcpb sha256 into server.json, then logs in with GitHub OIDC, then publishes', () => {
-      const shaIdx = named('Write mcpb sha256 into server.json');
-      expect(steps[shaIdx].run).toMatch(/sha256sum tandoor-recipes-mcp\.mcpb/);
-      expect(steps[shaIdx].run).toMatch(/fileSha256/);
-      expect(steps[shaIdx].run).toMatch(/server\.json/);
-      const loginIdx = named('Log in to the MCP Registry');
-      const publishIdx = named('Publish to the MCP Registry');
-      expect(steps[loginIdx].run).toMatch(/mcp-publisher login github-oidc/);
-      expect(steps[publishIdx].run).toMatch(/mcp-publisher publish/);
-      expect(loginIdx).toBeGreaterThan(shaIdx);
-      expect(publishIdx).toBeGreaterThan(loginIdx);
-      expect(release.permissions['id-token']).toBe('write');
+    it('leaves no registry steps in the release publish job', () => {
+      expect((release.jobs.publish.steps as any[]).filter(isRegistryStep)).toEqual([]);
     });
 
-    it('runs only after the image is signed and the GitHub release holds the mcpb', () => {
-      const firstRegistryIdx = steps.findIndex(isRegistryStep);
-      const releaseIdx = named('Create GitHub release');
-      expect(steps[releaseIdx].run).toMatch(/gh release create .*tandoor-recipes-mcp\.mcpb/);
-      expect(firstRegistryIdx).toBeGreaterThan(named('Sign Docker image'));
-      expect(firstRegistryIdx).toBeGreaterThan(releaseIdx);
+    it('release calls registry-publish.yml after publish, only for stable releases tagged in this run', () => {
+      const job = release.jobs.registry;
+      expect(job.uses).toBe('./.github/workflows/registry-publish.yml');
+      expect(needsIncludes(job.needs, 'publish')).toBe(true);
+      expect(job.with.version).toBe('${{ needs.detect.outputs.version }}');
+      expect(job.if).toMatch(/needs\.publish\.outputs\.skip == 'false'/);
+      expect(job.if).toMatch(/needs\.detect\.outputs\.prerelease != 'true'/);
+      expect(job.permissions).toEqual({ contents: 'read', 'id-token': 'write' });
+      expect(release.jobs.publish.outputs.skip).toBe('${{ steps.tagcheck.outputs.skip }}');
     });
 
-    it('runs only for stable releases that were tagged in this run', () => {
-      const registrySteps = steps.filter(isRegistryStep);
-      expect(registrySteps.length).toBeGreaterThanOrEqual(3);
-      for (const s of registrySteps) {
-        expect(s.if).toMatch(/steps\.tagcheck\.outputs\.skip != 'true'/);
-        expect(s.if).toMatch(/needs\.detect\.outputs\.prerelease != 'true'/);
-      }
+    it('runs when called with a version or dispatched with a required version', () => {
+      const triggers = registry.on ?? registry.true;
+      expect(Object.keys(triggers).sort()).toEqual(['workflow_call', 'workflow_dispatch']);
+      expect(triggers.workflow_call.inputs.version.required).toBe(true);
+      expect(triggers.workflow_dispatch.inputs.version.required).toBe(true);
+      expect(registry.permissions).toEqual({ contents: 'read', 'id-token': 'write' });
+    });
+
+    it('rejects a non-stable version and a missing tag before checking out the tag', () => {
+      const validateIdx = named('Validate version and tag');
+      const validate = steps[validateIdx].run as string;
+      expect(validate).toContain('^[0-9]+\\.[0-9]+\\.[0-9]+$');
+      expect(validate).toMatch(/git ls-remote --exit-code --tags .*refs\/tags\/v\$VERSION/);
+      const checkoutIdx = steps.findIndex((s) => typeof s.uses === 'string' && s.uses.startsWith('actions/checkout@'));
+      expect(steps[checkoutIdx].with.ref).toBe('refs/tags/v${{ inputs.version }}');
+      expect(checkoutIdx).toBeGreaterThan(validateIdx);
+    });
+
+    it('waits, bounded, for npm to serve the version and for an anonymous GHCR pull to work', () => {
+      const npm = steps[named('Wait for npm')].run as string;
+      expect(npm).toMatch(/seq 1 20/);
+      expect(npm).toMatch(/sleep 30/);
+      expect(npm).toContain('npm view "@cliftonz/tandoor-recipes-mcp@$VERSION" version');
+      expect(npm).toMatch(/exit 1/);
+      const ghcr = steps[named('Wait for GHCR')].run as string;
+      expect(ghcr).toMatch(/seq 1 20/);
+      expect(ghcr).toMatch(/sleep 30/);
+      expect(ghcr).toContain('docker manifest inspect "ghcr.io/cliftonz/tandoor-recipes-mcp:$VERSION"');
+      expect(ghcr).not.toMatch(/docker login/);
+      expect(ghcr).toMatch(/public.*CONTRIBUTING/);
+      expect(ghcr).toMatch(/exit 1/);
+    });
+
+    it('writes the sha256 of the downloaded release mcpb into server.json', () => {
+      const sha = steps[named('Write mcpb sha256 into server.json')];
+      expect(sha.run).toMatch(/gh release download "v\$VERSION" .*tandoor-recipes-mcp\.mcpb/);
+      expect(sha.env.GH_TOKEN).toBe('${{ secrets.GITHUB_TOKEN }}');
+      expect(sha.run).toMatch(/sha256sum tandoor-recipes-mcp\.mcpb/);
+      expect(sha.run).toContain('(.packages[] | select(.registryType == "mcpb")).fileSha256 = $sha');
+      expect(named('Write mcpb sha256 into server.json')).toBeGreaterThan(named('Wait for GHCR'));
+      expect(named('Wait for GHCR')).toBeGreaterThan(named('Wait for npm'));
     });
 
     it('installs a pinned mcp-publisher release verified against its Sigstore bundle', () => {
       const install = steps[named('Install mcp-publisher')];
+      const cosignIdx = steps.findIndex((s) => typeof s.uses === 'string' && s.uses.startsWith('sigstore/cosign-installer@'));
+      expect(steps[cosignIdx].uses).toBe(
+        (release.jobs.publish.steps as any[]).find((s) => typeof s.uses === 'string' && s.uses.startsWith('sigstore/cosign-installer@')).uses,
+      );
+      expect(cosignIdx).toBeLessThan(named('Install mcp-publisher'));
       expect(install.run).toMatch(/tar xzf .*mcp-publisher/);
       expect(install.env.MCP_PUBLISHER_VERSION).toMatch(/^v\d+\.\d+\.\d+$/);
       expect(install.run).not.toMatch(/releases\/latest/);
@@ -299,6 +333,17 @@ describe('release-gating workflow shape', () => {
         '--certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}"',
       );
       expect(install.run).toContain('--certificate-oidc-issuer "https://token.actions.githubusercontent.com"');
+    });
+
+    it('logs in with GitHub OIDC after writing the hash, then publishes last', () => {
+      const loginIdx = named('Log in to the MCP Registry');
+      const publishIdx = named('Publish to the MCP Registry');
+      expect(steps[loginIdx].run).toMatch(/mcp-publisher login github-oidc/);
+      expect(steps[publishIdx].run).toMatch(/mcp-publisher publish/);
+      expect(loginIdx).toBeGreaterThan(named('Write mcpb sha256 into server.json'));
+      expect(loginIdx).toBeGreaterThan(named('Install mcp-publisher'));
+      expect(publishIdx).toBeGreaterThan(loginIdx);
+      expect(publishIdx).toBe(steps.length - 1);
     });
   });
 });
