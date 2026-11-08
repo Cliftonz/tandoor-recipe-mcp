@@ -7,6 +7,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
@@ -150,6 +151,38 @@ describe('release-gating workflow shape', () => {
     expect(steps[tagIdx].run).toMatch(/git push origin "v\$NEW"/);
     expect(steps[publishIdx].run).toMatch(/npm publish/);
     expect(publishIdx).toBeGreaterThan(tagIdx);
+  });
+
+  describe('production-only npm-shrinkwrap.json', () => {
+    const STEP = 'Write production-only npm-shrinkwrap.json';
+    const RUN = "jq '.packages |= with_entries(select(.value.dev != true))' package-lock.json > npm-shrinkwrap.json";
+    const lockPackages = () => JSON.parse(readFileSync(path.join(REPO, 'package-lock.json'), 'utf8')).packages;
+    const shrinkwrapPackages = () => {
+      const run = release.jobs.publish.steps.find((s: any) => s.name === STEP).run as string;
+      const filter = run.match(/^jq '(.+)' package-lock\.json > npm-shrinkwrap\.json$/)![1];
+      return JSON.parse(execFileSync('jq', [filter, path.join(REPO, 'package-lock.json')], { encoding: 'utf8' })).packages;
+    };
+
+    it('writes it from package-lock.json before npm publish, without npm shrinkwrap', () => {
+      const steps = release.jobs.publish.steps as any[];
+      expect(steps[stepIndex(steps, STEP)].run).toBe(RUN);
+      expect(stepIndex(steps, STEP)).toBeLessThan(stepIndex(steps, 'Publish to npm'));
+      expect(steps.filter((s) => typeof s.run === 'string' && /npm shrinkwrap/.test(s.run))).toEqual([]);
+    });
+
+    it('is listed in package.json files so npm packs it', () => {
+      expect(JSON.parse(readFileSync(path.join(REPO, 'package.json'), 'utf8')).files).toContain('npm-shrinkwrap.json');
+    });
+
+    it('keeps the root and every production entry of the lock and drops every dev entry', () => {
+      const lock = lockPackages();
+      const shrinkwrap = shrinkwrapPackages();
+      expect(Object.values(shrinkwrap).filter((p: any) => p.dev === true)).toEqual([]);
+      expect(shrinkwrap['']).toEqual(lock['']);
+      for (const [key, entry] of Object.entries(lock) as [string, any][]) {
+        if (entry.dev !== true) expect(shrinkwrap[key], key).toEqual(entry);
+      }
+    });
   });
 
   it('publish job routes prereleases to the next dist-tag', () => {

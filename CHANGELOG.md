@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 3.4.1 / 2026-11-08
+
+### Notes
+- The published npm package now includes an `npm-shrinkwrap.json` with production dependencies only, so `npx` installs exactly the dependency versions that were tested.
+- No user-facing behavior changes.
+
 ## 3.4.0 / 2026-11-07
 
 ### Added
