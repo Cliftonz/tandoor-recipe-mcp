@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "tandoor-recipes-mcp",
   "display_name": "Tandoor Recipes",
-  "version": "3.4.3",
+  "version": "3.4.4",
   "description": "Recipes, meal plans, shopping lists, ingredients, cook logs, nutrition and AI import for your local Tandoor instance.",
   "long_description": "Connects Claude to your local Tandoor Recipes instance. Search and edit recipes, plan meals, manage shopping lists and pantry inventory, log cooking, and import recipes with AI. Tool sections can be switched off, simple, or full in the extension settings.",
   "author": {
