@@ -50,6 +50,28 @@ describe('sensitive endpoint log gate', () => {
     }
   });
 
+  it('authenticate on Tandoor 2.7 does not leak password, session token, or minted token to stderr', async () => {
+    const client = new TandoorClient({ url: 'https://tandoor.test', token: 'irrelevant' });
+    const responses: Record<string, () => Response> = {
+      '/api-token-auth/': () => new Response(null, { status: 302, headers: { Location: '/account/login/?next=/api-token-auth/' } }),
+      '/_allauth/app/v1/auth/login': () => new Response(JSON.stringify({ status: 200, meta: { session_token: 'SESS-secret' } }), { status: 200 }),
+      '/api/access-token/': () => new Response(JSON.stringify({ id: 1, token: 'sk-MINT27-secret' }), { status: 201 }),
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => responses[new URL(String(input)).pathname]());
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await handleAuthenticate(client, { username: 'alice', password: 'hunter2' });
+      const stderr = errSpy.mock.calls.map((c) => String(c[0])).join('\n');
+      expect(stderr).not.toContain('hunter2');
+      expect(stderr).not.toContain('SESS-secret');
+      expect(stderr).not.toContain('sk-MINT27-secret');
+      expect(stderr).toContain('/_allauth/app/v1/auth/login 200 <redacted-credentials>');
+    } finally {
+      errSpy.mockRestore();
+      fetchSpy.mockRestore();
+    }
+  });
+
   it('create_access_token POST does not leak the minted token to stderr', async () => {
     const client = new TandoorClient({ url: 'https://tandoor.test', token: 'irrelevant' });
     const fetchSpy = mockFetchOnce({ id: 1, scope: 'read', expires: '2030-01-01T00:00:00Z', created: '2026-01-01T00:00:00Z', token: 'ATK-secret-value' });
