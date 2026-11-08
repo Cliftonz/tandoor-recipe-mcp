@@ -94,7 +94,7 @@ export function registerAccessTokenTools(server: McpServer, client: TandoorClien
   registerStringTool(server, client, 'authenticate', {
     title: 'Get token from username and password',
     annotations: UPDATE,
-    description: `Trade username + password for a Tandoor bearer token via POST /api-token-auth/. ${ESCALATION_WARNING}`,
+    description: `Trade username + password for a Tandoor bearer token. Tandoor 2.6 and earlier: POST /api-token-auth/. Tandoor 2.7+: allauth login, then a new one-year read write token. Accounts that need MFA or email verification must create a token in Tandoor under Settings > API instead. ${ESCALATION_WARNING}`,
     inputSchema: authenticateShape,
   }, handleAuthenticate);
 }

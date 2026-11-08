@@ -23,7 +23,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "assign_household",
   },
   {
-    "description": "Trade username + password for a Tandoor bearer token via POST /api-token-auth/. ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user.",
+    "description": "Trade username + password for a Tandoor bearer token. Tandoor 2.6 and earlier: POST /api-token-auth/. Tandoor 2.7+: allauth login, then a new one-year read write token. Accounts that need MFA or email verification must create a token in Tandoor under Settings > API instead. ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller's login credentials. Only invoke when explicitly asked by the user.",
     "name": "authenticate",
   },
   {

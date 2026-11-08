@@ -21,6 +21,7 @@ const LOG_MODES = (() => {
 // password). Path-based match keeps the gate independent of body inspection.
 const SENSITIVE_ENDPOINTS: RegExp[] = [
   /\/api-token-auth\//,
+  /\/_allauth\//,
   /\/api\/access-token\/(\?|$)/,
 ];
 
@@ -96,9 +97,11 @@ export function redactToken(text: string, token: string): string {
 
 export class TandoorApiError extends Error {
   readonly status: number;
-  constructor(message: string, status: number) {
+  readonly location: string | null;
+  constructor(message: string, status: number, location: string | null = null) {
     super(message);
     this.status = status;
+    this.location = location;
   }
 }
 
@@ -132,6 +135,7 @@ function shouldRetry(status: number): boolean {
  */
 export interface TandoorRequestOptions extends RequestInit {
   maxRetries?: number;
+  sessionToken?: string;
 }
 
 async function sleep(ms: number): Promise<void> {
@@ -230,7 +234,7 @@ export class BaseClient {
     // boundary string itself. Forcing application/json breaks multipart uploads.
     const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
     const headers: Record<string, string> = {
-      'Authorization': `Bearer ${this.token}`,
+      ...(options.sessionToken ? { 'X-Session-Token': options.sessionToken } : { 'Authorization': `Bearer ${this.token}` }),
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(options.headers as Record<string, string>),
     };
@@ -264,7 +268,7 @@ export class BaseClient {
         logResponse(method, url, response.status, redactToken(bodyText, this.token), bodyPreview);
 
         if (!response.ok) {
-          throw new TandoorApiError(redactToken(apiErrorMessage(response, bodyText), this.token), response.status);
+          throw new TandoorApiError(redactToken(apiErrorMessage(response, bodyText), this.token), response.status, response.headers.get('location'));
         }
 
         // Handle 204 No Content and any other empty body (e.g. DELETE)
