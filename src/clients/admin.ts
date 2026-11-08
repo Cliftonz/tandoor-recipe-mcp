@@ -61,8 +61,10 @@ export class UserFileClient extends BaseClient {
     return this.request('/api/user-file/', { method: 'POST', body: fd });
   }
 
-  async patchUserFile(id: number, body: any): Promise<any> {
-    return this.request(`/api/user-file/${id}/`, { method: 'PATCH', body: JSON.stringify(body) });
+  async patchUserFile(id: number, body: { name: string }): Promise<any> {
+    const fd = new FormData();
+    fd.append('name', body.name);
+    return this.request(`/api/user-file/${id}/`, { method: 'PATCH', body: fd });
   }
 
   async deleteUserFile(id: number): Promise<void> {

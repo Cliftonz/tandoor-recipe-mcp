@@ -51,11 +51,10 @@ export class FoodUnitClient extends BaseClient {
     });
   }
 
-  /** Add a food to active shopping lists, or wipe with delete=true. */
   async foodShoppingUpdate(
     id: number,
-    body: { amount?: number | null; unit?: number | null; delete?: 'true' | null }
-  ): Promise<any> {
+    body: { amount?: number | null; unit?: number | null; _delete: 'true' | null }
+  ): Promise<void> {
     return this.request(`/api/food/${id}/shopping/`, {
       method: 'PUT',
       body: JSON.stringify(body),

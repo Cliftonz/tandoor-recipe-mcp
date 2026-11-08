@@ -30,6 +30,7 @@ describe('export handlers', () => {
       recipes: [{ id: 1 }, { id: 2 }, { id: 3 }],
       type: 'json',
       all: false,
+      custom_filter: null,
     }, { signal: undefined });
     expect(out).toContain('Export started');
     const body = out.split('\n\n')[1];
@@ -58,7 +59,7 @@ describe('export handlers', () => {
     const exportRecipes = vi.fn(async () => ({ id: 1, type: 'zip', running: true, created_at: 't' }));
     const client = { exports: { exportRecipes } } as any;
     await handleExportRecipes(client, { type: 'zip', all: true });
-    expect(exportRecipes).toHaveBeenCalledWith({ recipes: [], type: 'zip', all: true }, { signal: undefined });
+    expect(exportRecipes).toHaveBeenCalledWith({ recipes: [], type: 'zip', all: true, custom_filter: null }, { signal: undefined });
   });
 
   it.each([0, -1, 1.5])('export_recipes rejects custom_filter=%s at the input schema', (custom_filter) => {

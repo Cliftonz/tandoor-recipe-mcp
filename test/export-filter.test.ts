@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { TandoorClient } from '../src/clients/index.js';
 import { handleExportRecipes } from '../src/handlers/export.js';
+import type { ExportRecipesArgs } from '../src/tools/export.js';
 
 function json(body: unknown) {
   return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -24,6 +25,22 @@ describe('export_recipes custom_filter request shape', () => {
 
     expect(posted).toEqual([{ recipes: [], type: 'DEFAULT', all: false, custom_filter: { id: 7, name: 'weeknight' } }]);
     expect(out).toContain('Export started');
+  });
+
+  it.each<[ExportRecipesArgs, unknown]>([
+    [{ type: 'DEFAULT', recipes: [3, 4] }, { recipes: [{ id: 3 }, { id: 4 }], type: 'DEFAULT', all: false, custom_filter: null }],
+    [{ type: 'DEFAULT', all: true }, { recipes: [], type: 'DEFAULT', all: true, custom_filter: null }],
+  ])('posts custom_filter null without a filter, since the export view reads the key unconditionally (%o)', async (args, expected) => {
+    const posted: any[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+      posted.push(JSON.parse(String(init!.body)));
+      return json({ id: 9, type: 'DEFAULT', running: true, created_at: 't' });
+    });
+    const client = new TandoorClient({ url: 'https://tandoor.test', token: 't' });
+
+    await handleExportRecipes(client, args);
+
+    expect(posted).toEqual([expected]);
   });
 
   it("surfaces Tandoor's 404 for a filter id the caller cannot access and starts no export", async () => {

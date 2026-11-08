@@ -22,6 +22,7 @@ import { handleSearchRecipes, handleRecipeBatchUpdate, handleDeleteRecipe, handl
 import { handleCreateIngredient, handleUpdateIngredient } from '../src/handlers/ingredient.js';
 import { slimPaginated, emit } from '../src/lib/slim.js';
 import { paginated } from './helpers/factories.js';
+import { TandoorClient } from '../src/clients/index.js';
 
 // ---------- Shared helpers from src/lib/slim.ts ----------
 
@@ -543,11 +544,27 @@ describe('food handlers', () => {
     expect(out).toMatch(/7 merged into 3/);
   });
 
-  it('handleFoodShoppingUpdate translates delete=true → delete:"true"', async () => {
-    const foodShoppingUpdate = vi.fn(async () => ({}));
-    const client = { foodUnits: { foodShoppingUpdate } } as any;
+  it('handleFoodShoppingUpdate sends _delete, the key Tandoor reads, when delete=true', async () => {
+    const sent: any[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+      sent.push(JSON.parse(String(init!.body)));
+      return new Response(null, { status: 204 });
+    });
+    const client = new TandoorClient({ url: 'https://tandoor.test', token: 't' });
     await handleFoodShoppingUpdate(client, { id: 5, delete: true });
-    expect(foodShoppingUpdate.mock.calls[0][1].delete).toBe('true');
+    vi.restoreAllMocks();
+    expect(sent).toEqual([{ _delete: 'true' }]);
+  });
+
+  it.each([
+    [{ id: 5, amount: 2 }, 'Food 5 added to shopping lists.'],
+    [{ id: 5, delete: true }, 'Food 5 removed from shopping lists.'],
+  ])('handleFoodShoppingUpdate confirms with a text result when Tandoor answers 204 (%o)', async (args, expected) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(null, { status: 204 }));
+    const client = new TandoorClient({ url: 'https://tandoor.test', token: 't' });
+    const out = await handleFoodShoppingUpdate(client, args);
+    vi.restoreAllMocks();
+    expect(out).toBe(expected);
   });
 
   it('handleFoodFdcLookup fetches current food, overlays fdc_id, and posts', async () => {

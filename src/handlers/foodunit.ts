@@ -218,11 +218,11 @@ export async function handleFoodShoppingUpdate(
   client: TandoorClient,
   args: FoodShoppingUpdateArgs
 ): Promise<string> {
-  const body: any = { delete: args.delete ? 'true' : null };
+  const body: any = { _delete: args.delete ? 'true' : null };
   if (args.amount !== undefined) body.amount = args.amount;
   if (args.unit_id !== undefined) body.unit = args.unit_id;
-  const r = await client.foodUnits.foodShoppingUpdate(args.id, body);
-  return emit(r);
+  await client.foodUnits.foodShoppingUpdate(args.id, body);
+  return `Food ${args.id} ${args.delete ? 'removed from' : 'added to'} shopping lists.`;
 }
 
 // ---------- Unit handlers ----------

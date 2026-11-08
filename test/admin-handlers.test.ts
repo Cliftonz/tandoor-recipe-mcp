@@ -13,6 +13,7 @@ import {
   handleListAutomations,
   handleGetAutomation,
   handleUploadUserFile,
+  handleUpdateUserFile,
   handleListUserFiles,
   handleListViewLogs,
   handleListImportLogs,
@@ -23,7 +24,7 @@ import {
 } from '../src/handlers/admin.js';
 import { paginated } from './helpers/factories.js';
 import { mockClient } from './helpers/mock-client.js';
-import type { TandoorClient } from '../src/clients/index.js';
+import { TandoorClient } from '../src/clients/index.js';
 
 // Typed mock — TypeScript rejects misspelled client methods (QA F15).
 const mock = (impl: Parameters<typeof mockClient<TandoorClient>>[0]) => mockClient<TandoorClient>(impl);
@@ -314,5 +315,26 @@ describe('handlers/admin.ts', () => {
     const client = mock({ serverSettings: { getCurrent: async () => settings } });
     const res = await handleGetServerSettings(client, {} as any);
     expect(JSON.parse(res)).toEqual(settings);
+  });
+});
+
+describe('handleUpdateUserFile', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('PATCHes the new name as multipart, the only content type /api/user-file/ accepts', async () => {
+    const sent: { method?: string; body: unknown; contentType: string | null }[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+      sent.push({ method: init!.method, body: init!.body, contentType: new Headers(init!.headers).get('content-type') });
+      return new Response(JSON.stringify({ id: 4, name: 'renamed', file_download: 'x' }), { status: 200 });
+    });
+    const client = new TandoorClient({ url: 'https://tandoor.test', token: 't' });
+
+    await handleUpdateUserFile(client, { id: 4, name: 'renamed' });
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0].method).toBe('PATCH');
+    expect(sent[0].contentType).toBeNull();
+    expect(sent[0].body).toBeInstanceOf(FormData);
+    expect([...(sent[0].body as FormData).entries()]).toEqual([['name', 'renamed']]);
   });
 });

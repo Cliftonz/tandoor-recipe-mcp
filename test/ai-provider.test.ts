@@ -1,7 +1,7 @@
 // Tests for AiProvider CRUD handlers and ai_step_sort.
 // AiProvider.api_key is a real credential; slim mode MUST redact it.
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   handleGetAiProvider,
   handleCreateAiProvider,
@@ -12,7 +12,7 @@ import {
   __test__ as aiInternals,
 } from '../src/handlers/ai.js';
 import { mockClient } from './helpers/mock-client.js';
-import type { TandoorClient } from '../src/clients/index.js';
+import { TandoorClient } from '../src/clients/index.js';
 import { createAiProviderShape, updateAiProviderShape } from '../src/tools/ai.js';
 
 const mock = (impl: Parameters<typeof mockClient<TandoorClient>>[0]) =>
@@ -140,14 +140,45 @@ describe('update_ai_provider', () => {
       description: 'openai',
       api_key: body.api_key ?? 'sk-SECRET',
     }));
-    const client = mock({ ai: { patchAiProvider: patch } });
+    const client = mock({ ai: { patchAiProvider: patch, getAiProvider: async () => fullProvider } });
     const res = await handleUpdateAiProvider(client, {
       id: 5,
       api_key: 'sk-NEW',
     } as any);
-    expect(patch).toHaveBeenCalledWith(5, { api_key: 'sk-NEW' }, { signal: undefined });
+    expect(patch).toHaveBeenCalledWith(5, { api_key: 'sk-NEW', space: 1 }, { signal: undefined });
     expect(res).not.toMatch(/sk-SECRET/);
     expect(res).not.toMatch(/sk-NEW/);
+  });
+});
+
+describe('handleUpdateAiProvider keeps the provider in its space', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  function stubTandoor(currentSpace: number | null) {
+    const patches: unknown[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+      if (init?.method === 'PATCH') patches.push(JSON.parse(String(init.body)));
+      return new Response(JSON.stringify({ ...fullProvider, space: currentSpace }), { status: 200 });
+    });
+    return patches;
+  }
+
+  it.each([3, null])('sends the current space (%o) when the caller gives none, so a superuser PATCH does not make it global', async (space) => {
+    const patches = stubTandoor(space);
+    const client = new TandoorClient({ url: 'https://tandoor.test', token: 't' });
+
+    await handleUpdateAiProvider(client, { id: 5, name: 'renamed' });
+
+    expect(patches).toEqual([{ name: 'renamed', space }]);
+  });
+
+  it('sends the space the caller gives', async () => {
+    const patches = stubTandoor(3);
+    const client = new TandoorClient({ url: 'https://tandoor.test', token: 't' });
+
+    await handleUpdateAiProvider(client, { id: 5, name: 'renamed', space: 8 });
+
+    expect(patches).toEqual([{ name: 'renamed', space: 8 }]);
   });
 });
 

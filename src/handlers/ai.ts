@@ -171,6 +171,7 @@ export async function handleUpdateAiProvider(
   if (args.log_credit_cost !== undefined) body.log_credit_cost = args.log_credit_cost;
   if (args.space !== undefined) body.space = args.space;
   assertNonEmptyBody(body);
+  if (args.space === undefined) body.space = (await client.ai.getAiProvider(args.id, { signal: ctx?.signal })).space;
   const r = await client.ai.patchAiProvider(args.id, body, { signal: ctx?.signal });
   return `AI provider updated.\n\n${emit(args.format === 'full' ? r : slimAiProvider(r))}`;
 }
