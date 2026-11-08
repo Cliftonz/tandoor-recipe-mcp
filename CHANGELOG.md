@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Fixed
+- **`update_meal_plan` works on plans with shopping entries.** Tandoor returns HTTP 500 when a PATCH to a meal plan that has linked shopping entries leaves out `servings`. When the caller doesn't pass `servings`, `update_meal_plan` now reads the plan first and sends its current servings, so shopping amounts stay scaled correctly.
+
 ## 3.4.3 / 2026-11-08
 
 ### Changed

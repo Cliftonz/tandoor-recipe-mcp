@@ -222,6 +222,9 @@ export async function handleUpdateMealPlan(
   if (Object.keys(updates).length === 0) {
     throw new Error('At least one field must be provided to update');
   }
+  if (updates.servings === undefined) {
+    updates.servings = String((await client.mealPlans.getMealPlan(id)).servings);
+  }
 
   const updated = await client.mealPlans.patchMealPlan(id, updates);
   return `Meal plan updated successfully!\n\n${JSON.stringify(slimCreated(updated))}`;
