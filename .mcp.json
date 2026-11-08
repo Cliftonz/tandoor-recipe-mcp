@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "tandoor": {
+      "command": "npx",
+      "args": ["-y", "@cliftonz/tandoor-recipes-mcp"],
+      "env": {
+        "TANDOOR_URL": "https://your-tandoor-instance.com",
+        "TANDOOR_TOKEN": "your-api-token"
+      }
+    }
+  }
+}

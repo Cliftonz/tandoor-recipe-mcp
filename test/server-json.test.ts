@@ -71,3 +71,14 @@ describe('glama.json', () => {
     });
   });
 });
+
+describe('.mcp.json for directory auto-detection', () => {
+  it('runs the published npm package with npx and declares the Tandoor URL and token', () => {
+    const { mcpServers } = readJson('.mcp.json');
+    expect(mcpServers.tandoor).toMatchObject({
+      command: 'npx',
+      args: ['-y', readJson('package.json').name],
+    });
+    expect(Object.keys(mcpServers.tandoor.env)).toEqual(['TANDOOR_URL', 'TANDOOR_TOKEN']);
+  });
+});
