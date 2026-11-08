@@ -42,7 +42,7 @@ function toolSectionRows(body: string): [tools: string[], sections: string[]][] 
 function checkSkills(dir: string, tools: ReadonlySet<string>): string[] {
   const problems: string[] = [];
   for (const skill of existsSync(dir) ? readdirSync(dir).sort() : []) {
-    const text = readFileSync(path.join(dir, skill, 'SKILL.md'), 'utf8');
+    const text = readFileSync(path.join(dir, skill, 'SKILL.md'), 'utf8').replace(/\r\n/g, '\n');
     const [, front, body] = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(text)!;
     const meta = parse(front);
     if (meta.name !== skill) problems.push(`${skill}: frontmatter name "${meta.name}" does not match the folder name`);
@@ -92,6 +92,16 @@ describe('skills reference tools in backticks by exact name, and sections by nam
   it('ships the same skills folder in the Codex plugin, whose root is the repo root', () => {
     const codex = JSON.parse(readFileSync(path.join(root, '.codex-plugin/plugin.json'), 'utf8'));
     expect(path.join(root, codex.skills)).toBe(path.join(skillsDir, '/'));
+  });
+
+  it('reads SKILL.md files checked out with CRLF line endings', () => {
+    const dir = path.join(scratch, 'crlf');
+    for (const skill of readdirSync(skillsDir)) {
+      mkdirSync(path.join(dir, skill), { recursive: true });
+      const text = readFileSync(path.join(skillsDir, skill, 'SKILL.md'), 'utf8');
+      writeFileSync(path.join(dir, skill, 'SKILL.md'), text.replace(/\n/g, '\r\n'));
+    }
+    expect(checkSkills(dir, tools)).toEqual([]);
   });
 
   it('passes when there is no skills folder', () => {
