@@ -1,5 +1,7 @@
 <p align="center"><img src="assets/logo.png" alt="Tandoor Recipes MCP" width="520"></p>
 
+<h1 align="center">Tandoor Recipes MCP</h1>
+
 <p align="center"><strong>Turn "plan the week and make me a grocery list" into one prompt.</strong></p>
 
 <p align="center">Recipes, meal plans, shopping lists and more for your local or self-hosted Tandoor instance.</p>
@@ -39,7 +41,7 @@ See [CHANGELOG.md](CHANGELOG.md) for earlier releases.
 
 ## Why this server
 
-- **Full Tandoor 2.6 API coverage.** 307 typed tools, spanning every domain the Tandoor OpenAPI exposes.
+- **Full Tandoor 2.6 API coverage.** 307 typed tools, spanning every domain the Tandoor OpenAPI exposes. With the default settings, 46 are visible at startup.
 - **Resources + prompts, not just tools.** Read-only resources like `tandoor://meal-plan/this-week` and `tandoor://pantry/on-hand`, plus ready-made prompts (`plan_week`, `grocery_list_for_plan`, `what_can_i_make_tonight`). Most Tandoor MCP forks ship tools only.
 - **Slim-by-default responses.** A full recipe GET shrinks from ~20k characters to ~2k by stripping substitute trees, readonly timestamps, image URLs, etc. Pass `format: "full"` anywhere for the raw Tandoor response.
 - **Per-section tool settings.** One env var per section (recipes, meal plan, shopping, and so on) sets it. Tiered sections take `off`, `simple`, or `full`. Toggle sections take `off` or `on`. In stdio mode the LLM can turn a hidden section on mid-session with `enable_tool_group`. See [Tool sections](#tool-sections).
