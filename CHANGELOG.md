@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 - **`update_meal_plan` works on plans with shopping entries.** Tandoor returns HTTP 500 when a PATCH to a meal plan that has linked shopping entries leaves out `servings`. When the caller doesn't pass `servings`, `update_meal_plan` now reads the plan first and sends its current servings, so shopping amounts stay scaled correctly.
+- **`get_meal_plan`, `update_meal_plan` and `delete_meal_plan` find plans at any date.** Tandoor applies its list date window (plans ending from 90 days ago to 360 days ahead) to requests for a single plan too, so these tools returned 404 for plans outside it. They now send a date range that covers every date.
 
 ## 3.4.3 / 2026-11-08
 

@@ -251,7 +251,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "delete_keyword",
   },
   {
-    "description": "Delete meal plan by ID. Also deletes the shopping entries linked to it. Not found if the plan ends over 90 days ago or over 360 days ahead.",
+    "description": "Delete meal plan by ID. Also deletes the shopping entries linked to it.",
     "name": "delete_meal_plan",
   },
   {
@@ -475,7 +475,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_localization",
   },
   {
-    "description": "Get meal plan by ID, with its dates, meal type, recipe and servings. Not found if the plan ends over 90 days ago or over 360 days ahead. Find IDs with list_meal_plans.",
+    "description": "Get meal plan by ID, with its dates, meal type, recipe and servings. Find IDs with list_meal_plans.",
     "name": "get_meal_plan",
   },
   {

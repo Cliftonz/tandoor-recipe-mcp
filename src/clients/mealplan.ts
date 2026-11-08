@@ -8,6 +8,8 @@ import {
   MealType
 } from '../types/index.js';
 
+const mealPlanPath = (id: number) => `/api/meal-plan/${id}/?from_date=0001-01-01&to_date=9999-12-31`;
+
 export class MealPlanClient extends BaseClient {
   /**
    * List meal plans with optional filtering and pagination
@@ -43,7 +45,7 @@ export class MealPlanClient extends BaseClient {
    * Get a single meal plan by ID
    */
   async getMealPlan(id: number): Promise<MealPlan> {
-    return this.request<MealPlan>(`/api/meal-plan/${id}/`);
+    return this.request<MealPlan>(mealPlanPath(id));
   }
 
   /**
@@ -60,7 +62,7 @@ export class MealPlanClient extends BaseClient {
    * Update an existing meal plan (full update)
    */
   async updateMealPlan(id: number, mealPlan: MealPlan): Promise<MealPlan> {
-    return this.request<MealPlan>(`/api/meal-plan/${id}/`, {
+    return this.request<MealPlan>(mealPlanPath(id), {
       method: 'PUT',
       body: JSON.stringify(mealPlan),
     });
@@ -70,7 +72,7 @@ export class MealPlanClient extends BaseClient {
    * Partially update an existing meal plan
    */
   async patchMealPlan(id: number, updates: Partial<MealPlan>): Promise<MealPlan> {
-    return this.request<MealPlan>(`/api/meal-plan/${id}/`, {
+    return this.request<MealPlan>(mealPlanPath(id), {
       method: 'PATCH',
       body: JSON.stringify(updates),
     });
@@ -80,7 +82,7 @@ export class MealPlanClient extends BaseClient {
    * Delete a meal plan
    */
   async deleteMealPlan(id: number): Promise<void> {
-    return this.request<void>(`/api/meal-plan/${id}/`, {
+    return this.request<void>(mealPlanPath(id), {
       method: 'DELETE',
     });
   }
