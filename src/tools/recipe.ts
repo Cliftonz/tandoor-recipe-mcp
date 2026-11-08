@@ -245,7 +245,7 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
     title: 'Create recipe',
     annotations: CREATE,
     description:
-      'Create recipe. Required: name, steps[{instruction, ingredients[{food, amount, unit?}]}]. Optional: description, servings, working_time, waiting_time, keywords[], source_url, private, nutrition, properties[]. Foods, units and keywords are matched by name or created. To import a web page, use import_recipe_from_url.',
+      'Create recipe. Required: name, steps[{instruction, ingredients[{food, amount, unit?}]}]. Optional: description, servings, working_time, waiting_time, keywords[]. Foods, units and keywords are matched by name or created. To import a web page, use import_recipe_from_url.',
     inputSchema: createRecipeShape,
   }, handleCreateRecipe);
 
@@ -253,7 +253,7 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
     title: 'Update recipe',
     annotations: { ...UPDATE, destructiveHint: true },
     description:
-      'Update recipe metadata and content. Only provide fields you want to update. All fields optional except id. steps, keywords and properties each replace the whole existing list, so read the recipe with get_recipe first and send every item to keep.',
+      'Update recipe metadata and content. Only provide fields you want to update. Steps can\'t be matched by id, so sending steps recreates them all and loses step names, headers, files and sub-recipes. keywords and properties replace the list (properties accept id).',
     inputSchema: updateRecipeShape,
   }, handleUpdateRecipe);
 

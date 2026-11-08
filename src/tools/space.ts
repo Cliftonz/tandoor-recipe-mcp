@@ -109,7 +109,7 @@ export function registerSpaceTools(server: McpServer, client: TandoorClient): vo
   registerStringTool(server, client, 'get_current_space', {
     title: 'Get current space',
     annotations: READ,
-    description: 'Get the space currently active for this API token. Other tools read and write in this space. format=full returns the raw Tandoor object.',
+    description: 'Get the space currently active for this API token. Other tools read and write in this space.',
     inputSchema: getCurrentSpaceShape,
   }, handleGetCurrentSpace);
 

@@ -230,14 +230,14 @@ export function registerMiscTools(server: McpServer, client: TandoorClient): voi
   registerStringTool(server, client, 'list_keywords', {
     title: 'List keywords',
     annotations: READ,
-    description: 'List keywords (recipe tags). Optional: query, root (parent id, 0 for top-level), tree (id, with its descendants), root_tree, random, limit, updated_at, page, page_size, format. root, tree and root_tree ignore query, random and limit.',
+    description: 'List keywords (recipe tags). Optional: query (name filter, or similarity ranking if fuzzy search is on), root (parent id, 0 for top-level), tree (id, with its descendants), root_tree, random, limit. root, tree and root_tree ignore query, random, limit and updated_at.',
     inputSchema: listKeywordsShape,
   }, handleListKeywords);
-  registerStringTool(server, client, 'get_keyword', { title: 'Get keyword', annotations: READ, description: 'Get one recipe keyword (tag) by ID. format=full returns the raw Tandoor object. Find IDs with list_keywords.', inputSchema: getKeywordShape }, handleGetKeyword);
+  registerStringTool(server, client, 'get_keyword', { title: 'Get keyword', annotations: READ, description: 'Get recipe keyword (tag) by ID. Find IDs with list_keywords.', inputSchema: getKeywordShape }, handleGetKeyword);
   registerStringTool(server, client, 'create_keyword', { title: 'Create keyword', annotations: CREATE, description: 'Create keyword. Required: name. Optional: description.', inputSchema: createKeywordShape }, handleCreateKeyword);
   registerStringTool(server, client, 'update_keyword', { title: 'Update keyword', annotations: UPDATE, description: 'Update keyword (PATCH). Required: id.', inputSchema: updateKeywordShape }, handleUpdateKeyword);
   registerStringTool(server, client, 'delete_keyword', { title: 'Delete keyword', annotations: DELETE, description: 'Delete keyword by ID. Destructive + irreversible. Before calling, recommend: (1) check recipe usage via list_recipes({keywords: [id]}) so you know how many recipes lose the tag; (2) if the intent is merging duplicates (e.g., "weeknight" + "Weeknight"), use merge_keyword instead.', inputSchema: deleteKeywordShape }, handleDeleteKeyword);
-  registerStringTool(server, client, 'merge_keyword', { title: 'Merge keyword', annotations: DELETE, description: 'Merge keyword `id` into `target` keyword. Destructive + irreversible. All recipes tagged with id will be retagged to target. Before calling, recommend: (1) confirm both via get_keyword so you are sure which survives (target) and which is absorbed (id); (2) check numrecipe on each via list_keywords to understand the migration size.', inputSchema: mergeKeywordShape }, handleMergeKeyword);
+  registerStringTool(server, client, 'merge_keyword', { title: 'Merge keyword', annotations: DELETE, description: 'Merge keyword `id` into `target` keyword. Destructive + irreversible. All recipes tagged with id will be retagged to target. Before calling, recommend: (1) confirm both via get_keyword so you are sure which survives (target) and which is absorbed (id); (2) check usage of each via list_recipes({keywords: [id]}) to understand the migration size.', inputSchema: mergeKeywordShape }, handleMergeKeyword);
   registerStringTool(server, client, 'move_keyword', { title: 'Move keyword', annotations: UPDATE, description: 'Move keyword `id` under parent (parent=0 for root).', inputSchema: moveKeywordShape }, handleMoveKeyword);
 
   // Supermarket categories

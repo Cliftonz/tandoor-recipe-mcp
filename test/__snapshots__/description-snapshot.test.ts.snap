@@ -111,7 +111,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "create_keyword",
   },
   {
-    "description": "Create meal plan. Required: from_date (ISO), meal_type_id (from list_meal_types), servings, and recipe_id or title. Optional: to_date (default from_date), note, addshopping (adds the recipe ingredients to the shopping list).",
+    "description": "Create meal plan. Required: from_date (ISO), meal_type_id (from list_meal_types), servings, and recipe_id or title. Optional: to_date (default from_date), note, addshopping (adds the recipe ingredients to the shopping list; needs recipe_id; skips ignored and, by default, on-hand foods).",
     "name": "create_meal_plan",
   },
   {
@@ -127,7 +127,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "create_property_type",
   },
   {
-    "description": "Create recipe. Required: name, steps[{instruction, ingredients[{food, amount, unit?}]}]. Optional: description, servings, working_time, waiting_time, keywords[], source_url, private, nutrition, properties[]. Foods, units and keywords are matched by name or created. To import a web page, use import_recipe_from_url.",
+    "description": "Create recipe. Required: name, steps[{instruction, ingredients[{food, amount, unit?}]}]. Optional: description, servings, working_time, waiting_time, keywords[]. Foods, units and keywords are matched by name or created. To import a web page, use import_recipe_from_url.",
     "name": "create_recipe",
   },
   {
@@ -251,7 +251,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "delete_keyword",
   },
   {
-    "description": "Delete meal plan by ID. Also deletes the shopping entries linked to it. To reschedule, use update_meal_plan.",
+    "description": "Delete meal plan by ID. Also deletes the shopping entries linked to it. Not found if the plan ends over 90 days ago or over 360 days ahead.",
     "name": "delete_meal_plan",
   },
   {
@@ -283,7 +283,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "delete_recipe_import",
   },
   {
-    "description": "Delete a shopping entry by ID. To mark an item as bought, use update_shopping_entry or bulk_check_shopping_entries instead.",
+    "description": "Delete a shopping entry by ID. To mark bought, use update_shopping_entry or bulk_check_shopping_entries.",
     "name": "delete_shopping_entry",
   },
   {
@@ -407,7 +407,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_cook_log",
   },
   {
-    "description": "Get the space currently active for this API token. Other tools read and write in this space. format=full returns the raw Tandoor object.",
+    "description": "Get the space currently active for this API token. Other tools read and write in this space.",
     "name": "get_current_space",
   },
   {
@@ -423,7 +423,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_external_recipe_file_link",
   },
   {
-    "description": "Get one food (ingredient) by ID. format=full returns the raw Tandoor object. Find IDs with list_foods.",
+    "description": "Get food (ingredient) by ID. Find IDs with list_foods.",
     "name": "get_food",
   },
   {
@@ -467,7 +467,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_invite_link",
   },
   {
-    "description": "Get one recipe keyword (tag) by ID. format=full returns the raw Tandoor object. Find IDs with list_keywords.",
+    "description": "Get recipe keyword (tag) by ID. Find IDs with list_keywords.",
     "name": "get_keyword",
   },
   {
@@ -475,11 +475,11 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_localization",
   },
   {
-    "description": "Get meal plan by ID, with its dates, meal type, recipe and servings. Find IDs with list_meal_plans.",
+    "description": "Get meal plan by ID, with its dates, meal type, recipe and servings. Not found if the plan ends over 90 days ago or over 360 days ahead. Find IDs with list_meal_plans.",
     "name": "get_meal_plan",
   },
   {
-    "description": "Get a meal type by ID: name, order, color and default time. format=full returns the raw Tandoor object. Find IDs with list_meal_types.",
+    "description": "Get a meal type by ID: name, order, color and default time. Find IDs with list_meal_types.",
     "name": "get_meal_type",
   },
   {
@@ -515,7 +515,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_share_link",
   },
   {
-    "description": "Get a shopping list entry by ID, including old checked entries that list_shopping_entries hides. format=full returns the raw Tandoor object.",
+    "description": "Get a shopping list entry by ID, including old checked entries that list_shopping_entries hides.",
     "name": "get_shopping_entry",
   },
   {
@@ -663,7 +663,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_food_inherit_fields",
   },
   {
-    "description": "List foods (ingredients). Optional: query (case-insensitive name match), root (parent id, 0 for top-level), tree (id, with its descendants), root_tree, random, limit, updated_at, page, page_size, format. root, tree and root_tree ignore query, random and limit.",
+    "description": "List foods (ingredients). Optional: query (name filter, or similarity ranking if fuzzy search is on), root (parent id, 0 for top-level), tree (id, with its descendants), root_tree, random, limit. root, tree and root_tree ignore query, random, limit and updated_at.",
     "name": "list_foods",
   },
   {
@@ -687,7 +687,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_inventory_entries",
   },
   {
-    "description": "List inventory locations (pantry, fridge, freezer and so on). Optional: page, page_size, format. Use the IDs as location_id in the other inventory tools. The full inventory tier adds tools to update and delete entries.",
+    "description": "List inventory locations (pantry, fridge, freezer and so on). Optional: page, page_size. Use the IDs as location_id or to_location_id in the other inventory tools.",
     "name": "list_inventory_locations",
   },
   {
@@ -699,11 +699,11 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_invite_links",
   },
   {
-    "description": "List keywords (recipe tags). Optional: query, root (parent id, 0 for top-level), tree (id, with its descendants), root_tree, random, limit, updated_at, page, page_size, format. root, tree and root_tree ignore query, random and limit.",
+    "description": "List keywords (recipe tags). Optional: query (name filter, or similarity ranking if fuzzy search is on), root (parent id, 0 for top-level), tree (id, with its descendants), root_tree, random, limit. root, tree and root_tree ignore query, random, limit and updated_at.",
     "name": "list_keywords",
   },
   {
-    "description": "List meal plans made by you or your household. Optional: from_date, to_date (YYYY-MM-DD, matched on the end date of each entry; default 90 days ago to 360 days ahead), page, page_size.",
+    "description": "List meal plans made by you or your household. Optional: from_date, to_date (YYYY-MM-DD, matched on the end date of each entry; default 90 days ago to 360 days ahead).",
     "name": "list_meal_plans",
   },
   {
@@ -803,7 +803,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_unit_conversions",
   },
   {
-    "description": "List measurement units. Optional: query (name match), limit, random, updated_at, page, page_size, format. Returns {count, next, previous, results}, 50 per page by default.",
+    "description": "List measurement units. Optional: query (name filter, or similarity ranking if fuzzy search is on), limit, random. Returns {count, next, previous, results}, 50 per page.",
     "name": "list_units",
   },
   {
@@ -827,11 +827,11 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_view_logs",
   },
   {
-    "description": "Merge food \`id\` into \`target\` food (deduplication). All references to id will point to target. Destructive + irreversible. Before calling, recommend: (1) confirm both foods via get_food on each so you are sure which survives (target) and which is absorbed (id); (2) check numrecipe on each via list_foods to understand the migration size; (3) if you actually want the other direction, swap id and target.",
+    "description": "Merge food \`id\` into \`target\` food (deduplication). All references to id will point to target. Destructive + irreversible. Before calling, recommend: (1) confirm both foods via get_food on each so you are sure which survives (target) and which is absorbed (id); (2) check usage of each via list_recipes({foods: [id]}) to understand the migration size; (3) if you actually want the other direction, swap id and target.",
     "name": "merge_food",
   },
   {
-    "description": "Merge keyword \`id\` into \`target\` keyword. Destructive + irreversible. All recipes tagged with id will be retagged to target. Before calling, recommend: (1) confirm both via get_keyword so you are sure which survives (target) and which is absorbed (id); (2) check numrecipe on each via list_keywords to understand the migration size.",
+    "description": "Merge keyword \`id\` into \`target\` keyword. Destructive + irreversible. All recipes tagged with id will be retagged to target. Before calling, recommend: (1) confirm both via get_keyword so you are sure which survives (target) and which is absorbed (id); (2) check usage of each via list_recipes({keywords: [id]}) to understand the migration size.",
     "name": "merge_keyword",
   },
   {
@@ -1139,7 +1139,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "update_property_type",
   },
   {
-    "description": "Update recipe metadata and content. Only provide fields you want to update. All fields optional except id. steps, keywords and properties each replace the whole existing list, so read the recipe with get_recipe first and send every item to keep.",
+    "description": "Update recipe metadata and content. Only provide fields you want to update. Steps can't be matched by id, so sending steps recreates them all and loses step names, headers, files and sub-recipes. keywords and properties replace the list (properties accept id).",
     "name": "update_recipe",
   },
   {
@@ -1256,6 +1256,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -1294,6 +1295,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -1660,6 +1662,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -1688,6 +1691,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -1718,6 +1722,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -1760,6 +1765,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -1810,6 +1816,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -1839,6 +1846,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -1908,6 +1916,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -1943,6 +1952,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -1982,6 +1992,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2023,6 +2034,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2061,6 +2073,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2086,6 +2099,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2158,6 +2172,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2187,6 +2202,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2227,6 +2243,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2295,6 +2312,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           ],
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2332,6 +2350,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2371,6 +2390,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           ],
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2563,6 +2583,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           ],
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2595,6 +2616,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2634,6 +2656,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2699,6 +2722,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2724,6 +2748,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2759,6 +2784,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2794,6 +2820,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2876,6 +2903,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2942,6 +2970,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           ],
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -2974,6 +3003,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -3000,6 +3030,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -3030,6 +3061,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -3069,6 +3101,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -3113,6 +3146,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           ],
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -3864,6 +3898,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "integer",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -3905,6 +3940,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -3928,6 +3964,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4103,6 +4140,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4157,6 +4195,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4180,6 +4219,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4203,6 +4243,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4226,6 +4267,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4249,6 +4291,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4272,6 +4315,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4295,6 +4339,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4312,6 +4357,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4335,6 +4381,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4375,6 +4422,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4398,6 +4446,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4421,6 +4470,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4453,6 +4503,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4476,6 +4527,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4515,6 +4567,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4538,6 +4591,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4561,6 +4615,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4584,6 +4639,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4607,6 +4663,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4655,6 +4712,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4678,6 +4736,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4701,6 +4760,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4749,6 +4809,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4772,6 +4833,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4795,6 +4857,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4843,6 +4906,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4866,6 +4930,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4889,6 +4954,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4912,6 +4978,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4935,6 +5002,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4958,6 +5026,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -4981,6 +5050,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5004,6 +5074,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5027,6 +5098,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5050,6 +5122,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5073,6 +5146,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5096,6 +5170,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5119,6 +5194,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5142,6 +5218,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5165,6 +5242,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5188,6 +5266,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5211,6 +5290,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5243,6 +5323,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5275,6 +5356,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5309,6 +5391,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5377,6 +5460,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5437,6 +5521,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5460,6 +5545,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5483,6 +5569,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5506,6 +5593,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5529,6 +5617,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5552,6 +5641,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5575,6 +5665,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5598,6 +5689,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5624,6 +5716,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5647,6 +5740,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5670,6 +5764,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5687,6 +5782,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5731,6 +5827,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5748,6 +5845,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5771,6 +5869,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5821,6 +5920,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5850,6 +5950,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5879,6 +5980,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5902,6 +6004,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -5940,6 +6043,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6015,6 +6119,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6032,6 +6137,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6068,6 +6174,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6094,6 +6201,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6117,6 +6225,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6158,6 +6267,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6393,6 +6503,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6410,6 +6521,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6427,6 +6539,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6456,6 +6569,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6482,6 +6596,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6505,6 +6620,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6528,6 +6644,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6560,6 +6677,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6583,6 +6701,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6606,6 +6725,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6629,6 +6749,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6658,6 +6779,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6681,6 +6803,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6716,6 +6839,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6742,6 +6866,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6777,6 +6902,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6803,6 +6929,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6820,6 +6947,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6853,6 +6981,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6870,6 +6999,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -6996,6 +7126,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -7734,6 +7865,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -7757,6 +7889,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -7926,6 +8059,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8069,6 +8203,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8101,6 +8236,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8145,6 +8281,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8198,6 +8335,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8230,6 +8368,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8301,6 +8440,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8339,6 +8479,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8380,6 +8521,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8424,6 +8566,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8502,6 +8645,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8531,6 +8675,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8634,6 +8779,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8675,6 +8821,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8707,6 +8854,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8748,6 +8896,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8820,6 +8969,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           ],
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8860,6 +9010,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -8901,6 +9052,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           ],
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9099,6 +9251,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           ],
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9134,6 +9287,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9163,6 +9317,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9247,6 +9402,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           ],
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9299,6 +9455,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9327,6 +9484,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9371,6 +9529,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9409,6 +9568,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9494,6 +9654,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9561,6 +9722,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           ],
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9596,6 +9758,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9625,6 +9788,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9657,6 +9821,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9698,6 +9863,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9745,6 +9911,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           ],
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9771,6 +9938,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9797,6 +9965,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9848,6 +10017,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9910,6 +10080,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -9943,6 +10114,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",
@@ -10001,6 +10173,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "format": {
+          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
           "enum": [
             "slim",
             "full",

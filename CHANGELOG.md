@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## 3.4.3 / 2026-11-08
+
+### Changed
+- **Shorter, more accurate tool descriptions.** The 16 descriptions from 3.4.2 no longer repeat parameter names that the schema already lists. They now say that `update_recipe` recreates every step it is sent, that `query` ranks by similarity when fuzzy search is on, which meal plans `get_meal_plan` and `delete_meal_plan` can't find, and which foods `addshopping` skips.
+- **`merge_keyword` and `merge_food` point at a usage check that works.** They now say to check usage with `list_recipes` filtered by the keyword or food. Before, they pointed at a `numrecipe` field that no tool returns.
+- **The `format` parameter has a schema description.** Every tool that takes `format` now says that `slim` (the default) returns a compact shape and `full` returns the raw Tandoor object.
+
+### Notes
+- No behavior changes.
+
 ## 3.4.2 / 2026-11-08
 
 ### Changed

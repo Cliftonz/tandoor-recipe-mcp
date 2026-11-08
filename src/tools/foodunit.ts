@@ -173,14 +173,14 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'list_foods', {
     title: 'List foods',
     annotations: READ,
-    description: 'List foods (ingredients). Optional: query (case-insensitive name match), root (parent id, 0 for top-level), tree (id, with its descendants), root_tree, random, limit, updated_at, page, page_size, format. root, tree and root_tree ignore query, random and limit.',
+    description: 'List foods (ingredients). Optional: query (name filter, or similarity ranking if fuzzy search is on), root (parent id, 0 for top-level), tree (id, with its descendants), root_tree, random, limit. root, tree and root_tree ignore query, random, limit and updated_at.',
     inputSchema: listFoodsShape,
   }, handleListFoods);
 
   registerStringTool(server, client, 'get_food', {
     title: 'Get food',
     annotations: READ,
-    description: 'Get one food (ingredient) by ID. format=full returns the raw Tandoor object. Find IDs with list_foods.',
+    description: 'Get food (ingredient) by ID. Find IDs with list_foods.',
     inputSchema: getFoodShape,
   }, handleGetFood);
 
@@ -208,7 +208,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'merge_food', {
     title: 'Merge food',
     annotations: DELETE,
-    description: 'Merge food `id` into `target` food (deduplication). All references to id will point to target. Destructive + irreversible. Before calling, recommend: (1) confirm both foods via get_food on each so you are sure which survives (target) and which is absorbed (id); (2) check numrecipe on each via list_foods to understand the migration size; (3) if you actually want the other direction, swap id and target.',
+    description: 'Merge food `id` into `target` food (deduplication). All references to id will point to target. Destructive + irreversible. Before calling, recommend: (1) confirm both foods via get_food on each so you are sure which survives (target) and which is absorbed (id); (2) check usage of each via list_recipes({foods: [id]}) to understand the migration size; (3) if you actually want the other direction, swap id and target.',
     inputSchema: mergeFoodShape,
   }, handleMergeFood);
 
@@ -236,7 +236,7 @@ export function registerFoodUnitTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'list_units', {
     title: 'List units',
     annotations: READ,
-    description: 'List measurement units. Optional: query (name match), limit, random, updated_at, page, page_size, format. Returns {count, next, previous, results}, 50 per page by default.',
+    description: 'List measurement units. Optional: query (name filter, or similarity ranking if fuzzy search is on), limit, random. Returns {count, next, previous, results}, 50 per page.',
     inputSchema: listUnitsShape,
   }, handleListUnits);
 
