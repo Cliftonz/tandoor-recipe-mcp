@@ -336,6 +336,7 @@ describe('meal plan handlers — update', () => {
     return {
       mealPlans: {
         patchMealPlan: vi.fn(async (id, body) => ({ id, ...body })),
+        getMealPlan: vi.fn(async (id) => ({ id, servings: 2.5 })),
         getMealType: vi.fn(async () => ({ id: 3, name: 'Snack' })),
       },
       recipes: {
@@ -362,11 +363,11 @@ describe('meal plan handlers — update', () => {
   });
 
   it.each([
-    ['title only',     { id: 1, title: 'x' },                                 (b: any) => expect(b).toEqual({ title: 'x' })                                   ],
+    ['title only',     { id: 1, title: 'x' },                                 (b: any) => expect(b).toEqual({ title: 'x', servings: '2.5' })                  ],
     ['servings only',  { id: 1, servings: 3 },                                (b: any) => expect(b).toEqual({ servings: '3' })                                ],
-    ['note only',      { id: 1, note: 'hello' },                              (b: any) => expect(b).toEqual({ note: 'hello' })                                ],
-    ['from_date only', { id: 1, from_date: '2026-04-18' },                    (b: any) => expect(b).toEqual({ from_date: '2026-04-18T00:00:00' })             ],
-    ['to_date only',   { id: 1, to_date: '2026-04-20' },                      (b: any) => expect(b).toEqual({ to_date: '2026-04-20T00:00:00' })               ],
+    ['note only',      { id: 1, note: 'hello' },                              (b: any) => expect(b).toEqual({ note: 'hello', servings: '2.5' })               ],
+    ['from_date only', { id: 1, from_date: '2026-04-18' },                    (b: any) => expect(b).toEqual({ from_date: '2026-04-18T00:00:00', servings: '2.5' })],
+    ['to_date only',   { id: 1, to_date: '2026-04-20' },                      (b: any) => expect(b).toEqual({ to_date: '2026-04-20T00:00:00', servings: '2.5' })],
   ])('partial update: %s — only hydrates what is needed', async (_, args, assertBody) => {
     const client = mkClient();
     await handleUpdateMealPlan(client, args as any);
