@@ -49,7 +49,7 @@ export function registerMealTypeTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'get_meal_type', {
     title: 'Get meal type',
     annotations: READ,
-    description: 'Get a meal type by ID.',
+    description: 'Get a meal type by ID: name, order, color and default time. format=full returns the raw Tandoor object. Find IDs with list_meal_types.',
     inputSchema: getMealTypeShape,
   }, handleGetMealType);
 

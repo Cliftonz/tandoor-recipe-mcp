@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 3.4.2 / 2026-11-08
+
+### Changed
+- **Clearer descriptions for 16 tools:** `list_units`, `create_meal_plan`, `get_food`, `get_keyword`, `get_meal_plan`, `list_foods`, `list_keywords`, `list_meal_plans`, `delete_meal_plan`, `delete_shopping_entry`, `get_meal_type`, `get_shopping_entry`, `list_inventory_locations`, `create_recipe`, `get_current_space` and `update_recipe`. They now say what `format=full` returns, how the list filters and date defaults work, what a delete or update also changes, and which related tool to use instead.
+
+### Notes
+- No behavior, parameter or schema changes.
+
 ## 3.4.1 / 2026-11-08
 
 ### Notes

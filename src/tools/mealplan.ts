@@ -89,21 +89,21 @@ export function registerMealPlanTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'list_meal_plans', {
     title: 'List meal plans',
     annotations: READ,
-    description: 'List meal plans. Optional: from_date, to_date (YYYY-MM-DD), page, page_size',
+    description: 'List meal plans made by you or your household. Optional: from_date, to_date (YYYY-MM-DD, matched on the end date of each entry; default 90 days ago to 360 days ahead), page, page_size.',
     inputSchema: listMealPlansShape,
   }, handleListMealPlans);
 
   registerStringTool(server, client, 'get_meal_plan', {
     title: 'Get meal plan',
     annotations: READ,
-    description: 'Get meal plan by ID',
+    description: 'Get meal plan by ID, with its dates, meal type, recipe and servings. Find IDs with list_meal_plans.',
     inputSchema: getMealPlanShape,
   }, handleGetMealPlan);
 
   registerStringTool(server, client, 'create_meal_plan', {
     title: 'Create meal plan',
     annotations: CREATE,
-    description: 'Create meal plan. Required: from_date (ISO), meal_type_id, servings. Optional: recipe_id, title, note, addshopping',
+    description: 'Create meal plan. Required: from_date (ISO), meal_type_id (from list_meal_types), servings, and recipe_id or title. Optional: to_date (default from_date), note, addshopping (adds the recipe ingredients to the shopping list).',
     inputSchema: createMealPlanShape,
   }, handleCreateMealPlan);
 
@@ -117,7 +117,7 @@ export function registerMealPlanTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'delete_meal_plan', {
     title: 'Delete meal plan',
     annotations: DELETE,
-    description: 'Delete meal plan by ID',
+    description: 'Delete meal plan by ID. Also deletes the shopping entries linked to it. To reschedule, use update_meal_plan.',
     inputSchema: deleteMealPlanShape,
   }, handleDeleteMealPlan);
 
