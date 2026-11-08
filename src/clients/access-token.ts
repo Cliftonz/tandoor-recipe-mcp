@@ -29,7 +29,7 @@ export class AccessTokenClient extends BaseClient {
     try {
       return await this.request('/api-token-auth/', { method: 'POST', body: JSON.stringify(body), signal: opts?.signal, redirect: 'manual' });
     } catch (e) {
-      if (!(e instanceof TandoorApiError && e.location?.startsWith('/account/login'))) throw e;
+      if (!(e instanceof TandoorApiError && e.location !== null && new URL(e.location, this.baseUrl).pathname.startsWith('/account/login'))) throw e;
     }
     const login = await this.request<{ meta: { session_token: string } }>('/_allauth/app/v1/auth/login', {
       method: 'POST', body: JSON.stringify(body), signal: opts?.signal,
