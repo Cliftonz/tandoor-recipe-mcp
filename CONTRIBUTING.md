@@ -32,7 +32,7 @@ I pick version numbers and write the `CHANGELOG.md` entries. Do not bump the ver
 
 These steps are for the maintainer. The release workflow (`.github/workflows/release.yml`) runs when a version change in `package.json` lands on `main`. It does the rest automatically, except for the steps below.
 
-- **Make the image public once.** After the first image push, open the GHCR package `ghcr.io/cliftonz/tandoor-recipes-mcp` and set its visibility to public. Until you do, MCP Registry publishing fails, because the registry must be able to read the image.
+- **Make the image public once.** After the first image push, open the GHCR package `ghcr.io/cliftonz/tandoor-recipes-mcp` and set its visibility to public. The MCP Registry publish waits up to 10 minutes for the image to be pullable anonymously, then fails, because the registry must be able to read the image.
 - **Update SECURITY.md.** On each minor release, update the supported-versions table in `SECURITY.md`.
 - **Bind address in Docker.** Binding a specific address inside the container is not supported. Keep `TANDOOR_MCP_HTTP_HOST=0.0.0.0` and choose the address on the host with port mapping, for example `-p 127.0.0.1:3737:3737`.
 
@@ -46,7 +46,7 @@ Do the remaining steps by hand from the tagged commit (`git checkout vX.Y.Z`). R
 2. **Sign.** Run `cosign sign --yes ghcr.io/cliftonz/tandoor-recipes-mcp@<digest>`. A local keyless signature uses your own identity, not the workflow's, so say so in the release notes.
 3. **Attest.** The mcpb provenance attestation comes from `actions/attest-build-provenance`, which runs only inside GitHub Actions. You cannot recreate it by hand. Ship the release without it and say so in the release notes.
 4. **GitHub release.** Run `npm ci && npm run build`, `node scripts/pack-mcpb.js tandoor-recipes-mcp.mcpb`, `npm sbom --sbom-format cyclonedx --omit dev > tandoor-recipes-mcp.cdx.json` and `sha256sum tandoor-recipes-mcp.cdx.json tandoor-recipes-mcp.mcpb > SHA256SUMS`. Then run `gh release create vX.Y.Z --verify-tag --generate-notes --title vX.Y.Z tandoor-recipes-mcp.mcpb tandoor-recipes-mcp.cdx.json SHA256SUMS`. Add `--prerelease` for a prerelease.
-5. **MCP Registry (stable releases only).** Write the mcpb hash into `server.json` with the `jq` command from the "Write mcpb sha256 into server.json" step. Install `mcp-publisher` at the version the workflow pins. Run `mcp-publisher login github`, because `github-oidc` works only inside GitHub Actions. Then run `mcp-publisher publish`. Do not commit the edited `server.json`.
+5. **MCP Registry (stable releases only).** Actions > Publish to MCP Registry > Run workflow, version X.Y.Z. The workflow waits for npm and GHCR to serve the version before it publishes.
 
 ## Security issues
 

@@ -76,6 +76,8 @@ jobs:
     needs: [detect, e2e]
     if: needs.detect.outputs.changed == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.tagcheck.outputs.skip }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -213,35 +215,14 @@ jobs:
             gh release create "v$NEW" --generate-notes --target "$GITHUB_SHA" --title "v$NEW" tandoor-recipes-mcp.mcpb tandoor-recipes-mcp.cdx.json SHA256SUMS
           fi
 
-      # After the GitHub release: the registry checks the mcpb URL and the
-      # GHCR image label, so both must already be public.
-      - name: Write mcpb sha256 into server.json
-        if: steps.tagcheck.outputs.skip != 'true' && needs.detect.outputs.prerelease != 'true'
-        run: |
-          sha="$(sha256sum tandoor-recipes-mcp.mcpb | cut -d' ' -f1)"
-          jq --arg sha "$sha" '(.packages[] | select(.registryType == "mcpb")).fileSha256 = $sha' server.json > server.tmp
-          mv server.tmp server.json
-
-      - name: Install mcp-publisher
-        if: steps.tagcheck.outputs.skip != 'true' && needs.detect.outputs.prerelease != 'true'
-        env:
-          MCP_PUBLISHER_VERSION: v1.8.8
-        run: |
-          archive="mcp-publisher_linux_amd64.tar.gz"
-          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
-          curl -fsSL -o "$archive" "$base_url/$archive"
-          curl -fsSL -o "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
-          cosign verify-blob \
-            --bundle "$archive.sigstore.json" \
-            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            "$archive"
-          tar xzf "$archive" mcp-publisher
-
-      - name: Log in to the MCP Registry
-        if: steps.tagcheck.outputs.skip != 'true' && needs.detect.outputs.prerelease != 'true'
-        run: ./mcp-publisher login github-oidc
-
-      - name: Publish to the MCP Registry
-        if: steps.tagcheck.outputs.skip != 'true' && needs.detect.outputs.prerelease != 'true'
-        run: ./mcp-publisher publish
+  # Separate workflow so a registry failure can be retried from the Actions
+  # tab without re-running the release.
+  registry:
+    needs: [detect, publish]
+    if: needs.publish.outputs.skip == 'false' && needs.detect.outputs.prerelease != 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/registry-publish.yml
+    with:
+      version: ${{ needs.detect.outputs.version }}
