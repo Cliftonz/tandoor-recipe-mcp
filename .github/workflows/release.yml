@@ -152,6 +152,14 @@ jobs:
           git tag -a "v$NEW" -m "v$NEW"
           git push origin "v$NEW"
 
+      # npm only honors a lockfile inside a published package when it is
+      # npm-shrinkwrap.json, and installs every entry in it, dev ones included.
+      # Dropping `dev` entries leaves exactly the `--omit=dev` tree (devOptional
+      # and optional entries stay). Written with jq, not `npm shrinkwrap`, so
+      # package-lock.json stays for the Docker push below.
+      - name: Write production-only npm-shrinkwrap.json
+        run: jq '.packages |= with_entries(select(.value.dev != true))' package-lock.json > npm-shrinkwrap.json
+
       # npm Trusted Publishing — no NPM_TOKEN secret. Requires:
       #   - id-token: write (above)
       #   - Trusted Publisher configured on npmjs.com for this package
