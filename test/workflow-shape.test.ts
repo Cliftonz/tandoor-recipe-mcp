@@ -139,6 +139,17 @@ describe('release-gating workflow shape', () => {
     });
   });
 
+  it('grants write permissions only to the publish job, which tags, publishes, pushes and signs', () => {
+    expect(release.permissions).toEqual({ contents: 'read' });
+    expect(release.jobs.detect.permissions).toBeUndefined();
+    expect(release.jobs.publish.permissions).toEqual({
+      contents: 'write',
+      'id-token': 'write',
+      packages: 'write',
+      attestations: 'write',
+    });
+  });
+
   it('publish job tags the commit and pushes the tag before npm publish', () => {
     // The merged workflow is the only thing that creates the tag, so the
     // ordering matters: tag → push tag → npm publish ensures provenance and
@@ -201,10 +212,6 @@ describe('release-gating workflow shape', () => {
       steps = release.jobs.publish.steps;
       buildIdx = named('Build Docker image');
       pushIdx = named('Push Docker image');
-    });
-
-    it('grants packages: write for the GHCR push', () => {
-      expect(release.permissions.packages).toBe('write');
     });
 
     it('builds for amd64 and arm64 before tagging, then pushes after npm publish and before the GitHub release', () => {
@@ -276,8 +283,6 @@ describe('release-gating workflow shape', () => {
       expect(attest.uses).toMatch(/^actions\/attest-build-provenance@[0-9a-f]{40}$/);
       expect(attest.with['subject-path']).toBe(MCPB);
       expect(attest.if).toMatch(/steps\.tagcheck\.outputs\.skip != 'true'/);
-      expect(release.permissions.attestations).toBe('write');
-      expect(release.permissions['id-token']).toBe('write');
     });
   });
 
@@ -378,6 +383,27 @@ describe('release-gating workflow shape', () => {
       expect(publishIdx).toBeGreaterThan(loginIdx);
       expect(publishIdx).toBe(steps.length - 1);
     });
+  });
+});
+
+describe('workflow token permissions', () => {
+  it('codeql grants security-events: write only to the analyze job', () => {
+    const codeql = readWorkflow('codeql.yml');
+    expect(codeql.permissions).toEqual({ contents: 'read' });
+    expect(codeql.jobs.analyze.permissions).toEqual({ 'security-events': 'write', contents: 'read', actions: 'read' });
+  });
+
+  it('installs dependencies from the lockfile with npm ci in every workflow', () => {
+    const installs = ['ci.yml', 'e2e.yml', 'release.yml', 'bootstrap-smoke.yml'].flatMap((name) =>
+      (Object.values(readWorkflow(name).jobs) as any[]).flatMap((job) => job.steps ?? [])
+        .filter((s: any) => s.name === 'Install' || s.name === 'Install dependencies')
+        .map((s: any) => `${name}: ${s.run}`));
+    expect(installs).toEqual([
+      'ci.yml: npm ci --no-audit --no-fund',
+      'e2e.yml: npm ci --no-audit --no-fund',
+      'release.yml: npm ci --no-audit --no-fund',
+      'bootstrap-smoke.yml: npm ci --no-audit --no-fund',
+    ]);
   });
 });
 

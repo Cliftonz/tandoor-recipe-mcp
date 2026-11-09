@@ -620,7 +620,7 @@ describe('post-write errors on create tools', () => {
       () => handleCreateFood(client(), { name: 'Milk', shopping_list_ids: [] })],
   ])('%s says not to retry', async (_case, advice, routes, run) => {
     stubTandoor({ ...listPages, ...routes });
-    await expect(run()).rejects.toThrow(new RegExp(`${advice.replace(/[.]/g, '\\.')}$`));
+    await expect(run()).rejects.toThrow(new RegExp(`${advice.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`));
   });
 });
 
