@@ -11,8 +11,8 @@ describe('Dockerfile', () => {
   const dockerfile = read('Dockerfile');
   const runtime = dockerfile.slice(dockerfile.lastIndexOf('\nFROM '));
 
-  it('builds on node:24-slim in more than one stage', () => {
-    expect(dockerfile.match(/^FROM node:24-slim/gm)?.length).toBeGreaterThanOrEqual(2);
+  it('builds on node:26-slim in more than one stage', () => {
+    expect(dockerfile.match(/^FROM node:26-slim/gm)?.length).toBeGreaterThanOrEqual(2);
   });
 
   it('runs the final stage as the non-root node user', () => {
