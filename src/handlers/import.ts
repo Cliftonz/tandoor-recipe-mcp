@@ -1,6 +1,5 @@
 import { TandoorClient } from '../clients/index.js';
 import type {
-  ImportRecipesArgs,
   CreateImportLogArgs,
   GetImportLogArgs,
   UpdateImportLogArgs,
@@ -85,21 +84,6 @@ function slimFdcQuery(q: any) {
 function slimInheritField(f: any) {
   if (!f) return f;
   return { id: f.id, name: f.name, field: f.field };
-}
-
-// ---------- General import ----------
-
-export async function handleImportRecipes(
-  client: TandoorClient,
-  args: ImportRecipesArgs,
-  ctx?: HandlerContext,
-): Promise<string> {
-  const body: any = { ai_provider_id: args.ai_provider_id };
-  if (args.text !== undefined) body.text = args.text;
-  if (args.file !== undefined) body.file = args.file;
-  if (args.recipe_id !== undefined) body.recipe_id = args.recipe_id;
-  const r = await client.imports.importRecipes(body, { signal: ctx?.signal });
-  return `Import submitted.\n\n${emit(r)}`;
 }
 
 // ---------- Import log ----------

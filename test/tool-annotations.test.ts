@@ -150,8 +150,8 @@ beforeAll(async () => {
 });
 
 describe('tool titles and annotations over tools/list', () => {
-  it('lists all 307 tools', () => {
-    expect(tools).toHaveLength(307);
+  it('lists all 306 tools', () => {
+    expect(tools).toHaveLength(306);
   });
 
   it('gives every tool a non-empty title and four explicit boolean hints', () => {
