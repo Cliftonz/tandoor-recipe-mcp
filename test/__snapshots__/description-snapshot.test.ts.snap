@@ -15,7 +15,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "add_recipe_to_shopping_list",
   },
   {
-    "description": "Bulk-sort a recipe steps via AI. Required: recipe_id.",
+    "description": "Preview an AI sort of a recipe's steps. Returns the recipe with sorted steps without saving it; save with update_recipe. Required: recipe_id, provider_id.",
     "name": "ai_step_sort",
   },
   {
@@ -1364,6 +1364,10 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
+        "provider_id": {
+          "description": "AI provider ID, from list_ai_providers.",
+          "type": "number",
+        },
         "recipe_id": {
           "description": "Recipe ID whose steps to sort.",
           "type": "number",
@@ -1371,6 +1375,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       },
       "required": [
         "recipe_id",
+        "provider_id",
       ],
       "type": "object",
     },

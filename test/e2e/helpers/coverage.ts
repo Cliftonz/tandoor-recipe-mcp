@@ -15,7 +15,6 @@ export const SKIPS: ReviewedSkip[] = [
   { tool: 'food_ai_properties', reason: AI_PROVIDER },
   { tool: 'recipe_ai_properties', reason: AI_PROVIDER },
   { tool: 'import_recipe_from_image', reason: AI_PROVIDER },
-  { tool: 'ai_step_sort', reason: AI_PROVIDER },
   { tool: 'import_recipe_from_url', reason: 'the strict public-URL check refuses local fixtures; needs a live public recipe page' },
   { tool: 'run_open_data_import', reason: 'downloads from raw.githubusercontent.com and bulk-seeds the space' },
   { tool: 'get_external_recipe_file_link', reason: 'works only for Nextcloud or Dropbox storage; LOCAL storage returns 500' },
@@ -34,6 +33,7 @@ export const SKIPS: ReviewedSkip[] = [
 // afterAll that it called every tool listed under its own name.
 export const COVERS: Record<string, readonly string[]> = {
   'read-sweep.e2e.test.ts': [...SEED_COVERS, 'create_access_token', 'delete_access_token'],
+  'ai-step-sort.e2e.test.ts': ['ai_step_sort'],
   'writes-recipes.e2e.test.ts': [
     'update_recipe',
     'recipe_batch_update',

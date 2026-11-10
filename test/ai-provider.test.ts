@@ -229,11 +229,25 @@ describe('delete_ai_provider', () => {
 });
 
 describe('ai_step_sort', () => {
-  it('POSTs { recipe: id } and returns response', async () => {
-    const sort = vi.fn().mockResolvedValue({ id: 42, name: 'sorted' });
-    const client = mock({ ai: { aiStepSort: sort } });
-    const res = await handleAiStepSort(client, { recipe_id: 42 } as any);
-    expect(sort).toHaveBeenCalledWith({ recipe: 42 }, { signal: undefined });
-    expect(JSON.parse(res)).toEqual({ id: 42, name: 'sorted' });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('POSTs the fetched recipe to ai-step-sort with the provider and returns the sorted recipe without saving', async () => {
+    const recipe = { id: 42, name: 'pasta', steps: [{ instruction: 'b' }, { instruction: 'a' }] };
+    const sorted = { ...recipe, steps: [{ instruction: 'a' }, { instruction: 'b' }] };
+    const requests: { method: string; url: string; body?: unknown }[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+      const method = init?.method ?? 'GET';
+      requests.push({ method, url: String(url), body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      return new Response(JSON.stringify(method === 'GET' ? recipe : sorted), { status: 200 });
+    });
+    const client = new TandoorClient({ url: 'https://tandoor.test', token: 't' });
+
+    const res = await handleAiStepSort(client, { recipe_id: 42, provider_id: 7 });
+
+    expect(requests).toEqual([
+      { method: 'GET', url: 'https://tandoor.test/api/recipe/42/', body: undefined },
+      { method: 'POST', url: 'https://tandoor.test/api/ai-step-sort/?provider=7', body: recipe },
+    ]);
+    expect(JSON.parse(res)).toEqual(sorted);
   });
 });
