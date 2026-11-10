@@ -118,7 +118,7 @@ export const listAiLogsShape = { page: z.number().optional().describe('1-based p
 
 export const foodAiPropertiesShape = {
   id: z.number().describe('Food ID.'),
-  provider: z.number().optional().describe('AI provider ID (defaults to workspace default)'),
+  provider: z.number().optional().describe('AI provider ID from list_ai_providers; Tandoor rejects the call without one.'),
   format: formatEnum,
 } as const;
 export const recipeAiPropertiesShape = {

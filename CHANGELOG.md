@@ -8,6 +8,9 @@ All notable changes to this project are documented in this file.
 - **Every tool parameter has a description.** About 900 parameters that had none now explain formats, defaults, units and where IDs come from, so clients pick values correctly. `update_meal_plan` explains partial updates and how it handles `servings`. With every section turned on, the tool list grows from about 40,400 to 53,100 tokens; with the default sections, from about 9,300 to 12,700.
 - Tool, parameter, prompt and resource text, along with a few error messages, no longer uses em-dashes. A new test fails if one comes back in tool, resource or prompt text or in the server instructions.
 
+### Fixed
+- Three tool descriptions that contradicted Tandoor: `food_batch_update` no longer claims `category: null` clears the category (Tandoor sets a category only when that ID exists, and null changes nothing); `food_ai_properties` now says `provider` is required instead of defaulting to the workspace provider; `export_recipes` lists integration names (DEFAULT, SAFFRON, RECIPESAGE) as types instead of json, zip and pdf, and notes that PDF is rejected.
+
 ## 3.4.4 / 2026-11-08
 
 This release corrects the record for 3.4.2 and 3.4.3. Both shipped more than their entries said. The 3.4.2 and 3.4.3 entries below now point here.
