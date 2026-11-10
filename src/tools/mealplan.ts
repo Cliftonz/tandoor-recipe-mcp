@@ -138,7 +138,7 @@ export function registerMealPlanTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'bulk_create_meal_plans', {
     title: 'Bulk create meal plans',
     annotations: CREATE,
-    description: 'Client-side batched create_meal_plan. Tandoor has no server-side bulk endpoint — this handler dedupes meal_type_ids and recipe_ids across entries, hydrates each unique id once, then creates all entries in parallel. Use for "plan the week" (7+ entries) to avoid N×3 round-trips. Each entry takes the same args as create_meal_plan: {recipe_id?, title?, servings, from_date, to_date?, meal_type_id, note?, addshopping?}. Returns {count, created: [{index, id, recipe_id, meal_type_id, ...}], failed: [{index, error}]} — individual failures do NOT abort the batch so you can see partial success and retry the failures.',
+    description: 'Client-side batched create_meal_plan. Tandoor has no server-side bulk endpoint; this handler dedupes meal_type_ids and recipe_ids across entries, hydrates each unique id once, then creates all entries in parallel. Use for "plan the week" (7+ entries) to avoid N×3 round-trips. Each entry takes the same args as create_meal_plan: {recipe_id?, title?, servings, from_date, to_date?, meal_type_id, note?, addshopping?}. Returns {count, created: [{index, id, recipe_id, meal_type_id, ...}], failed: [{index, error}]}. Individual failures do NOT abort the batch so you can see partial success and retry the failures.',
     inputSchema: bulkCreateMealPlansShape,
   }, handleBulkCreateMealPlans);
 }

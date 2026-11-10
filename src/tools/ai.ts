@@ -81,7 +81,7 @@ export function registerAiTools(server: McpServer, client: TandoorClient): void 
     title: 'Import recipe from image',
     annotations: { ...CREATE, openWorldHint: true },
     description:
-      'Import a recipe from an image, PDF, or text via Tandoor AI provider. Provide one of: file_path (local file readable by the MCP server), file_url (remote URL we fetch then upload), or text. By default the parsed recipe is saved to Tandoor; pass save=false to only return the parse result. ai_provider_id is auto-picked if omitted. If no AI provider is configured, this tool cannot work — recommend: (1) ask the operator to add one in Tandoor Settings → AI; (2) for web recipes, fall back to import_recipe_from_url (uses Tandoor scraper + JSON-LD, no AI required); (3) for text-only input, type up the structure manually via create_recipe.',
+      'Import a recipe from an image, PDF, or text via Tandoor AI provider. Provide one of: file_path (local file readable by the MCP server), file_url (remote URL we fetch then upload), or text. By default the parsed recipe is saved to Tandoor; pass save=false to only return the parse result. ai_provider_id is auto-picked if omitted. If no AI provider is configured, this tool cannot work. Recommend: (1) ask the operator to add one in Tandoor Settings → AI; (2) for web recipes, fall back to import_recipe_from_url (uses Tandoor scraper + JSON-LD, no AI required); (3) for text-only input, type up the structure manually via create_recipe.',
     inputSchema: aiImportRecipeShape,
   }, handleAiImportRecipe);
 

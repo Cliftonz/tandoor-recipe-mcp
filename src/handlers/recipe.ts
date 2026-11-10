@@ -833,7 +833,7 @@ export async function handleImportRecipeFromUrl(
 
     const stub: Recipe = {
       name: stubName,
-      description: `Imported from ${url}. Scraper could not extract content — fill in manually.`,
+      description: `Imported from ${url}. Scraper could not extract content; fill in manually.`,
       source_url: url,
       working_time: 0,
       waiting_time: 0,

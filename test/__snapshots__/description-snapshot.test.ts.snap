@@ -35,7 +35,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "bulk_check_shopping_entries",
   },
   {
-    "description": "Client-side batched create_meal_plan. Tandoor has no server-side bulk endpoint — this handler dedupes meal_type_ids and recipe_ids across entries, hydrates each unique id once, then creates all entries in parallel. Use for "plan the week" (7+ entries) to avoid N×3 round-trips. Each entry takes the same args as create_meal_plan: {recipe_id?, title?, servings, from_date, to_date?, meal_type_id, note?, addshopping?}. Returns {count, created: [{index, id, recipe_id, meal_type_id, ...}], failed: [{index, error}]} — individual failures do NOT abort the batch so you can see partial success and retry the failures.",
+    "description": "Client-side batched create_meal_plan. Tandoor has no server-side bulk endpoint; this handler dedupes meal_type_ids and recipe_ids across entries, hydrates each unique id once, then creates all entries in parallel. Use for "plan the week" (7+ entries) to avoid N×3 round-trips. Each entry takes the same args as create_meal_plan: {recipe_id?, title?, servings, from_date, to_date?, meal_type_id, note?, addshopping?}. Returns {count, created: [{index, id, recipe_id, meal_type_id, ...}], failed: [{index, error}]}. Individual failures do NOT abort the batch so you can see partial success and retry the failures.",
     "name": "bulk_create_meal_plans",
   },
   {
@@ -219,7 +219,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "delete_export_log",
   },
   {
-    "description": "Delete food by ID. Destructive + irreversible. Before calling, recommend: (1) check recipe usage via list_recipes({foods: [id]}) — if recipes reference it, they will lose the ingredient link; (2) if the intent is deduplication not removal, use merge_food instead so references follow the merge.",
+    "description": "Delete food by ID. Destructive + irreversible. Before calling, recommend: (1) check recipe usage via list_recipes({foods: [id]}); if recipes reference it, they will lose the ingredient link; (2) if the intent is deduplication not removal, use merge_food instead so references follow the merge.",
     "name": "delete_food",
   },
   {
@@ -267,7 +267,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "delete_property_type",
   },
   {
-    "description": "Delete recipe by ID. Destructive + irreversible — removes the recipe, its steps, and its ingredients. Before calling, recommend: (1) confirm the target via get_recipe (name + id) so the wrong recipe is not deleted; (2) check meal-plan and recipe-book usage via list_meal_plans / recipe books, since references to the recipe are removed with it; (3) if the intent is to hide rather than remove, update_recipe with private=true is reversible.",
+    "description": "Delete recipe by ID. Destructive + irreversible: removes the recipe, its steps, and its ingredients. Before calling, recommend: (1) confirm the target via get_recipe (name + id) so the wrong recipe is not deleted; (2) check meal-plan and recipe-book usage via list_meal_plans / recipe books, since references to the recipe are removed with it; (3) if the intent is to hide rather than remove, update_recipe with private=true is reversible.",
     "name": "delete_recipe",
   },
   {
@@ -319,7 +319,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "delete_sync",
   },
   {
-    "description": "Delete unit by ID. Destructive + irreversible. Before calling, recommend: (1) check ingredient + unit_conversion usage — unit deletions cascade into "None" unit on ingredients; (2) if the intent is deduplication (e.g., "cup" vs "cups"), use merge_unit instead so references follow the merge.",
+    "description": "Delete unit by ID. Destructive + irreversible. Before calling, recommend: (1) check ingredient + unit_conversion usage, since unit deletions cascade into "None" unit on ingredients; (2) if the intent is deduplication (e.g., "cup" vs "cups"), use merge_unit instead so references follow the merge.",
     "name": "delete_unit",
   },
   {
@@ -367,7 +367,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "fdc_search",
   },
   {
-    "description": "Enrich a food with AI-generated properties (fallback path when USDA FDC is incomplete). Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend: (1) prefer food_fdc_lookup when the food has an fdc_id — it is deterministic, free, and does not need AI setup; (2) otherwise ask the operator to add an AI provider in Tandoor Settings → AI (OpenAI/Anthropic/Ollama/etc.).",
+    "description": "Enrich a food with AI-generated properties (fallback path when USDA FDC is incomplete). Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend: (1) prefer food_fdc_lookup when the food has an fdc_id, since it is deterministic, free, and does not need AI setup; (2) otherwise ask the operator to add an AI provider in Tandoor Settings → AI (OpenAI/Anthropic/Ollama/etc.).",
     "name": "food_ai_properties",
   },
   {
@@ -375,7 +375,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "food_batch_update",
   },
   {
-    "description": "Enrich a food with USDA FDC nutrition data. Optional: fdc_id to set/override the USDA FDC id before lookup. Tandoor populates fdc-linked properties; manually-entered properties without fdc_id are preserved. Rate limit: Tandoor defaults to USDA DEMO_KEY (30 req/hour/IP) — bulk enrichment will 429. Operator should set FDC_API_KEY on the Tandoor container (free key at api.data.gov/signup) to raise the limit to 1000/hour. Fallback for FDC 404s: food_ai_properties.",
+    "description": "Enrich a food with USDA FDC nutrition data. Optional: fdc_id to set/override the USDA FDC id before lookup. Tandoor populates fdc-linked properties; manually-entered properties without fdc_id are preserved. Rate limit: Tandoor defaults to USDA DEMO_KEY (30 req/hour/IP), so bulk enrichment will 429. Operator should set FDC_API_KEY on the Tandoor container (free key at api.data.gov/signup) to raise the limit to 1000/hour. Fallback for FDC 404s: food_ai_properties.",
     "name": "food_fdc_lookup",
   },
   {
@@ -511,7 +511,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "get_server_settings",
   },
   {
-    "description": "Retrieve an existing share link by ID. Note: Tandoor's REST API does not expose create/list/delete for share links — create them via the web UI.",
+    "description": "Retrieve an existing share link by ID. Note: Tandoor's REST API does not expose create/list/delete for share links; create them via the web UI.",
     "name": "get_share_link",
   },
   {
@@ -599,11 +599,11 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "import_pending_recipe",
   },
   {
-    "description": "Import a recipe from an image, PDF, or text via Tandoor AI provider. Provide one of: file_path (local file readable by the MCP server), file_url (remote URL we fetch then upload), or text. By default the parsed recipe is saved to Tandoor; pass save=false to only return the parse result. ai_provider_id is auto-picked if omitted. If no AI provider is configured, this tool cannot work — recommend: (1) ask the operator to add one in Tandoor Settings → AI; (2) for web recipes, fall back to import_recipe_from_url (uses Tandoor scraper + JSON-LD, no AI required); (3) for text-only input, type up the structure manually via create_recipe.",
+    "description": "Import a recipe from an image, PDF, or text via Tandoor AI provider. Provide one of: file_path (local file readable by the MCP server), file_url (remote URL we fetch then upload), or text. By default the parsed recipe is saved to Tandoor; pass save=false to only return the parse result. ai_provider_id is auto-picked if omitted. If no AI provider is configured, this tool cannot work. Recommend: (1) ask the operator to add one in Tandoor Settings → AI; (2) for web recipes, fall back to import_recipe_from_url (uses Tandoor scraper + JSON-LD, no AI required); (3) for text-only input, type up the structure manually via create_recipe.",
     "name": "import_recipe_from_image",
   },
   {
-    "description": "Import a recipe from a URL. Tries Tandoor's built-in scraper first, then fetches the page and extracts schema.org JSON-LD as a real fallback (works when Tandoor can't reach the URL or doesn't support the site). On total failure, throws with an attempts log — pass create_stub_on_failure=true to write an empty placeholder recipe instead. If all stages fail, recommend: (1) retry with create_stub_on_failure=true to capture the URL as a stub you can fill in later; (2) if the page is an image/PDF, use import_recipe_from_image (AI provider required); (3) if the URL is paywalled or JS-rendered, fall back to manual create_recipe with fields you can see.",
+    "description": "Import a recipe from a URL. Tries Tandoor's built-in scraper first, then fetches the page and extracts schema.org JSON-LD as a real fallback (works when Tandoor can't reach the URL or doesn't support the site). On total failure, throws with an attempts log; pass create_stub_on_failure=true to write an empty placeholder recipe instead. If all stages fail, recommend: (1) retry with create_stub_on_failure=true to capture the URL as a stub you can fill in later; (2) if the page is an image/PDF, use import_recipe_from_image (AI provider required); (3) if the URL is paywalled or JS-rendered, fall back to manual create_recipe with fields you can see.",
     "name": "import_recipe_from_url",
   },
   {
@@ -611,7 +611,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "import_recipes",
   },
   {
-    "description": "Run a jq filter against a previously stashed tool result and return the focused subset. Use this when a prior tool returned \`{stashed:true, handle, shape, sample_filters}\` instead of the full payload. Treat the stash like a JSON document the user already paid for — extract only what you need. Common filters: ".results | length", ".results[] | select(.id == 42)", ".results | map({id, name})", "keys", ".count".",
+    "description": "Run a jq filter against a previously stashed tool result and return the focused subset. Use this when a prior tool returned \`{stashed:true, handle, shape, sample_filters}\` instead of the full payload. Treat the stash like a JSON document the user already paid for: extract only what you need. Common filters: ".results | length", ".results[] | select(.id == 42)", ".results | map({id, name})", "keys", ".count".",
     "name": "jq_query",
   },
   {
@@ -735,7 +735,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_recipe_imports",
   },
   {
-    "description": "List/search recipes with extensive filtering. Default returns slim results (id, name, description, servings, rating, keywords). Pass format="full" for raw API response. sort_order options: score,-score,name,-name,lastcooked,-lastcooked,rating,-rating,times_cooked,-times_cooked,created_at,-created_at,lastviewed,-lastviewed. If filtering by food/keyword/book NAMES (not ids), prefer search_recipes — it resolves names to ids for you and reports unresolved names in _meta.unresolved so you know what was dropped. If this returns an empty result set, recommend: broaden the query, drop restrictive filters, or try search_recipes if you were passing names.",
+    "description": "List/search recipes with extensive filtering. Default returns slim results (id, name, description, servings, rating, keywords). Pass format="full" for raw API response. sort_order options: score,-score,name,-name,lastcooked,-lastcooked,rating,-rating,times_cooked,-times_cooked,created_at,-created_at,lastviewed,-lastviewed. If filtering by food/keyword/book NAMES (not ids), prefer search_recipes; it resolves names to ids for you and reports unresolved names in _meta.unresolved so you know what was dropped. If this returns an empty result set, recommend: broaden the query, drop restrictive filters, or try search_recipes if you were passing names.",
     "name": "list_recipes",
   },
   {
@@ -839,7 +839,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "merge_supermarket_category",
   },
   {
-    "description": "Merge unit \`id\` into \`target\` unit (deduplication). Destructive + irreversible. Before calling, recommend: (1) confirm base_unit compatibility via get_unit on each — merging units with different base_unit (e.g., mass into volume) will break existing conversion math; (2) if the intent is a one-way rename, update_unit is safer.",
+    "description": "Merge unit \`id\` into \`target\` unit (deduplication). Destructive + irreversible. Before calling, recommend: (1) confirm base_unit compatibility via get_unit on each; merging units with different base_unit (e.g., mass into volume) will break existing conversion math; (2) if the intent is a one-way rename, update_unit is safer.",
     "name": "merge_unit",
   },
   {
@@ -1031,11 +1031,11 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "query_synced_folder",
   },
   {
-    "description": "Have AI compute nutrition/properties for a full recipe. Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend the operator add one in Tandoor Settings → AI. For single-ingredient nutrition use food_fdc_lookup instead — deterministic and no AI setup required.",
+    "description": "Have AI compute nutrition/properties for a full recipe. Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend the operator add one in Tandoor Settings → AI. For single-ingredient nutrition use food_fdc_lookup instead (deterministic, no AI setup required).",
     "name": "recipe_ai_properties",
   },
   {
-    "description": "Apply a narrow set of bulk mutations across many recipes in one call via Tandoor's /api/recipe/batch_update/ endpoint. Required: recipes[]. Optional (all apply to every recipe in recipes[]): keywords_add/remove/set/remove_all, shared_add/remove/set/remove_all, working_time, waiting_time, servings, servings_text, private, show_ingredient_overview, clear_description. Does NOT support bulk step/ingredient edits — those still need update_recipe per-item. Use for: bulk keyword retagging, sharing recipes with a user across a set, flipping privacy on many recipes at once.",
+    "description": "Apply a narrow set of bulk mutations across many recipes in one call via Tandoor's /api/recipe/batch_update/ endpoint. Required: recipes[]. Optional (all apply to every recipe in recipes[]): keywords_add/remove/set/remove_all, shared_add/remove/set/remove_all, working_time, waiting_time, servings, servings_text, private, show_ingredient_overview, clear_description. Does NOT support bulk step/ingredient edits; those still need update_recipe per-item. Use for: bulk keyword retagging, sharing recipes with a user across a set, flipping privacy on many recipes at once.",
     "name": "recipe_batch_update",
   },
   {
@@ -1051,7 +1051,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "run_open_data_import",
   },
   {
-    "description": "High-level recipe search. Accepts food/keyword/book *names* (not IDs) and resolves them internally — typically collapses 3-4 round-trips into 1. Example: {foods: ["chicken", "broccoli"], exclude_foods: ["peanuts"], keywords: ["weeknight"]}. For complex ID-based filtering, fall back to list_recipes.",
+    "description": "High-level recipe search. Accepts food/keyword/book *names* (not IDs) and resolves them internally, typically collapsing 3-4 round-trips into 1. Example: {foods: ["chicken", "broccoli"], exclude_foods: ["peanuts"], keywords: ["weeknight"]}. For complex ID-based filtering, fall back to list_recipes.",
     "name": "search_recipes",
   },
   {
@@ -1223,7 +1223,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "update_view_log",
   },
   {
-    "description": "Attach an image to a recipe. Provide exactly one of: file_path (local file on MCP server), file_url (remote URL; we fetch and upload bytes), or image_url (remote URL; Tandoor fetches it server-side). If a large local upload fails on size/timeout, recommend image_url instead — Tandoor fetches it server-side so the file never transits through the MCP process.",
+    "description": "Attach an image to a recipe. Provide exactly one of: file_path (local file on MCP server), file_url (remote URL; we fetch and upload bytes), or image_url (remote URL; Tandoor fetches it server-side). If a large local upload fails on size/timeout, recommend image_url instead; Tandoor fetches it server-side so the file never transits through the MCP process.",
     "name": "upload_recipe_image",
   },
   {
@@ -8096,7 +8096,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "books": {
-          "description": "Recipe book names — recipe must be in ANY of these",
+          "description": "Recipe book names; recipe must be in ANY of these",
           "items": {
             "type": "string",
           },
@@ -8132,7 +8132,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "keywords": {
-          "description": "Keyword names — recipe must have ANY of these",
+          "description": "Keyword names; recipe must have ANY of these",
           "items": {
             "type": "string",
           },

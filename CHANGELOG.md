@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Changed
+- Tool, parameter, prompt and resource text, along with a few error messages, no longer uses em-dashes. A new test fails if one comes back in tool, resource or prompt text or in the server instructions.
+
 ## 3.4.4 / 2026-11-08
 
 This release corrects the record for 3.4.2 and 3.4.3. Both shipped more than their entries said. The 3.4.2 and 3.4.3 entries below now point here.

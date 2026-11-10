@@ -165,7 +165,7 @@ export async function assertSafeUploadPath(userPath: string): Promise<ValidatedP
       return { safePath: real, ino: stat.ino, dev: stat.dev };
     }
   }
-  const allowedList = resolved.length ? resolved.join(DELIM) : '(none — TANDOOR_MCP_UPLOAD_ROOT is empty)';
+  const allowedList = resolved.length ? resolved.join(DELIM) : '(none; TANDOOR_MCP_UPLOAD_ROOT is empty)';
   const unreachableHint = unreachable.length
     ? ` Unreachable (check config): ${unreachable.join(DELIM)}.`
     : '';

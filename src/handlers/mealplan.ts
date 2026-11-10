@@ -81,7 +81,7 @@ function assertRef(
 ): asserts ref is { id: number; name: string } {
   if (!ref || typeof ref.id !== 'number' || typeof ref.name !== 'string') {
     throw new Error(
-      `${kind} ${id} response missing id/name — Tandoor returned an unexpected shape`
+      `${kind} ${id} response missing id/name; Tandoor returned an unexpected shape`
     );
   }
 }

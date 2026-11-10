@@ -173,9 +173,9 @@ export const searchRecipesShape = {
   query: z.string().optional().describe('Fuzzy match against recipe names'),
   foods: z.array(z.string()).optional().describe('Food names the recipe must contain ALL of'),
   exclude_foods: z.array(z.string()).optional().describe('Food names the recipe must NOT contain any of'),
-  keywords: z.array(z.string()).optional().describe('Keyword names — recipe must have ANY of these'),
+  keywords: z.array(z.string()).optional().describe('Keyword names; recipe must have ANY of these'),
   exclude_keywords: z.array(z.string()).optional().describe('Keyword names to exclude'),
-  books: z.array(z.string()).optional().describe('Recipe book names — recipe must be in ANY of these'),
+  books: z.array(z.string()).optional().describe('Recipe book names; recipe must be in ANY of these'),
   rating_gte: z.number().optional(),
   rating_lte: z.number().optional(),
   timescooked_gte: z.number().optional(),
@@ -229,7 +229,7 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
     title: 'List recipes',
     annotations: READ,
     description:
-      'List/search recipes with extensive filtering. Default returns slim results (id, name, description, servings, rating, keywords). Pass format="full" for raw API response. sort_order options: score,-score,name,-name,lastcooked,-lastcooked,rating,-rating,times_cooked,-times_cooked,created_at,-created_at,lastviewed,-lastviewed. If filtering by food/keyword/book NAMES (not ids), prefer search_recipes — it resolves names to ids for you and reports unresolved names in _meta.unresolved so you know what was dropped. If this returns an empty result set, recommend: broaden the query, drop restrictive filters, or try search_recipes if you were passing names.',
+      'List/search recipes with extensive filtering. Default returns slim results (id, name, description, servings, rating, keywords). Pass format="full" for raw API response. sort_order options: score,-score,name,-name,lastcooked,-lastcooked,rating,-rating,times_cooked,-times_cooked,created_at,-created_at,lastviewed,-lastviewed. If filtering by food/keyword/book NAMES (not ids), prefer search_recipes; it resolves names to ids for you and reports unresolved names in _meta.unresolved so you know what was dropped. If this returns an empty result set, recommend: broaden the query, drop restrictive filters, or try search_recipes if you were passing names.',
     inputSchema: listRecipesShape,
   }, handleListRecipes);
 
@@ -261,7 +261,7 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
     title: 'Delete recipe',
     annotations: DELETE,
     description:
-      'Delete recipe by ID. Destructive + irreversible — removes the recipe, its steps, and its ingredients. Before calling, recommend: (1) confirm the target via get_recipe (name + id) so the wrong recipe is not deleted; (2) check meal-plan and recipe-book usage via list_meal_plans / recipe books, since references to the recipe are removed with it; (3) if the intent is to hide rather than remove, update_recipe with private=true is reversible.',
+      'Delete recipe by ID. Destructive + irreversible: removes the recipe, its steps, and its ingredients. Before calling, recommend: (1) confirm the target via get_recipe (name + id) so the wrong recipe is not deleted; (2) check meal-plan and recipe-book usage via list_meal_plans / recipe books, since references to the recipe are removed with it; (3) if the intent is to hide rather than remove, update_recipe with private=true is reversible.',
     inputSchema: deleteRecipeShape,
   }, handleDeleteRecipe);
 
@@ -269,7 +269,7 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
     title: 'Import recipe from URL',
     annotations: { ...CREATE, openWorldHint: true },
     description:
-      'Import a recipe from a URL. Tries Tandoor\'s built-in scraper first, then fetches the page and extracts schema.org JSON-LD as a real fallback (works when Tandoor can\'t reach the URL or doesn\'t support the site). On total failure, throws with an attempts log — pass create_stub_on_failure=true to write an empty placeholder recipe instead. If all stages fail, recommend: (1) retry with create_stub_on_failure=true to capture the URL as a stub you can fill in later; (2) if the page is an image/PDF, use import_recipe_from_image (AI provider required); (3) if the URL is paywalled or JS-rendered, fall back to manual create_recipe with fields you can see.',
+      'Import a recipe from a URL. Tries Tandoor\'s built-in scraper first, then fetches the page and extracts schema.org JSON-LD as a real fallback (works when Tandoor can\'t reach the URL or doesn\'t support the site). On total failure, throws with an attempts log; pass create_stub_on_failure=true to write an empty placeholder recipe instead. If all stages fail, recommend: (1) retry with create_stub_on_failure=true to capture the URL as a stub you can fill in later; (2) if the page is an image/PDF, use import_recipe_from_image (AI provider required); (3) if the URL is paywalled or JS-rendered, fall back to manual create_recipe with fields you can see.',
     inputSchema: importRecipeFromUrlShape,
   }, handleImportRecipeFromUrl);
 
@@ -277,7 +277,7 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
     title: 'Upload recipe image',
     annotations: { ...DELETE, openWorldHint: true },
     description:
-      'Attach an image to a recipe. Provide exactly one of: file_path (local file on MCP server), file_url (remote URL; we fetch and upload bytes), or image_url (remote URL; Tandoor fetches it server-side). If a large local upload fails on size/timeout, recommend image_url instead — Tandoor fetches it server-side so the file never transits through the MCP process.',
+      'Attach an image to a recipe. Provide exactly one of: file_path (local file on MCP server), file_url (remote URL; we fetch and upload bytes), or image_url (remote URL; Tandoor fetches it server-side). If a large local upload fails on size/timeout, recommend image_url instead; Tandoor fetches it server-side so the file never transits through the MCP process.',
     inputSchema: uploadRecipeImageShape,
   }, handleUploadRecipeImage);
 
@@ -300,14 +300,14 @@ export function registerRecipeTools(server: McpServer, client: TandoorClient): v
     title: 'Search recipes',
     annotations: READ,
     description:
-      'High-level recipe search. Accepts food/keyword/book *names* (not IDs) and resolves them internally — typically collapses 3-4 round-trips into 1. Example: {foods: ["chicken", "broccoli"], exclude_foods: ["peanuts"], keywords: ["weeknight"]}. For complex ID-based filtering, fall back to list_recipes.',
+      'High-level recipe search. Accepts food/keyword/book *names* (not IDs) and resolves them internally, typically collapsing 3-4 round-trips into 1. Example: {foods: ["chicken", "broccoli"], exclude_foods: ["peanuts"], keywords: ["weeknight"]}. For complex ID-based filtering, fall back to list_recipes.',
     inputSchema: searchRecipesShape,
   }, handleSearchRecipes);
 
   registerStringTool(server, client, 'recipe_batch_update', {
     title: 'Batch update recipes',
     annotations: DELETE,
-    description: 'Apply a narrow set of bulk mutations across many recipes in one call via Tandoor\'s /api/recipe/batch_update/ endpoint. Required: recipes[]. Optional (all apply to every recipe in recipes[]): keywords_add/remove/set/remove_all, shared_add/remove/set/remove_all, working_time, waiting_time, servings, servings_text, private, show_ingredient_overview, clear_description. Does NOT support bulk step/ingredient edits — those still need update_recipe per-item. Use for: bulk keyword retagging, sharing recipes with a user across a set, flipping privacy on many recipes at once.',
+    description: 'Apply a narrow set of bulk mutations across many recipes in one call via Tandoor\'s /api/recipe/batch_update/ endpoint. Required: recipes[]. Optional (all apply to every recipe in recipes[]): keywords_add/remove/set/remove_all, shared_add/remove/set/remove_all, working_time, waiting_time, servings, servings_text, private, show_ingredient_overview, clear_description. Does NOT support bulk step/ingredient edits; those still need update_recipe per-item. Use for: bulk keyword retagging, sharing recipes with a user across a set, flipping privacy on many recipes at once.',
     inputSchema: recipeBatchUpdateShape,
   }, handleRecipeBatchUpdate);
 

@@ -42,7 +42,7 @@ export function registerJqTools(server: McpServer, client: TandoorClient): void 
     description: [
       'Run a jq filter against a previously stashed tool result and return the focused subset.',
       'Use this when a prior tool returned `{stashed:true, handle, shape, sample_filters}` instead of the full payload.',
-      'Treat the stash like a JSON document the user already paid for — extract only what you need.',
+      'Treat the stash like a JSON document the user already paid for: extract only what you need.',
       'Common filters: ".results | length", ".results[] | select(.id == 42)", ".results | map({id, name})", "keys", ".count".',
     ].join(' '),
     inputSchema: jqQueryShape,
