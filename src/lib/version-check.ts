@@ -136,7 +136,7 @@ async function probeVersion({ origin, getSettings, timeoutMs, blameTokenOnAuthEr
         status: 'unknown',
         level: 'warning',
         detail:
-          `Tandoor rejected the version probe (${msg}) — the token is likely invalid ` +
+          `Tandoor rejected the version probe (${msg}); the token is likely invalid ` +
           "and ALL tool calls will fail. Check TANDOOR_TOKEN (or the plugin's Tandoor API Token setting).",
       };
     }
