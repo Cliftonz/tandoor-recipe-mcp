@@ -13,7 +13,7 @@ import { paginated } from './helpers/factories.js';
 import { mockClient } from './helpers/mock-client.js';
 import type { TandoorClient } from '../src/clients/index.js';
 
-// Typed mock — misspelled client methods fail at typecheck.
+// Typed mock: misspelled client methods fail at typecheck.
 const mock = (impl: Parameters<typeof mockClient<TandoorClient>>[0]) => mockClient<TandoorClient>(impl);
 
 describe('handlers/ai.ts', () => {

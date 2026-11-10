@@ -348,14 +348,14 @@ export async function saveScrapedRecipe(
 
 async function fetchUrlHtml(url: string, signal?: AbortSignal): Promise<string | null> {
   // SSRF guard pins the resolved address into undici's dispatcher so the
-  // actual fetch connects to the validated IP — closes the DNS-rebinding
+  // actual fetch connects to the validated IP; closes the DNS-rebinding
   // window that the prior split-resolver design left open. Returns null on
   // non-2xx so the caller's fallback chain can move on; re-throws guard
   // errors so an injected loopback URL surfaces loudly.
   try {
     const res = await safeFetch(url, {
       headers: {
-        // Many recipe sites gate bots — present as a regular browser.
+        // Many recipe sites gate bots; present as a regular browser.
         'User-Agent':
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
         Accept: 'text/html,application/xhtml+xml',
@@ -429,7 +429,7 @@ export function extractJsonLdRecipe(html: string): JsonLdRecipe | null {
     try {
       parsed = JSON.parse(raw);
     } catch {
-      // Some sites concatenate multiple objects or include trailing commas —
+      // Some sites concatenate multiple objects or include trailing commas;
       // give up on this block and try the next.
       continue;
     }
@@ -505,7 +505,7 @@ export async function jsonLdToScrapedRecipe(
       try {
         return (await client.ingredients.parseIngredientString(text)) as any;
       } catch {
-        // Parser miss — fall back to storing the raw text so the ingredient
+        // Parser miss; fall back to storing the raw text so the ingredient
         // still shows up, just without structured amount/unit.
         return { amount: 1, unit: '', food: text, note: '', original_text: text };
       }
@@ -524,7 +524,7 @@ export async function jsonLdToScrapedRecipe(
     ? instructions.map((inst, i) => ({
         instruction: inst,
         show_ingredients_table: i === 0,
-        // Attach ingredients to the first step only — mirrors Tandoor's own
+        // Attach ingredients to the first step only; mirrors Tandoor's own
         // single-step representation for URL-imported recipes.
         ingredients: i === 0 ? (ingredients as any) : [],
       }))
@@ -555,7 +555,7 @@ export async function jsonLdToScrapedRecipe(
 
 /**
  * Resolve a single name to a Tandoor id via a query-based list lookup. This is
- * intentionally read-only — unlike `findOrCreateFood`, `search_recipes` should
+ * intentionally read-only; unlike `findOrCreateFood`, `search_recipes` should
  * never create taxonomy rows as a side effect of a search.
  */
 async function resolveName(
@@ -724,7 +724,7 @@ export async function handleUploadRecipeImage(
 
   if (args.image_url) {
     // Tandoor fetches the URL server-side. Pre-check WITHOUT the dev opt-out
-    // (Tandoor is usually deployed in a cloud VPC where IMDS is reachable —
+    // (Tandoor is usually deployed in a cloud VPC where IMDS is reachable,
     // a server-side fetch of 169.254.169.254 would exfil instance creds
     // even if our local stack is configured for dev). assertPublicUrl
     // throws SsrfBlockedError on loopback/IMDS regardless of env.
@@ -746,7 +746,7 @@ export async function handleUploadRecipeImage(
     filename = path.basename(safePath);
     mimeType = guessMimeFromExt(filename, IMAGE_EXTS);
   } else {
-    // SSRF guard + 10MB byte cap — refuses RFC1918/loopback/IMDS, blocks
+    // SSRF guard + 10MB byte cap: refuses RFC1918/loopback/IMDS, blocks
     // hostile content-length DoS, re-checks per redirect hop.
     const { res, bytes } = await safeFetchBytes(args.file_url!, {}, { maxBytes: MAX_UPLOAD_BYTES });
     if (!res.ok) throw new Error(`Failed to fetch file_url: ${res.status}`);
@@ -780,7 +780,7 @@ export async function handleImportRecipeFromUrl(
   checkAbort();
   // Pre-flight SSRF check BEFORE handing the URL to Tandoor. Tandoor's
   // server-side scraper would otherwise happily fetch IMDS / internal
-  // services on its own host — same exfil surface as our local fetch.
+  // services on its own host; same exfil surface as our local fetch.
   // Strict mode (assertPublicUrl) ignores TANDOOR_MCP_ALLOW_PRIVATE_FETCH
   // because the production Tandoor host is not the dev host.
   await assertPublicUrl(url);
@@ -799,8 +799,8 @@ export async function handleImportRecipeFromUrl(
 
   checkAbort();
   // Attempt 2: fetch HTML ourselves and extract schema.org JSON-LD. This is a
-  // genuinely different parse path — not a re-submission to the same Tandoor
-  // scraper — so it catches cases where Tandoor's server can't reach the URL
+  // genuinely different parse path (not a re-submission to the same Tandoor
+  // scraper), so it catches cases where Tandoor's server can't reach the URL
   // (firewall / IP block) and cases where Tandoor's extractor doesn't support
   // the site's markup.
   const html = await fetchUrlHtml(url, signal);
@@ -825,7 +825,7 @@ export async function handleImportRecipeFromUrl(
     attempts.push('fetch-html: request failed or returned non-ok status');
   }
 
-  // Attempt 3: stub recipe — only if explicitly opted in.
+  // Attempt 3: stub recipe, only if explicitly opted in.
   if (args.create_stub_on_failure === true) {
     const stubName = args.name || (() => {
       try { return new URL(url).hostname; } catch { return url; }

@@ -39,7 +39,7 @@ describe('server registration', () => {
       registerPrompts(server, client);
     }).not.toThrow();
 
-    // Tripwire: jq_query / jq_stash_stats are load-bearing — the stash gate
+    // Tripwire: jq_query / jq_stash_stats are load-bearing; the stash gate
     // in registerStringTool only fires when jq_query is registered. If a
     // future refactor drops the registration, every >25KB response becomes
     // an unstashed full payload (or, if the gate didn't have the guard,

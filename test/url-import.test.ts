@@ -126,7 +126,7 @@ describe('handleImportRecipeFromUrl fallback chain', () => {
   });
 
   function fakeClient(overrides: Record<string, any> = {}) {
-    // Minimal stand-in for TandoorClient — just the methods the handler uses.
+    // Minimal stand-in for TandoorClient; just the methods the handler uses.
     return {
       recipes: {
         recipeFromSource: vi.fn(async () => ({ error: true, msg: 'not supported' })),
@@ -167,7 +167,7 @@ describe('handleImportRecipeFromUrl fallback chain', () => {
     const parsed = JSON.parse(out);
     expect(parsed._meta.via).toBe('tandoor-scraper');
     expect(parsed.recipe.id).toBe(42);
-    // We never had to call fetch — Tandoor did the scrape server-side.
+    // We never had to call fetch; Tandoor did the scrape server-side.
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -234,7 +234,7 @@ describe('handleImportRecipeFromUrl fallback chain', () => {
 });
 
 // Handler-boundary SSRF tests (Codex medium). The fallback-chain tests
-// above set ALLOW_PRIVATE_FETCH=1 globally so the mocked fetch can run —
+// above set ALLOW_PRIVATE_FETCH=1 globally so the mocked fetch can run;
 // which means those tests cannot detect a regression where
 // handleImportRecipeFromUrl stops propagating SsrfBlockedError, silently
 // falls through to stub creation, or fetches a loopback/IMDS URL during
@@ -244,7 +244,7 @@ describe('handleImportRecipeFromUrl: SSRF rejections propagate from the handler'
   let fetchSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    // Explicitly DO NOT set TANDOOR_MCP_ALLOW_PRIVATE_FETCH — the whole
+    // Explicitly DO NOT set TANDOOR_MCP_ALLOW_PRIVATE_FETCH; the whole
     // point is to assert the guard fires at handler-boundary.
     delete process.env.TANDOOR_MCP_ALLOW_PRIVATE_FETCH;
     fetchSpy = vi.spyOn(globalThis, 'fetch');
@@ -256,8 +256,8 @@ describe('handleImportRecipeFromUrl: SSRF rejections propagate from the handler'
   function clientWhereTandoorScrapeFails(overrides: Record<string, any> = {}) {
     return {
       recipes: {
-        // Tandoor scraper fails, forcing the JSON-LD fallback chain to run
-        // — that's where the SSRF guard fires.
+        // Tandoor scraper fails, forcing the JSON-LD fallback chain to run,
+        // which is where the SSRF guard fires.
         recipeFromSource: vi.fn(async () => ({ error: true, msg: 'not supported' })),
         createRecipe: vi.fn(async (r: any) => ({ ...r, id: 999 })),
         ...overrides.recipes,

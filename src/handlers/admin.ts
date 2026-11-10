@@ -171,7 +171,7 @@ const slimUserFile = (f: any) => f && {
   created_at: f.created_at,
 };
 
-// guessMime moved to ../lib/mime.ts — shared with recipe + ai handlers.
+// guessMime moved to ../lib/mime.ts, shared with recipe + ai handlers.
 // Admin accepts the full table (images, PDFs, video) so we pass no allow set.
 
 export async function handleListUserFiles(

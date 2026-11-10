@@ -42,7 +42,7 @@ describe('tool description snapshot', () => {
   });
 
   it('every tool has at least one character of description', () => {
-    // CRUD reads (`get_food`, `get_keyword`, etc.) are legitimately terse —
+    // CRUD reads (`get_food`, `get_keyword`, etc.) are legitimately terse;
     // the schema and the name carry the meaning. This guard catches the
     // truly-empty cases that slip through during a refactor.
     const empty = tools.filter((t) => !t.description || t.description.trim() === '');

@@ -196,7 +196,7 @@ export class BaseClient {
   protected token: string;
 
   constructor(config: TandoorConfig) {
-    // Normalize to origin only — users often paste a full page URL like
+    // Normalize to origin only; users often paste a full page URL like
     // `recipes.example.com/settings/api`, but the API lives at the root, so
     // we strip any path/query/hash and keep just `<scheme>://<host>[:port]`.
     let raw = config.url.trim();
@@ -206,7 +206,7 @@ export class BaseClient {
     try {
       this.baseUrl = new URL(raw).origin;
     } catch {
-      // Do NOT interpolate config.url — operators sometimes paste URLs
+      // Do NOT interpolate config.url; operators sometimes paste URLs
       // containing basic-auth credentials, and the error gets pasted into
       // bug reports / crash logs.
       throw new Error("Invalid TANDOOR_URL (or the plugin's Tandoor URL setting): value does not parse as a URL (check scheme and host).");
@@ -217,7 +217,7 @@ export class BaseClient {
   /**
    * Resolved API origin (no path / query / fragment). Used by the server
    * startup log so the operator can see which URL was actually derived from
-   * `TANDOOR_URL` — pasting a full page URL is the common misconfiguration.
+   * `TANDOOR_URL`: pasting a full page URL is the common misconfiguration.
    */
   public getBaseUrl(): string {
     return this.baseUrl;
@@ -230,7 +230,7 @@ export class BaseClient {
     const method = options.method || 'GET';
     const url = `${this.baseUrl}${endpoint}`;
     const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
-    // Don't set Content-Type for FormData — fetch picks the correct multipart
+    // Don't set Content-Type for FormData; fetch picks the correct multipart
     // boundary string itself. Forcing application/json breaks multipart uploads.
     const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
     const headers: Record<string, string> = {
@@ -243,7 +243,7 @@ export class BaseClient {
       ? redactToken(options.body, this.token)
       : undefined;
 
-    // Aborts skip retry — abort means "stop". Track once per call.
+    // Aborts skip retry; abort means "stop". Track once per call.
     const signal = options.signal;
 
     let lastError: unknown;
@@ -263,7 +263,7 @@ export class BaseClient {
           continue;
         }
 
-        // Read body exactly once — Response body is a single-use stream.
+        // Read body exactly once; Response body is a single-use stream.
         const bodyText = await response.text();
         logResponse(method, url, response.status, redactToken(bodyText, this.token), bodyPreview);
 
@@ -286,11 +286,11 @@ export class BaseClient {
       } catch (error) {
         lastError = error;
         logError(method, url, error);
-        // Aborts propagate immediately — never retry a cancelled request.
+        // Aborts propagate immediately; never retry a cancelled request.
         if (signal?.aborted || (error as any)?.name === 'AbortError') {
           throw error;
         }
-        // Network errors (DNS failure, socket reset) — worth retrying.
+        // Network errors (DNS failure, socket reset) are worth retrying.
         const isNetwork = error instanceof TypeError || (error as any)?.name === 'FetchError';
         if (isNetwork && attempt < maxRetries && isReplayableBody) {
           await sleep(backoffMs(attempt, null));
@@ -312,7 +312,7 @@ export class BaseClient {
         throw error;
       }
     }
-    // Unreachable under normal flow — the for-loop either returns or throws.
+    // Unreachable under normal flow; the for-loop either returns or throws.
     throw lastError instanceof Error ? lastError : new Error('Unknown request failure');
   }
 

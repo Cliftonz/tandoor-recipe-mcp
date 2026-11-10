@@ -3,7 +3,7 @@
 // `[range(infinite)]`, etc.) would hang the Node main thread and freeze
 // every other MCP tool. Running jq inside a worker_threads worker lets us:
 //
-//   - terminate() the worker on timeout — the only way to interrupt
+//   - terminate() the worker on timeout; the only way to interrupt
 //     synchronous WASM execution from outside
 //   - cap output bytes in the worker before posting back, so a cheap
 //     `[range(0; 100000000)]` filter can't OOM the parent
@@ -11,7 +11,7 @@
 // The worker is lazy + singleton + reused across calls (WASM cold-start is
 // ~hundreds of ms; we don't want to pay that per query). On timeout we
 // terminate the worker and null the singleton so the next call spawns a
-// fresh one — that pending request was unrecoverable anyway.
+// fresh one; that pending request was unrecoverable anyway.
 
 import { Worker } from 'node:worker_threads';
 
@@ -106,7 +106,7 @@ function rejectAllPending(ref: WorkerRef, err: Error): void {
 
 function getWorker(): WorkerRef {
   if (workerRef) return workerRef;
-  // Capture worker stderr instead of inheriting it — Emscripten prints
+  // Capture worker stderr instead of inheriting it; Emscripten prints
   // "Aborted()" noise there when a pathological filter kills the WASM.
   // Keep a small tail so worker-exit errors can carry the real cause.
   const worker = new Worker(WORKER_SOURCE, { eval: true, stderr: true });
@@ -135,7 +135,7 @@ function getWorker(): WorkerRef {
     rejectAllPending(ref, new Error(`jq worker exited (code ${code})${detail ? `: ${detail}` : ''}`));
     if (workerRef === ref) workerRef = null;
   });
-  // Don't block process exit on the worker — stdio servers should be
+  // Don't block process exit on the worker; stdio servers should be
   // terminable cleanly even while a worker is idle.
   worker.unref();
   workerRef = ref;

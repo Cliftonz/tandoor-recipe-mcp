@@ -140,11 +140,11 @@ describe('summarize', () => {
   // record whose keys come from untrusted upstream JSON, so a payload with
   // `__proto__` (the classic prototype-pollution vector) cannot rewrite the
   // prototype chain of the keys map. Stdio e2e's "proto" mode only proves
-  // the server doesn't crash; these tests pin the actual defense — they
+  // the server doesn't crash; these tests pin the actual defense. They
   // FAIL if `emptyKeyMap()` is replaced with `() => ({})`.
   describe('prototype-pollution payloads stay confined to own properties', () => {
     // Construct the malicious key via Object.defineProperty so `__proto__`
-    // is a real own enumerable data property and survives iteration —
+    // is a real own enumerable data property and survives iteration;
     // JSON.parse silently strips it in modern V8, which would make the
     // earlier-style test useless. This shape models the actual attack
     // vector (a Tandoor-side serializer or middleware that builds the

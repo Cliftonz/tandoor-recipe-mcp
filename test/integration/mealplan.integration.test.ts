@@ -4,7 +4,7 @@
 // this suite mocks `fetch` itself with fixtures that replicate Tandoor's
 // real DRF 400 response on a bare `{id}` envelope, plus its 201 on the
 // hydrated envelope. If a future refactor silently reintroduces the 1.0.0
-// bug shape, the bare-{id} fixture's 400 path surfaces as a test failure —
+// bug shape, the bare-{id} fixture's 400 path surfaces as a test failure;
 // which a mock-based client test cannot catch.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -42,7 +42,7 @@ function makeFetchMock(routes: RouteHandler[]) {
   });
 }
 
-describe('meal plan hydration — integration against Tandoor wire contract', () => {
+describe('meal plan hydration: integration against Tandoor wire contract', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', undefined);
   });

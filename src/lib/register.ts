@@ -1,17 +1,17 @@
 // Adapter: wraps a (client, args) => Promise<string> handler into the shape
 // McpServer.registerTool expects. Provides:
 //
-// 1. **Typed args at the handler boundary** via `InferShape<S>` — when a
+// 1. **Typed args at the handler boundary** via `InferShape<S>`: when a
 //    caller supplies a Zod input schema `S`, the handler's `args` are typed
 //    as the inferred shape rather than `any`.
-// 2. **structuredContent** — if the handler's returned string looks like JSON
+// 2. **structuredContent**: if the handler's returned string looks like JSON
 //    (optionally prefixed by a `header\n\n` preamble), the parsed object is
 //    attached as `structuredContent` per the MCP spec. This lets modern MCP
 //    clients consume the typed payload without re-parsing the text field.
-// 3. **Stash gate** — large JSON payloads are parked in a bounded in-memory
+// 3. **Stash gate**: large JSON payloads are parked in a bounded in-memory
 //    cache and replaced with a schema summary + handle, so the LLM doesn't
 //    blow its context on a 200KB recipe list it only wanted to count.
-// 4. **Uniform try/catch** — any thrown error becomes `{isError: true}` with
+// 4. **Uniform try/catch**: any thrown error becomes `{isError: true}` with
 //    a readable message, instead of crashing the transport.
 
 import { randomUUID } from 'node:crypto';
@@ -53,7 +53,7 @@ export type InferShape<S extends ZodRawShape> = z.infer<z.ZodObject<S>>;
  * `reqId` is a short correlation token generated at the register-middleware
  * boundary. Stash/jq logs include it so an operator can pair
  * "list_recipes minted handle X" with "jq_query on handle X failed" in the
- * same log scrape — under concurrent traffic the handle id alone is not
+ * same log scrape; under concurrent traffic the handle id alone is not
  * enough to walk back to the originating call.
  *
  * Both fields are optional because direct-handler-invocation tests (and any
@@ -113,11 +113,11 @@ function logSkip(name: string): void {
   if (_loggedSkips.has(name)) return;
   _loggedSkips.add(name);
   // stderr so it never pollutes stdout (which belongs to the MCP transport).
-  console.error(`[tandoor-mcp] skipping tool '${name}' — filtered by TANDOOR_MCP_INCLUDE_ONLY/EXCLUDE`);
+  console.error(`[tandoor-mcp] skipping tool '${name}': filtered by TANDOOR_MCP_INCLUDE_ONLY/EXCLUDE`);
 }
 
 // Names that actually passed registration. The stash gate only kicks in
-// when `jq_query` is in here — otherwise a stashed payload becomes
+// when `jq_query` is in here; otherwise a stashed payload becomes
 // unreachable (no tool to resolve the handle), so we'd be silently dropping
 // data on the floor for operators who filtered jq_query out.
 const _registeredNames = new Set<string>();
@@ -144,10 +144,10 @@ interface ExtractedJson {
  * can be mirrored as `structuredContent`. Handlers generally return one of:
  *   - pure JSON: `{"id":1,...}`
  *   - "Header message.\n\n{JSON}" style confirmations
- *   - plain human text ("Meal plan 5 deleted.") — no structured mirror
+ *   - plain human text ("Meal plan 5 deleted."), no structured mirror
  *
  * Returns the parsed value, the substring that was the JSON payload (which
- * the stash gate stores verbatim — jq-wasm takes it as a string and avoids
+ * the stash gate stores verbatim; jq-wasm takes it as a string and avoids
  * a round-trip stringify), and any header prefix so the gate can preserve
  * mutating-tool confirmation text instead of dropping it.
  */
@@ -173,7 +173,7 @@ function isStructuredObject(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === 'object';
 }
 
-// MCP requires `structuredContent` to be a JSON object — strict clients (e.g.
+// MCP requires `structuredContent` to be a JSON object; strict clients (e.g.
 // the SDK Client) reject arrays here with `expected: "record"`. The stash
 // gate's predicate is intentionally broader (top-level arrays are still
 // worth stashing); this one guards only the pass-through mirror.
@@ -182,7 +182,7 @@ function isJsonObject(v: unknown): v is Record<string, unknown> {
 }
 
 // One-shot dedup so the array-skip log fires exactly once per tool name per
-// process. Mirrors the `_loggedSkips` pattern at the top of this file — the
+// process. Mirrors the `_loggedSkips` pattern at the top of this file; the
 // operator wants to know a downgrade is happening, not to be flooded.
 const _loggedArraySkips = new Set<string>();
 
@@ -213,7 +213,7 @@ export function _resetArraySkipLog(): void {
 const NEVER_ABORTED: AbortSignal = new AbortController().signal;
 
 function shortReqId(): string {
-  // 8 chars of base16 from randomUUID — enough cardinality for grep
+  // 8 chars of base16 from randomUUID, enough cardinality for grep
   // correlation under any realistic concurrent-call volume; short enough
   // that the log line stays readable.
   return randomUUID().replace(/-/g, '').slice(0, 8);
@@ -245,7 +245,7 @@ export function registerStringTool<S extends ZodRawShape>(
   _registeredNames.add(name);
   const cb = async (args: InferShape<S>, extra: { signal?: AbortSignal; requestId?: string | number; authInfo?: AuthInfo }): Promise<CallToolResult> => {
     const signal = extra?.signal ?? NEVER_ABORTED;
-    // Prefer the SDK's request id (varies by transport — usually a number)
+    // Prefer the SDK's request id (varies by transport, usually a number)
     // and fall back to a server-side short uuid so the field is always
     // present in logs even for harnesses that don't set one.
     const reqId = extra?.requestId !== undefined ? String(extra.requestId) : shortReqId();
@@ -260,7 +260,7 @@ export function registerStringTool<S extends ZodRawShape>(
       // summary + handle. The LLM then calls `jq_query` to extract what it
       // needs.
       //
-      // Bypass when `jq_query` was filtered out at registration time — a
+      // Bypass when `jq_query` was filtered out at registration time; a
       // handle is useless without the tool that resolves it (Codex finding).
       if (
         extracted &&
@@ -298,7 +298,7 @@ export function registerStringTool<S extends ZodRawShape>(
       // Build the result in one shot so `structuredContent` keeps its spec
       // typing (Record<string, unknown>) without an intermediate cast. Arrays
       // (e.g. from a jq filter like `.results | map(.id)`) get the text
-      // channel only — see isJsonObject for why. Log once per tool so an
+      // channel only; see isJsonObject for why. Log once per tool so an
       // operator can see post-deploy which endpoints exercise the downgrade
       // path (Observability F2).
       if (extracted && Array.isArray(extracted.structured) && !_loggedArraySkips.has(name)) {
@@ -320,7 +320,7 @@ export function registerStringTool<S extends ZodRawShape>(
       }
       // Distinguish security-guard rejections so an operator can grep
       // server stderr for `guard rejection` to see probing / misconfig
-      // signals — previously these were silent server-side and only
+      // signals; previously these were silent server-side and only
       // visible to the LLM client. Counters expose for dashboarding via
       // the `get_guard_stats` tool registered alongside jq_stash_stats.
       const guardName = (err as any)?.name;
@@ -336,11 +336,11 @@ export function registerStringTool<S extends ZodRawShape>(
       };
     }
   };
-  // The SDK's `ToolCallback<S>` is structurally what we've built above — same
+  // The SDK's `ToolCallback<S>` is structurally what we've built above; same
   // `(args, extra) => CallToolResult` shape when S extends ZodRawShapeCompat.
   // TypeScript can't match `z.infer<z.ZodObject<S>>` to the SDK's internal
   // `ShapeOutput<S>` across the helper boundary, so we narrow via the SDK's
-  // own exported callback type. Still a cast, but typed — not `any`.
+  // own exported callback type. Still a cast, but typed, not `any`.
   const remoteConfig = { ...config, _meta: { securitySchemes: [{ type: 'oauth2', scopes: ['tandoor'] }] } };
   server.registerTool(name, isRemoteMode() ? remoteConfig : config, cb as unknown as ToolCallback<S>);
 }

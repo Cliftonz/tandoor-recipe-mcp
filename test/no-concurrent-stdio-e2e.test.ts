@@ -1,4 +1,4 @@
-// Enforces the top-of-file warning in test/stdio-protocol-e2e.test.ts —
+// Enforces the top-of-file warning in test/stdio-protocol-e2e.test.ts;
 // that file uses module-level `mode` + `tandoorVersionMode` flags driving a
 // shared stub server, so `.concurrent` would tear results across scenarios.
 // The comment is the documentation; this test is the lock (QA F6).

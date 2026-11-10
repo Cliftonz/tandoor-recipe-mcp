@@ -6,14 +6,14 @@
  * creates is tracked and cleaned up in the `afterAll` hook, in reverse order.
  *
  * Required env:
- *   TANDOOR_URL    — base URL of the Tandoor instance
- *   TANDOOR_TOKEN  — API token with write access to the test space
+ *   TANDOOR_URL      base URL of the Tandoor instance
+ *   TANDOOR_TOKEN    API token with write access to the test space
  *
  * Optional env:
- *   TANDOOR_E2E_KEEP=1                 — skip cleanup (leaves resources in place for manual inspection)
- *   TANDOOR_E2E_SKIP_IMPORT=1          — skip the URL-import step (useful if the runner has no internet)
- *   TANDOOR_E2E_IMPORT_URL=<url>       — override the default recipe URL used for import
- *   TANDOOR_E2E_AI_PROVIDER=<id>       — run AI-import against this provider id (otherwise skipped)
+ *   TANDOOR_E2E_KEEP=1                   skip cleanup (leaves resources in place for manual inspection)
+ *   TANDOOR_E2E_SKIP_IMPORT=1            skip the URL-import step (useful if the runner has no internet)
+ *   TANDOOR_E2E_IMPORT_URL=<url>         override the default recipe URL used for import
+ *   TANDOOR_E2E_AI_PROVIDER=<id>         run AI-import against this provider id (otherwise skipped)
  *
  * Run: `npm run test:e2e`
  */
@@ -85,7 +85,7 @@ interface CleanupTask {
 
 const cleanup: CleanupTask[] = [];
 
-// Shared across tests — populated as the workflow progresses.
+// Shared across tests; populated as the workflow progresses.
 const ctx: Record<string, any> = {};
 
 function describeE2E(name: string, fn: () => void) {
@@ -124,7 +124,7 @@ describeE2E('Tandoor E2E workflow', () => {
     delete process.env.TANDOOR_MCP_TEST_SKIP_URL_CHECK;
     if (process.env.TANDOOR_E2E_KEEP === '1') {
       // eslint-disable-next-line no-console
-      console.log(`\n  TANDOOR_E2E_KEEP=1 — leaving ${cleanup.length} resource(s) behind for inspection.`);
+      console.log(`\n  TANDOOR_E2E_KEEP=1: leaving ${cleanup.length} resource(s) behind for inspection.`);
       for (const t of cleanup) console.log(`    • ${t.label}`);
       return;
     }
@@ -144,7 +144,7 @@ describeE2E('Tandoor E2E workflow', () => {
     }
     if (failed > 0) {
       // eslint-disable-next-line no-console
-      console.error(`  ${failed} cleanup step(s) failed — inspect manually.`);
+      console.error(`  ${failed} cleanup step(s) failed; inspect manually.`);
     } else {
       // eslint-disable-next-line no-console
       console.log(`  All cleanup complete.`);
@@ -161,7 +161,7 @@ describeE2E('Tandoor E2E workflow', () => {
   it('version check returns ok against the live instance', async () => {
     // Pins the wire contract: the payload field is named `version` and looks
     // like a semver. If Tandoor renames it, every boot silently degrades to
-    // `unknown` — this is the only test that would catch that.
+    // `unknown`; this is the only test that would catch that.
     const r = await checkTandoorVersion(client);
     expect(r.status).toBe('ok');
     expect(r.version).toMatch(/^\d+\./);
@@ -174,7 +174,7 @@ describeE2E('Tandoor E2E workflow', () => {
     ctx.mealTypeName = types[0]?.name;
     // Create a meal type on the fly if none exist so downstream steps work.
     if (!ctx.mealTypeId) {
-      // Use the raw endpoint — create-meal-type isn't exposed via tools, but
+      // Use the raw endpoint; create-meal-type isn't exposed via tools, but
       // it's just a POST /api/meal-type/
       const created: any = await (client.mealPlans as any).request('/api/meal-type/', {
         method: 'POST',
@@ -669,7 +669,7 @@ describeE2E('Tandoor E2E workflow', () => {
 
     const full = await invokeAndParse(mcp, 'get_storage', { id: created.id, format: 'full' });
     expect(full.id).toBe(created.id);
-    // Tandoor may echo the token/password verbatim or return a masked form —
+    // Tandoor may echo the token/password verbatim or return a masked form;
     // either way, full mode must NOT be identical to slim (i.e. more keys).
     expect(Object.keys(full).length).toBeGreaterThan(Object.keys(slim).length);
 
@@ -846,7 +846,7 @@ describeE2E('Tandoor E2E workflow', () => {
     const food = await client.foodUnits.createFood({ name: `${E2E_PREFIX}-tree-food` });
     cleanup.push({ label: `tree-food ${food.id}`, fn: () => client.foodUnits.deleteFood(food.id) });
 
-    // The tool wraps GET /api/food/{id}/cascading/ — a URL typo would 404.
+    // The tool wraps GET /api/food/{id}/cascading/; a URL typo would 404.
     const preview: any = await client.treeSafety.preview('food', food.id, 'cascading');
     expect(preview).toBeDefined();
   });
@@ -865,7 +865,7 @@ describeE2E('Tandoor E2E workflow', () => {
     try {
       const resp = await client.recipes.recipeFromSource({ url: importUrl });
       expect(resp).toBeDefined();
-      // We do not attempt to save the import here — just verify the parse
+      // We do not attempt to save the import here; just verify the parse
       // round-trip works. Saved URL import is exercised indirectly by the
       // main recipe flow above.
     } catch (err) {
@@ -909,7 +909,7 @@ describeE2E('Tandoor E2E workflow', () => {
 
   it('jq_query against the live stash handle returns a focused subset', async (testCtx) => {
     if (!ctx.stashHandle) {
-      // Surface as a skip — not a silent pass — so a broken prior test or
+      // Surface as a skip, not a silent pass, so a broken prior test or
       // an empty live instance is visible in the report instead of green.
       testCtx.skip();
       return;

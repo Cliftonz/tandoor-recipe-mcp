@@ -2,14 +2,14 @@ name: Release
 
 # Single-workflow release pipeline. Triggered on `package.json` changes on
 # main; if the version field actually changed, runs e2e → build → test →
-# tag → npm publish → gh release create — all in one job.
+# tag → npm publish → gh release create, all in one job.
 #
 # Why one workflow: GitHub deliberately blocks workflow→workflow chains
 # authenticated via the default GITHUB_TOKEN (anti-loop protection). The
 # previous two-workflow split (release.yml tags, publish.yml publishes on
 # the tag event) needed a GitHub App token to bridge them, which is fragile
 # (App can be uninstalled, rotated, etc.). Collapsing into one workflow
-# removes the chain entirely — default GITHUB_TOKEN handles the tag push
+# removes the chain entirely; the default GITHUB_TOKEN handles the tag push
 # because no downstream workflow needs to fire on it.
 #
 # Trade-off: you lose the ability to publish from an out-of-band tag push
@@ -60,7 +60,7 @@ jobs:
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
-  # Live-API gate — same as the standalone e2e workflow. Releases block
+  # Live-API gate, same as the standalone e2e workflow. Releases block
   # on this: a red e2e suite means no tag, no publish.
   e2e:
     needs: detect
@@ -132,10 +132,10 @@ jobs:
           NEW: ${{ needs.detect.outputs.version }}
         run: |
           if git rev-parse "v$NEW" >/dev/null 2>&1; then
-            echo "Tag v$NEW already exists locally — skipping publish."
+            echo "Tag v$NEW already exists locally, skipping publish."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           elif git ls-remote --tags origin "refs/tags/v$NEW" | grep -q .; then
-            echo "Tag v$NEW already exists on origin — skipping publish."
+            echo "Tag v$NEW already exists on origin, skipping publish."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
@@ -159,7 +159,7 @@ jobs:
       - name: Write production-only npm-shrinkwrap.json
         run: jq '.packages |= with_entries(select(.value.dev != true))' package-lock.json > npm-shrinkwrap.json
 
-      # npm Trusted Publishing — no NPM_TOKEN secret. Requires:
+      # npm Trusted Publishing, no NPM_TOKEN secret. Requires:
       #   - id-token: write (above)
       #   - Trusted Publisher configured on npmjs.com for this package
       #   - npm CLI ≥ 11.5.1 (Node 24 ships 11; explicit `npm i -g npm@latest`

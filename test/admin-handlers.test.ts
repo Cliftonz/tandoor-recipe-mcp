@@ -26,7 +26,7 @@ import { paginated } from './helpers/factories.js';
 import { mockClient } from './helpers/mock-client.js';
 import { TandoorClient } from '../src/clients/index.js';
 
-// Typed mock — TypeScript rejects misspelled client methods (QA F15).
+// Typed mock: TypeScript rejects misspelled client methods (QA F15).
 const mock = (impl: Parameters<typeof mockClient<TandoorClient>>[0]) => mockClient<TandoorClient>(impl);
 
 describe('handlers/admin.ts', () => {
@@ -176,7 +176,7 @@ describe('handlers/admin.ts', () => {
     });
 
     // Handler-boundary path-guard tests (Codex high). Proves the handler
-    // calls assertSafeUploadPath BEFORE readFile + createUserFile — a
+    // calls assertSafeUploadPath BEFORE readFile + createUserFile; a
     // refactor that strips the guard would not be caught by path-guard's
     // own library tests.
     describe('refuses paths outside the allow-list', () => {

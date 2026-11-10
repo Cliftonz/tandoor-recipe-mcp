@@ -31,7 +31,7 @@ export function evaluateVersion(version: unknown): VersionCheckResult {
   }
   const trimmed = version.trim();
   if (!VERSION_SHAPE.test(trimmed)) {
-    // Never echo a string that fails the allowlist — it is server-controlled
+    // Never echo a string that fails the allowlist; it is server-controlled
     // and would otherwise flow into the MCP instructions and stderr logs.
     return {
       status: 'unknown',

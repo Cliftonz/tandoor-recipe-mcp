@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -10,7 +12,15 @@ import { buildInstructions } from '../src/lib/instructions.js';
 import { getStashConfig } from '../src/lib/stash.js';
 import { ALL_SECTIONS_OPEN } from './helpers/mcp.js';
 
-const EM_DASH = '—';
+const EM_DASH = '\u2014';
+const EN_DASH = '\u2013';
+const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+function trackedFilesContainingDashes(): string[] {
+  const grep = spawnSync('git', ['grep', '-I', '-l', '-F', '-e', EM_DASH, '-e', EN_DASH], { cwd: REPO_ROOT, encoding: 'utf8' });
+  if (grep.status !== 0 && grep.status !== 1) throw new Error(`git grep failed: ${grep.stderr}`);
+  return grep.stdout.split('\n').filter(Boolean);
+}
 
 async function clientVisibleText(): Promise<Record<string, string>> {
   _resetRegisteredNames();
@@ -55,5 +65,11 @@ describe('client-visible text', () => {
       .filter(([, value]) => value.includes(EM_DASH))
       .map(([key]) => key);
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('repository text', () => {
+  it('contains no em-dashes or en-dashes in any git-tracked text file', () => {
+    expect(trackedFilesContainingDashes()).toEqual([]);
   });
 });

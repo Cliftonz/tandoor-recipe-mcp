@@ -1,6 +1,6 @@
 // Single source of truth for which tool groups get registered on the MCP
 // server, and in which order. Both src/index.ts (production) and
-// test/description-snapshot.test.ts (regression guard) use this — adding a
+// test/description-snapshot.test.ts (regression guard) use this; adding a
 // new tool family means touching one place, not two.
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';

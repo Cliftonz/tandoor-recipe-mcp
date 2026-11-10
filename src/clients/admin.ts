@@ -9,7 +9,7 @@ export class ShareLinkClient extends BaseClient {
   }
 
   /**
-   * Build a URL usable to view a shared recipe. Client-side helper — does not
+   * Build a URL usable to view a shared recipe. Client-side helper; it does not
    * hit the API. Tandoor shared recipes use GET /api/recipe/{id}/?share=<uuid>.
    */
   sharedRecipeUrl(baseUrl: string, recipeId: number, shareUuid: string): string {

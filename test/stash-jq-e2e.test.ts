@@ -3,7 +3,7 @@
 // Drives the real `registerStringTool` middleware, the real stash module, the
 // real schema-summary module, the real jq_query handler, the real worker-
 // isolated runner, and the real `jq-wasm` WebAssembly binary. The only thing
-// stubbed is the Tandoor HTTP boundary (`client.recipes.listRecipes`, etc) —
+// stubbed is the Tandoor HTTP boundary (`client.recipes.listRecipes`, etc);
 // we feed canned payloads so the test is deterministic and doesn't need a
 // live server.
 //
@@ -319,8 +319,8 @@ describe('stash + jq_query end-to-end through the real MCP surface', () => {
     const handle: string = listed.structuredContent.handle;
 
     // Non-terminating recursion. Either jq-wasm hits its internal recursion
-    // limit and aborts the WASM (`Aborted()` from Emscripten) — which kills
-    // the worker, surfacing as a generic worker exit error — or our
+    // limit and aborts the WASM (`Aborted()` from Emscripten), which kills
+    // the worker, surfacing as a generic worker exit error, or our
     // JQ_TIMEOUT_MS guard fires first. Both paths must show up as isError
     // and (critically) must not hang the test runner.
     const hangRes = await invokeTool(server, 'jq_query', {
@@ -330,7 +330,7 @@ describe('stash + jq_query end-to-end through the real MCP surface', () => {
     expect(hangRes.isError).toBe(true);
     expect(hangRes.content[0].text).toMatch(/timed out|jq:|aborted|Aborted|worker exited/i);
 
-    // The next request must succeed — the worker was replaced.
+    // The next request must succeed; the worker was replaced.
     const okRes = await invokeTool(server, 'jq_query', { handle, filter: '.count' });
     expect(okRes.isError).toBeFalsy();
     expect(JSON.parse(okRes.content[0].text)).toBe(5);

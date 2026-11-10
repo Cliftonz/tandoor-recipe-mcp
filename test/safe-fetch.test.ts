@@ -50,7 +50,7 @@ function withResolver(addrs: { address: string; family: number }[]): ResolverFn 
   return async () => addrs;
 }
 
-describe('safeFetch — literal IP and scheme rejections', () => {
+describe('safeFetch: literal IP and scheme rejections', () => {
   it('refuses a literal loopback URL', async () => {
     await expect(safeFetch('http://127.0.0.1/x')).rejects.toThrow(SsrfBlockedError);
     await expect(safeFetch('http://127.0.0.1/x')).rejects.toThrow(/forbidden range/);
@@ -104,7 +104,7 @@ describe('safeFetch — literal IP and scheme rejections', () => {
   });
 });
 
-describe('safeFetch — redirects', () => {
+describe('safeFetch: redirects', () => {
   it('rejects a redirect to a private host (per-hop re-check)', async () => {
     const stub = await startStub((_req, res) => {
       res.statusCode = 302;
@@ -193,7 +193,7 @@ describe('safeFetch — redirects', () => {
     const stub = await startStub(handler);
     process.env.TANDOOR_MCP_ALLOW_PRIVATE_FETCH = '1';
     try {
-      // First hop resolves to whatever the stub bound (127.0.0.1) — allowed
+      // First hop resolves to whatever the stub bound (127.0.0.1); allowed
       // under opt-out. The redirect's protocol-relative URL gets parsed and
       // rejected on the always-forbidden check.
       await expect(safeFetch(stub.url + '/start', {}, { resolver }))
@@ -205,7 +205,7 @@ describe('safeFetch — redirects', () => {
   });
 });
 
-describe('safeFetch — DNS resolver injection (rebinding defense)', () => {
+describe('safeFetch: DNS resolver injection (rebinding defense)', () => {
   it('rejects a hostname that resolves to 127.0.0.1', async () => {
     const r = withResolver([{ address: '127.0.0.1', family: 4 }]);
     await expect(safeFetch('https://attacker.example/loot', {}, { resolver: r }))
@@ -284,7 +284,7 @@ describe('safeFetch — DNS resolver injection (rebinding defense)', () => {
   it('opt-out narrowing: literal-local hostname (localhost) IS allowed under env=1', async () => {
     process.env.TANDOOR_MCP_ALLOW_PRIVATE_FETCH = '1';
     const r = withResolver([{ address: '127.0.0.1', family: 4 }]);
-    // We won't actually fetch — instead use assertPublicUrl-style check by
+    // We won't actually fetch; instead use assertPublicUrl-style check by
     // forcing the validation through a non-fetching helper. assertPublicUrl
     // is strict so use safeFetch with a stub instead.
     const stub = await startStub((_req, res) => { res.end('ok'); });
@@ -300,7 +300,7 @@ describe('safeFetch — DNS resolver injection (rebinding defense)', () => {
   });
 });
 
-describe('assertPublicUrl — strict-mode pre-check', () => {
+describe('assertPublicUrl: strict-mode pre-check', () => {
   it('ignores TANDOOR_MCP_ALLOW_PRIVATE_FETCH (Tandoor-delegated surface)', async () => {
     process.env.TANDOOR_MCP_ALLOW_PRIVATE_FETCH = '1';
     try {
@@ -322,7 +322,7 @@ describe('assertPublicUrl — strict-mode pre-check', () => {
   });
 });
 
-describe('safeFetchBytes — content-length cap', () => {
+describe('safeFetchBytes: content-length cap', () => {
   it('rejects when Content-Length exceeds maxBytes (before reading)', async () => {
     const stub = await startStub((_req, res) => {
       res.setHeader('content-length', '999999');
@@ -342,7 +342,7 @@ describe('safeFetchBytes — content-length cap', () => {
   it('rejects when streamed body exceeds maxBytes despite missing Content-Length', async () => {
     const stub = await startStub((_req, res) => {
       res.statusCode = 200;
-      // No content-length header — chunked. Write more than maxBytes.
+      // No content-length header; chunked. Write more than maxBytes.
       res.write('A'.repeat(200));
       res.end('B'.repeat(200));
     });

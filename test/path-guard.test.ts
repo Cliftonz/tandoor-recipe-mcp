@@ -1,4 +1,4 @@
-// Unit tests for the path-guard library — the defense against prompt-injected
+// Unit tests for the path-guard library, the defense against prompt-injected
 // upload_recipe_image / upload_user_file / ai_import_recipe handlers reading
 // sensitive paths.
 
@@ -22,7 +22,7 @@ import {
   _resetPathGuardCache,
 } from '../src/lib/path-guard.js';
 
-describe('getAllowedRoots — env contract', () => {
+describe('getAllowedRoots: env contract', () => {
   it('defaults to ~/Downloads, ~/Pictures, ~/Documents, tmpdir when unset', () => {
     const roots = getAllowedRoots({});
     const home = homedir();
@@ -138,7 +138,7 @@ describe('assertSafeUploadPath', () => {
   });
 });
 
-describe('assertSafeUploadPath — typo / vanished root handling', () => {
+describe('assertSafeUploadPath: typo / vanished root handling', () => {
   let allowed: string;
   let prevRoot: string | undefined;
   let consoleSpy: ReturnType<typeof vi.fn>;
@@ -197,7 +197,7 @@ describe('assertSafeUploadPath — typo / vanished root handling', () => {
   });
 });
 
-describe('openSafeUpload — TOCTOU defense', () => {
+describe('openSafeUpload: TOCTOU defense', () => {
   let allowed: string;
   let prevRoot: string | undefined;
   beforeEach(() => {
@@ -225,7 +225,7 @@ describe('openSafeUpload — TOCTOU defense', () => {
     const target = path.join(allowed, 'recipe.png');
     writeFileSync(target, 'original');
     const v = await assertSafeUploadPath(target);
-    // Swap via separate-file + rename, NOT unlink + recreate — Linux ext4
+    // Swap via separate-file + rename, NOT unlink + recreate; Linux ext4
     // reuses inode numbers immediately after unlink, so the recreated file
     // would have the same ino and the test would silently pass on macOS
     // but fail on Linux runners. A staged file + rename guarantees a

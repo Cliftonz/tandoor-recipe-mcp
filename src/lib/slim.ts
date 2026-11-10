@@ -1,6 +1,6 @@
 // Shared helpers used across every handler file. Before this module existed,
 // each handler rolled its own `slimPage` / nested-id-envelope / JSON emit
-// inline — 150+ lines of subtly-different copies. Centralising them keeps
+// inline: 150+ lines of subtly-different copies. Centralising them keeps
 // response shapes consistent and makes format tweaks one-file changes.
 
 import { z } from 'zod';
@@ -8,7 +8,7 @@ import { z } from 'zod';
 /**
  * Guard for PATCH handlers: refuses to send an empty body, which Tandoor
  * accepts as a no-op that still burns a round trip. Message wording is
- * asserted by tests — do not change it.
+ * asserted by tests; do not change it.
  */
 export function assertNonEmptyBody(body: Record<string, unknown>): void {
   if (Object.keys(body).length === 0) throw new Error('At least one field required');

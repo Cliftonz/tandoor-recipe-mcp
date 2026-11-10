@@ -1,6 +1,6 @@
 // Exercise tool input validation through the actual MCP protocol path using
 // InMemoryTransport. This catches schema-level rejections McpServer applies
-// before our handler ever runs — the layer our unit tests can't reach.
+// before our handler ever runs; the layer our unit tests can't reach.
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';

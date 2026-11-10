@@ -4,7 +4,7 @@ import { handleUpdateIngredient } from '../src/handlers/ingredient.js';
 import { handleBulkCheckShoppingEntries } from '../src/handlers/shopping.js';
 import { handleUpdateStep } from '../src/handlers/step.js';
 
-// None of these should touch the network — they should throw before calling
+// None of these should touch the network; they should throw before calling
 // the client. A bare object stands in as a "client".
 const noClient: any = {};
 

@@ -3,7 +3,7 @@ name: Bootstrap Smoke
 # Smoke-tests `scripts/tandoor-bootstrap.sh` outside the release pipeline.
 # The full e2e workflow gates publishes; this surfaces bash typos, Tandoor
 # image schema changes, or `docker compose` flag drift on the PR or as a
-# weekly heartbeat — well before tag push (QA F4).
+# weekly heartbeat, well before tag push (QA F4).
 on:
   pull_request:
     paths:
@@ -12,7 +12,7 @@ on:
       - 'test/e2e/local-storage-bootstrap.e2e.test.ts'
       - 'test/e2e/fixtures/local-storage/**'
   schedule:
-    # Mondays 11:23 UTC — weekly drift check against vabene1111/recipes:latest.
+    # Mondays 11:23 UTC, weekly drift check against vabene1111/recipes:latest.
     - cron: '23 11 * * 1'
   workflow_dispatch:
 

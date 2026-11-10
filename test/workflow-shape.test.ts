@@ -3,7 +3,7 @@
 //
 // Uses a real YAML parser instead of regex so structural edits (`needs: [e2e,
 // lint]`, multiline `needs:\n  - e2e`, reordered keys) are tolerated when
-// they preserve the contract — and caught when they violate it.
+// they preserve the contract, and caught when they violate it.
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -37,7 +37,7 @@ describe('release-gating workflow shape', () => {
   beforeAll(() => {
     // Merged workflow: release.yml owns detect → e2e → build → test → tag →
     // npm publish → gh release. The contract this file pins is "publish job
-    // must depend on e2e" — same shape as the old two-workflow split, just
+    // must depend on e2e"; same shape as the old two-workflow split, just
     // collapsed into one file (commit f8355a3).
     release = readWorkflow('release.yml');
     e2e = readWorkflow('e2e.yml');
@@ -55,7 +55,7 @@ describe('release-gating workflow shape', () => {
 
   it('e2e workflow exposes workflow_call so release can invoke it', () => {
     // YAML parses `on:` as a key; reusable-workflow trigger is `workflow_call`.
-    // The key can be top-level `on: { workflow_call: ... }` or a list — both
+    // The key can be top-level `on: { workflow_call: ... }` or a list; both
     // shapes resolve to a key on `on`.
     const triggers = e2e.on ?? e2e.true; // js-yaml quirk: `on` sometimes parses as `true`
     expect(triggers).toBeDefined();

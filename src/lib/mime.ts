@@ -1,6 +1,6 @@
 // Single source of truth for filename → MIME mappings used by the three
 // upload handlers (recipe image, user-file, AI import). Previously each
-// handler kept its own switch — that already drifted (`.heic` was in
+// handler kept its own switch, and that already drifted (`.heic` was in
 // recipe + ai but missing in admin, so a user uploading a HEIC photo got
 // `application/octet-stream` only from `upload_user_file`).
 //
@@ -25,7 +25,7 @@ export const IMAGE_EXTS: ReadonlySet<string> = new Set([
 
 /**
  * Guess a MIME type from a filename. When `allow` is provided, extensions
- * outside that set fall back to `application/octet-stream` — used by the
+ * outside that set fall back to `application/octet-stream`; used by the
  * recipe-image handler to refuse forwarding PDFs as recipe photos.
  */
 export function guessMimeFromExt(filename: string, allow?: ReadonlySet<string>): string {

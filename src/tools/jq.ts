@@ -13,7 +13,7 @@ import { handleJqQuery, handleJqStashStats, handleGuardStats } from '../handlers
 // from accidentally sending free-form text (which we'd then echo back),
 // and keeps the validation error generic.
 const HANDLE_RE = /^stash_[0-9a-f-]{36}$/;
-// jq's parser itself can be slow on adversarial input — cap before it ever
+// jq's parser itself can be slow on adversarial input; cap before it ever
 // reaches the WASM. 4096 chars is far above any realistic real filter.
 const FILTER_MAX = 4096;
 

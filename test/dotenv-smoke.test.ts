@@ -13,7 +13,7 @@ const VARS = {
   TANDOOR_MCP_RECIPES: 'full',
 };
 
-describe('dotenv v18 smoke — env vars populate process.env', () => {
+describe('dotenv v18 smoke: env vars populate process.env', () => {
   beforeEach(() => {
     writeFileSync(
       TMP_ENV,
