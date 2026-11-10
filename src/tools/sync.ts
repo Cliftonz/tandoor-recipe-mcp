@@ -15,41 +15,41 @@ import {
 } from '../handlers/sync.js';
 
 export const listSyncsShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page: z.number().optional().describe('1-based page number.'),
+  page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
 
-export const getSyncShape = { id: z.number(), format: formatEnum } as const;
+export const getSyncShape = { id: z.number().describe('Sync ID from list_syncs.'), format: formatEnum } as const;
 
 export const createSyncShape = {
-  storage_id: z.number(),
-  path: z.string(),
-  active: z.boolean().optional(),
-  last_checked: z.string().nullable().optional(),
+  storage_id: z.number().describe('Storage ID from list_storages.'),
+  path: z.string().describe('Folder path on the storage backend to import from.'),
+  active: z.boolean().optional().describe('Included in Tandoor\'s sync-all run. Default true.'),
+  last_checked: z.string().nullable().optional().describe('ISO 8601 datetime of the last scan; null if never.'),
   format: formatEnum,
 } as const;
 
 export const updateSyncShape = {
-  id: z.number(),
-  storage_id: z.number().optional(),
-  path: z.string().optional(),
-  active: z.boolean().optional(),
-  last_checked: z.string().nullable().optional(),
+  id: z.number().describe('Sync ID from list_syncs.'),
+  storage_id: z.number().optional().describe('Storage ID from list_storages.'),
+  path: z.string().optional().describe('Folder path on the storage backend to import from.'),
+  active: z.boolean().optional().describe('Included in Tandoor\'s sync-all run.'),
+  last_checked: z.string().nullable().optional().describe('ISO 8601 datetime of the last scan; null if never.'),
   format: formatEnum,
 } as const;
 
-export const deleteSyncShape = { id: z.number() } as const;
+export const deleteSyncShape = { id: z.number().describe('Sync ID from list_syncs.') } as const;
 
-export const querySyncedFolderShape = { id: z.number(), format: formatEnum } as const;
+export const querySyncedFolderShape = { id: z.number().describe('Sync ID from list_syncs.'), format: formatEnum } as const;
 
 export const listSyncLogsShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page: z.number().optional().describe('1-based page number.'),
+  page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
 
-export const getSyncLogShape = { id: z.number(), format: formatEnum } as const;
+export const getSyncLogShape = { id: z.number().describe('Sync log ID from list_sync_logs.'), format: formatEnum } as const;
 
 export type ListSyncsArgs = z.infer<z.ZodObject<typeof listSyncsShape>>;
 export type GetSyncArgs = z.infer<z.ZodObject<typeof getSyncShape>>;

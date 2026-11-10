@@ -13,38 +13,38 @@ import {
 
 
 export const listInviteLinksShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
-  limit: z.string().optional(),
-  query: z.string().optional(),
-  unused: z.boolean().optional(),
-  internal_note: z.string().optional(),
-  updated_at: z.string().optional(),
+  page: z.number().optional().describe('1-based page number.'),
+  page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'),
+  limit: z.string().optional().describe('Integer cap on rows, applied before paging.'),
+  query: z.string().optional().describe('Ignored; invite links have no name field.'),
+  unused: z.boolean().optional().describe('Ignored; Tandoor always lists only unused links.'),
+  internal_note: z.string().optional().describe('Exact-match filter on the internal note.'),
+  updated_at: z.string().optional().describe('Ignored; invite links have no updated_at field.'),
   format: formatEnum,
 } as const;
 
-export const getInviteLinkShape = { id: z.number(), format: formatEnum } as const;
+export const getInviteLinkShape = { id: z.number().describe('Invite link ID from list_invite_links.'), format: formatEnum } as const;
 
 export const createInviteLinkShape = {
-  email: z.string(),
-  group: z.number(),
-  valid_until: z.string(),
-  reusable: z.boolean().optional(),
-  internal_note: z.string().nullable().optional(),
+  email: z.string().describe('Invitee email; Tandoor emails the link if SMTP is set up.'),
+  group: z.number().describe('Group ID from list_groups; the joiner gets its permissions.'),
+  valid_until: z.string().describe('Expiry date, YYYY-MM-DD.'),
+  reusable: z.boolean().optional().describe('Allow more than one user to join with this link. Default false.'),
+  internal_note: z.string().nullable().optional().describe('Note copied to the user-space created on join.'),
   format: formatEnum,
 } as const;
 
 export const updateInviteLinkShape = {
-  id: z.number(),
-  email: z.string().optional(),
-  group: z.number().optional(),
-  valid_until: z.string().optional(),
-  reusable: z.boolean().optional(),
-  internal_note: z.string().nullable().optional(),
+  id: z.number().describe('Invite link ID from list_invite_links.'),
+  email: z.string().optional().describe('Invitee email.'),
+  group: z.number().optional().describe('Group ID from list_groups; the joiner gets its permissions.'),
+  valid_until: z.string().optional().describe('Expiry date, YYYY-MM-DD.'),
+  reusable: z.boolean().optional().describe('Allow more than one user to join with this link. Default false.'),
+  internal_note: z.string().nullable().optional().describe('Note copied to the user-space created on join.'),
   format: formatEnum,
 } as const;
 
-export const deleteInviteLinkShape = { id: z.number() } as const;
+export const deleteInviteLinkShape = { id: z.number().describe('Invite link ID from list_invite_links.') } as const;
 
 export type ListInviteLinksArgs = z.infer<z.ZodObject<typeof listInviteLinksShape>>;
 export type GetInviteLinkArgs = z.infer<z.ZodObject<typeof getInviteLinkShape>>;
