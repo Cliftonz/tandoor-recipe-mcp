@@ -36,110 +36,110 @@ import {
 // ---------- General import ----------
 
 export const importRecipesShape = {
-  ai_provider_id: z.number(),
-  text: z.string().optional(),
-  file: z.string().optional(),
-  recipe_id: z.string().optional(),
+  ai_provider_id: z.number().describe('AI provider ID, from list_ai_providers.'),
+  text: z.string().optional().describe('Raw recipe text.'),
+  file: z.string().optional().describe('Sent to Tandoor as the file field.'),
+  recipe_id: z.string().optional().describe('Recipe ID, as a string.'),
   format: formatEnum,
 } as const;
 
 // ---------- Import log ----------
 
 export const createImportLogShape = {
-  type: z.string(),
-  msg: z.string().optional(),
-  running: z.boolean().optional(),
-  total_recipes: z.number().optional(),
-  imported_recipes: z.number().optional(),
+  type: z.string().describe('Import source label, max 32 characters.'),
+  msg: z.string().optional().describe('Log text. Default empty.'),
+  running: z.boolean().optional().describe('Import still in progress. Default true.'),
+  total_recipes: z.number().optional().describe('Recipes found in the source. Default 0.'),
+  imported_recipes: z.number().optional().describe('Recipes imported so far. Default 0.'),
   format: formatEnum,
 } as const;
 
-export const getImportLogShape = { id: z.number(), format: formatEnum } as const;
+export const getImportLogShape = { id: z.number().describe('Import log ID, from list_import_logs.'), format: formatEnum } as const;
 
 export const updateImportLogShape = {
-  id: z.number(),
-  type: z.string().optional(),
-  msg: z.string().optional(),
-  running: z.boolean().optional(),
-  total_recipes: z.number().optional(),
-  imported_recipes: z.number().optional(),
+  id: z.number().describe('Import log ID, from list_import_logs.'),
+  type: z.string().optional().describe('Import source label, max 32 characters.'),
+  msg: z.string().optional().describe('Log text; replaces the existing text.'),
+  running: z.boolean().optional().describe('Import still in progress.'),
+  total_recipes: z.number().optional().describe('Recipes found in the source.'),
+  imported_recipes: z.number().optional().describe('Recipes imported so far.'),
   format: formatEnum,
 } as const;
 
-export const deleteImportLogShape = { id: z.number() } as const;
+export const deleteImportLogShape = { id: z.number().describe('Import log ID, from list_import_logs.') } as const;
 
 // ---------- Import open data ----------
 
 export const listOpenDataImportsShape = { format: formatEnum } as const;
 
 export const runOpenDataImportShape = {
-  selected_version: z.string(),
-  selected_datatypes: z.array(z.string()),
-  update_existing: z.boolean().optional(),
-  use_metric: z.boolean().optional(),
+  selected_version: z.string().describe('Version key, from list_open_data_imports.'),
+  selected_datatypes: z.array(z.string()).describe('Any of: unit, category, property, store, food, conversion.'),
+  update_existing: z.boolean().optional().describe('Also update rows that already exist. Default true.'),
+  use_metric: z.boolean().optional().describe('Default true. Current Tandoor ignores it.'),
   format: formatEnum,
 } as const;
 
 // ---------- Recipe-import queue ----------
 
 export const listRecipeImportsShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page: z.number().optional().describe('Page number, starting at 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
 
 export const createRecipeImportShape = {
-  name: z.string(),
-  storage: z.number(),
+  name: z.string().describe('Name of the staged file.'),
+  storage: z.number().describe('Storage ID, from list_storages.'),
   format: formatEnum,
 } as const;
 
-export const getRecipeImportShape = { id: z.number(), format: formatEnum } as const;
+export const getRecipeImportShape = { id: z.number().describe('Queue entry ID, from list_recipe_imports.'), format: formatEnum } as const;
 
 export const updateRecipeImportShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  storage: z.number().optional(),
+  id: z.number().describe('Queue entry ID, from list_recipe_imports.'),
+  name: z.string().optional().describe('Name of the staged file.'),
+  storage: z.number().optional().describe('Storage ID, from list_storages.'),
   format: formatEnum,
 } as const;
 
-export const deleteRecipeImportShape = { id: z.number() } as const;
+export const deleteRecipeImportShape = { id: z.number().describe('Queue entry ID, from list_recipe_imports.') } as const;
 
 export const importAllPendingShape = {} as const;
 
-export const importPendingRecipeShape = { id: z.number(), format: formatEnum } as const;
+export const importPendingRecipeShape = { id: z.number().describe('Queue entry ID, from list_recipe_imports.'), format: formatEnum } as const;
 
 // ---------- Bookmarklet import ----------
 
 export const listBookmarkletImportsShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page: z.number().optional().describe('Page number, starting at 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
 
 export const createBookmarkletImportShape = {
-  html: z.string(),
-  url: z.string().optional(),
+  html: z.string().describe('Full HTML of the recipe page.'),
+  url: z.string().optional().describe('Address of the page the HTML came from.'),
   format: formatEnum,
 } as const;
 
-export const getBookmarkletImportShape = { id: z.number(), format: formatEnum } as const;
+export const getBookmarkletImportShape = { id: z.number().describe('Bookmarklet import ID, from list_bookmarklet_imports.'), format: formatEnum } as const;
 
 export const updateBookmarkletImportShape = {
-  id: z.number(),
-  html: z.string().optional(),
-  url: z.string().optional(),
+  id: z.number().describe('Bookmarklet import ID, from list_bookmarklet_imports.'),
+  html: z.string().optional().describe('Full HTML of the recipe page.'),
+  url: z.string().optional().describe('Address of the page the HTML came from.'),
   format: formatEnum,
 } as const;
 
-export const deleteBookmarkletImportShape = { id: z.number() } as const;
+export const deleteBookmarkletImportShape = { id: z.number().describe('Bookmarklet import ID, from list_bookmarklet_imports.') } as const;
 
 // ---------- FDC search ----------
 
 export const fdcSearchShape = {
-  query: z.string(),
+  query: z.string().describe('Search text, e.g. "cheddar cheese".'),
   // Strict enum: unknown dataType values are rejected at MCP boundary rather than passed through to Tandoor.
-  dataType: z.array(z.enum(['Branded', 'Foundation', 'Survey (FNDDS)', 'SR Legacy'])).optional(),
+  dataType: z.array(z.enum(['Branded', 'Foundation', 'Survey (FNDDS)', 'SR Legacy'])).optional().describe('FDC data sets to search. Default Foundation.'),
   format: formatEnum,
 } as const;
 
@@ -147,7 +147,7 @@ export const fdcSearchShape = {
 
 export const listFoodInheritFieldsShape = { format: formatEnum } as const;
 
-export const getFoodInheritFieldShape = { id: z.number(), format: formatEnum } as const;
+export const getFoodInheritFieldShape = { id: z.number().describe('Inherit field ID, from list_food_inherit_fields.'), format: formatEnum } as const;
 
 export type ImportRecipesArgs = z.infer<z.ZodObject<typeof importRecipesShape>>;
 export type CreateImportLogArgs = z.infer<z.ZodObject<typeof createImportLogShape>>;

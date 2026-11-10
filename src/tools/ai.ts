@@ -17,8 +17,8 @@ import {
 
 
 export const listAiProvidersShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page: z.number().optional().describe('Page number, starting at 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
 
@@ -26,40 +26,40 @@ export const aiImportRecipeShape = {
   file_path: z.string().optional().describe('Absolute path to an image or PDF on the MCP server filesystem'),
   file_url: z.string().optional().describe('Remote URL of an image/PDF; the server fetches it and uploads bytes'),
   text: z.string().optional().describe('Optional raw recipe text to feed the AI provider'),
-  ai_provider_id: z.number().optional(),
+  ai_provider_id: z.number().optional().describe('AI provider ID, from list_ai_providers. Default: first provider.'),
   save: z.boolean().optional().describe('Save parsed recipe to Tandoor (default true)'),
   name: z.string().optional().describe('Override name if AI did not extract one'),
   format: formatEnum,
 } as const;
 
-export const getAiProviderShape = { id: z.number(), format: formatEnum } as const;
+export const getAiProviderShape = { id: z.number().describe('AI provider ID, from list_ai_providers.'), format: formatEnum } as const;
 
 export const createAiProviderShape = {
-  name: z.string(),
-  model_name: z.string(),
-  api_key: z.string().optional(),
-  description: z.string().optional(),
-  url: z.string().optional(),
-  log_credit_cost: z.boolean().optional(),
-  space: z.number().optional(),
+  name: z.string().describe('Display name, max 128 characters.'),
+  model_name: z.string().describe('LiteLLM model string, e.g. "gpt-4o".'),
+  api_key: z.string().optional().describe('Secret key for the model provider.'),
+  description: z.string().optional().describe('Free-text notes.'),
+  url: z.string().optional().describe('Custom API base URL; omit for the LiteLLM default.'),
+  log_credit_cost: z.boolean().optional().describe('Count usage toward space AI credits. Superuser only. Default true.'),
+  space: z.number().optional().describe('Superusers: omit for a global provider; any value means active space.'),
   format: formatEnum,
 } as const;
 
 export const updateAiProviderShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  api_key: z.string().optional(),
-  model_name: z.string().optional(),
-  description: z.string().optional(),
-  url: z.string().optional(),
-  log_credit_cost: z.boolean().optional(),
-  space: z.number().optional(),
+  id: z.number().describe('AI provider ID, from list_ai_providers.'),
+  name: z.string().optional().describe('Display name, max 128 characters.'),
+  api_key: z.string().optional().describe('Replacement secret key for the model provider.'),
+  model_name: z.string().optional().describe('LiteLLM model string, e.g. "gpt-4o".'),
+  description: z.string().optional().describe('Free-text notes.'),
+  url: z.string().optional().describe('Custom API base URL.'),
+  log_credit_cost: z.boolean().optional().describe('Count usage toward space AI credits. Superuser only.'),
+  space: z.number().optional().describe('Superusers: any value means active space. Omit to keep current.'),
   format: formatEnum,
 } as const;
 
-export const deleteAiProviderShape = { id: z.number() } as const;
+export const deleteAiProviderShape = { id: z.number().describe('AI provider ID, from list_ai_providers.') } as const;
 
-export const aiStepSortShape = { recipe_id: z.number() } as const;
+export const aiStepSortShape = { recipe_id: z.number().describe('Recipe ID whose steps to sort.') } as const;
 
 export type ListAiProvidersArgs = z.infer<z.ZodObject<typeof listAiProvidersShape>>;
 export type AiImportRecipeArgs = z.infer<z.ZodObject<typeof aiImportRecipeShape>>;

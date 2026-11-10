@@ -16,52 +16,52 @@ import {
 
 const ingredientInput = z.object({
   food: z.string().optional().describe('Food name (find-or-create)'),
-  food_id: z.number().optional(),
+  food_id: z.number().optional().describe('Food ID, from list_foods. Takes precedence over food.'),
   unit: z.string().optional().describe('Unit name (find-or-create)'),
-  unit_id: z.number().optional(),
-  amount: z.number().optional(),
-  note: z.string().optional(),
-  order: z.number().optional(),
-  is_header: z.boolean().optional(),
-  no_amount: z.boolean().optional(),
+  unit_id: z.number().optional().describe('Unit ID, from list_units. Takes precedence over unit.'),
+  amount: z.number().optional().describe('Quantity in the given unit. Default 0.'),
+  note: z.string().optional().describe('Free text, e.g. "finely chopped".'),
+  order: z.number().optional().describe('Sort position in the step. Default: array index.'),
+  is_header: z.boolean().optional().describe('Show as a heading row, not an ingredient. Default false.'),
+  no_amount: z.boolean().optional().describe('Hide the amount, e.g. "salt to taste". Default false.'),
 });
 
 export const listStepsShape = {
-  recipe: z.array(z.number()).optional(),
-  query: z.string().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  recipe: z.array(z.number()).optional().describe('Recipe IDs; only steps of these recipes.'),
+  query: z.string().optional().describe('Substring match on step name or recipe name.'),
+  page: z.number().optional().describe('Page number, starting at 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
 
-export const getStepShape = { id: z.number(), format: formatEnum } as const;
+export const getStepShape = { id: z.number().describe('Step ID, from list_steps.'), format: formatEnum } as const;
 
 export const createStepShape = {
-  instruction: z.string(),
-  name: z.string().optional(),
-  time: z.number().optional(),
-  order: z.number().optional(),
-  show_as_header: z.boolean().optional(),
-  show_ingredients_table: z.boolean().optional(),
-  step_recipe: z.number().nullable().optional(),
-  ingredients: z.array(ingredientInput).optional(),
+  instruction: z.string().describe('Step text. Markdown supported.'),
+  name: z.string().optional().describe('Step title, max 128 characters.'),
+  time: z.number().optional().describe('Step duration in minutes. Default 0.'),
+  order: z.number().optional().describe('Sort position within the recipe. Default 0.'),
+  show_as_header: z.boolean().optional().describe('Show the step name as a heading. Default true.'),
+  show_ingredients_table: z.boolean().optional().describe('Show the step ingredient table. Default true.'),
+  step_recipe: z.number().nullable().optional().describe('Recipe ID to embed as a sub-recipe.'),
+  ingredients: z.array(ingredientInput).optional().describe('Step ingredients; each needs food or food_id.'),
   format: formatEnum,
 } as const;
 
 export const updateStepShape = {
-  id: z.number(),
-  instruction: z.string().optional(),
-  name: z.string().optional(),
-  time: z.number().optional(),
-  order: z.number().optional(),
-  show_as_header: z.boolean().optional(),
-  show_ingredients_table: z.boolean().optional(),
-  step_recipe: z.number().nullable().optional(),
-  ingredients: z.array(ingredientInput).optional(),
+  id: z.number().describe('Step ID, from list_steps.'),
+  instruction: z.string().optional().describe('Step text. Markdown supported.'),
+  name: z.string().optional().describe('Step title, max 128 characters.'),
+  time: z.number().optional().describe('Step duration in minutes.'),
+  order: z.number().optional().describe('Sort position within the recipe.'),
+  show_as_header: z.boolean().optional().describe('Show the step name as a heading.'),
+  show_ingredients_table: z.boolean().optional().describe('Show the step ingredient table.'),
+  step_recipe: z.number().nullable().optional().describe('Recipe ID to embed as a sub-recipe; null removes it.'),
+  ingredients: z.array(ingredientInput).optional().describe('Replaces all step ingredients; each needs food or food_id.'),
   format: formatEnum,
 } as const;
 
-export const deleteStepShape = { id: z.number() } as const;
+export const deleteStepShape = { id: z.number().describe('Step ID, from list_steps.') } as const;
 
 export type ListStepsArgs = z.infer<z.ZodObject<typeof listStepsShape>>;
 export type GetStepArgs = z.infer<z.ZodObject<typeof getStepShape>>;
