@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## Unreleased
 
 ### Changed
+- **Every tool parameter has a description.** About 900 parameters that had none now explain formats, defaults, units and where IDs come from, so clients pick values correctly. `update_meal_plan` explains partial updates and how it handles `servings`. With every section turned on, the tool list grows from about 40,400 to 53,100 tokens; with the default sections, from about 9,300 to 12,700.
 - Tool, parameter, prompt and resource text, along with a few error messages, no longer uses em-dashes. A new test fails if one comes back in tool, resource or prompt text or in the server instructions.
 
 ## 3.4.4 / 2026-11-08

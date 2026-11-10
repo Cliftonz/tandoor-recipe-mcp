@@ -33,122 +33,131 @@ const FOOD_LISTS = 'Changing a food\'s lists does not change its existing shoppi
 
 
 export const listFoodsShape = {
-  query: z.string().optional(),
-  limit: z.number().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
-  random: z.string().optional(),
-  root: z.number().optional(),
-  root_tree: z.number().optional(),
-  tree: z.number().optional(),
-  updated_at: z.string().optional(),
+  query: z.string().optional().describe('Name filter, or similarity ranking when Tandoor fuzzy search is on.'),
+  limit: z.number().optional().describe('Maximum number of foods to return.'),
+  page: z.number().optional().describe('Page number, from 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
+  random: z.string().optional().describe('String. Any non-empty value shuffles the order, even "false".'),
+  root: z.number().optional().describe('Parent food ID; lists its direct children. 0 lists top-level foods.'),
+  root_tree: z.number().optional().describe('Food ID; lists the whole tree that food belongs to.'),
+  tree: z.number().optional().describe('Food ID; lists that food and all its descendants.'),
+  updated_at: z.string().optional().describe('No effect: Tandoor foods have no updated_at field.'),
   format: formatEnum,
 } as const;
 
-export const getFoodShape = { id: z.number(), format: formatEnum } as const;
+export const getFoodShape = { id: z.number().describe('Food ID, from list_foods.'), format: formatEnum } as const;
 
 export const createFoodShape = {
-  name: z.string(),
-  plural_name: z.string().optional(),
-  description: z.string().optional(),
-  food_onhand: z.boolean().optional(),
-  fdc_id: z.number().optional(),
-  supermarket_category_id: z.number().nullable().optional(),
-  shopping_list_ids: z.array(z.number()).optional(),
+  name: z.string().describe('Food name, e.g. tomato.'),
+  plural_name: z.string().optional().describe('Plural form, e.g. tomatoes.'),
+  description: z.string().optional().describe('Free-text description.'),
+  food_onhand: z.boolean().optional().describe('True marks the food on hand for your household.'),
+  fdc_id: z.number().optional().describe('USDA FoodData Central ID, used by food_fdc_lookup.'),
+  supermarket_category_id: z.number().nullable().optional().describe('Supermarket category ID, from list_supermarket_categories.'),
+  shopping_list_ids: z.array(z.number()).optional().describe('Shopping list IDs, from list_shopping_lists.'),
   format: formatEnum,
 } as const;
 
 export const updateFoodShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  plural_name: z.string().optional(),
-  description: z.string().optional(),
-  food_onhand: z.boolean().optional(),
-  fdc_id: z.number().optional(),
-  supermarket_category_id: z.number().nullable().optional(),
+  id: z.number().describe('Food ID, from list_foods.'),
+  name: z.string().optional().describe('New food name.'),
+  plural_name: z.string().optional().describe('Plural form, e.g. tomatoes.'),
+  description: z.string().optional().describe('Free-text description.'),
+  food_onhand: z.boolean().optional().describe('True or false sets on hand for your household.'),
+  fdc_id: z.number().optional().describe('USDA FoodData Central ID, used by food_fdc_lookup.'),
+  supermarket_category_id: z.number().nullable().optional().describe('Supermarket category ID, from list_supermarket_categories.'),
   properties: z.array(z.object({
-    property_type_id: z.number(),
-    property_amount: z.number().nullable(),
-  })).optional(),
-  remove_property_type_ids: z.array(z.number()).optional(),
-  properties_food_amount: z.number().optional(),
-  properties_food_unit_id: z.number().nullable().optional(),
-  shopping_list_ids: z.array(z.number()).optional(),
+    property_type_id: z.number().describe('Property type ID, from list_property_types.'),
+    property_amount: z.number().nullable().describe('Value per properties_food_amount; null means unknown.'),
+  })).optional().describe('Property values to set, one per type.'),
+  remove_property_type_ids: z.array(z.number()).optional().describe('Property type IDs whose values to delete.'),
+  properties_food_amount: z.number().optional().describe('Food amount the property values refer to, e.g. 100.'),
+  properties_food_unit_id: z.number().nullable().optional().describe('Unit ID for properties_food_amount, from list_units.'),
+  shopping_list_ids: z.array(z.number()).optional().describe('Replaces the food\'s shopping lists; [] clears them.'),
   format: formatEnum,
 } as const;
 
-export const deleteFoodShape = { id: z.number() } as const;
-export const mergeFoodShape = { id: z.number(), target: z.number() } as const;
-export const moveFoodShape = { id: z.number(), parent: z.number() } as const;
+export const deleteFoodShape = { id: z.number().describe('Food ID, from list_foods.') } as const;
+export const mergeFoodShape = {
+  id: z.number().describe('Food ID to absorb; it is deleted.'),
+  target: z.number().describe('Food ID that remains and takes the references.'),
+} as const;
+export const moveFoodShape = {
+  id: z.number().describe('Food ID to move.'),
+  parent: z.number().describe('New parent food ID; 0 moves it to the top level.'),
+} as const;
 
 export const foodFdcLookupShape = {
-  id: z.number(),
-  fdc_id: z.number().optional(),
+  id: z.number().describe('Food ID, from list_foods.'),
+  fdc_id: z.number().optional().describe('USDA FDC ID to set before the lookup.'),
   format: formatEnum,
 } as const;
 
 export const foodShoppingUpdateShape = {
-  id: z.number(),
-  amount: z.number().nullable().optional(),
-  unit_id: z.number().nullable().optional(),
-  delete: z.boolean().optional(),
+  id: z.number().describe('Food ID, from list_foods.'),
+  amount: z.number().nullable().optional().describe('Amount to add. Tandoor defaults to 1 when omitted.'),
+  unit_id: z.number().nullable().optional().describe('Unit ID, from list_units.'),
+  delete: z.boolean().optional().describe('True removes the food\'s unchecked entries instead of adding.'),
 } as const;
 
 export const listUnitsShape = {
-  query: z.string().optional(),
-  limit: z.number().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
-  random: z.string().optional(),
-  updated_at: z.string().optional(),
+  query: z.string().optional().describe('Name filter, or similarity ranking when Tandoor fuzzy search is on.'),
+  limit: z.number().optional().describe('Maximum number of units to return.'),
+  page: z.number().optional().describe('Page number, from 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
+  random: z.string().optional().describe('String. Any non-empty value shuffles the order, even "false".'),
+  updated_at: z.string().optional().describe('No effect: Tandoor units have no updated_at field.'),
   format: formatEnum,
 } as const;
 
-export const getUnitShape = { id: z.number(), format: formatEnum } as const;
+export const getUnitShape = { id: z.number().describe('Unit ID, from list_units.'), format: formatEnum } as const;
 
 export const createUnitShape = {
-  name: z.string(),
-  plural_name: z.string().optional(),
-  description: z.string().optional(),
-  base_unit: z.string().optional(),
+  name: z.string().describe('Unit name, e.g. cup. Unique per space.'),
+  plural_name: z.string().optional().describe('Plural form, e.g. cups.'),
+  description: z.string().optional().describe('Free-text description.'),
+  base_unit: z.string().optional().describe('Standard unit for automatic conversion, e.g. g, kg, ml, l, tsp.'),
   format: formatEnum,
 } as const;
 
 export const updateUnitShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  plural_name: z.string().optional(),
-  description: z.string().optional(),
-  base_unit: z.string().optional(),
+  id: z.number().describe('Unit ID, from list_units.'),
+  name: z.string().optional().describe('New unit name. Unique per space.'),
+  plural_name: z.string().optional().describe('Plural form, e.g. cups.'),
+  description: z.string().optional().describe('Free-text description.'),
+  base_unit: z.string().optional().describe('Standard unit for automatic conversion, e.g. g, kg, ml, l, tsp.'),
   format: formatEnum,
 } as const;
 
-export const deleteUnitShape = { id: z.number() } as const;
-export const mergeUnitShape = { id: z.number(), target: z.number() } as const;
+export const deleteUnitShape = { id: z.number().describe('Unit ID, from list_units.') } as const;
+export const mergeUnitShape = {
+  id: z.number().describe('Unit ID to absorb; it is deleted.'),
+  target: z.number().describe('Unit ID that remains and takes the references.'),
+} as const;
 
 // Mirrors Tandoor's FoodBatchUpdate serializer. `foods` is the target set;
 // all other fields are optional mutations applied across that set.
 export const foodBatchUpdateShape = {
-  foods: z.array(z.number()),
-  category: z.number().nullable().optional(),
-  substitute_add: z.array(z.number()).optional(),
-  substitute_remove: z.array(z.number()).optional(),
-  substitute_set: z.array(z.number()).optional(),
-  substitute_remove_all: z.boolean().optional(),
-  inherit_fields_add: z.array(z.number()).optional(),
-  inherit_fields_remove: z.array(z.number()).optional(),
-  inherit_fields_set: z.array(z.number()).optional(),
-  inherit_fields_remove_all: z.boolean().optional(),
-  child_inherit_fields_add: z.array(z.number()).optional(),
-  child_inherit_fields_remove: z.array(z.number()).optional(),
-  child_inherit_fields_set: z.array(z.number()).optional(),
-  child_inherit_fields_remove_all: z.boolean().optional(),
-  substitute_children: z.boolean().nullable().optional(),
-  substitute_siblings: z.boolean().nullable().optional(),
-  ignore_shopping: z.boolean().nullable().optional(),
-  on_hand: z.boolean().nullable().optional(),
-  parent_remove: z.boolean().nullable().optional(),
-  parent_set: z.number().nullable().optional(),
+  foods: z.array(z.number()).describe('Food IDs to update, from list_foods.'),
+  category: z.number().nullable().optional().describe('Supermarket category ID, from list_supermarket_categories.'),
+  substitute_add: z.array(z.number()).optional().describe('Food IDs to add as substitutes.'),
+  substitute_remove: z.array(z.number()).optional().describe('Substitute food IDs to remove.'),
+  substitute_set: z.array(z.number()).optional().describe('Food IDs that replace all substitutes.'),
+  substitute_remove_all: z.boolean().optional().describe('True removes all substitutes.'),
+  inherit_fields_add: z.array(z.number()).optional().describe('Inherit field IDs to add, from list_food_inherit_fields.'),
+  inherit_fields_remove: z.array(z.number()).optional().describe('Inherit field IDs to remove.'),
+  inherit_fields_set: z.array(z.number()).optional().describe('Inherit field IDs that replace the current ones.'),
+  inherit_fields_remove_all: z.boolean().optional().describe('True removes all inherit fields.'),
+  child_inherit_fields_add: z.array(z.number()).optional().describe('Child inherit field IDs to add, from list_food_inherit_fields.'),
+  child_inherit_fields_remove: z.array(z.number()).optional().describe('Child inherit field IDs to remove.'),
+  child_inherit_fields_set: z.array(z.number()).optional().describe('Child inherit field IDs that replace the current ones.'),
+  child_inherit_fields_remove_all: z.boolean().optional().describe('True removes all child inherit fields.'),
+  substitute_children: z.boolean().nullable().optional().describe('Child foods count as substitutes. Null leaves it unchanged.'),
+  substitute_siblings: z.boolean().nullable().optional().describe('Sibling foods count as substitutes. Null leaves it unchanged.'),
+  ignore_shopping: z.boolean().nullable().optional().describe('True skips these foods when recipes go to shopping. Null: no change.'),
+  on_hand: z.boolean().nullable().optional().describe('Sets on hand for your household. Null leaves it unchanged.'),
+  parent_remove: z.boolean().nullable().optional().describe('True moves the foods to the top level.'),
+  parent_set: z.number().nullable().optional().describe('Parent food ID to move the foods under.'),
   ...listOperationsShape,
 } as const;
 

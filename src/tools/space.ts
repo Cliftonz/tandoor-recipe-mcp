@@ -21,63 +21,63 @@ import {
 
 
 export const listSpacesShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page: z.number().optional().describe('1-based page number.'),
+  page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
 
-export const getSpaceShape = { id: z.number(), format: formatEnum } as const;
+export const getSpaceShape = { id: z.number().describe('Space ID from list_spaces.'), format: formatEnum } as const;
 
 export const getCurrentSpaceShape = { format: formatEnum } as const;
 
 export const createSpaceShape = {
-  name: z.string(),
-  message: z.string().optional(),
-  max_recipes: z.number().optional(),
-  max_file_storage_mb: z.number().optional(),
-  max_users: z.number().optional(),
-  allow_sharing: z.boolean().optional(),
+  name: z.string().describe('Name of the new space.'),
+  message: z.string().optional().describe('Ignored on create; set it with update_space.'),
+  max_recipes: z.number().optional().describe('Read-only in Tandoor; ignored.'),
+  max_file_storage_mb: z.number().optional().describe('Read-only in Tandoor; ignored.'),
+  max_users: z.number().optional().describe('Read-only in Tandoor; ignored.'),
+  allow_sharing: z.boolean().optional().describe('Read-only in Tandoor; ignored.'),
   format: formatEnum,
 } as const;
 
 export const updateSpaceShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  message: z.string().optional(),
-  max_recipes: z.number().optional(),
-  max_file_storage_mb: z.number().optional(),
-  max_users: z.number().optional(),
-  allow_sharing: z.boolean().optional(),
-  food_inherit: z.array(z.number()).optional(),
+  id: z.number().describe('Space ID from list_spaces.'),
+  name: z.string().optional().describe('New name; must be unique on the server.'),
+  message: z.string().optional().describe('Space message, up to 512 characters.'),
+  max_recipes: z.number().optional().describe('Read-only in Tandoor; ignored.'),
+  max_file_storage_mb: z.number().optional().describe('Read-only in Tandoor; ignored.'),
+  max_users: z.number().optional().describe('Read-only in Tandoor; ignored.'),
+  allow_sharing: z.boolean().optional().describe('Read-only in Tandoor; ignored.'),
+  food_inherit: z.array(z.number()).optional().describe('Food fields children inherit, IDs from list_food_inherit_fields.'),
   format: formatEnum,
 } as const;
 
 export const listUserSpacesShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
-  internal_note: z.string().optional(),
+  page: z.number().optional().describe('1-based page number.'),
+  page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'),
+  internal_note: z.string().optional().describe('Exact-match filter on the membership note.'),
   format: formatEnum,
 } as const;
 
-export const getUserSpaceShape = { id: z.number(), format: formatEnum } as const;
+export const getUserSpaceShape = { id: z.number().describe('User-space ID from list_user_spaces.'), format: formatEnum } as const;
 
 export const updateUserSpaceShape = {
-  id: z.number(),
-  active: z.boolean().optional(),
-  groups: z.array(z.number()).min(1).optional(),
-  internal_note: z.string().optional(),
+  id: z.number().describe('User-space ID from list_user_spaces.'),
+  active: z.boolean().optional().describe('Whether this is the user\'s active space.'),
+  groups: z.array(z.number()).min(1).optional().describe('Group IDs from list_groups; replaces current groups.'),
+  internal_note: z.string().optional().describe('Free-text note on the membership.'),
   format: formatEnum,
 } as const;
 
-export const deleteUserSpaceShape = { id: z.number() } as const;
+export const deleteUserSpaceShape = { id: z.number().describe('User-space ID from list_user_spaces.') } as const;
 
 export const listAllPersonalUserSpacesShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page: z.number().optional().describe('Ignored; this endpoint returns every row.'),
+  page_size: z.number().optional().describe('Ignored; this endpoint returns every row.'),
   format: formatEnum,
 } as const;
 
-export const switchActiveSpaceShape = { spaceId: z.number() } as const;
+export const switchActiveSpaceShape = { spaceId: z.number().describe('Space ID from list_spaces.') } as const;
 
 export type ListSpacesArgs = z.infer<z.ZodObject<typeof listSpacesShape>>;
 export type GetSpaceArgs = z.infer<z.ZodObject<typeof getSpaceShape>>;

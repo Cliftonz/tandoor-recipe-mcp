@@ -14,43 +14,43 @@ import {
 
 
 export const exportRecipesShape = {
-  type: z.string(),
-  recipes: z.array(z.number()).optional(),
-  all: z.boolean().optional(),
-  custom_filter: z.number().int().positive().optional(),
+  type: z.string().describe('Integration name, e.g. DEFAULT, SAFFRON, RECIPESAGE. PDF is rejected.'),
+  recipes: z.array(z.number()).optional().describe('Recipe IDs to export.'),
+  all: z.boolean().optional().describe('Export every recipe you can see. Default false.'),
+  custom_filter: z.number().int().positive().optional().describe('Saved custom filter ID from list_custom_filters.'),
   format: formatEnum,
 } as const;
 
 export const listExportLogsShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page: z.number().optional().describe('1-based page number.'),
+  page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
 
-export const getExportLogShape = { id: z.number(), format: formatEnum } as const;
+export const getExportLogShape = { id: z.number().describe('Export log ID from list_export_logs.'), format: formatEnum } as const;
 
 export const createExportLogShape = {
-  type: z.string(),
-  msg: z.string().optional(),
-  running: z.boolean().optional(),
-  total_recipes: z.number().optional(),
-  exported_recipes: z.number().optional(),
-  cache_duration: z.number().optional(),
+  type: z.string().describe('Integration name, e.g. DEFAULT.'),
+  msg: z.string().optional().describe('Log text written by the export job.'),
+  running: z.boolean().optional().describe('True while the export job is in progress.'),
+  total_recipes: z.number().optional().describe('Number of recipes in the export.'),
+  exported_recipes: z.number().optional().describe('Number of recipes exported so far.'),
+  cache_duration: z.number().optional().describe('Seconds the export file stays downloadable.'),
   format: formatEnum,
 } as const;
 
 export const updateExportLogShape = {
-  id: z.number(),
-  type: z.string().optional(),
-  msg: z.string().optional(),
-  running: z.boolean().optional(),
-  total_recipes: z.number().optional(),
-  exported_recipes: z.number().optional(),
-  cache_duration: z.number().optional(),
+  id: z.number().describe('Export log ID from list_export_logs.'),
+  type: z.string().optional().describe('Integration name, e.g. DEFAULT.'),
+  msg: z.string().optional().describe('Log text written by the export job.'),
+  running: z.boolean().optional().describe('True while the export job is in progress.'),
+  total_recipes: z.number().optional().describe('Number of recipes in the export.'),
+  exported_recipes: z.number().optional().describe('Number of recipes exported so far.'),
+  cache_duration: z.number().optional().describe('Seconds the export file stays downloadable.'),
   format: formatEnum,
 } as const;
 
-export const deleteExportLogShape = { id: z.number() } as const;
+export const deleteExportLogShape = { id: z.number().describe('Export log ID from list_export_logs.') } as const;
 
 export type ExportRecipesArgs = z.infer<z.ZodObject<typeof exportRecipesShape>>;
 export type ListExportLogsArgs = z.infer<z.ZodObject<typeof listExportLogsShape>>;

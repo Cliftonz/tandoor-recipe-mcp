@@ -15,66 +15,58 @@ import {
   handleBulkCreateMealPlans,
 } from '../handlers/mealplan.js';
 
+const mealPlanId = z.number().describe('Meal plan ID, from list_meal_plans.');
+const recipeId = 'Recipe ID, from search_recipes.';
+const mealTypeId = 'Meal type ID, from list_meal_types.';
+const planDate = 'YYYY-MM-DD or ISO datetime.';
+
 export const listMealPlansShape = {
-  from_date: z.string().optional(),
-  to_date: z.string().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  from_date: z.string().optional().describe('Range start, YYYY-MM-DD. Default 90 days ago.'),
+  to_date: z.string().optional().describe('Range end, YYYY-MM-DD. Default 360 days ahead.'),
+  page: z.number().optional().describe('Page number, starting at 1.'),
+  page_size: z.number().optional().describe('Results per page.'),
 } as const;
 
-export const getMealPlanShape = { id: z.number() } as const;
+export const getMealPlanShape = { id: mealPlanId } as const;
 
 export const listMealTypesShape = {} as const;
 
 export const createMealPlanShape = {
-  recipe_id: z.number().optional(),
-  title: z.string().optional(),
-  servings: z.number(),
-  from_date: z.string(),
-  to_date: z.string().optional(),
-  meal_type_id: z.number(),
-  note: z.string().optional(),
-  addshopping: z.boolean().optional(),
+  recipe_id: z.number().optional().describe(`${recipeId} Needed when title is omitted.`),
+  title: z.string().optional().describe('Plan title. Needed when recipe_id is omitted.'),
+  servings: z.number().describe('Number of servings.'),
+  from_date: z.string().describe(`Start date, ${planDate}`),
+  to_date: z.string().optional().describe(`End date, ${planDate} Defaults to from_date.`),
+  meal_type_id: z.number().describe(mealTypeId),
+  note: z.string().optional().describe('Free-text note.'),
+  addshopping: z.boolean().optional().describe("Add the recipe's ingredients to the shopping list."),
 } as const;
 
 export const updateMealPlanShape = {
-  id: z.number(),
-  recipe_id: z.number().nullable().optional(),
-  title: z.string().optional(),
-  servings: z.number().optional(),
-  from_date: z.string().optional(),
-  to_date: z.string().optional(),
-  meal_type_id: z.number().optional(),
-  note: z.string().optional(),
+  id: mealPlanId,
+  recipe_id: z.number().nullable().optional().describe(`${recipeId} null removes the recipe.`),
+  title: z.string().optional().describe('Plan title.'),
+  servings: z.number().optional().describe('Number of servings. Omitted keeps the current value.'),
+  from_date: z.string().optional().describe(`Start date, ${planDate}`),
+  to_date: z.string().optional().describe(`End date, ${planDate}`),
+  meal_type_id: z.number().optional().describe(mealTypeId),
+  note: z.string().optional().describe('Free-text note.'),
 } as const;
 
-export const deleteMealPlanShape = { id: z.number() } as const;
-
-// Per-entry shape for bulk_create_meal_plans. Mirrors createMealPlanShape
-// but as a z.object so we can nest it in an array.
-const bulkMealPlanEntry = z.object({
-  recipe_id: z.number().optional(),
-  title: z.string().optional(),
-  servings: z.number(),
-  from_date: z.string(),
-  to_date: z.string().optional(),
-  meal_type_id: z.number(),
-  note: z.string().optional(),
-  addshopping: z.boolean().optional(),
-});
+export const deleteMealPlanShape = { id: mealPlanId } as const;
 
 export const bulkCreateMealPlansShape = {
-  entries: z.array(bulkMealPlanEntry),
+  entries: z.array(z.object(createMealPlanShape)).describe('Meal plans to create, each with the create_meal_plan fields.'),
 } as const;
 
 export const autoMealPlanShape = {
-  start_date: z.iso.date(),
-  end_date: z.iso.date(),
-  meal_type_id: z.number(),
-  keyword_ids: z.array(z.number()).optional(),
-  keyword_mode: z.enum(['or', 'and']).optional(),
-  servings: z.number(),
-  addshopping: z.boolean(),
+  start_date: z.iso.date().describe('First day, YYYY-MM-DD.'),
+  end_date: z.iso.date().describe('Last day, YYYY-MM-DD.'),
+  meal_type_id: z.number().describe(mealTypeId),
+  keyword_ids: z.array(z.number()).optional().describe('Keyword IDs, from list_keywords. Omitted or empty uses all recipes.'),
+  keyword_mode: z.enum(['or', 'and']).optional().describe('and (default): recipes need every keyword. or: any keyword.'),
+  servings: z.number().describe('Servings for each plan.'),
+  addshopping: z.boolean().describe("Add each recipe's ingredients to the shopping list."),
 } as const;
 
 export type ListMealPlansArgs = z.infer<z.ZodObject<typeof listMealPlansShape>>;
@@ -110,7 +102,7 @@ export function registerMealPlanTools(server: McpServer, client: TandoorClient):
   registerStringTool(server, client, 'update_meal_plan', {
     title: 'Update meal plan',
     annotations: UPDATE,
-    description: 'Update meal plan. Required: id. All other fields optional',
+    description: 'Update a meal plan by ID (PATCH); only the fields you give change, and at least one is required. If servings is omitted, the tool reads the plan and resends its current servings, so plans with shopping entries do not fail; plans at any date are reachable. Use create_meal_plan to add a plan and delete_meal_plan to remove one.',
     inputSchema: updateMealPlanShape,
   }, handleUpdateMealPlan);
 

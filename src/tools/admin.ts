@@ -39,91 +39,91 @@ const automationTypeEnum = z.enum([
 
 // ---------- Shapes ----------
 
-export const getShareLinkShape = { id: z.number() } as const;
+export const getShareLinkShape = { id: z.number().describe('Share link ID.') } as const;
 
 export const listUserPreferencesShape = { format: formatEnum } as const;
-export const getUserPreferenceShape = { user_id: z.number(), format: formatEnum } as const;
+export const getUserPreferenceShape = { user_id: z.number().describe('Your own user ID; Tandoor only exposes the caller\'s preferences.'), format: formatEnum } as const;
 export const updateUserPreferenceShape = {
-  user_id: z.number(),
-  theme: z.string().optional(),
-  default_page: z.enum(['SEARCH', 'PLAN', 'BOOKS', 'SHOPPING']).optional(),
-  default_unit: z.string().optional(),
-  use_fractions: z.boolean().optional(),
-  use_kj: z.boolean().optional(),
-  comments: z.boolean().optional(),
-  ingredient_decimals: z.number().optional(),
-  shopping_auto_sync: z.number().optional(),
-  shopping_recent_days: z.number().optional(),
-  shopping_add_onhand: z.boolean().optional(),
-  mealplan_autoadd_shopping: z.boolean().optional(),
-  mealplan_autoinclude_related: z.boolean().optional(),
-  mealplan_autoexclude_onhand: z.boolean().optional(),
-  filter_to_supermarket: z.boolean().optional(),
-  left_handed: z.boolean().optional(),
-  default_meal_type_id: z.number().nullable().optional(),
-  shopping_update_food_lists: z.boolean().optional(),
+  user_id: z.number().describe('Your own user ID; Tandoor only exposes the caller\'s preferences.'),
+  theme: z.string().optional().describe('TANDOOR, BOOTSTRAP, DARKLY, FLATLY, SUPERHERO or TANDOOR_DARK.'),
+  default_page: z.enum(['SEARCH', 'PLAN', 'BOOKS', 'SHOPPING']).optional().describe('Web UI start page.'),
+  default_unit: z.string().optional().describe('Unit name for new ingredients, e.g. g.'),
+  use_fractions: z.boolean().optional().describe('Show recipe decimals as fractions.'),
+  use_kj: z.boolean().optional().describe('Show energy in kJ instead of kcal.'),
+  comments: z.boolean().optional().describe('Show recipe comments.'),
+  ingredient_decimals: z.number().optional().describe('Decimal places for ingredient amounts. Default 2.'),
+  shopping_auto_sync: z.number().optional().describe('Shopping list refresh interval in seconds; 0 disables.'),
+  shopping_recent_days: z.number().optional().describe('Days of checked entries to keep loading.'),
+  shopping_add_onhand: z.boolean().optional().describe('Mark food on hand when checked off.'),
+  mealplan_autoadd_shopping: z.boolean().optional().describe('Add meal plan ingredients to shopping automatically.'),
+  mealplan_autoinclude_related: z.boolean().optional().describe('Include related recipes when shopping a meal plan.'),
+  mealplan_autoexclude_onhand: z.boolean().optional().describe('Skip on-hand foods when shopping a meal plan.'),
+  filter_to_supermarket: z.boolean().optional().describe('Show only the selected supermarket\'s categories.'),
+  left_handed: z.boolean().optional().describe('Lay out the UI for left-hand use.'),
+  default_meal_type_id: z.number().nullable().optional().describe('Meal type ID from list_meal_types; null clears.'),
+  shopping_update_food_lists: z.boolean().optional().describe('New entries without lists get the food\'s lists.'),
   format: formatEnum,
 } as const;
 
-export const listAutomationsShape = { page: z.number().optional(), page_size: z.number().optional(), format: formatEnum } as const;
-export const getAutomationShape = { id: z.number(), format: formatEnum } as const;
+export const listAutomationsShape = { page: z.number().optional().describe('1-based page number.'), page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'), format: formatEnum } as const;
+export const getAutomationShape = { id: z.number().describe('Automation ID from list_automations.'), format: formatEnum } as const;
 export const createAutomationShape = {
-  type: automationTypeEnum,
-  name: z.string().optional(),
-  description: z.string().optional(),
-  param_1: z.string().optional(),
-  param_2: z.string().optional(),
-  param_3: z.string().optional(),
-  order: z.number().optional(),
-  disabled: z.boolean().optional(),
+  type: automationTypeEnum.describe('Rule type; decides how param_1 to param_3 are read.'),
+  name: z.string().optional().describe('Display name.'),
+  description: z.string().optional().describe('Free-text description.'),
+  param_1: z.string().optional().describe('Alias rules: text to match. Replace rules: source URL regex.'),
+  param_2: z.string().optional().describe('Alias rules: replacement name. Replace rules: regex to find.'),
+  param_3: z.string().optional().describe('Replace rules: replacement text. Unused by other types.'),
+  order: z.number().optional().describe('Lower values run first.'),
+  disabled: z.boolean().optional().describe('Skip this rule when true.'),
   format: formatEnum,
 } as const;
 export const updateAutomationShape = {
-  id: z.number(),
-  type: automationTypeEnum.optional(),
-  name: z.string().optional(),
-  description: z.string().optional(),
-  param_1: z.string().optional(),
-  param_2: z.string().optional(),
-  param_3: z.string().optional(),
-  order: z.number().optional(),
-  disabled: z.boolean().optional(),
+  id: z.number().describe('Automation ID from list_automations.'),
+  type: automationTypeEnum.optional().describe('Rule type; decides how param_1 to param_3 are read.'),
+  name: z.string().optional().describe('Display name.'),
+  description: z.string().optional().describe('Free-text description.'),
+  param_1: z.string().optional().describe('Alias rules: text to match. Replace rules: source URL regex.'),
+  param_2: z.string().optional().describe('Alias rules: replacement name. Replace rules: regex to find.'),
+  param_3: z.string().optional().describe('Replace rules: replacement text. Unused by other types.'),
+  order: z.number().optional().describe('Lower values run first.'),
+  disabled: z.boolean().optional().describe('Skip this rule when true.'),
   format: formatEnum,
 } as const;
-export const deleteAutomationShape = { id: z.number() } as const;
+export const deleteAutomationShape = { id: z.number().describe('Automation ID from list_automations.') } as const;
 
 export const listUserFilesShape = {
-  query: z.string().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  query: z.string().optional().describe('Case-insensitive substring match on file name.'),
+  page: z.number().optional().describe('1-based page number.'),
+  page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
-export const getUserFileShape = { id: z.number(), format: formatEnum } as const;
+export const getUserFileShape = { id: z.number().describe('User file ID from list_user_files.'), format: formatEnum } as const;
 export const uploadUserFileShape = {
-  name: z.string(),
-  file_path: z.string().optional(),
-  file_url: z.string().optional(),
+  name: z.string().describe('Display name for the file in Tandoor.'),
+  file_path: z.string().optional().describe('Local path in an allowed upload root; stdio only. Wins over file_url.'),
+  file_url: z.string().optional().describe('Public http(s) URL to fetch, up to 50 MiB.'),
   format: formatEnum,
 } as const;
-export const updateUserFileShape = { id: z.number(), name: z.string(), format: formatEnum } as const;
-export const deleteUserFileShape = { id: z.number() } as const;
+export const updateUserFileShape = { id: z.number().describe('User file ID from list_user_files.'), name: z.string().describe('New display name.'), format: formatEnum } as const;
+export const deleteUserFileShape = { id: z.number().describe('User file ID from list_user_files.') } as const;
 export const downloadFileShape = {
   file_id: z.number().describe('User file ID'),
   save: z.boolean().optional().describe('Save to TANDOOR_MCP_DOWNLOAD_ROOT instead of returning the file inline (needed above 5 MiB; stdio only).'),
 } as const;
 
-export const listViewLogsShape = { page: z.number().optional(), page_size: z.number().optional(), format: formatEnum } as const;
-export const listImportLogsShape = { page: z.number().optional(), page_size: z.number().optional(), format: formatEnum } as const;
-export const listAiLogsShape = { page: z.number().optional(), page_size: z.number().optional(), format: formatEnum } as const;
+export const listViewLogsShape = { page: z.number().optional().describe('1-based page number.'), page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'), format: formatEnum } as const;
+export const listImportLogsShape = { page: z.number().optional().describe('1-based page number.'), page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'), format: formatEnum } as const;
+export const listAiLogsShape = { page: z.number().optional().describe('1-based page number.'), page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'), format: formatEnum } as const;
 
 export const foodAiPropertiesShape = {
-  id: z.number(),
+  id: z.number().describe('Food ID.'),
   provider: z.number().optional().describe('AI provider ID (defaults to workspace default)'),
   format: formatEnum,
 } as const;
 export const recipeAiPropertiesShape = {
-  id: z.number(),
-  provider: z.number().optional(),
+  id: z.number().describe('Recipe ID.'),
+  provider: z.number().optional().describe('AI provider ID from list_ai_providers; Tandoor rejects the call without one.'),
   format: formatEnum,
 } as const;
 

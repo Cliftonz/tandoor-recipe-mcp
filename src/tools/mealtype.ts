@@ -13,25 +13,25 @@ import {
 const mealTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/).nullable().optional();
 
 export const createMealTypeShape = {
-  name: z.string(),
-  order: z.number().optional(),
-  color: z.string().nullable().optional(),
-  time: mealTime,
+  name: z.string().describe('Meal type name, e.g. Breakfast.'),
+  order: z.number().optional().describe('Sort position. Tandoor default 0.'),
+  color: z.string().nullable().optional().describe('Hex color, e.g. #FF8800. Max 7 characters.'),
+  time: mealTime.describe('Default time, HH:MM or HH:MM:SS.'),
   format: formatEnum,
 } as const;
 
-export const getMealTypeShape = { id: z.number(), format: formatEnum } as const;
+export const getMealTypeShape = { id: z.number().describe('Meal type ID, from list_meal_types.'), format: formatEnum } as const;
 
 export const updateMealTypeShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  order: z.number().optional(),
-  color: z.string().nullable().optional(),
-  time: mealTime,
+  id: z.number().describe('Meal type ID, from list_meal_types.'),
+  name: z.string().optional().describe('New meal type name.'),
+  order: z.number().optional().describe('Sort position.'),
+  color: z.string().nullable().optional().describe('Hex color, e.g. #FF8800. Max 7 characters.'),
+  time: mealTime.describe('Default time, HH:MM or HH:MM:SS. Null clears it.'),
   format: formatEnum,
 } as const;
 
-export const deleteMealTypeShape = { id: z.number() } as const;
+export const deleteMealTypeShape = { id: z.number().describe('Meal type ID, from list_meal_types.') } as const;
 
 export type CreateMealTypeArgs = z.infer<z.ZodObject<typeof createMealTypeShape>>;
 export type GetMealTypeArgs = z.infer<z.ZodObject<typeof getMealTypeShape>>;

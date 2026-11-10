@@ -17,43 +17,43 @@ import {
 export const listIngredientsShape = {
   food: z.number().optional().describe('Filter by food ID'),
   unit: z.number().optional().describe('Filter by unit ID'),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page: z.number().optional().describe('Page number, starting at 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
 } as const;
 
 export const getIngredientShape = {
-  id: z.number(),
+  id: z.number().describe('Ingredient ID, from get_recipe or list_ingredients.'),
 } as const;
 
 export const createIngredientShape = {
-  food_id: z.number(),
-  unit_id: z.number().optional(),
-  amount: z.number().optional(),
-  note: z.string().optional(),
-  order: z.number().optional(),
-  is_header: z.boolean().optional(),
-  no_amount: z.boolean().optional(),
-  original_text: z.string().optional(),
+  food_id: z.number().describe('Food ID, from list_foods or parse_ingredient.'),
+  unit_id: z.number().optional().describe('Unit ID, from list_units or parse_ingredient. Default none.'),
+  amount: z.number().optional().describe('Quantity in the given unit. Default 0.'),
+  note: z.string().optional().describe('Free text, e.g. "finely chopped". Max 256 characters.'),
+  order: z.number().optional().describe('Sort position in its step. Default 0.'),
+  is_header: z.boolean().optional().describe('Show as a heading row, not an ingredient. Default false.'),
+  no_amount: z.boolean().optional().describe('Hide the amount, e.g. "salt to taste". Default false.'),
+  original_text: z.string().optional().describe('Source line it was parsed from. Max 512 characters.'),
 } as const;
 
 export const updateIngredientShape = {
-  id: z.number(),
-  food_id: z.number().optional(),
-  unit_id: z.number().nullable().optional(),
-  amount: z.number().optional(),
-  note: z.string().optional(),
-  order: z.number().optional(),
-  is_header: z.boolean().optional(),
-  no_amount: z.boolean().optional(),
-  original_text: z.string().optional(),
+  id: z.number().describe('Ingredient ID, from get_recipe or list_ingredients.'),
+  food_id: z.number().optional().describe('Food ID, from list_foods or parse_ingredient.'),
+  unit_id: z.number().nullable().optional().describe('Unit ID, from list_units; null clears the unit.'),
+  amount: z.number().optional().describe('Quantity in the given unit.'),
+  note: z.string().optional().describe('Free text, e.g. "finely chopped". Max 256 characters.'),
+  order: z.number().optional().describe('Sort position in its step.'),
+  is_header: z.boolean().optional().describe('Show as a heading row, not an ingredient.'),
+  no_amount: z.boolean().optional().describe('Hide the amount, e.g. "salt to taste".'),
+  original_text: z.string().optional().describe('Source line it was parsed from. Max 512 characters.'),
 } as const;
 
 export const deleteIngredientShape = {
-  id: z.number(),
+  id: z.number().describe('Ingredient ID, from get_recipe or list_ingredients.'),
 } as const;
 
 export const parseIngredientShape = {
-  text: z.string(),
+  text: z.string().describe('One ingredient line, e.g. "2 cups flour".'),
 } as const;
 
 export type ListIngredientsArgs = z.infer<z.ZodObject<typeof listIngredientsShape>>;

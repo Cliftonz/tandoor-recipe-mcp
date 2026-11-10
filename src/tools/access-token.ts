@@ -21,31 +21,31 @@ const ESCALATION_WARNING =
   'ESCALATION SURFACE: this tool can mint or reveal Tandoor API tokens equivalent to the caller\'s login credentials. Only invoke when explicitly asked by the user.';
 
 export const listAccessTokensShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page: z.number().optional().describe('Ignored; Tandoor returns every token.'),
+  page_size: z.number().optional().describe('Ignored; Tandoor returns every token.'),
   format: formatEnum,
 } as const;
 
-export const getAccessTokenShape = { id: z.number(), format: formatEnum } as const;
+export const getAccessTokenShape = { id: z.number().describe('Access token ID from list_access_tokens.'), format: formatEnum } as const;
 
 export const createAccessTokenShape = {
-  scope: z.string(),
-  expires: z.string().datetime(),
+  scope: z.string().describe('Space-separated scopes: read, write, bookmarklet, mealplan.'),
+  expires: z.string().datetime().describe('UTC ISO 8601 ending in Z, e.g. 2026-12-01T10:00:00Z.'),
   format: formatEnum,
 } as const;
 
 export const updateAccessTokenShape = {
-  id: z.number(),
-  scope: z.string().optional(),
-  expires: z.string().datetime().optional(),
+  id: z.number().describe('Access token ID from list_access_tokens.'),
+  scope: z.string().optional().describe('Space-separated scopes: read, write, bookmarklet, mealplan.'),
+  expires: z.string().datetime().optional().describe('UTC ISO 8601 ending in Z, e.g. 2026-12-01T10:00:00Z.'),
   format: formatEnum,
 } as const;
 
-export const deleteAccessTokenShape = { id: z.number() } as const;
+export const deleteAccessTokenShape = { id: z.number().describe('Access token ID from list_access_tokens.') } as const;
 
 export const authenticateShape = {
-  username: z.string(),
-  password: z.string(),
+  username: z.string().describe('Tandoor login username.'),
+  password: z.string().describe('Tandoor login password.'),
 } as const;
 
 export type ListAccessTokensArgs = z.infer<z.ZodObject<typeof listAccessTokensShape>>;

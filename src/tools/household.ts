@@ -14,25 +14,29 @@ import {
 
 const OWNER_ONLY = 'Space owner only (admins get 403).';
 
+const page = z.number().optional().describe('Page number, starting at 1.');
+const pageSize = z.number().optional().describe('Results per page.');
+const householdId = z.number().describe('Household ID, from list_households.');
+
 export const listHouseholdsShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page,
+  page_size: pageSize,
   format: formatEnum,
 } as const;
 
-export const getHouseholdShape = { id: z.number(), format: formatEnum } as const;
+export const getHouseholdShape = { id: householdId, format: formatEnum } as const;
 
 const householdName = z.string().min(1).max(128);
 
-export const createHouseholdShape = { name: householdName, format: formatEnum } as const;
+export const createHouseholdShape = { name: householdName.describe('Household name.'), format: formatEnum } as const;
 
-export const updateHouseholdShape = { id: z.number(), name: householdName, format: formatEnum } as const;
+export const updateHouseholdShape = { id: householdId, name: householdName.describe('New household name.'), format: formatEnum } as const;
 
-export const deleteHouseholdShape = { id: z.number() } as const;
+export const deleteHouseholdShape = { id: householdId } as const;
 
 export const assignHouseholdShape = {
-  user_space_ids: z.array(z.number()).min(1).refine((ids) => new Set(ids).size === ids.length, 'user_space_ids must not repeat an id'),
-  household_id: z.number().nullable(),
+  user_space_ids: z.array(z.number()).min(1).refine((ids) => new Set(ids).size === ids.length, 'user_space_ids must not repeat an id').describe('User-space IDs, from list_user_spaces.'),
+  household_id: z.number().nullable().describe('Household ID, from list_households, or null to take them out.'),
 } as const;
 
 export type ListHouseholdsArgs = z.infer<z.ZodObject<typeof listHouseholdsShape>>;

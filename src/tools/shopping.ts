@@ -36,41 +36,45 @@ const ENTRY_LISTS = 'shopping_list_ids (ids from list_shopping_lists) puts the e
   + 'add_recipe_to_shopping_list always copies each food\'s lists; food_shopping_update never does. '
   + `Changing a food's lists later does not change existing entries. ${LIST_IDS_CHECKED} ${LISTS_APPLIED}`;
 
+const page = z.number().optional().describe('Page number, starting at 1.');
+const pageSize = z.number().optional().describe('Results per page.');
+const listIdsToSet = 'Shopping list IDs, from list_shopping_lists.';
+
 export const listShoppingListsShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page,
+  page_size: pageSize,
   format: formatEnum,
 } as const;
 
-export const getShoppingListShape = { id: z.number(), format: formatEnum } as const;
+export const getShoppingListShape = { id: z.number().describe('Shopping list ID, from list_shopping_lists.'), format: formatEnum } as const;
 
 const shoppingListName = z.string().min(1).max(32);
 const shoppingListColor = z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable();
 
 export const createShoppingListShape = {
-  name: shoppingListName,
-  description: z.string().optional(),
-  color: shoppingListColor.optional(),
+  name: shoppingListName.describe('List name. An existing name (any case) returns that list.'),
+  description: z.string().optional().describe('Free-text description.'),
+  color: shoppingListColor.optional().describe('Color as #rrggbb, or null for none.'),
   format: formatEnum,
 } as const;
 
 export const updateShoppingListShape = {
-  id: z.number(),
-  name: shoppingListName.optional(),
-  description: z.string().optional(),
-  color: shoppingListColor.optional(),
+  id: z.number().describe('Shopping list ID, from list_shopping_lists.'),
+  name: shoppingListName.optional().describe('New name. Must not match another list, ignoring case.'),
+  description: z.string().optional().describe('Free-text description.'),
+  color: shoppingListColor.optional().describe('Color as #rrggbb, or null to clear it.'),
   format: formatEnum,
 } as const;
 
-export const deleteShoppingListShape = { id: z.number() } as const;
+export const deleteShoppingListShape = { id: z.number().describe('Shopping list ID, from list_shopping_lists.') } as const;
 
 const shoppingListIds = z.array(z.number());
 
 export const listOperationsShape = {
-  shopping_lists_add: shoppingListIds.optional(),
-  shopping_lists_remove: shoppingListIds.optional(),
-  shopping_lists_set: shoppingListIds.optional(),
-  shopping_lists_remove_all: z.boolean().optional(),
+  shopping_lists_add: shoppingListIds.optional().describe('Shopping list IDs to add, from list_shopping_lists.'),
+  shopping_lists_remove: shoppingListIds.optional().describe('Shopping list IDs to remove.'),
+  shopping_lists_set: shoppingListIds.optional().describe('Replaces all lists with these IDs. Must not be empty.'),
+  shopping_lists_remove_all: z.boolean().optional().describe('true takes every list off.'),
 } as const;
 
 export const LIST_OPERATIONS = 'shopping_lists_add and shopping_lists_remove (may be combined), shopping_lists_set (replaces the lists; must not be empty) '
@@ -79,93 +83,93 @@ export const LIST_OPERATIONS = 'shopping_lists_add and shopping_lists_remove (ma
   + LIST_IDS_CHECKED;
 
 export const listShoppingEntriesShape = {
-  mealplan: z.number().optional(),
-  updated_after: z.string().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  mealplan: z.number().optional().describe('Only entries for this meal plan ID, from list_meal_plans.'),
+  updated_after: z.string().optional().describe('Only entries updated at or after this ISO 8601 datetime.'),
+  page,
+  page_size: pageSize,
   format: formatEnum,
 } as const;
 
-export const getShoppingEntryShape = { id: z.number(), format: formatEnum } as const;
+export const getShoppingEntryShape = { id: z.number().describe('Shopping entry ID, from list_shopping_entries.'), format: formatEnum } as const;
 
 export const createShoppingEntryShape = {
-  amount: z.number(),
-  food_id: z.number(),
-  unit_id: z.number().nullable().optional(),
-  checked: z.boolean().optional(),
-  list_recipe: z.number().nullable().optional(),
-  ingredient: z.number().nullable().optional(),
-  order: z.number().optional(),
-  delay_until: z.string().optional(),
-  mealplan_id: z.number().optional(),
-  shopping_list_ids: shoppingListIds.optional(),
+  amount: z.number().describe('Amount, in unit_id.'),
+  food_id: z.number().describe('Food ID, from list_foods.'),
+  unit_id: z.number().nullable().optional().describe('Unit ID, from list_units. Default none.'),
+  checked: z.boolean().optional().describe('Already bought. Default false.'),
+  list_recipe: z.number().nullable().optional().describe('Shopping list recipe ID, from list_shopping_list_recipes.'),
+  ingredient: z.number().nullable().optional().describe('Recipe ingredient ID this entry comes from.'),
+  order: z.number().optional().describe('Sort position.'),
+  delay_until: z.string().optional().describe('ISO 8601 datetime to postpone the entry until.'),
+  mealplan_id: z.number().optional().describe('Meal plan ID, from list_meal_plans.'),
+  shopping_list_ids: shoppingListIds.optional().describe(`${listIdsToSet} [] puts it on no list.`),
   format: formatEnum,
 } as const;
 
 export const updateShoppingEntryShape = {
-  id: z.number(),
-  amount: z.number().optional(),
-  food_id: z.number().nullable().optional(),
-  unit_id: z.number().nullable().optional(),
-  checked: z.boolean().optional(),
-  order: z.number().optional(),
-  delay_until: z.string().optional(),
-  shopping_list_ids: shoppingListIds.optional(),
+  id: z.number().describe('Shopping entry ID, from list_shopping_entries.'),
+  amount: z.number().optional().describe('Amount, in the entry unit.'),
+  food_id: z.number().nullable().optional().describe('Food ID, from list_foods.'),
+  unit_id: z.number().nullable().optional().describe('Unit ID, from list_units. null clears it.'),
+  checked: z.boolean().optional().describe('Bought or not. Omitted keeps the current value.'),
+  order: z.number().optional().describe('Sort position.'),
+  delay_until: z.string().optional().describe('ISO 8601 datetime to postpone the entry until.'),
+  shopping_list_ids: shoppingListIds.optional().describe(`${listIdsToSet} [] clears, omitted keeps.`),
   format: formatEnum,
 } as const;
 
-export const deleteShoppingEntryShape = { id: z.number() } as const;
+export const deleteShoppingEntryShape = { id: z.number().describe('Shopping entry ID, from list_shopping_entries.') } as const;
 
 export const bulkCheckShoppingEntriesShape = {
-  ids: z.array(z.number()),
-  checked: z.boolean(),
+  ids: z.array(z.number()).describe('Shopping entry IDs, from list_shopping_entries.'),
+  checked: z.boolean().describe('true checks, false unchecks.'),
 } as const;
 
 export const bulkUpdateShoppingEntriesShape = {
-  ids: z.array(z.number()).min(1),
-  checked: z.boolean().optional(),
+  ids: z.array(z.number()).min(1).describe('Shopping entry IDs, from list_shopping_entries.'),
+  checked: z.boolean().optional().describe('true checks, false unchecks. Omitted keeps each value.'),
   ...listOperationsShape,
 } as const;
 
 export const listShoppingListRecipesShape = {
-  mealplan: z.number().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  mealplan: z.number().optional().describe('Only those for this meal plan ID, from list_meal_plans.'),
+  page,
+  page_size: pageSize,
   format: formatEnum,
 } as const;
 
-export const getShoppingListRecipeShape = { id: z.number(), format: formatEnum } as const;
+export const getShoppingListRecipeShape = { id: z.number().describe('Shopping list recipe ID, from list_shopping_list_recipes.'), format: formatEnum } as const;
 
 export const createShoppingListRecipeShape = {
-  servings: z.number(),
-  name: z.string().optional(),
-  recipe: z.number().optional(),
-  mealplan: z.number().optional(),
+  servings: z.number().describe('Number of servings.'),
+  name: z.string().optional().describe('Display name, up to 32 characters.'),
+  recipe: z.number().optional().describe('Recipe ID, from search_recipes.'),
+  mealplan: z.number().optional().describe('Meal plan ID, from list_meal_plans.'),
   format: formatEnum,
 } as const;
 
 export const updateShoppingListRecipeShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  servings: z.number().optional(),
-  recipe: z.number().optional(),
-  mealplan: z.number().optional(),
+  id: z.number().describe('Shopping list recipe ID, from list_shopping_list_recipes.'),
+  name: z.string().optional().describe('Display name, up to 32 characters.'),
+  servings: z.number().optional().describe('Number of servings.'),
+  recipe: z.number().optional().describe('Recipe ID, from search_recipes.'),
+  mealplan: z.number().optional().describe('Meal plan ID, from list_meal_plans.'),
   format: formatEnum,
 } as const;
 
-export const deleteShoppingListRecipeShape = { id: z.number() } as const;
+export const deleteShoppingListRecipeShape = { id: z.number().describe('Shopping list recipe ID, from list_shopping_list_recipes.') } as const;
 
 export const bulkCreateShoppingListRecipeEntriesShape = {
-  id: z.number(),
+  id: z.number().describe('Shopping list recipe ID, from list_shopping_list_recipes.'),
   entries: z.array(
     z.object({
-      amount: z.number(),
-      food_id: z.number().nullable(),
-      unit_id: z.number().nullable(),
-      ingredient_id: z.number().nullable(),
+      amount: z.number().describe('Amount, in unit_id.'),
+      food_id: z.number().nullable().describe('Food ID, from list_foods. null or unknown skips the entry.'),
+      unit_id: z.number().nullable().describe('Unit ID, from list_units, or null. Unknown skips the entry.'),
+      ingredient_id: z.number().nullable().describe('Recipe ingredient ID, or null. Unknown skips the entry.'),
     })
-  ),
-  shopping_list_ids: shoppingListIds.optional(),
+  ).describe('Entries to append.'),
+  shopping_list_ids: shoppingListIds.optional().describe(`${listIdsToSet} Must not be empty.`),
 } as const;
 
 export type ListShoppingListsArgs = z.infer<z.ZodObject<typeof listShoppingListsShape>>;

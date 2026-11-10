@@ -39,68 +39,68 @@ const searchEnum = z.enum(['PLAIN', 'PHRASE', 'RAW', 'WEB', 'FUZZY']);
 // ---------- Connector-config ----------
 
 export const listConnectorsShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page: z.number().optional().describe('1-based page number.'),
+  page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
 
-export const getConnectorShape = { id: z.number(), format: formatEnum } as const;
+export const getConnectorShape = { id: z.number().describe('Connector ID from list_connectors.'), format: formatEnum } as const;
 
 export const createConnectorShape = {
-  name: z.string(),
-  type: connectorTypeEnum,
-  url: z.string().nullable().optional(),
-  token: z.string().nullable().optional(),
-  todo_entity: z.string().nullable().optional(),
-  enabled: z.boolean().optional(),
-  on_shopping_list_entry_created_enabled: z.boolean().optional(),
-  on_shopping_list_entry_updated_enabled: z.boolean().optional(),
-  on_shopping_list_entry_deleted_enabled: z.boolean().optional(),
-  supports_description_field: z.boolean().optional(),
+  name: z.string().describe('Display name.'),
+  type: connectorTypeEnum.describe('Connector type; only HomeAssistant exists.'),
+  url: z.string().nullable().optional().describe('Home Assistant base URL.'),
+  token: z.string().nullable().optional().describe('Home Assistant access token; write-only in Tandoor.'),
+  todo_entity: z.string().nullable().optional().describe('Home Assistant to-do entity ID, e.g. todo.shopping_list.'),
+  enabled: z.boolean().optional().describe('Turn the connector on or off. Default true.'),
+  on_shopping_list_entry_created_enabled: z.boolean().optional().describe('Push new shopping entries. Default false.'),
+  on_shopping_list_entry_updated_enabled: z.boolean().optional().describe('Push shopping entry updates. Default false.'),
+  on_shopping_list_entry_deleted_enabled: z.boolean().optional().describe('Push shopping entry deletions. Default false.'),
+  supports_description_field: z.boolean().optional().describe('Whether the to-do entity accepts a description. Default true.'),
   format: formatEnum,
 } as const;
 
 export const updateConnectorShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  type: connectorTypeEnum.optional(),
-  url: z.string().nullable().optional(),
-  token: z.string().nullable().optional(),
-  todo_entity: z.string().nullable().optional(),
-  enabled: z.boolean().optional(),
-  on_shopping_list_entry_created_enabled: z.boolean().optional(),
-  on_shopping_list_entry_updated_enabled: z.boolean().optional(),
-  on_shopping_list_entry_deleted_enabled: z.boolean().optional(),
-  supports_description_field: z.boolean().optional(),
+  id: z.number().describe('Connector ID from list_connectors.'),
+  name: z.string().optional().describe('Display name.'),
+  type: connectorTypeEnum.optional().describe('Connector type; only HomeAssistant exists.'),
+  url: z.string().nullable().optional().describe('Home Assistant base URL.'),
+  token: z.string().nullable().optional().describe('Home Assistant access token; write-only in Tandoor.'),
+  todo_entity: z.string().nullable().optional().describe('Home Assistant to-do entity ID, e.g. todo.shopping_list.'),
+  enabled: z.boolean().optional().describe('Turn the connector on or off. Default true.'),
+  on_shopping_list_entry_created_enabled: z.boolean().optional().describe('Push new shopping entries. Default false.'),
+  on_shopping_list_entry_updated_enabled: z.boolean().optional().describe('Push shopping entry updates. Default false.'),
+  on_shopping_list_entry_deleted_enabled: z.boolean().optional().describe('Push shopping entry deletions. Default false.'),
+  supports_description_field: z.boolean().optional().describe('Whether the to-do entity accepts a description. Default true.'),
   format: formatEnum,
 } as const;
 
-export const deleteConnectorShape = { id: z.number() } as const;
+export const deleteConnectorShape = { id: z.number().describe('Connector ID from list_connectors.') } as const;
 
 // ---------- View-log ----------
 
-export const getViewLogShape = { id: z.number(), format: formatEnum } as const;
+export const getViewLogShape = { id: z.number().describe('View log ID from list_view_logs.'), format: formatEnum } as const;
 export const updateViewLogShape = {
-  id: z.number(),
-  recipe: z.number().optional(),
+  id: z.number().describe('View log ID from list_view_logs.'),
+  recipe: z.number().optional().describe('Recipe ID to link the entry to.'),
   format: formatEnum,
 } as const;
-export const deleteViewLogShape = { id: z.number() } as const;
+export const deleteViewLogShape = { id: z.number().describe('View log ID from list_view_logs.') } as const;
 
 // ---------- Search preferences ----------
 
 export const listSearchFieldsShape = { format: formatEnum } as const;
 export const listSearchPreferencesShape = { format: formatEnum } as const;
 export const updateSearchPreferenceShape = {
-  user: z.number(),
-  search: searchEnum.optional(),
-  lookup: z.boolean().optional(),
-  unaccent: z.array(z.number()).optional(),
-  icontains: z.array(z.number()).optional(),
-  istartswith: z.array(z.number()).optional(),
-  trigram: z.array(z.number()).optional(),
-  fulltext: z.array(z.number()).optional(),
-  trigram_threshold: z.number().optional(),
+  user: z.number().describe('Your own user ID; Tandoor only exposes the caller\'s preference.'),
+  search: searchEnum.optional().describe('Full-text search method.'),
+  lookup: z.boolean().optional().describe('Fuzzy search toggle.'),
+  unaccent: z.array(z.number()).optional().describe('Accent-insensitive field IDs from list_search_fields.'),
+  icontains: z.array(z.number()).optional().describe('Partial-match field IDs from list_search_fields.'),
+  istartswith: z.array(z.number()).optional().describe('Starts-with field IDs from list_search_fields.'),
+  trigram: z.array(z.number()).optional().describe('Fuzzy-match field IDs from list_search_fields.'),
+  fulltext: z.array(z.number()).optional().describe('Full-text field IDs from list_search_fields.'),
+  trigram_threshold: z.number().optional().describe('Fuzzy match threshold; lower matches more. Default 0.2.'),
   format: formatEnum,
 } as const;
 
@@ -111,7 +111,7 @@ export const getLocalizationShape = {} as const;
 // ---------- Groups ----------
 
 export const listGroupsShape = { format: formatEnum } as const;
-export const getGroupShape = { id: z.number(), format: formatEnum } as const;
+export const getGroupShape = { id: z.number().describe('Group ID from list_groups.'), format: formatEnum } as const;
 
 // ---------- Users ----------
 
@@ -119,11 +119,11 @@ export const listUsersShape = {
   filter_list: z.array(z.number()).optional().describe('User IDs to filter to'),
   format: formatEnum,
 } as const;
-export const getUserShape = { id: z.number(), format: formatEnum } as const;
+export const getUserShape = { id: z.number().describe('User ID from list_users.'), format: formatEnum } as const;
 export const updateUserShape = {
-  id: z.number(),
-  first_name: z.string().optional(),
-  last_name: z.string().optional(),
+  id: z.number().describe('User ID from list_users.'),
+  first_name: z.string().optional().describe('Given name.'),
+  last_name: z.string().optional().describe('Family name.'),
   format: formatEnum,
 } as const;
 
@@ -132,7 +132,7 @@ export const updateUserShape = {
 export const exportMealPlanIcalShape = {
   from_date: z.string().optional().describe('YYYY-MM-DD inclusive'),
   to_date: z.string().optional().describe('YYYY-MM-DD inclusive'),
-  meal_type: z.array(z.number()).optional(),
+  meal_type: z.array(z.number()).optional().describe('Meal type IDs to include; omit for all.'),
 } as const;
 
 // ---------- Recipe file / external link ----------
