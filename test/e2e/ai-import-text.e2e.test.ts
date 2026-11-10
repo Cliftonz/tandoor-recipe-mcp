@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { openSurface, textOf, type Surface } from './helpers/surface.js';
+import { COVERS } from './helpers/coverage.js';
 
 const url = process.env.TANDOOR_URL;
 const token = process.env.TANDOOR_TOKEN;
@@ -17,6 +18,7 @@ describe.skipIf(!(url && token))('import_recipe_from_image text-only against liv
   afterAll(async () => {
     await s.call('delete_ai_provider', { id: providerId });
     await s.close();
+    expect(COVERS['ai-import-text.e2e.test.ts'].filter((t) => !s.called.has(t))).toEqual([]);
   });
 
   it('hands text-only input to Tandoor\'s AI step', async () => {
