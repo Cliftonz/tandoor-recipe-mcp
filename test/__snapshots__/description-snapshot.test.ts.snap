@@ -1123,7 +1123,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "update_keyword",
   },
   {
-    "description": "Update meal plan. Required: id. All other fields optional",
+    "description": "Update a meal plan by ID (PATCH); only the fields you give change, and at least one is required. If servings is omitted, the tool reads the plan and resends its current servings, so plans with shopping entries do not fail; plans at any date are reachable. Use create_meal_plan to add a plan and delete_meal_plan to remove one.",
     "name": "update_meal_plan",
   },
   {
@@ -1241,18 +1241,22 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "amount": {
+          "description": "Amount, in unit_id.",
           "exclusiveMinimum": 0,
           "type": "number",
         },
         "code": {
+          "description": "Short label, up to 16 characters. Default: the entry ID in hex.",
           "type": "string",
         },
         "expires": {
+          "description": "Expiry date, YYYY-MM-DD.",
           "format": "date",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
           "type": "string",
         },
         "food_id": {
+          "description": "Food ID, from list_foods.",
           "type": "number",
         },
         "format": {
@@ -1264,15 +1268,19 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "location_id": {
+          "description": "Inventory location ID, from list_inventory_locations.",
           "type": "number",
         },
         "note": {
+          "description": "Free-text note, up to 256 characters.",
           "type": "string",
         },
         "sub_location": {
+          "description": "Spot within the location, such as a shelf.",
           "type": "string",
         },
         "unit_id": {
+          "description": "Unit ID, from list_units.",
           "type": "number",
         },
       },
@@ -1292,6 +1300,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "book": {
+          "description": "Recipe book ID, from list_recipe_books.",
           "type": "number",
         },
         "format": {
@@ -1303,6 +1312,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "recipe": {
+          "description": "Recipe ID, from search_recipes.",
           "type": "number",
         },
       },
@@ -1359,6 +1369,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "recipe_id": {
+          "description": "Recipe ID whose steps to sort.",
           "type": "number",
         },
       },
@@ -1375,12 +1386,14 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "household_id": {
+          "description": "Household ID, from list_households, or null to take them out.",
           "type": [
             "number",
             "null",
           ],
         },
         "user_space_ids": {
+          "description": "User-space IDs, from list_user_spaces.",
           "items": {
             "type": "number",
           },
@@ -1402,9 +1415,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "password": {
+          "description": "Tandoor login password.",
           "type": "string",
         },
         "username": {
+          "description": "Tandoor login username.",
           "type": "string",
         },
       },
@@ -1422,20 +1437,24 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "addshopping": {
+          "description": "Add each recipe's ingredients to the shopping list.",
           "type": "boolean",
         },
         "end_date": {
+          "description": "Last day, YYYY-MM-DD.",
           "format": "date",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
           "type": "string",
         },
         "keyword_ids": {
+          "description": "Keyword IDs, from list_keywords. Omitted or empty uses all recipes.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "keyword_mode": {
+          "description": "and (default): recipes need every keyword. or: any keyword.",
           "enum": [
             "or",
             "and",
@@ -1443,12 +1462,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "meal_type_id": {
+          "description": "Meal type ID, from list_meal_types.",
           "type": "number",
         },
         "servings": {
+          "description": "Servings for each plan.",
           "type": "number",
         },
         "start_date": {
+          "description": "First day, YYYY-MM-DD.",
           "format": "date",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
           "type": "string",
@@ -1471,9 +1493,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "checked": {
+          "description": "true checks, false unchecks.",
           "type": "boolean",
         },
         "ids": {
+          "description": "Shopping entry IDs, from list_shopping_entries.",
           "items": {
             "type": "number",
           },
@@ -1494,31 +1518,40 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "entries": {
+          "description": "Meal plans to create, each with the create_meal_plan fields.",
           "items": {
             "additionalProperties": false,
             "properties": {
               "addshopping": {
+                "description": "Add the recipe's ingredients to the shopping list.",
                 "type": "boolean",
               },
               "from_date": {
+                "description": "Start date, YYYY-MM-DD or ISO datetime.",
                 "type": "string",
               },
               "meal_type_id": {
+                "description": "Meal type ID, from list_meal_types.",
                 "type": "number",
               },
               "note": {
+                "description": "Free-text note.",
                 "type": "string",
               },
               "recipe_id": {
+                "description": "Recipe ID, from search_recipes. Needed when title is omitted.",
                 "type": "number",
               },
               "servings": {
+                "description": "Number of servings.",
                 "type": "number",
               },
               "title": {
+                "description": "Plan title. Needed when recipe_id is omitted.",
                 "type": "string",
               },
               "to_date": {
+                "description": "End date, YYYY-MM-DD or ISO datetime. Defaults to from_date.",
                 "type": "string",
               },
             },
@@ -1545,25 +1578,30 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "entries": {
+          "description": "Entries to append.",
           "items": {
             "additionalProperties": false,
             "properties": {
               "amount": {
+                "description": "Amount, in unit_id.",
                 "type": "number",
               },
               "food_id": {
+                "description": "Food ID, from list_foods. null or unknown skips the entry.",
                 "type": [
                   "number",
                   "null",
                 ],
               },
               "ingredient_id": {
+                "description": "Recipe ingredient ID, or null. Unknown skips the entry.",
                 "type": [
                   "number",
                   "null",
                 ],
               },
               "unit_id": {
+                "description": "Unit ID, from list_units, or null. Unknown skips the entry.",
                 "type": [
                   "number",
                   "null",
@@ -1581,9 +1619,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "id": {
+          "description": "Shopping list recipe ID, from list_shopping_list_recipes.",
           "type": "number",
         },
         "shopping_list_ids": {
+          "description": "Shopping list IDs, from list_shopping_lists. Must not be empty.",
           "items": {
             "type": "number",
           },
@@ -1604,9 +1644,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "checked": {
+          "description": "true checks, false unchecks. Omitted keeps each value.",
           "type": "boolean",
         },
         "ids": {
+          "description": "Shopping entry IDs, from list_shopping_entries.",
           "items": {
             "type": "number",
           },
@@ -1614,21 +1656,25 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "shopping_lists_add": {
+          "description": "Shopping list IDs to add, from list_shopping_lists.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "shopping_lists_remove": {
+          "description": "Shopping list IDs to remove.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "shopping_lists_remove_all": {
+          "description": "true takes every list off.",
           "type": "boolean",
         },
         "shopping_lists_set": {
+          "description": "Replaces all lists with these IDs. Must not be empty.",
           "items": {
             "type": "number",
           },
@@ -1649,16 +1695,20 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "properties": {
         "all": {
           "const": true,
+          "description": "Use up the whole entry instead of an amount.",
           "type": "boolean",
         },
         "amount": {
+          "description": "Amount to use, in the entry unit.",
           "exclusiveMinimum": 0,
           "type": "number",
         },
         "entry_id": {
+          "description": "Inventory entry ID, from list_inventory_entries. Give this or food_id.",
           "type": "number",
         },
         "food_id": {
+          "description": "Food ID, from list_foods. Give this or entry_id.",
           "type": "number",
         },
         "format": {
@@ -1670,9 +1720,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "location_id": {
+          "description": "Narrows food_id to this location. Not with entry_id.",
           "type": "number",
         },
         "unit_id": {
+          "description": "Must equal the entry unit. No conversion.",
           "type": "number",
         },
       },
@@ -1686,6 +1738,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "expires": {
+          "description": "UTC ISO 8601 ending in Z, e.g. 2026-12-01T10:00:00Z.",
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
           "type": "string",
@@ -1699,6 +1752,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "scope": {
+          "description": "Space-separated scopes: read, write, bookmarklet, mealplan.",
           "type": "string",
         },
       },
@@ -1716,9 +1770,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "api_key": {
+          "description": "Secret key for the model provider.",
           "type": "string",
         },
         "description": {
+          "description": "Free-text notes.",
           "type": "string",
         },
         "format": {
@@ -1730,18 +1786,23 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "log_credit_cost": {
+          "description": "Count usage toward space AI credits. Superuser only. Default true.",
           "type": "boolean",
         },
         "model_name": {
+          "description": "LiteLLM model string, e.g. "gpt-4o".",
           "type": "string",
         },
         "name": {
+          "description": "Display name, max 128 characters.",
           "type": "string",
         },
         "space": {
+          "description": "Superusers: omit for a global provider; any value means active space.",
           "type": "number",
         },
         "url": {
+          "description": "Custom API base URL; omit for the LiteLLM default.",
           "type": "string",
         },
       },
@@ -1759,9 +1820,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "disabled": {
+          "description": "Skip this rule when true.",
           "type": "boolean",
         },
         "format": {
@@ -1773,21 +1836,27 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Display name.",
           "type": "string",
         },
         "order": {
+          "description": "Lower values run first.",
           "type": "number",
         },
         "param_1": {
+          "description": "Alias rules: text to match. Replace rules: source URL regex.",
           "type": "string",
         },
         "param_2": {
+          "description": "Alias rules: replacement name. Replace rules: regex to find.",
           "type": "string",
         },
         "param_3": {
+          "description": "Replace rules: replacement text. Unused by other types.",
           "type": "string",
         },
         "type": {
+          "description": "Rule type; decides how param_1 to param_3 are read.",
           "enum": [
             "FOOD_ALIAS",
             "UNIT_ALIAS",
@@ -1824,9 +1893,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "html": {
+          "description": "Full HTML of the recipe page.",
           "type": "string",
         },
         "url": {
+          "description": "Address of the page the HTML came from.",
           "type": "string",
         },
       },
@@ -1843,6 +1914,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "enabled": {
+          "description": "Turn the connector on or off. Default true.",
           "type": "boolean",
         },
         "format": {
@@ -1854,39 +1926,48 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Display name.",
           "type": "string",
         },
         "on_shopping_list_entry_created_enabled": {
+          "description": "Push new shopping entries. Default false.",
           "type": "boolean",
         },
         "on_shopping_list_entry_deleted_enabled": {
+          "description": "Push shopping entry deletions. Default false.",
           "type": "boolean",
         },
         "on_shopping_list_entry_updated_enabled": {
+          "description": "Push shopping entry updates. Default false.",
           "type": "boolean",
         },
         "supports_description_field": {
+          "description": "Whether the to-do entity accepts a description. Default true.",
           "type": "boolean",
         },
         "todo_entity": {
+          "description": "Home Assistant to-do entity ID, e.g. todo.shopping_list.",
           "type": [
             "string",
             "null",
           ],
         },
         "token": {
+          "description": "Home Assistant access token; write-only in Tandoor.",
           "type": [
             "string",
             "null",
           ],
         },
         "type": {
+          "description": "Connector type; only HomeAssistant exists.",
           "enum": [
             "HomeAssistant",
           ],
           "type": "string",
         },
         "url": {
+          "description": "Home Assistant base URL.",
           "type": [
             "string",
             "null",
@@ -1907,12 +1988,14 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "comment": {
+          "description": "Free-text comment.",
           "type": [
             "string",
             "null",
           ],
         },
         "created_at": {
+          "description": "When it was cooked, ISO 8601 datetime. Default now.",
           "type": "string",
         },
         "format": {
@@ -1924,15 +2007,18 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "rating": {
+          "description": "Whole-number rating.",
           "type": [
             "number",
             "null",
           ],
         },
         "recipe": {
+          "description": "Recipe ID, from search_recipes.",
           "type": "number",
         },
         "servings": {
+          "description": "Servings made.",
           "type": [
             "number",
             "null",
@@ -1960,12 +2046,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Filter name.",
           "type": "string",
         },
         "search": {
+          "description": "Saved recipe search parameters as a JSON string.",
           "type": "string",
         },
         "shared_user_ids": {
+          "description": "User IDs to share the filter with.",
           "items": {
             "type": "number",
           },
@@ -1986,9 +2075,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "cache_duration": {
+          "description": "Seconds the export file stays downloadable.",
           "type": "number",
         },
         "exported_recipes": {
+          "description": "Number of recipes exported so far.",
           "type": "number",
         },
         "format": {
@@ -2000,15 +2091,19 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "msg": {
+          "description": "Log text written by the export job.",
           "type": "string",
         },
         "running": {
+          "description": "True while the export job is in progress.",
           "type": "boolean",
         },
         "total_recipes": {
+          "description": "Number of recipes in the export.",
           "type": "number",
         },
         "type": {
+          "description": "Integration name, e.g. DEFAULT.",
           "type": "string",
         },
       },
@@ -2025,12 +2120,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "fdc_id": {
+          "description": "USDA FoodData Central ID, used by food_fdc_lookup.",
           "type": "number",
         },
         "food_onhand": {
+          "description": "True marks the food on hand for your household.",
           "type": "boolean",
         },
         "format": {
@@ -2042,18 +2140,22 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Food name, e.g. tomato.",
           "type": "string",
         },
         "plural_name": {
+          "description": "Plural form, e.g. tomatoes.",
           "type": "string",
         },
         "shopping_list_ids": {
+          "description": "Shopping list IDs, from list_shopping_lists.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "supermarket_category_id": {
+          "description": "Supermarket category ID, from list_supermarket_categories.",
           "type": [
             "number",
             "null",
@@ -2081,6 +2183,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Household name.",
           "maxLength": 128,
           "minLength": 1,
           "type": "string",
@@ -2107,18 +2210,23 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "imported_recipes": {
+          "description": "Recipes imported so far. Default 0.",
           "type": "number",
         },
         "msg": {
+          "description": "Log text. Default empty.",
           "type": "string",
         },
         "running": {
+          "description": "Import still in progress. Default true.",
           "type": "boolean",
         },
         "total_recipes": {
+          "description": "Recipes found in the source. Default 0.",
           "type": "number",
         },
         "type": {
+          "description": "Import source label, max 32 characters.",
           "type": "string",
         },
       },
@@ -2135,27 +2243,35 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "amount": {
+          "description": "Quantity in the given unit. Default 0.",
           "type": "number",
         },
         "food_id": {
+          "description": "Food ID, from list_foods or parse_ingredient.",
           "type": "number",
         },
         "is_header": {
+          "description": "Show as a heading row, not an ingredient. Default false.",
           "type": "boolean",
         },
         "no_amount": {
+          "description": "Hide the amount, e.g. "salt to taste". Default false.",
           "type": "boolean",
         },
         "note": {
+          "description": "Free text, e.g. "finely chopped". Max 256 characters.",
           "type": "string",
         },
         "order": {
+          "description": "Sort position in its step. Default 0.",
           "type": "number",
         },
         "original_text": {
+          "description": "Source line it was parsed from. Max 512 characters.",
           "type": "string",
         },
         "unit_id": {
+          "description": "Unit ID, from list_units or parse_ingredient. Default none.",
           "type": "number",
         },
       },
@@ -2180,9 +2296,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "is_freezer": {
+          "description": "Location is a freezer. Default false.",
           "type": "boolean",
         },
         "name": {
+          "description": "Location name, up to 64 characters.",
           "type": "string",
         },
       },
@@ -2199,6 +2317,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "email": {
+          "description": "Invitee email; Tandoor emails the link if SMTP is set up.",
           "type": "string",
         },
         "format": {
@@ -2210,18 +2329,22 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "group": {
+          "description": "Group ID from list_groups; the joiner gets its permissions.",
           "type": "number",
         },
         "internal_note": {
+          "description": "Note copied to the user-space created on join.",
           "type": [
             "string",
             "null",
           ],
         },
         "reusable": {
+          "description": "Allow more than one user to join with this link. Default false.",
           "type": "boolean",
         },
         "valid_until": {
+          "description": "Expiry date, YYYY-MM-DD.",
           "type": "string",
         },
       },
@@ -2240,6 +2363,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "format": {
@@ -2251,6 +2375,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Keyword name, max 64 characters. Unique per space.",
           "type": "string",
         },
       },
@@ -2267,27 +2392,35 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "addshopping": {
+          "description": "Add the recipe's ingredients to the shopping list.",
           "type": "boolean",
         },
         "from_date": {
+          "description": "Start date, YYYY-MM-DD or ISO datetime.",
           "type": "string",
         },
         "meal_type_id": {
+          "description": "Meal type ID, from list_meal_types.",
           "type": "number",
         },
         "note": {
+          "description": "Free-text note.",
           "type": "string",
         },
         "recipe_id": {
+          "description": "Recipe ID, from search_recipes. Needed when title is omitted.",
           "type": "number",
         },
         "servings": {
+          "description": "Number of servings.",
           "type": "number",
         },
         "title": {
+          "description": "Plan title. Needed when recipe_id is omitted.",
           "type": "string",
         },
         "to_date": {
+          "description": "End date, YYYY-MM-DD or ISO datetime. Defaults to from_date.",
           "type": "string",
         },
       },
@@ -2306,6 +2439,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "color": {
+          "description": "Hex color, e.g. #FF8800. Max 7 characters.",
           "type": [
             "string",
             "null",
@@ -2320,9 +2454,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Meal type name, e.g. Breakfast.",
           "type": "string",
         },
         "order": {
+          "description": "Sort position. Tandoor default 0.",
           "type": "number",
         },
         "time": {
@@ -2335,6 +2471,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
               "type": "null",
             },
           ],
+          "description": "Default time, HH:MM or HH:MM:SS.",
         },
       },
       "required": [
@@ -2358,9 +2495,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "property_amount": {
+          "description": "Value in the property type's unit.",
           "type": "number",
         },
         "property_type_id": {
+          "description": "Property type ID, from list_property_types.",
           "type": "number",
         },
       },
@@ -2378,12 +2517,14 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free text, max 512 characters.",
           "type": [
             "string",
             "null",
           ],
         },
         "fdc_id": {
+          "description": "USDA nutrient ID; food_fdc_lookup fills matching values.",
           "type": [
             "number",
             "null",
@@ -2398,18 +2539,22 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Property name, e.g. Protein.",
           "type": "string",
         },
         "open_data_slug": {
+          "description": "Tandoor Open Data identifier.",
           "type": [
             "string",
             "null",
           ],
         },
         "order": {
+          "description": "Sort position. Tandoor default 0.",
           "type": "number",
         },
         "unit": {
+          "description": "Unit label as free text, e.g. g or kcal.",
           "type": [
             "string",
             "null",
@@ -2429,6 +2574,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Short summary, max 512 characters.",
           "type": "string",
         },
         "format": {
@@ -2440,52 +2586,66 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "internal": {
+          "description": "Native Tandoor recipe, not an external file. Default true.",
           "type": "boolean",
         },
         "keywords": {
+          "description": "Keyword names; matched case-insensitively or created.",
           "items": {
             "type": "string",
           },
           "type": "array",
         },
         "name": {
+          "description": "Recipe title, max 128 characters.",
           "type": "string",
         },
         "nutrition": {
           "additionalProperties": false,
+          "description": "Nutrition values for the recipe.",
           "properties": {
             "calories": {
+              "description": "Energy value.",
               "type": "number",
             },
             "carbohydrates": {
+              "description": "Carbohydrate amount.",
               "type": "number",
             },
             "fats": {
+              "description": "Fat amount.",
               "type": "number",
             },
             "proteins": {
+              "description": "Protein amount.",
               "type": "number",
             },
             "source": {
+              "description": "Where the nutrition values came from.",
               "type": "string",
             },
           },
           "type": "object",
         },
         "private": {
+          "description": "Hide from other space members unless shared. Default false.",
           "type": "boolean",
         },
         "properties": {
+          "description": "Property values, e.g. nutrients or price.",
           "items": {
             "additionalProperties": false,
             "properties": {
               "id": {
+                "description": "Existing recipe property ID to update in place.",
                 "type": "number",
               },
               "property_amount": {
+                "description": "Value in the property type unit.",
                 "type": "number",
               },
               "property_type_id": {
+                "description": "Property type ID, from list_property_types.",
                 "type": "number",
               },
             },
@@ -2498,35 +2658,45 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "servings": {
+          "description": "Servings the ingredient amounts make. Default 1.",
           "type": "number",
         },
         "servings_text": {
+          "description": "Servings label, e.g. "cookies". Max 32 characters.",
           "type": "string",
         },
         "show_ingredient_overview": {
+          "description": "Show all ingredients above the steps. Default true.",
           "type": "boolean",
         },
         "source_url": {
+          "description": "Web address the recipe came from.",
           "type": "string",
         },
         "steps": {
+          "description": "Steps in display order.",
           "items": {
             "additionalProperties": false,
             "properties": {
               "ingredients": {
+                "description": "Ingredients used in this step; may be empty.",
                 "items": {
                   "additionalProperties": false,
                   "properties": {
                     "amount": {
+                      "description": "Quantity in the given unit.",
                       "type": "number",
                     },
                     "food": {
+                      "description": "Food name; matched case-insensitively or created.",
                       "type": "string",
                     },
                     "note": {
+                      "description": "Free text, e.g. "finely chopped".",
                       "type": "string",
                     },
                     "unit": {
+                      "description": "Unit name; matched case-insensitively or created.",
                       "type": "string",
                     },
                   },
@@ -2539,9 +2709,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
                 "type": "array",
               },
               "instruction": {
+                "description": "Step text. Markdown supported.",
                 "type": "string",
               },
               "time": {
+                "description": "Step duration in minutes. Default 0.",
                 "type": "number",
               },
             },
@@ -2554,9 +2726,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "waiting_time": {
+          "description": "Passive time, e.g. baking, in minutes. Default 0.",
           "type": "number",
         },
         "working_time": {
+          "description": "Active prep time in minutes. Default 0.",
           "type": "number",
         },
       },
@@ -2574,9 +2748,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "filter_id": {
+          "description": "Saved custom filter ID, from list_custom_filters.",
           "type": [
             "number",
             "null",
@@ -2591,12 +2767,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Book name, up to 128 characters.",
           "type": "string",
         },
         "order": {
+          "description": "Sort position among books. Default 0.",
           "type": "number",
         },
         "shared_user_ids": {
+          "description": "User IDs to share the book with, from list_users.",
           "items": {
             "type": "number",
           },
@@ -2624,9 +2803,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Name of the staged file.",
           "type": "string",
         },
         "storage": {
+          "description": "Storage ID, from list_storages.",
           "type": "number",
         },
       },
@@ -2644,15 +2825,19 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "amount": {
+          "description": "Amount, in unit_id.",
           "type": "number",
         },
         "checked": {
+          "description": "Already bought. Default false.",
           "type": "boolean",
         },
         "delay_until": {
+          "description": "ISO 8601 datetime to postpone the entry until.",
           "type": "string",
         },
         "food_id": {
+          "description": "Food ID, from list_foods.",
           "type": "number",
         },
         "format": {
@@ -2664,30 +2849,36 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "ingredient": {
+          "description": "Recipe ingredient ID this entry comes from.",
           "type": [
             "number",
             "null",
           ],
         },
         "list_recipe": {
+          "description": "Shopping list recipe ID, from list_shopping_list_recipes.",
           "type": [
             "number",
             "null",
           ],
         },
         "mealplan_id": {
+          "description": "Meal plan ID, from list_meal_plans.",
           "type": "number",
         },
         "order": {
+          "description": "Sort position.",
           "type": "number",
         },
         "shopping_list_ids": {
+          "description": "Shopping list IDs, from list_shopping_lists. [] puts it on no list.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "unit_id": {
+          "description": "Unit ID, from list_units. Default none.",
           "type": [
             "number",
             "null",
@@ -2717,8 +2908,10 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
               "type": "null",
             },
           ],
+          "description": "Color as #rrggbb, or null for none.",
         },
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "format": {
@@ -2730,6 +2923,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "List name. An existing name (any case) returns that list.",
           "maxLength": 32,
           "minLength": 1,
           "type": "string",
@@ -2756,15 +2950,19 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "mealplan": {
+          "description": "Meal plan ID, from list_meal_plans.",
           "type": "number",
         },
         "name": {
+          "description": "Display name, up to 32 characters.",
           "type": "string",
         },
         "recipe": {
+          "description": "Recipe ID, from search_recipes.",
           "type": "number",
         },
         "servings": {
+          "description": "Number of servings.",
           "type": "number",
         },
       },
@@ -2781,6 +2979,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "allow_sharing": {
+          "description": "Read-only in Tandoor; ignored.",
           "type": "boolean",
         },
         "format": {
@@ -2792,18 +2991,23 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "max_file_storage_mb": {
+          "description": "Read-only in Tandoor; ignored.",
           "type": "number",
         },
         "max_recipes": {
+          "description": "Read-only in Tandoor; ignored.",
           "type": "number",
         },
         "max_users": {
+          "description": "Read-only in Tandoor; ignored.",
           "type": "number",
         },
         "message": {
+          "description": "Ignored on create; set it with update_space.",
           "type": "string",
         },
         "name": {
+          "description": "Name of the new space.",
           "type": "string",
         },
       },
@@ -2828,10 +3032,12 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "ingredients": {
+          "description": "Step ingredients; each needs food or food_id.",
           "items": {
             "additionalProperties": false,
             "properties": {
               "amount": {
+                "description": "Quantity in the given unit. Default 0.",
                 "type": "number",
               },
               "food": {
@@ -2839,18 +3045,23 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
                 "type": "string",
               },
               "food_id": {
+                "description": "Food ID, from list_foods. Takes precedence over food.",
                 "type": "number",
               },
               "is_header": {
+                "description": "Show as a heading row, not an ingredient. Default false.",
                 "type": "boolean",
               },
               "no_amount": {
+                "description": "Hide the amount, e.g. "salt to taste". Default false.",
                 "type": "boolean",
               },
               "note": {
+                "description": "Free text, e.g. "finely chopped".",
                 "type": "string",
               },
               "order": {
+                "description": "Sort position in the step. Default: array index.",
                 "type": "number",
               },
               "unit": {
@@ -2858,6 +3069,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
                 "type": "string",
               },
               "unit_id": {
+                "description": "Unit ID, from list_units. Takes precedence over unit.",
                 "type": "number",
               },
             },
@@ -2866,27 +3078,34 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "instruction": {
+          "description": "Step text. Markdown supported.",
           "type": "string",
         },
         "name": {
+          "description": "Step title, max 128 characters.",
           "type": "string",
         },
         "order": {
+          "description": "Sort position within the recipe. Default 0.",
           "type": "number",
         },
         "show_as_header": {
+          "description": "Show the step name as a heading. Default true.",
           "type": "boolean",
         },
         "show_ingredients_table": {
+          "description": "Show the step ingredient table. Default true.",
           "type": "boolean",
         },
         "step_recipe": {
+          "description": "Recipe ID to embed as a sub-recipe.",
           "type": [
             "number",
             "null",
           ],
         },
         "time": {
+          "description": "Step duration in minutes. Default 0.",
           "type": "number",
         },
       },
@@ -2911,6 +3130,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "method": {
+          "description": "Backend: DB is Dropbox, NEXTCLOUD, or LOCAL.",
           "enum": [
             "DB",
             "NEXTCLOUD",
@@ -2919,30 +3139,36 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Display name.",
           "type": "string",
         },
         "password": {
+          "description": "Nextcloud password; write-only in Tandoor.",
           "type": [
             "string",
             "null",
           ],
         },
         "path": {
+          "description": "Nextcloud WebDAV root; empty uses the user files root.",
           "type": "string",
         },
         "token": {
+          "description": "Dropbox access token; write-only in Tandoor.",
           "type": [
             "string",
             "null",
           ],
         },
         "url": {
+          "description": "Nextcloud server URL.",
           "type": [
             "string",
             "null",
           ],
         },
         "username": {
+          "description": "Nextcloud login username.",
           "type": [
             "string",
             "null",
@@ -2964,6 +3190,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free-text description.",
           "type": [
             "string",
             "null",
@@ -2978,9 +3205,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Store name. Unique per space.",
           "type": "string",
         },
         "open_data_slug": {
+          "description": "Tandoor Open Data identifier. Unique per space.",
           "type": [
             "string",
             "null",
@@ -3000,6 +3229,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "format": {
@@ -3011,6 +3241,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Category name, e.g. Produce. Unique per space.",
           "type": "string",
         },
       },
@@ -3027,6 +3258,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "category_id": {
+          "description": "Category ID, from list_supermarket_categories.",
           "type": "number",
         },
         "format": {
@@ -3038,9 +3270,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "order": {
+          "description": "Category position in this supermarket. Tandoor default 0.",
           "type": "number",
         },
         "supermarket": {
+          "description": "Supermarket ID, from list_supermarkets.",
           "type": "number",
         },
       },
@@ -3058,6 +3292,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "active": {
+          "description": "Included in Tandoor's sync-all run. Default true.",
           "type": "boolean",
         },
         "format": {
@@ -3069,15 +3304,18 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "last_checked": {
+          "description": "ISO 8601 datetime of the last scan; null if never.",
           "type": [
             "string",
             "null",
           ],
         },
         "path": {
+          "description": "Folder path on the storage backend to import from.",
           "type": "string",
         },
         "storage_id": {
+          "description": "Storage ID from list_storages.",
           "type": "number",
         },
       },
@@ -3095,9 +3333,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "base_unit": {
+          "description": "Standard unit for automatic conversion, e.g. g, kg, ml, l, tsp.",
           "type": "string",
         },
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "format": {
@@ -3109,9 +3349,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Unit name, e.g. cup. Unique per space.",
           "type": "string",
         },
         "plural_name": {
+          "description": "Plural form, e.g. cups.",
           "type": "string",
         },
       },
@@ -3128,18 +3370,23 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "base_amount": {
+          "description": "Amount of the base unit, e.g. 1.",
           "type": "number",
         },
         "base_unit_id": {
+          "description": "Unit ID to convert from, from list_units.",
           "type": "number",
         },
         "converted_amount": {
+          "description": "Equal amount of the converted unit, e.g. 240.",
           "type": "number",
         },
         "converted_unit_id": {
+          "description": "Unit ID to convert to, from list_units.",
           "type": "number",
         },
         "food_id": {
+          "description": "Food ID for a food-specific conversion; null for none.",
           "type": [
             "number",
             "null",
@@ -3170,6 +3417,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Access token ID from list_access_tokens.",
           "type": "number",
         },
       },
@@ -3186,6 +3434,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "AI provider ID, from list_ai_providers.",
           "type": "number",
         },
       },
@@ -3202,6 +3451,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Automation ID from list_automations.",
           "type": "number",
         },
       },
@@ -3218,6 +3468,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Bookmarklet import ID, from list_bookmarklet_imports.",
           "type": "number",
         },
       },
@@ -3234,6 +3485,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Connector ID from list_connectors.",
           "type": "number",
         },
       },
@@ -3250,6 +3502,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Cook log ID, from list_cook_logs.",
           "type": "number",
         },
       },
@@ -3266,6 +3519,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Custom filter ID, from list_custom_filters.",
           "type": "number",
         },
       },
@@ -3282,6 +3536,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Export log ID from list_export_logs.",
           "type": "number",
         },
       },
@@ -3298,6 +3553,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Food ID, from list_foods.",
           "type": "number",
         },
       },
@@ -3314,6 +3570,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Household ID, from list_households.",
           "type": "number",
         },
       },
@@ -3330,6 +3587,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Import log ID, from list_import_logs.",
           "type": "number",
         },
       },
@@ -3346,6 +3604,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Ingredient ID, from get_recipe or list_ingredients.",
           "type": "number",
         },
       },
@@ -3362,6 +3621,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Inventory entry ID, from list_inventory_entries.",
           "type": "number",
         },
       },
@@ -3378,6 +3638,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Inventory location ID, from list_inventory_locations.",
           "type": "number",
         },
       },
@@ -3394,6 +3655,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Invite link ID from list_invite_links.",
           "type": "number",
         },
       },
@@ -3410,6 +3672,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Keyword ID, from list_keywords.",
           "type": "number",
         },
       },
@@ -3426,6 +3689,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Meal plan ID, from list_meal_plans.",
           "type": "number",
         },
       },
@@ -3442,6 +3706,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Meal type ID, from list_meal_types.",
           "type": "number",
         },
       },
@@ -3458,6 +3723,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Property ID, from list_properties.",
           "type": "number",
         },
       },
@@ -3474,6 +3740,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Property type ID, from list_property_types.",
           "type": "number",
         },
       },
@@ -3507,6 +3774,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Recipe book ID, from list_recipe_books.",
           "type": "number",
         },
       },
@@ -3540,6 +3808,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Queue entry ID, from list_recipe_imports.",
           "type": "number",
         },
       },
@@ -3556,6 +3825,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Shopping entry ID, from list_shopping_entries.",
           "type": "number",
         },
       },
@@ -3572,6 +3842,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Shopping list ID, from list_shopping_lists.",
           "type": "number",
         },
       },
@@ -3588,6 +3859,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Shopping list recipe ID, from list_shopping_list_recipes.",
           "type": "number",
         },
       },
@@ -3604,6 +3876,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Step ID, from list_steps.",
           "type": "number",
         },
       },
@@ -3620,6 +3893,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Storage ID from list_storages.",
           "type": "number",
         },
       },
@@ -3636,6 +3910,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Supermarket ID, from list_supermarkets.",
           "type": "number",
         },
       },
@@ -3652,6 +3927,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Category ID, from list_supermarket_categories.",
           "type": "number",
         },
       },
@@ -3668,6 +3944,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Relation ID, from list_supermarket_category_relations.",
           "type": "number",
         },
       },
@@ -3684,6 +3961,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Sync ID from list_syncs.",
           "type": "number",
         },
       },
@@ -3700,6 +3978,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Unit ID, from list_units.",
           "type": "number",
         },
       },
@@ -3716,6 +3995,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Unit conversion ID, from list_unit_conversions.",
           "type": "number",
         },
       },
@@ -3732,6 +4012,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "User file ID from list_user_files.",
           "type": "number",
         },
       },
@@ -3748,6 +4029,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "User-space ID from list_user_spaces.",
           "type": "number",
         },
       },
@@ -3764,6 +4046,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "View log ID from list_view_logs.",
           "type": "number",
         },
       },
@@ -3870,6 +4153,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "meal_type": {
+          "description": "Meal type IDs to include; omit for all.",
           "items": {
             "type": "number",
           },
@@ -3890,9 +4174,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "all": {
+          "description": "Export every recipe you can see. Default false.",
           "type": "boolean",
         },
         "custom_filter": {
+          "description": "Saved custom filter ID from list_custom_filters.",
           "exclusiveMinimum": 0,
           "maximum": 9007199254740991,
           "type": "integer",
@@ -3906,12 +4192,14 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "recipes": {
+          "description": "Recipe IDs to export.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "type": {
+          "description": "Integration name, e.g. DEFAULT, SAFFRON, RECIPESAGE. PDF is rejected.",
           "type": "string",
         },
       },
@@ -3928,6 +4216,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "dataType": {
+          "description": "FDC data sets to search. Default Foundation.",
           "items": {
             "enum": [
               "Branded",
@@ -3948,6 +4237,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "query": {
+          "description": "Search text, e.g. "cheddar cheese".",
           "type": "string",
         },
       },
@@ -3972,6 +4262,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Food ID.",
           "type": "number",
         },
         "provider": {
@@ -3992,132 +4283,156 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "category": {
+          "description": "Supermarket category ID, from list_supermarket_categories.",
           "type": [
             "number",
             "null",
           ],
         },
         "child_inherit_fields_add": {
+          "description": "Child inherit field IDs to add, from list_food_inherit_fields.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "child_inherit_fields_remove": {
+          "description": "Child inherit field IDs to remove.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "child_inherit_fields_remove_all": {
+          "description": "True removes all child inherit fields.",
           "type": "boolean",
         },
         "child_inherit_fields_set": {
+          "description": "Child inherit field IDs that replace the current ones.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "foods": {
+          "description": "Food IDs to update, from list_foods.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "ignore_shopping": {
+          "description": "True skips these foods when recipes go to shopping. Null: no change.",
           "type": [
             "boolean",
             "null",
           ],
         },
         "inherit_fields_add": {
+          "description": "Inherit field IDs to add, from list_food_inherit_fields.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "inherit_fields_remove": {
+          "description": "Inherit field IDs to remove.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "inherit_fields_remove_all": {
+          "description": "True removes all inherit fields.",
           "type": "boolean",
         },
         "inherit_fields_set": {
+          "description": "Inherit field IDs that replace the current ones.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "on_hand": {
+          "description": "Sets on hand for your household. Null leaves it unchanged.",
           "type": [
             "boolean",
             "null",
           ],
         },
         "parent_remove": {
+          "description": "True moves the foods to the top level.",
           "type": [
             "boolean",
             "null",
           ],
         },
         "parent_set": {
+          "description": "Parent food ID to move the foods under.",
           "type": [
             "number",
             "null",
           ],
         },
         "shopping_lists_add": {
+          "description": "Shopping list IDs to add, from list_shopping_lists.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "shopping_lists_remove": {
+          "description": "Shopping list IDs to remove.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "shopping_lists_remove_all": {
+          "description": "true takes every list off.",
           "type": "boolean",
         },
         "shopping_lists_set": {
+          "description": "Replaces all lists with these IDs. Must not be empty.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "substitute_add": {
+          "description": "Food IDs to add as substitutes.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "substitute_children": {
+          "description": "Child foods count as substitutes. Null leaves it unchanged.",
           "type": [
             "boolean",
             "null",
           ],
         },
         "substitute_remove": {
+          "description": "Substitute food IDs to remove.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "substitute_remove_all": {
+          "description": "True removes all substitutes.",
           "type": "boolean",
         },
         "substitute_set": {
+          "description": "Food IDs that replace all substitutes.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "substitute_siblings": {
+          "description": "Sibling foods count as substitutes. Null leaves it unchanged.",
           "type": [
             "boolean",
             "null",
@@ -4137,6 +4452,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "fdc_id": {
+          "description": "USDA FDC ID to set before the lookup.",
           "type": "number",
         },
         "format": {
@@ -4148,6 +4464,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Food ID, from list_foods.",
           "type": "number",
         },
       },
@@ -4164,18 +4481,22 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "amount": {
+          "description": "Amount to add. Tandoor defaults to 1 when omitted.",
           "type": [
             "number",
             "null",
           ],
         },
         "delete": {
+          "description": "True removes the food's unchecked entries instead of adding.",
           "type": "boolean",
         },
         "id": {
+          "description": "Food ID, from list_foods.",
           "type": "number",
         },
         "unit_id": {
+          "description": "Unit ID, from list_units.",
           "type": [
             "number",
             "null",
@@ -4203,6 +4524,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Access token ID from list_access_tokens.",
           "type": "number",
         },
       },
@@ -4227,6 +4549,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "AI provider ID, from list_ai_providers.",
           "type": "number",
         },
       },
@@ -4251,6 +4574,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Automation ID from list_automations.",
           "type": "number",
         },
       },
@@ -4275,6 +4599,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Bookmarklet import ID, from list_bookmarklet_imports.",
           "type": "number",
         },
       },
@@ -4299,6 +4624,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Connector ID from list_connectors.",
           "type": "number",
         },
       },
@@ -4323,6 +4649,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Cook log ID, from list_cook_logs.",
           "type": "number",
         },
       },
@@ -4365,6 +4692,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Custom filter ID, from list_custom_filters.",
           "type": "number",
         },
       },
@@ -4389,6 +4717,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Export log ID from list_export_logs.",
           "type": "number",
         },
       },
@@ -4430,6 +4759,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Food ID, from list_foods.",
           "type": "number",
         },
       },
@@ -4454,6 +4784,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Inherit field ID, from list_food_inherit_fields.",
           "type": "number",
         },
       },
@@ -4478,6 +4809,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Group ID from list_groups.",
           "type": "number",
         },
       },
@@ -4511,6 +4843,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Household ID, from list_households.",
           "type": "number",
         },
       },
@@ -4535,6 +4868,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Import log ID, from list_import_logs.",
           "type": "number",
         },
       },
@@ -4551,6 +4885,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Ingredient ID, from get_recipe or list_ingredients.",
           "type": "number",
         },
       },
@@ -4575,6 +4910,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Inventory entry ID, from list_inventory_entries.",
           "type": "number",
         },
       },
@@ -4599,6 +4935,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Inventory location ID, from list_inventory_locations.",
           "type": "number",
         },
       },
@@ -4623,6 +4960,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Inventory log ID, from list_inventory_logs.",
           "type": "number",
         },
       },
@@ -4647,6 +4985,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Invite link ID from list_invite_links.",
           "type": "number",
         },
       },
@@ -4671,6 +5010,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Keyword ID, from list_keywords.",
           "type": "number",
         },
       },
@@ -4696,6 +5036,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Meal plan ID, from list_meal_plans.",
           "type": "number",
         },
       },
@@ -4720,6 +5061,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Meal type ID, from list_meal_types.",
           "type": "number",
         },
       },
@@ -4744,6 +5086,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Property ID, from list_properties.",
           "type": "number",
         },
       },
@@ -4768,6 +5111,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Property type ID, from list_property_types.",
           "type": "number",
         },
       },
@@ -4817,6 +5161,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Recipe book ID, from list_recipe_books.",
           "type": "number",
         },
       },
@@ -4841,6 +5186,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Recipe book entry ID, from list_recipe_book_entries.",
           "type": "number",
         },
       },
@@ -4865,6 +5211,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Queue entry ID, from list_recipe_imports.",
           "type": "number",
         },
       },
@@ -4890,6 +5237,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Share link ID.",
           "type": "number",
         },
       },
@@ -4914,6 +5262,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Shopping entry ID, from list_shopping_entries.",
           "type": "number",
         },
       },
@@ -4938,6 +5287,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Shopping list ID, from list_shopping_lists.",
           "type": "number",
         },
       },
@@ -4962,6 +5312,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Shopping list recipe ID, from list_shopping_list_recipes.",
           "type": "number",
         },
       },
@@ -4986,6 +5337,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Space ID from list_spaces.",
           "type": "number",
         },
       },
@@ -5010,6 +5362,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Step ID, from list_steps.",
           "type": "number",
         },
       },
@@ -5034,6 +5387,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Storage ID from list_storages.",
           "type": "number",
         },
       },
@@ -5058,6 +5412,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Supermarket ID, from list_supermarkets.",
           "type": "number",
         },
       },
@@ -5082,6 +5437,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Category ID, from list_supermarket_categories.",
           "type": "number",
         },
       },
@@ -5106,6 +5462,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Relation ID, from list_supermarket_category_relations.",
           "type": "number",
         },
       },
@@ -5130,6 +5487,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Sync ID from list_syncs.",
           "type": "number",
         },
       },
@@ -5154,6 +5512,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Sync log ID from list_sync_logs.",
           "type": "number",
         },
       },
@@ -5178,6 +5537,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Unit ID, from list_units.",
           "type": "number",
         },
       },
@@ -5202,6 +5562,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Unit conversion ID, from list_unit_conversions.",
           "type": "number",
         },
       },
@@ -5226,6 +5587,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "User ID from list_users.",
           "type": "number",
         },
       },
@@ -5250,6 +5612,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "User file ID from list_user_files.",
           "type": "number",
         },
       },
@@ -5274,6 +5637,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "user_id": {
+          "description": "Your own user ID; Tandoor only exposes the caller's preferences.",
           "type": "number",
         },
       },
@@ -5298,6 +5662,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "User-space ID from list_user_spaces.",
           "type": "number",
         },
       },
@@ -5331,6 +5696,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "View log ID from list_view_logs.",
           "type": "number",
         },
       },
@@ -5364,6 +5730,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Queue entry ID, from list_recipe_imports.",
           "type": "number",
         },
       },
@@ -5380,6 +5747,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "ai_provider_id": {
+          "description": "AI provider ID, from list_ai_providers. Default: first provider.",
           "type": "number",
         },
         "file_path": {
@@ -5454,9 +5822,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "ai_provider_id": {
+          "description": "AI provider ID, from list_ai_providers.",
           "type": "number",
         },
         "file": {
+          "description": "Sent to Tandoor as the file field.",
           "type": "string",
         },
         "format": {
@@ -5468,9 +5838,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "recipe_id": {
+          "description": "Recipe ID, as a string.",
           "type": "string",
         },
         "text": {
+          "description": "Raw recipe text.",
           "type": "string",
         },
       },
@@ -5529,9 +5901,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Ignored; Tandoor returns every token.",
           "type": "number",
         },
         "page_size": {
+          "description": "Ignored; Tandoor returns every token.",
           "type": "number",
         },
       },
@@ -5553,9 +5927,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -5577,9 +5953,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -5601,9 +5979,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Ignored; this endpoint returns every row.",
           "type": "number",
         },
         "page_size": {
+          "description": "Ignored; this endpoint returns every row.",
           "type": "number",
         },
       },
@@ -5625,9 +6005,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -5649,9 +6031,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -5673,9 +6057,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -5697,12 +6083,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page.",
           "type": "number",
         },
         "recipe": {
+          "description": "Only entries for this recipe ID, from search_recipes.",
           "type": "number",
         },
       },
@@ -5724,9 +6113,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, from 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -5748,9 +6139,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -5790,30 +6183,39 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "limit": {
+          "description": "Maximum number of foods to return.",
           "type": "number",
         },
         "page": {
+          "description": "Page number, from 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
         "query": {
+          "description": "Name filter, or similarity ranking when Tandoor fuzzy search is on.",
           "type": "string",
         },
         "random": {
+          "description": "String. Any non-empty value shuffles the order, even "false".",
           "type": "string",
         },
         "root": {
+          "description": "Parent food ID; lists its direct children. 0 lists top-level foods.",
           "type": "number",
         },
         "root_tree": {
+          "description": "Food ID; lists the whole tree that food belongs to.",
           "type": "number",
         },
         "tree": {
+          "description": "Food ID; lists that food and all its descendants.",
           "type": "number",
         },
         "updated_at": {
+          "description": "No effect: Tandoor foods have no updated_at field.",
           "type": "string",
         },
       },
@@ -5853,9 +6255,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page.",
           "type": "number",
         },
       },
@@ -5877,9 +6281,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -5897,9 +6303,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
         "unit": {
@@ -5917,6 +6325,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "food_id": {
+          "description": "Only entries for this food ID, from list_foods.",
           "type": "number",
         },
         "format": {
@@ -5928,15 +6337,19 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "include_empty": {
+          "description": "Include entries with amount 0 or less. Default false.",
           "type": "boolean",
         },
         "location_id": {
+          "description": "Only entries at this location ID, from list_inventory_locations.",
           "type": "number",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page.",
           "type": "number",
         },
       },
@@ -5958,9 +6371,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page.",
           "type": "number",
         },
       },
@@ -5974,9 +6389,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "entry_id": {
+          "description": "Only rows for this inventory entry ID.",
           "type": "number",
         },
         "food_id": {
+          "description": "Only rows for this food ID.",
           "type": "number",
         },
         "format": {
@@ -5988,9 +6405,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page.",
           "type": "number",
         },
       },
@@ -6012,24 +6431,31 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "internal_note": {
+          "description": "Exact-match filter on the internal note.",
           "type": "string",
         },
         "limit": {
+          "description": "Integer cap on rows, applied before paging.",
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
         "query": {
+          "description": "Ignored; invite links have no name field.",
           "type": "string",
         },
         "unused": {
+          "description": "Ignored; Tandoor always lists only unused links.",
           "type": "boolean",
         },
         "updated_at": {
+          "description": "Ignored; invite links have no updated_at field.",
           "type": "string",
         },
       },
@@ -6051,30 +6477,39 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "limit": {
+          "description": "Maximum number of keywords, as a string, e.g. "10".",
           "type": "string",
         },
         "page": {
+          "description": "Page number, from 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
         "query": {
+          "description": "Name filter, or similarity ranking when Tandoor fuzzy search is on.",
           "type": "string",
         },
         "random": {
+          "description": "String. Any non-empty value shuffles the order, even "false".",
           "type": "string",
         },
         "root": {
+          "description": "Parent keyword ID; lists its direct children. 0 lists top-level keywords.",
           "type": "number",
         },
         "root_tree": {
+          "description": "Keyword ID; lists the whole tree that keyword belongs to.",
           "type": "number",
         },
         "tree": {
+          "description": "Keyword ID; lists that keyword and all its descendants.",
           "type": "number",
         },
         "updated_at": {
+          "description": "ISO datetime; only keywords updated at or after it.",
           "type": "string",
         },
       },
@@ -6088,15 +6523,19 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "from_date": {
+          "description": "Range start, YYYY-MM-DD. Default 90 days ago.",
           "type": "string",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page.",
           "type": "number",
         },
         "to_date": {
+          "description": "Range end, YYYY-MM-DD. Default 360 days ahead.",
           "type": "string",
         },
       },
@@ -6145,9 +6584,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, from 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -6161,6 +6602,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "category": {
+          "description": "Category filter. Tandoor currently ignores it.",
           "items": {
             "enum": [
               "ALLERGEN",
@@ -6182,9 +6624,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, from 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -6198,6 +6642,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "book": {
+          "description": "Only entries in this book ID, from list_recipe_books.",
           "type": "number",
         },
         "format": {
@@ -6209,9 +6654,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page.",
           "type": "number",
         },
       },
@@ -6233,9 +6680,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "limit": {
+          "description": "Maximum number of books, as a numeric string.",
           "type": "string",
         },
         "order_direction": {
+          "description": "Sort direction. Default asc.",
           "enum": [
             "asc",
             "desc",
@@ -6243,6 +6692,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "order_field": {
+          "description": "Sort field. Default order.",
           "enum": [
             "id",
             "name",
@@ -6251,9 +6701,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page.",
           "type": "number",
         },
       },
@@ -6275,9 +6727,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -6291,51 +6745,62 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "books": {
+          "description": "Recipe book IDs, from list_recipe_books. Same as books_or.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "books_and": {
+          "description": "Book IDs; recipe is in all of them.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "books_and_not": {
+          "description": "Book IDs; exclude recipes in all of them.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "books_or": {
+          "description": "Book IDs; recipe is in any of them.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "books_or_not": {
+          "description": "Book IDs; exclude recipes in any of them.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "cookedon_gte": {
+          "description": "Last cooked on or after, YYYY-MM-DD.",
           "type": "string",
         },
         "cookedon_lte": {
+          "description": "Last cooked on or before, YYYY-MM-DD.",
           "type": "string",
         },
         "createdby": {
+          "description": "Creator user ID.",
           "type": "number",
         },
         "createdon": {
+          "description": "Created on this date, YYYY-MM-DD.",
           "type": "string",
         },
         "createdon_gte": {
+          "description": "Created on or after, YYYY-MM-DD.",
           "type": "string",
         },
         "createdon_lte": {
+          "description": "Created on or before, YYYY-MM-DD.",
           "type": "string",
         },
         "filter": {
@@ -6343,30 +6808,35 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "foods": {
+          "description": "Food IDs, from list_foods. Same as foods_or.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "foods_and": {
+          "description": "Food IDs; recipe has all of them.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "foods_and_not": {
+          "description": "Food IDs; exclude recipes with all of them.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "foods_or": {
+          "description": "Food IDs; recipe has any of them.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "foods_or_not": {
+          "description": "Food IDs; exclude recipes with any of them.",
           "items": {
             "type": "number",
           },
@@ -6381,33 +6851,39 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "internal": {
+          "description": "Only internal recipes, not external file recipes.",
           "type": "boolean",
         },
         "keywords": {
+          "description": "Keyword IDs, from list_keywords. Same as keywords_or.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "keywords_and": {
+          "description": "Keyword IDs; recipe has all of them.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "keywords_and_not": {
+          "description": "Keyword IDs; exclude recipes with all of them.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "keywords_or": {
+          "description": "Keyword IDs; recipe has any of them.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "keywords_or_not": {
+          "description": "Keyword IDs; exclude recipes with any of them.",
           "items": {
             "type": "number",
           },
@@ -6418,60 +6894,79 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "new": {
+          "description": "Put recently created recipes first.",
           "type": "boolean",
         },
         "num_recent": {
+          "description": "Put this many recently viewed recipes first.",
           "type": "number",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 25, max 100.",
           "type": "number",
         },
         "query": {
+          "description": "Fuzzy match on recipe name.",
           "type": "string",
         },
         "random": {
+          "description": "Return results in random order.",
           "type": "boolean",
         },
         "rating": {
+          "description": "Exact rating.",
           "type": "number",
         },
         "rating_gte": {
+          "description": "Minimum rating.",
           "type": "number",
         },
         "rating_lte": {
+          "description": "Maximum rating.",
           "type": "number",
         },
         "sort_order": {
+          "description": "One option from the tool description; "-" prefix descends.",
           "type": "string",
         },
         "timescooked": {
+          "description": "Exact number of times cooked.",
           "type": "number",
         },
         "timescooked_gte": {
+          "description": "Minimum number of times cooked.",
           "type": "number",
         },
         "timescooked_lte": {
+          "description": "Maximum number of times cooked.",
           "type": "number",
         },
         "units": {
+          "description": "Unit ID, from list_units; recipe uses this unit.",
           "type": "number",
         },
         "updatedon": {
+          "description": "Updated on this date, YYYY-MM-DD.",
           "type": "string",
         },
         "updatedon_gte": {
+          "description": "Updated on or after, YYYY-MM-DD.",
           "type": "string",
         },
         "updatedon_lte": {
+          "description": "Updated on or before, YYYY-MM-DD.",
           "type": "string",
         },
         "viewedon_gte": {
+          "description": "Last viewed on or after, YYYY-MM-DD.",
           "type": "string",
         },
         "viewedon_lte": {
+          "description": "Last viewed on or before, YYYY-MM-DD.",
           "type": "string",
         },
       },
@@ -6547,15 +7042,19 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "mealplan": {
+          "description": "Only entries for this meal plan ID, from list_meal_plans.",
           "type": "number",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page.",
           "type": "number",
         },
         "updated_after": {
+          "description": "Only entries updated at or after this ISO 8601 datetime.",
           "type": "string",
         },
       },
@@ -6577,12 +7076,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "mealplan": {
+          "description": "Only those for this meal plan ID, from list_meal_plans.",
           "type": "number",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page.",
           "type": "number",
         },
       },
@@ -6604,9 +7106,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page.",
           "type": "number",
         },
       },
@@ -6628,9 +7132,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -6652,15 +7158,19 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
         "query": {
+          "description": "Substring match on step name or recipe name.",
           "type": "string",
         },
         "recipe": {
+          "description": "Recipe IDs; only steps of these recipes.",
           "items": {
             "type": "number",
           },
@@ -6685,9 +7195,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -6709,9 +7221,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, from 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -6733,9 +7247,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, from 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -6757,15 +7273,19 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "limit": {
+          "description": "Maximum number of supermarkets, as a string, e.g. "10".",
           "type": "string",
         },
         "page": {
+          "description": "Page number, from 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
         "query": {
+          "description": "Case-insensitive name substring.",
           "type": "string",
         },
       },
@@ -6787,9 +7307,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -6811,9 +7333,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -6836,6 +7360,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "food_id": {
+          "description": "Only conversions for this food ID.",
           "type": "number",
         },
         "format": {
@@ -6847,12 +7372,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "Page number, from 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
         "query": {
+          "description": "Matches food, base unit or converted unit name.",
           "type": "string",
         },
       },
@@ -6874,21 +7402,27 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "limit": {
+          "description": "Maximum number of units to return.",
           "type": "number",
         },
         "page": {
+          "description": "Page number, from 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 50, max 200.",
           "type": "number",
         },
         "query": {
+          "description": "Name filter, or similarity ranking when Tandoor fuzzy search is on.",
           "type": "string",
         },
         "random": {
+          "description": "String. Any non-empty value shuffles the order, even "false".",
           "type": "string",
         },
         "updated_at": {
+          "description": "No effect: Tandoor units have no updated_at field.",
           "type": "string",
         },
       },
@@ -6910,12 +7444,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
         "query": {
+          "description": "Case-insensitive substring match on file name.",
           "type": "string",
         },
       },
@@ -6955,12 +7492,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "internal_note": {
+          "description": "Exact-match filter on the membership note.",
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -7007,9 +7547,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "page": {
+          "description": "1-based page number.",
           "type": "number",
         },
         "page_size": {
+          "description": "Rows per page. Default 50, max 200.",
           "type": "number",
         },
       },
@@ -7023,9 +7565,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Food ID to absorb; it is deleted.",
           "type": "number",
         },
         "target": {
+          "description": "Food ID that remains and takes the references.",
           "type": "number",
         },
       },
@@ -7043,9 +7587,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Keyword ID to absorb; it is deleted.",
           "type": "number",
         },
         "target": {
+          "description": "Keyword ID that remains and takes the references.",
           "type": "number",
         },
       },
@@ -7063,9 +7609,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Category ID to absorb; it is deleted.",
           "type": "number",
         },
         "target": {
+          "description": "Category ID that remains and takes the references.",
           "type": "number",
         },
       },
@@ -7083,9 +7631,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Unit ID to absorb; it is deleted.",
           "type": "number",
         },
         "target": {
+          "description": "Unit ID that remains and takes the references.",
           "type": "number",
         },
       },
@@ -7103,9 +7653,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Food ID to move.",
           "type": "number",
         },
         "parent": {
+          "description": "New parent food ID; 0 moves it to the top level.",
           "type": "number",
         },
       },
@@ -7123,6 +7675,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "entry_id": {
+          "description": "Inventory entry ID, from list_inventory_entries.",
           "type": "number",
         },
         "format": {
@@ -7134,12 +7687,14 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "sub_location": {
+          "description": "Spot within the new location. null clears it.",
           "type": [
             "string",
             "null",
           ],
         },
         "to_location_id": {
+          "description": "Target location ID, from list_inventory_locations.",
           "type": "number",
         },
       },
@@ -7157,9 +7712,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Keyword ID to move.",
           "type": "number",
         },
         "parent": {
+          "description": "New parent keyword ID; 0 moves it to the top level.",
           "type": "number",
         },
       },
@@ -7177,6 +7734,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "text": {
+          "description": "One ingredient line, e.g. "2 cups flour".",
           "type": "string",
         },
       },
@@ -7193,6 +7751,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7209,6 +7768,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7225,6 +7785,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7241,6 +7802,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7257,6 +7819,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7273,6 +7836,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7289,6 +7853,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7305,6 +7870,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7321,6 +7887,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7337,6 +7904,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7353,6 +7921,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7369,6 +7938,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7385,6 +7955,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7401,6 +7972,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7417,6 +7989,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7433,6 +8006,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7449,6 +8023,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7465,6 +8040,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7481,6 +8057,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7497,6 +8074,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7513,6 +8091,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7529,6 +8108,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7545,6 +8125,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7561,6 +8142,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7577,6 +8159,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7593,6 +8176,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7609,6 +8193,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7625,6 +8210,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7641,6 +8227,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7657,6 +8244,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7673,6 +8261,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7689,6 +8278,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7705,6 +8295,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7721,6 +8312,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7737,6 +8329,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7753,6 +8346,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7769,6 +8363,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7785,6 +8380,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7801,6 +8397,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7817,6 +8414,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7833,6 +8431,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7849,6 +8448,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "ID of the object you plan to delete.",
           "type": "number",
         },
       },
@@ -7873,6 +8473,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Sync ID from list_syncs.",
           "type": "number",
         },
       },
@@ -7897,9 +8498,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Recipe ID.",
           "type": "number",
         },
         "provider": {
+          "description": "AI provider ID from list_ai_providers; Tandoor rejects the call without one.",
           "type": "number",
         },
       },
@@ -7916,90 +8519,106 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "clear_description": {
+          "description": "True clears the description.",
           "type": [
             "boolean",
             "null",
           ],
         },
         "keywords_add": {
+          "description": "Keyword IDs to add, from list_keywords.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "keywords_remove": {
+          "description": "Keyword IDs to remove.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "keywords_remove_all": {
+          "description": "Remove every keyword from the recipes.",
           "type": "boolean",
         },
         "keywords_set": {
+          "description": "Keyword IDs replacing all keywords. Empty list is ignored.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "private": {
+          "description": "Set privacy; null leaves it unchanged.",
           "type": [
             "boolean",
             "null",
           ],
         },
         "recipes": {
+          "description": "Recipe IDs to change.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "servings": {
+          "description": "Servings the ingredient amounts make.",
           "type": [
             "number",
             "null",
           ],
         },
         "servings_text": {
+          "description": "Servings label, e.g. "cookies".",
           "type": [
             "string",
             "null",
           ],
         },
         "shared_add": {
+          "description": "User IDs to share with, from list_users.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "shared_remove": {
+          "description": "User IDs to stop sharing with.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "shared_remove_all": {
+          "description": "Stop sharing with every user.",
           "type": "boolean",
         },
         "shared_set": {
+          "description": "User IDs replacing the share list. Empty list is ignored.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "show_ingredient_overview": {
+          "description": "Show all ingredients above the steps.",
           "type": [
             "boolean",
             "null",
           ],
         },
         "waiting_time": {
+          "description": "Passive time in minutes.",
           "type": [
             "number",
             "null",
           ],
         },
         "working_time": {
+          "description": "Active prep time in minutes.",
           "type": [
             "number",
             "null",
@@ -8027,6 +8646,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Recipe ID",
           "type": "number",
         },
       },
@@ -8043,6 +8663,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "id": {
+          "description": "Recipe book entry ID, from list_recipe_book_entries.",
           "type": "number",
         },
       },
@@ -8067,18 +8688,22 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "selected_datatypes": {
+          "description": "Any of: unit, category, property, store, food, conversion.",
           "items": {
             "type": "string",
           },
           "type": "array",
         },
         "selected_version": {
+          "description": "Version key, from list_open_data_imports.",
           "type": "string",
         },
         "update_existing": {
+          "description": "Also update rows that already exist. Default true.",
           "type": "boolean",
         },
         "use_metric": {
+          "description": "Default true. Current Tandoor ignores it.",
           "type": "boolean",
         },
       },
@@ -8143,9 +8768,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "page": {
+          "description": "Page number, starting at 1.",
           "type": "number",
         },
         "page_size": {
+          "description": "Results per page. Default 25, max 100.",
           "type": "number",
         },
         "query": {
@@ -8153,12 +8780,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "random": {
+          "description": "Return results in random order.",
           "type": "boolean",
         },
         "rating_gte": {
+          "description": "Minimum rating.",
           "type": "number",
         },
         "rating_lte": {
+          "description": "Maximum rating.",
           "type": "number",
         },
         "sort_order": {
@@ -8166,9 +8796,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "timescooked_gte": {
+          "description": "Minimum number of times cooked.",
           "type": "number",
         },
         "timescooked_lte": {
+          "description": "Maximum number of times cooked.",
           "type": "number",
         },
       },
@@ -8182,6 +8814,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "spaceId": {
+          "description": "Space ID from list_spaces.",
           "type": "number",
         },
       },
@@ -8198,6 +8831,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "expires": {
+          "description": "UTC ISO 8601 ending in Z, e.g. 2026-12-01T10:00:00Z.",
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
           "type": "string",
@@ -8211,9 +8845,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Access token ID from list_access_tokens.",
           "type": "number",
         },
         "scope": {
+          "description": "Space-separated scopes: read, write, bookmarklet, mealplan.",
           "type": "string",
         },
       },
@@ -8230,9 +8866,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "api_key": {
+          "description": "Replacement secret key for the model provider.",
           "type": "string",
         },
         "description": {
+          "description": "Free-text notes.",
           "type": "string",
         },
         "format": {
@@ -8244,21 +8882,27 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "AI provider ID, from list_ai_providers.",
           "type": "number",
         },
         "log_credit_cost": {
+          "description": "Count usage toward space AI credits. Superuser only.",
           "type": "boolean",
         },
         "model_name": {
+          "description": "LiteLLM model string, e.g. "gpt-4o".",
           "type": "string",
         },
         "name": {
+          "description": "Display name, max 128 characters.",
           "type": "string",
         },
         "space": {
+          "description": "Superusers: any value means active space. Omit to keep current.",
           "type": "number",
         },
         "url": {
+          "description": "Custom API base URL.",
           "type": "string",
         },
       },
@@ -8275,9 +8919,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "disabled": {
+          "description": "Skip this rule when true.",
           "type": "boolean",
         },
         "format": {
@@ -8289,24 +8935,31 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Automation ID from list_automations.",
           "type": "number",
         },
         "name": {
+          "description": "Display name.",
           "type": "string",
         },
         "order": {
+          "description": "Lower values run first.",
           "type": "number",
         },
         "param_1": {
+          "description": "Alias rules: text to match. Replace rules: source URL regex.",
           "type": "string",
         },
         "param_2": {
+          "description": "Alias rules: replacement name. Replace rules: regex to find.",
           "type": "string",
         },
         "param_3": {
+          "description": "Replace rules: replacement text. Unused by other types.",
           "type": "string",
         },
         "type": {
+          "description": "Rule type; decides how param_1 to param_3 are read.",
           "enum": [
             "FOOD_ALIAS",
             "UNIT_ALIAS",
@@ -8343,12 +8996,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "html": {
+          "description": "Full HTML of the recipe page.",
           "type": "string",
         },
         "id": {
+          "description": "Bookmarklet import ID, from list_bookmarklet_imports.",
           "type": "number",
         },
         "url": {
+          "description": "Address of the page the HTML came from.",
           "type": "string",
         },
       },
@@ -8365,6 +9021,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "enabled": {
+          "description": "Turn the connector on or off. Default true.",
           "type": "boolean",
         },
         "format": {
@@ -8376,42 +9033,52 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Connector ID from list_connectors.",
           "type": "number",
         },
         "name": {
+          "description": "Display name.",
           "type": "string",
         },
         "on_shopping_list_entry_created_enabled": {
+          "description": "Push new shopping entries. Default false.",
           "type": "boolean",
         },
         "on_shopping_list_entry_deleted_enabled": {
+          "description": "Push shopping entry deletions. Default false.",
           "type": "boolean",
         },
         "on_shopping_list_entry_updated_enabled": {
+          "description": "Push shopping entry updates. Default false.",
           "type": "boolean",
         },
         "supports_description_field": {
+          "description": "Whether the to-do entity accepts a description. Default true.",
           "type": "boolean",
         },
         "todo_entity": {
+          "description": "Home Assistant to-do entity ID, e.g. todo.shopping_list.",
           "type": [
             "string",
             "null",
           ],
         },
         "token": {
+          "description": "Home Assistant access token; write-only in Tandoor.",
           "type": [
             "string",
             "null",
           ],
         },
         "type": {
+          "description": "Connector type; only HomeAssistant exists.",
           "enum": [
             "HomeAssistant",
           ],
           "type": "string",
         },
         "url": {
+          "description": "Home Assistant base URL.",
           "type": [
             "string",
             "null",
@@ -8431,12 +9098,14 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "comment": {
+          "description": "Free-text comment. null clears it.",
           "type": [
             "string",
             "null",
           ],
         },
         "created_at": {
+          "description": "When it was cooked, ISO 8601 datetime.",
           "type": "string",
         },
         "format": {
@@ -8448,18 +9117,22 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Cook log ID, from list_cook_logs.",
           "type": "number",
         },
         "rating": {
+          "description": "Whole-number rating. null clears it.",
           "type": [
             "number",
             "null",
           ],
         },
         "recipe": {
+          "description": "Recipe ID, from search_recipes.",
           "type": "number",
         },
         "servings": {
+          "description": "Servings made. null clears it.",
           "type": [
             "number",
             "null",
@@ -8487,15 +9160,19 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Custom filter ID, from list_custom_filters.",
           "type": "number",
         },
         "name": {
+          "description": "New filter name.",
           "type": "string",
         },
         "search": {
+          "description": "Saved recipe search parameters as a JSON string.",
           "type": "string",
         },
         "shared_user_ids": {
+          "description": "User IDs to share with; replaces the current list.",
           "items": {
             "type": "number",
           },
@@ -8515,9 +9192,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "cache_duration": {
+          "description": "Seconds the export file stays downloadable.",
           "type": "number",
         },
         "exported_recipes": {
+          "description": "Number of recipes exported so far.",
           "type": "number",
         },
         "format": {
@@ -8529,18 +9208,23 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Export log ID from list_export_logs.",
           "type": "number",
         },
         "msg": {
+          "description": "Log text written by the export job.",
           "type": "string",
         },
         "running": {
+          "description": "True while the export job is in progress.",
           "type": "boolean",
         },
         "total_recipes": {
+          "description": "Number of recipes in the export.",
           "type": "number",
         },
         "type": {
+          "description": "Integration name, e.g. DEFAULT.",
           "type": "string",
         },
       },
@@ -8557,12 +9241,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "fdc_id": {
+          "description": "USDA FoodData Central ID, used by food_fdc_lookup.",
           "type": "number",
         },
         "food_onhand": {
+          "description": "True or false sets on hand for your household.",
           "type": "boolean",
         },
         "format": {
@@ -8574,25 +9261,31 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Food ID, from list_foods.",
           "type": "number",
         },
         "name": {
+          "description": "New food name.",
           "type": "string",
         },
         "plural_name": {
+          "description": "Plural form, e.g. tomatoes.",
           "type": "string",
         },
         "properties": {
+          "description": "Property values to set, one per type.",
           "items": {
             "additionalProperties": false,
             "properties": {
               "property_amount": {
+                "description": "Value per properties_food_amount; null means unknown.",
                 "type": [
                   "number",
                   "null",
                 ],
               },
               "property_type_id": {
+                "description": "Property type ID, from list_property_types.",
                 "type": "number",
               },
             },
@@ -8605,27 +9298,32 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "properties_food_amount": {
+          "description": "Food amount the property values refer to, e.g. 100.",
           "type": "number",
         },
         "properties_food_unit_id": {
+          "description": "Unit ID for properties_food_amount, from list_units.",
           "type": [
             "number",
             "null",
           ],
         },
         "remove_property_type_ids": {
+          "description": "Property type IDs whose values to delete.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "shopping_list_ids": {
+          "description": "Replaces the food's shopping lists; [] clears them.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "supermarket_category_id": {
+          "description": "Supermarket category ID, from list_supermarket_categories.",
           "type": [
             "number",
             "null",
@@ -8653,9 +9351,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Household ID, from list_households.",
           "type": "number",
         },
         "name": {
+          "description": "New household name.",
           "maxLength": 128,
           "minLength": 1,
           "type": "string",
@@ -8683,21 +9383,27 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Import log ID, from list_import_logs.",
           "type": "number",
         },
         "imported_recipes": {
+          "description": "Recipes imported so far.",
           "type": "number",
         },
         "msg": {
+          "description": "Log text; replaces the existing text.",
           "type": "string",
         },
         "running": {
+          "description": "Import still in progress.",
           "type": "boolean",
         },
         "total_recipes": {
+          "description": "Recipes found in the source.",
           "type": "number",
         },
         "type": {
+          "description": "Import source label, max 32 characters.",
           "type": "string",
         },
       },
@@ -8714,30 +9420,39 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "amount": {
+          "description": "Quantity in the given unit.",
           "type": "number",
         },
         "food_id": {
+          "description": "Food ID, from list_foods or parse_ingredient.",
           "type": "number",
         },
         "id": {
+          "description": "Ingredient ID, from get_recipe or list_ingredients.",
           "type": "number",
         },
         "is_header": {
+          "description": "Show as a heading row, not an ingredient.",
           "type": "boolean",
         },
         "no_amount": {
+          "description": "Hide the amount, e.g. "salt to taste".",
           "type": "boolean",
         },
         "note": {
+          "description": "Free text, e.g. "finely chopped". Max 256 characters.",
           "type": "string",
         },
         "order": {
+          "description": "Sort position in its step.",
           "type": "number",
         },
         "original_text": {
+          "description": "Source line it was parsed from. Max 512 characters.",
           "type": "string",
         },
         "unit_id": {
+          "description": "Unit ID, from list_units; null clears the unit.",
           "type": [
             "number",
             "null",
@@ -8757,10 +9472,12 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "amount": {
+          "description": "Amount, in the entry unit.",
           "minimum": 0,
           "type": "number",
         },
         "code": {
+          "description": "Short label, up to 16 characters.",
           "type": "string",
         },
         "expires": {
@@ -8774,8 +9491,10 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
               "type": "null",
             },
           ],
+          "description": "Expiry date, YYYY-MM-DD. null clears it.",
         },
         "food_id": {
+          "description": "Food ID, from list_foods.",
           "type": "number",
         },
         "format": {
@@ -8787,24 +9506,29 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Inventory entry ID, from list_inventory_entries.",
           "type": "number",
         },
         "location_id": {
+          "description": "Inventory location ID, from list_inventory_locations.",
           "type": "number",
         },
         "note": {
+          "description": "Free-text note, up to 256 characters. null clears it.",
           "type": [
             "string",
             "null",
           ],
         },
         "sub_location": {
+          "description": "Spot within the location. null clears it.",
           "type": [
             "string",
             "null",
           ],
         },
         "unit_id": {
+          "description": "Unit ID, from list_units.",
           "type": "number",
         },
       },
@@ -8829,12 +9553,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Inventory location ID, from list_inventory_locations.",
           "type": "number",
         },
         "is_freezer": {
+          "description": "Location is a freezer.",
           "type": "boolean",
         },
         "name": {
+          "description": "Location name, up to 64 characters.",
           "type": "string",
         },
       },
@@ -8851,6 +9578,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "email": {
+          "description": "Invitee email.",
           "type": "string",
         },
         "format": {
@@ -8862,21 +9590,26 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "group": {
+          "description": "Group ID from list_groups; the joiner gets its permissions.",
           "type": "number",
         },
         "id": {
+          "description": "Invite link ID from list_invite_links.",
           "type": "number",
         },
         "internal_note": {
+          "description": "Note copied to the user-space created on join.",
           "type": [
             "string",
             "null",
           ],
         },
         "reusable": {
+          "description": "Allow more than one user to join with this link. Default false.",
           "type": "boolean",
         },
         "valid_until": {
+          "description": "Expiry date, YYYY-MM-DD.",
           "type": "string",
         },
       },
@@ -8893,6 +9626,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "format": {
@@ -8904,9 +9638,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Keyword ID, from list_keywords.",
           "type": "number",
         },
         "name": {
+          "description": "New keyword name, max 64 characters.",
           "type": "string",
         },
       },
@@ -8923,30 +9659,38 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "from_date": {
+          "description": "Start date, YYYY-MM-DD or ISO datetime.",
           "type": "string",
         },
         "id": {
+          "description": "Meal plan ID, from list_meal_plans.",
           "type": "number",
         },
         "meal_type_id": {
+          "description": "Meal type ID, from list_meal_types.",
           "type": "number",
         },
         "note": {
+          "description": "Free-text note.",
           "type": "string",
         },
         "recipe_id": {
+          "description": "Recipe ID, from search_recipes. null removes the recipe.",
           "type": [
             "number",
             "null",
           ],
         },
         "servings": {
+          "description": "Number of servings. Omitted keeps the current value.",
           "type": "number",
         },
         "title": {
+          "description": "Plan title.",
           "type": "string",
         },
         "to_date": {
+          "description": "End date, YYYY-MM-DD or ISO datetime.",
           "type": "string",
         },
       },
@@ -8963,6 +9707,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "color": {
+          "description": "Hex color, e.g. #FF8800. Max 7 characters.",
           "type": [
             "string",
             "null",
@@ -8977,12 +9722,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Meal type ID, from list_meal_types.",
           "type": "number",
         },
         "name": {
+          "description": "New meal type name.",
           "type": "string",
         },
         "order": {
+          "description": "Sort position.",
           "type": "number",
         },
         "time": {
@@ -8995,6 +9743,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
               "type": "null",
             },
           ],
+          "description": "Default time, HH:MM or HH:MM:SS. Null clears it.",
         },
       },
       "required": [
@@ -9018,12 +9767,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Property ID, from list_properties.",
           "type": "number",
         },
         "property_amount": {
+          "description": "Value in the property type's unit.",
           "type": "number",
         },
         "property_type_id": {
+          "description": "Property type ID, from list_property_types.",
           "type": "number",
         },
       },
@@ -9040,12 +9792,14 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free text, max 512 characters.",
           "type": [
             "string",
             "null",
           ],
         },
         "fdc_id": {
+          "description": "USDA nutrient ID; food_fdc_lookup fills matching values.",
           "type": [
             "number",
             "null",
@@ -9060,21 +9814,26 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Property type ID, from list_property_types.",
           "type": "number",
         },
         "name": {
+          "description": "New property name.",
           "type": "string",
         },
         "open_data_slug": {
+          "description": "Tandoor Open Data identifier.",
           "type": [
             "string",
             "null",
           ],
         },
         "order": {
+          "description": "Sort position.",
           "type": "number",
         },
         "unit": {
+          "description": "Unit label as free text, e.g. g or kcal.",
           "type": [
             "string",
             "null",
@@ -9094,6 +9853,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Short summary, max 512 characters.",
           "type": "string",
         },
         "format": {
@@ -9109,52 +9869,66 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "internal": {
+          "description": "Native Tandoor recipe, not an external file.",
           "type": "boolean",
         },
         "keywords": {
+          "description": "Keyword names; replaces the list. Missing names are created.",
           "items": {
             "type": "string",
           },
           "type": "array",
         },
         "name": {
+          "description": "Recipe title, max 128 characters.",
           "type": "string",
         },
         "nutrition": {
           "additionalProperties": false,
+          "description": "Nutrition values for the recipe.",
           "properties": {
             "calories": {
+              "description": "Energy value.",
               "type": "number",
             },
             "carbohydrates": {
+              "description": "Carbohydrate amount.",
               "type": "number",
             },
             "fats": {
+              "description": "Fat amount.",
               "type": "number",
             },
             "proteins": {
+              "description": "Protein amount.",
               "type": "number",
             },
             "source": {
+              "description": "Where the nutrition values came from.",
               "type": "string",
             },
           },
           "type": "object",
         },
         "private": {
+          "description": "Hide from other space members unless shared.",
           "type": "boolean",
         },
         "properties": {
+          "description": "Replaces the property list; id updates an existing entry.",
           "items": {
             "additionalProperties": false,
             "properties": {
               "id": {
+                "description": "Existing recipe property ID to update in place.",
                 "type": "number",
               },
               "property_amount": {
+                "description": "Value in the property type unit.",
                 "type": "number",
               },
               "property_type_id": {
+                "description": "Property type ID, from list_property_types.",
                 "type": "number",
               },
             },
@@ -9167,35 +9941,45 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "servings": {
+          "description": "Servings the ingredient amounts make.",
           "type": "number",
         },
         "servings_text": {
+          "description": "Servings label, e.g. "cookies". Max 32 characters.",
           "type": "string",
         },
         "show_ingredient_overview": {
+          "description": "Show all ingredients above the steps.",
           "type": "boolean",
         },
         "source_url": {
+          "description": "Web address the recipe came from.",
           "type": "string",
         },
         "steps": {
+          "description": "Replaces all steps; step names and sub-recipes are lost.",
           "items": {
             "additionalProperties": false,
             "properties": {
               "ingredients": {
+                "description": "Ingredients used in this step; may be empty.",
                 "items": {
                   "additionalProperties": false,
                   "properties": {
                     "amount": {
+                      "description": "Quantity in the given unit.",
                       "type": "number",
                     },
                     "food": {
+                      "description": "Food name; matched case-insensitively or created.",
                       "type": "string",
                     },
                     "note": {
+                      "description": "Free text, e.g. "finely chopped".",
                       "type": "string",
                     },
                     "unit": {
+                      "description": "Unit name; matched case-insensitively or created.",
                       "type": "string",
                     },
                   },
@@ -9208,9 +9992,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
                 "type": "array",
               },
               "instruction": {
+                "description": "Step text. Markdown supported.",
                 "type": "string",
               },
               "time": {
+                "description": "Step duration in minutes. Default 0.",
                 "type": "number",
               },
             },
@@ -9223,9 +10009,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "waiting_time": {
+          "description": "Passive time, e.g. baking, in minutes.",
           "type": "number",
         },
         "working_time": {
+          "description": "Active prep time in minutes.",
           "type": "number",
         },
       },
@@ -9242,9 +10030,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "filter_id": {
+          "description": "Saved custom filter ID, from list_custom_filters. null clears it.",
           "type": [
             "number",
             "null",
@@ -9259,15 +10049,19 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Recipe book ID, from list_recipe_books.",
           "type": "number",
         },
         "name": {
+          "description": "Book name, up to 128 characters.",
           "type": "string",
         },
         "order": {
+          "description": "Sort position among books.",
           "type": "number",
         },
         "shared_user_ids": {
+          "description": "User IDs to share with, from list_users. Replaces the list; [] clears, omitted keeps.",
           "items": {
             "type": "number",
           },
@@ -9295,12 +10089,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Queue entry ID, from list_recipe_imports.",
           "type": "number",
         },
         "name": {
+          "description": "Name of the staged file.",
           "type": "string",
         },
         "storage": {
+          "description": "Storage ID, from list_storages.",
           "type": "number",
         },
       },
@@ -9325,27 +10122,32 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "fulltext": {
+          "description": "Full-text field IDs from list_search_fields.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "icontains": {
+          "description": "Partial-match field IDs from list_search_fields.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "istartswith": {
+          "description": "Starts-with field IDs from list_search_fields.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "lookup": {
+          "description": "Fuzzy search toggle.",
           "type": "boolean",
         },
         "search": {
+          "description": "Full-text search method.",
           "enum": [
             "PLAIN",
             "PHRASE",
@@ -9356,21 +10158,25 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "trigram": {
+          "description": "Fuzzy-match field IDs from list_search_fields.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "trigram_threshold": {
+          "description": "Fuzzy match threshold; lower matches more. Default 0.2.",
           "type": "number",
         },
         "unaccent": {
+          "description": "Accent-insensitive field IDs from list_search_fields.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "user": {
+          "description": "Your own user ID; Tandoor only exposes the caller's preference.",
           "type": "number",
         },
       },
@@ -9387,15 +10193,19 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "amount": {
+          "description": "Amount, in the entry unit.",
           "type": "number",
         },
         "checked": {
+          "description": "Bought or not. Omitted keeps the current value.",
           "type": "boolean",
         },
         "delay_until": {
+          "description": "ISO 8601 datetime to postpone the entry until.",
           "type": "string",
         },
         "food_id": {
+          "description": "Food ID, from list_foods.",
           "type": [
             "number",
             "null",
@@ -9410,18 +10220,22 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Shopping entry ID, from list_shopping_entries.",
           "type": "number",
         },
         "order": {
+          "description": "Sort position.",
           "type": "number",
         },
         "shopping_list_ids": {
+          "description": "Shopping list IDs, from list_shopping_lists. [] clears, omitted keeps.",
           "items": {
             "type": "number",
           },
           "type": "array",
         },
         "unit_id": {
+          "description": "Unit ID, from list_units. null clears it.",
           "type": [
             "number",
             "null",
@@ -9450,8 +10264,10 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
               "type": "null",
             },
           ],
+          "description": "Color as #rrggbb, or null to clear it.",
         },
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "format": {
@@ -9463,9 +10279,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Shopping list ID, from list_shopping_lists.",
           "type": "number",
         },
         "name": {
+          "description": "New name. Must not match another list, ignoring case.",
           "maxLength": 32,
           "minLength": 1,
           "type": "string",
@@ -9492,18 +10310,23 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Shopping list recipe ID, from list_shopping_list_recipes.",
           "type": "number",
         },
         "mealplan": {
+          "description": "Meal plan ID, from list_meal_plans.",
           "type": "number",
         },
         "name": {
+          "description": "Display name, up to 32 characters.",
           "type": "string",
         },
         "recipe": {
+          "description": "Recipe ID, from search_recipes.",
           "type": "number",
         },
         "servings": {
+          "description": "Number of servings.",
           "type": "number",
         },
       },
@@ -9520,9 +10343,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "allow_sharing": {
+          "description": "Read-only in Tandoor; ignored.",
           "type": "boolean",
         },
         "food_inherit": {
+          "description": "Food fields children inherit, IDs from list_food_inherit_fields.",
           "items": {
             "type": "number",
           },
@@ -9537,21 +10362,27 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Space ID from list_spaces.",
           "type": "number",
         },
         "max_file_storage_mb": {
+          "description": "Read-only in Tandoor; ignored.",
           "type": "number",
         },
         "max_recipes": {
+          "description": "Read-only in Tandoor; ignored.",
           "type": "number",
         },
         "max_users": {
+          "description": "Read-only in Tandoor; ignored.",
           "type": "number",
         },
         "message": {
+          "description": "Space message, up to 512 characters.",
           "type": "string",
         },
         "name": {
+          "description": "New name; must be unique on the server.",
           "type": "string",
         },
       },
@@ -9576,13 +10407,16 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Step ID, from list_steps.",
           "type": "number",
         },
         "ingredients": {
+          "description": "Replaces all step ingredients; each needs food or food_id.",
           "items": {
             "additionalProperties": false,
             "properties": {
               "amount": {
+                "description": "Quantity in the given unit. Default 0.",
                 "type": "number",
               },
               "food": {
@@ -9590,18 +10424,23 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
                 "type": "string",
               },
               "food_id": {
+                "description": "Food ID, from list_foods. Takes precedence over food.",
                 "type": "number",
               },
               "is_header": {
+                "description": "Show as a heading row, not an ingredient. Default false.",
                 "type": "boolean",
               },
               "no_amount": {
+                "description": "Hide the amount, e.g. "salt to taste". Default false.",
                 "type": "boolean",
               },
               "note": {
+                "description": "Free text, e.g. "finely chopped".",
                 "type": "string",
               },
               "order": {
+                "description": "Sort position in the step. Default: array index.",
                 "type": "number",
               },
               "unit": {
@@ -9609,6 +10448,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
                 "type": "string",
               },
               "unit_id": {
+                "description": "Unit ID, from list_units. Takes precedence over unit.",
                 "type": "number",
               },
             },
@@ -9617,27 +10457,34 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "instruction": {
+          "description": "Step text. Markdown supported.",
           "type": "string",
         },
         "name": {
+          "description": "Step title, max 128 characters.",
           "type": "string",
         },
         "order": {
+          "description": "Sort position within the recipe.",
           "type": "number",
         },
         "show_as_header": {
+          "description": "Show the step name as a heading.",
           "type": "boolean",
         },
         "show_ingredients_table": {
+          "description": "Show the step ingredient table.",
           "type": "boolean",
         },
         "step_recipe": {
+          "description": "Recipe ID to embed as a sub-recipe; null removes it.",
           "type": [
             "number",
             "null",
           ],
         },
         "time": {
+          "description": "Step duration in minutes.",
           "type": "number",
         },
       },
@@ -9662,9 +10509,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Storage ID from list_storages.",
           "type": "number",
         },
         "method": {
+          "description": "Backend: DB is Dropbox, NEXTCLOUD, or LOCAL.",
           "enum": [
             "DB",
             "NEXTCLOUD",
@@ -9673,30 +10522,36 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Display name.",
           "type": "string",
         },
         "password": {
+          "description": "Nextcloud password; write-only in Tandoor.",
           "type": [
             "string",
             "null",
           ],
         },
         "path": {
+          "description": "Nextcloud WebDAV root; empty uses the user files root.",
           "type": "string",
         },
         "token": {
+          "description": "Dropbox access token; write-only in Tandoor.",
           "type": [
             "string",
             "null",
           ],
         },
         "url": {
+          "description": "Nextcloud server URL.",
           "type": [
             "string",
             "null",
           ],
         },
         "username": {
+          "description": "Nextcloud login username.",
           "type": [
             "string",
             "null",
@@ -9716,6 +10571,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free-text description.",
           "type": [
             "string",
             "null",
@@ -9730,12 +10586,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Supermarket ID, from list_supermarkets.",
           "type": "number",
         },
         "name": {
+          "description": "New store name. Unique per space.",
           "type": "string",
         },
         "open_data_slug": {
+          "description": "Tandoor Open Data identifier. Unique per space.",
           "type": [
             "string",
             "null",
@@ -9755,6 +10614,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "format": {
@@ -9766,9 +10626,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Category ID, from list_supermarket_categories.",
           "type": "number",
         },
         "name": {
+          "description": "New category name. Unique per space.",
           "type": "string",
         },
       },
@@ -9785,6 +10647,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "category_id": {
+          "description": "Category ID, from list_supermarket_categories.",
           "type": "number",
         },
         "format": {
@@ -9796,12 +10659,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Relation ID, from list_supermarket_category_relations.",
           "type": "number",
         },
         "order": {
+          "description": "Category position in this supermarket.",
           "type": "number",
         },
         "supermarket": {
+          "description": "Supermarket ID, from list_supermarkets.",
           "type": "number",
         },
       },
@@ -9818,6 +10684,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "active": {
+          "description": "Included in Tandoor's sync-all run.",
           "type": "boolean",
         },
         "format": {
@@ -9829,18 +10696,22 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Sync ID from list_syncs.",
           "type": "number",
         },
         "last_checked": {
+          "description": "ISO 8601 datetime of the last scan; null if never.",
           "type": [
             "string",
             "null",
           ],
         },
         "path": {
+          "description": "Folder path on the storage backend to import from.",
           "type": "string",
         },
         "storage_id": {
+          "description": "Storage ID from list_storages.",
           "type": "number",
         },
       },
@@ -9857,9 +10728,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "base_unit": {
+          "description": "Standard unit for automatic conversion, e.g. g, kg, ml, l, tsp.",
           "type": "string",
         },
         "description": {
+          "description": "Free-text description.",
           "type": "string",
         },
         "format": {
@@ -9871,12 +10744,15 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Unit ID, from list_units.",
           "type": "number",
         },
         "name": {
+          "description": "New unit name. Unique per space.",
           "type": "string",
         },
         "plural_name": {
+          "description": "Plural form, e.g. cups.",
           "type": "string",
         },
       },
@@ -9893,18 +10769,23 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "base_amount": {
+          "description": "Amount of the base unit, e.g. 1.",
           "type": "number",
         },
         "base_unit_id": {
+          "description": "Unit ID to convert from, from list_units.",
           "type": "number",
         },
         "converted_amount": {
+          "description": "Equal amount of the converted unit, e.g. 240.",
           "type": "number",
         },
         "converted_unit_id": {
+          "description": "Unit ID to convert to, from list_units.",
           "type": "number",
         },
         "food_id": {
+          "description": "Food ID for a food-specific conversion; null for none.",
           "type": [
             "number",
             "null",
@@ -9919,6 +10800,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "Unit conversion ID, from list_unit_conversions.",
           "type": "number",
         },
       },
@@ -9935,6 +10817,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "first_name": {
+          "description": "Given name.",
           "type": "string",
         },
         "format": {
@@ -9946,9 +10829,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "User ID from list_users.",
           "type": "number",
         },
         "last_name": {
+          "description": "Family name.",
           "type": "string",
         },
       },
@@ -9973,9 +10858,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "User file ID from list_user_files.",
           "type": "number",
         },
         "name": {
+          "description": "New display name.",
           "type": "string",
         },
       },
@@ -9993,15 +10880,18 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "comments": {
+          "description": "Show recipe comments.",
           "type": "boolean",
         },
         "default_meal_type_id": {
+          "description": "Meal type ID from list_meal_types; null clears.",
           "type": [
             "number",
             "null",
           ],
         },
         "default_page": {
+          "description": "Web UI start page.",
           "enum": [
             "SEARCH",
             "PLAN",
@@ -10011,9 +10901,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "default_unit": {
+          "description": "Unit name for new ingredients, e.g. g.",
           "type": "string",
         },
         "filter_to_supermarket": {
+          "description": "Show only the selected supermarket's categories.",
           "type": "boolean",
         },
         "format": {
@@ -10025,42 +10917,55 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "ingredient_decimals": {
+          "description": "Decimal places for ingredient amounts. Default 2.",
           "type": "number",
         },
         "left_handed": {
+          "description": "Lay out the UI for left-hand use.",
           "type": "boolean",
         },
         "mealplan_autoadd_shopping": {
+          "description": "Add meal plan ingredients to shopping automatically.",
           "type": "boolean",
         },
         "mealplan_autoexclude_onhand": {
+          "description": "Skip on-hand foods when shopping a meal plan.",
           "type": "boolean",
         },
         "mealplan_autoinclude_related": {
+          "description": "Include related recipes when shopping a meal plan.",
           "type": "boolean",
         },
         "shopping_add_onhand": {
+          "description": "Mark food on hand when checked off.",
           "type": "boolean",
         },
         "shopping_auto_sync": {
+          "description": "Shopping list refresh interval in seconds; 0 disables.",
           "type": "number",
         },
         "shopping_recent_days": {
+          "description": "Days of checked entries to keep loading.",
           "type": "number",
         },
         "shopping_update_food_lists": {
+          "description": "New entries without lists get the food's lists.",
           "type": "boolean",
         },
         "theme": {
+          "description": "TANDOOR, BOOTSTRAP, DARKLY, FLATLY, SUPERHERO or TANDOOR_DARK.",
           "type": "string",
         },
         "use_fractions": {
+          "description": "Show recipe decimals as fractions.",
           "type": "boolean",
         },
         "use_kj": {
+          "description": "Show energy in kJ instead of kcal.",
           "type": "boolean",
         },
         "user_id": {
+          "description": "Your own user ID; Tandoor only exposes the caller's preferences.",
           "type": "number",
         },
       },
@@ -10077,6 +10982,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "active": {
+          "description": "Whether this is the user's active space.",
           "type": "boolean",
         },
         "format": {
@@ -10088,6 +10994,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "groups": {
+          "description": "Group IDs from list_groups; replaces current groups.",
           "items": {
             "type": "number",
           },
@@ -10095,9 +11002,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "array",
         },
         "id": {
+          "description": "User-space ID from list_user_spaces.",
           "type": "number",
         },
         "internal_note": {
+          "description": "Free-text note on the membership.",
           "type": "string",
         },
       },
@@ -10122,9 +11031,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "id": {
+          "description": "View log ID from list_view_logs.",
           "type": "number",
         },
         "recipe": {
+          "description": "Recipe ID to link the entry to.",
           "type": "number",
         },
       },
@@ -10141,9 +11052,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "file_path": {
+          "description": "Local image path inside an allowed upload root.",
           "type": "string",
         },
         "file_url": {
+          "description": "Public image URL; this server downloads it, 10 MB max.",
           "type": "string",
         },
         "id": {
@@ -10151,6 +11064,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "number",
         },
         "image_url": {
+          "description": "Public image URL; Tandoor downloads it itself.",
           "type": "string",
         },
       },
@@ -10167,9 +11081,11 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "additionalProperties": false,
       "properties": {
         "file_path": {
+          "description": "Local path in an allowed upload root; stdio only. Wins over file_url.",
           "type": "string",
         },
         "file_url": {
+          "description": "Public http(s) URL to fetch, up to 50 MiB.",
           "type": "string",
         },
         "format": {
@@ -10181,6 +11097,7 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "string",
         },
         "name": {
+          "description": "Display name for the file in Tandoor.",
           "type": "string",
         },
       },
