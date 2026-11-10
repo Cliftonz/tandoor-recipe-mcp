@@ -1,4 +1,4 @@
-// Import-domain tool registrations: general import, import log,
+// Import-domain tool registrations: import log,
 // import-open-data, recipe-import queue, bookmarklet-import, fdc-search,
 // food-inherit-field.
 
@@ -8,7 +8,6 @@ import { TandoorClient } from '../clients/index.js';
 import { READ, CREATE, UPDATE, DELETE, registerStringTool } from '../lib/register.js';
 import { formatEnum } from '../lib/slim.js';
 import {
-  handleImportRecipes,
   handleCreateImportLog,
   handleGetImportLog,
   handleUpdateImportLog,
@@ -32,16 +31,6 @@ import {
   handleGetFoodInheritField,
 } from '../handlers/import.js';
 
-
-// ---------- General import ----------
-
-export const importRecipesShape = {
-  ai_provider_id: z.number().describe('AI provider ID, from list_ai_providers.'),
-  text: z.string().optional().describe('Raw recipe text.'),
-  file: z.string().optional().describe('Sent to Tandoor as the file field.'),
-  recipe_id: z.string().optional().describe('Recipe ID, as a string.'),
-  format: formatEnum,
-} as const;
 
 // ---------- Import log ----------
 
@@ -149,7 +138,6 @@ export const listFoodInheritFieldsShape = { format: formatEnum } as const;
 
 export const getFoodInheritFieldShape = { id: z.number().describe('Inherit field ID, from list_food_inherit_fields.'), format: formatEnum } as const;
 
-export type ImportRecipesArgs = z.infer<z.ZodObject<typeof importRecipesShape>>;
 export type CreateImportLogArgs = z.infer<z.ZodObject<typeof createImportLogShape>>;
 export type GetImportLogArgs = z.infer<z.ZodObject<typeof getImportLogShape>>;
 export type UpdateImportLogArgs = z.infer<z.ZodObject<typeof updateImportLogShape>>;
@@ -173,15 +161,6 @@ export type ListFoodInheritFieldsArgs = z.infer<z.ZodObject<typeof listFoodInher
 export type GetFoodInheritFieldArgs = z.infer<z.ZodObject<typeof getFoodInheritFieldShape>>;
 
 export function registerImportTools(server: McpServer, client: TandoorClient): void {
-  // ---------- General import ----------
-
-  registerStringTool(server, client, 'import_recipes', {
-    title: 'Import recipes',
-    annotations: CREATE,
-    description: 'Submit a raw recipe payload (text and/or uploaded file) to Tandoor for AI parsing into a Recipe. Requires ai_provider_id (see list_ai_providers). For URL scraping use import_recipe_from_url. For staged files already sitting in the recipe-import queue use import_pending_recipe. For the curated open-data seed set use run_open_data_import.',
-    inputSchema: importRecipesShape,
-  }, handleImportRecipes);
-
   // ---------- Import log ----------
 
   registerStringTool(server, client, 'create_import_log', {
@@ -224,7 +203,7 @@ export function registerImportTools(server: McpServer, client: TandoorClient): v
   registerStringTool(server, client, 'run_open_data_import', {
     title: 'Run open data import',
     annotations: { ...CREATE, destructiveHint: true },
-    description: 'Import the Tandoor curated open-data seed set (foods, units, categories, properties, stores, conversions) for a chosen version. Required: selected_version, selected_datatypes[]. Optional: update_existing, use_metric. This is a bulk taxonomy seed; for a single recipe use import_recipes or import_recipe_from_url.',
+    description: 'Import the Tandoor curated open-data seed set (foods, units, categories, properties, stores, conversions) for a chosen version. Required: selected_version, selected_datatypes[]. Optional: update_existing, use_metric. This is a bulk taxonomy seed; for a single recipe use import_recipe_from_url or import_recipe_from_image.',
     inputSchema: runOpenDataImportShape,
   }, handleRunOpenDataImport);
 
@@ -275,7 +254,7 @@ export function registerImportTools(server: McpServer, client: TandoorClient): v
   registerStringTool(server, client, 'import_pending_recipe', {
     title: 'Import pending recipe',
     annotations: CREATE,
-    description: 'Import one already-staged entry from the recipe-import queue into a real Recipe. Required: id (of the queue entry). For raw text/file that has NOT been staged yet use import_recipes. For a URL use import_recipe_from_url.',
+    description: 'Import one already-staged entry from the recipe-import queue into a real Recipe. Required: id (of the queue entry). For raw text/file that has NOT been staged yet use import_recipe_from_image. For a URL use import_recipe_from_url.',
     inputSchema: importPendingRecipeShape,
   }, handleImportPendingRecipe);
 

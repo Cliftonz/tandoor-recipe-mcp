@@ -8,6 +8,9 @@ All notable changes to this project are documented in this file.
 - **Every tool parameter has a description.** About 900 parameters that had none now explain formats, defaults, units and where IDs come from, so clients pick values correctly. `update_meal_plan` explains partial updates and how it handles `servings`. With every section turned on, the tool list grows from about 40,400 to 53,100 tokens; with the default sections, from about 9,300 to 12,700.
 - Tool, parameter, prompt and resource text, along with a few error messages, no longer uses em-dashes. A new test fails if one comes back in tool, resource or prompt text or in the server instructions.
 
+### Removed
+- **`import_recipes` is removed.** It sent JSON to Tandoor's file-upload import endpoint, so every call failed with 415 on Tandoor 2.x. Use `import_recipe_from_image` to import from text, a file or a URL.
+
 ### Fixed
 - Three tool descriptions that contradicted Tandoor: `food_batch_update` no longer claims `category: null` clears the category (Tandoor sets a category only when that ID exists, and null changes nothing); `food_ai_properties` now says `provider` is required instead of defaulting to the workspace provider; `export_recipes` lists integration names (DEFAULT, SAFFRON, RECIPESAGE) as types instead of json, zip and pdf, and notes that PDF is rejected.
 - **`update_search_preference` sets the search mode.** The `search` option listed values Tandoor rejects (PLAIN, PHRASE, RAW, WEB, FUZZY), so every call failed. It now takes `plain`, `phrase`, `websearch` or `raw`; fuzzy matching is the separate `lookup` setting.

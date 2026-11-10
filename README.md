@@ -39,14 +39,14 @@ A Model Context Protocol (MCP) server that gives LLM agents full read/write acce
 - **Remote mode for Claude and ChatGPT.** Host the server next to your Tandoor and add it as a custom connector in Claude or ChatGPT. Each person signs in with their own Tandoor API token. See [Remote mode](#remote-mode).
 - **Docker image on GHCR.** Each release pushes a signed multi-arch image to `ghcr.io/cliftonz/tandoor-recipes-mcp`. See [Run with Docker](#run-with-docker).
 - **MCP Registry listing.** Stable releases publish `server.json` to the MCP Registry, with the npm package, the `.mcpb` file and the Docker image.
-- **Titles and annotations on every tool.** All 307 tools declare a title and the read-only, destructive, idempotent and open-world hints.
+- **Titles and annotations on every tool.** All 306 tools declare a title and the read-only, destructive, idempotent and open-world hints.
 - **Host and Origin checks, plus rate limits.** Remote mode checks the Host and Origin headers and rate limits each visitor on `/mcp`. See [Remote mode security](#remote-mode-security).
 
 See [CHANGELOG.md](CHANGELOG.md) for earlier releases.
 
 ## Why this server
 
-- **Full Tandoor 2.6 API coverage.** 307 typed tools, spanning every domain the Tandoor OpenAPI exposes. With the default settings, 46 are visible at startup.
+- **Full Tandoor 2.6 API coverage.** 306 typed tools, spanning every domain the Tandoor OpenAPI exposes. With the default settings, 46 are visible at startup.
 - **Resources + prompts, not just tools.** Read-only resources like `tandoor://meal-plan/this-week` and `tandoor://pantry/on-hand`, plus ready-made prompts (`plan_week`, `grocery_list_for_plan`, `what_can_i_make_tonight`). Most Tandoor MCP forks ship tools only.
 - **Slim-by-default responses.** A full recipe GET shrinks from ~20k characters to ~2k by stripping substitute trees, readonly timestamps, image URLs, etc. Pass `format: "full"` anywhere for the raw Tandoor response.
 - **Per-section tool settings.** One env var per section (recipes, meal plan, shopping, and so on) sets it. Tiered sections take `off`, `simple`, or `full`. Toggle sections take `off` or `on`. In stdio mode the LLM can turn a hidden section on mid-session with `enable_tool_group`. See [Tool sections](#tool-sections).

@@ -3,12 +3,6 @@ import { BaseClient, qs } from './base.js';
 type Opts = { signal?: AbortSignal };
 
 export class ImportClient extends BaseClient {
-  // ---------- General import ----------
-
-  async importRecipes(body: any, opts?: Opts): Promise<any> {
-    return this.request('/api/import/', { method: 'POST', body: JSON.stringify(body), signal: opts?.signal });
-  }
-
   // ---------- Import log ----------
 
   async createImportLog(body: any, opts?: Opts): Promise<any> {

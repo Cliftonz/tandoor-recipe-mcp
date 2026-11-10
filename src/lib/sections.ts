@@ -182,7 +182,7 @@ export const SECTIONS: readonly Section[] = [
     description: 'Recipe import and export, import queues, bookmarklet and open-data imports, their logs.',
     tools: [
       'export_recipes', ...crud('export_log'),
-      'import_recipes', ...crud('import_log'),
+      ...crud('import_log'),
       ...crud('recipe_import'),
       'import_all_pending', 'import_pending_recipe',
       ...crud('bookmarklet_import'),

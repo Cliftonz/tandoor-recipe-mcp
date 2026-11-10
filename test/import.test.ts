@@ -1,11 +1,10 @@
-// Import-domain handlers: general import, import log (CRUD),
+// Import-domain handlers: import log (CRUD),
 // import-open-data, recipe-import queue, bookmarklet-import, fdc-search,
 // food-inherit-field. One test per registered handler; each test mocks only
 // the specific client method under test.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
-  handleImportRecipes,
   handleCreateImportLog,
   handleGetImportLog,
   handleUpdateImportLog,
@@ -33,19 +32,6 @@ import { paginated } from './helpers/factories.js';
 function mkClient(overrides: any): any {
   return { imports: overrides };
 }
-
-// ---------- General import ----------
-
-describe('handleImportRecipes', () => {
-  it('POSTs multipart body with ai_provider_id + text and returns confirmation', async () => {
-    const importRecipes = vi.fn(async () => ({ recipe_id: 42, msg: 'ok', error: false }));
-    const client = mkClient({ importRecipes });
-    const out = await handleImportRecipes(client, { ai_provider_id: 1, text: 'raw recipe text' });
-    expect(importRecipes).toHaveBeenCalledWith({ ai_provider_id: 1, text: 'raw recipe text' }, { signal: undefined });
-    expect(out).toContain('Import submitted');
-    expect(out).toContain('"recipe_id":42');
-  });
-});
 
 // ---------- Import log ----------
 

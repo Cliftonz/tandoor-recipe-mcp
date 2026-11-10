@@ -595,7 +595,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "import_all_pending",
   },
   {
-    "description": "Import one already-staged entry from the recipe-import queue into a real Recipe. Required: id (of the queue entry). For raw text/file that has NOT been staged yet use import_recipes. For a URL use import_recipe_from_url.",
+    "description": "Import one already-staged entry from the recipe-import queue into a real Recipe. Required: id (of the queue entry). For raw text/file that has NOT been staged yet use import_recipe_from_image. For a URL use import_recipe_from_url.",
     "name": "import_pending_recipe",
   },
   {
@@ -605,10 +605,6 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
   {
     "description": "Import a recipe from a URL. Tries Tandoor's built-in scraper first, then fetches the page and extracts schema.org JSON-LD as a real fallback (works when Tandoor can't reach the URL or doesn't support the site). On total failure, throws with an attempts log; pass create_stub_on_failure=true to write an empty placeholder recipe instead. If all stages fail, recommend: (1) retry with create_stub_on_failure=true to capture the URL as a stub you can fill in later; (2) if the page is an image/PDF, use import_recipe_from_image (AI provider required); (3) if the URL is paywalled or JS-rendered, fall back to manual create_recipe with fields you can see.",
     "name": "import_recipe_from_url",
-  },
-  {
-    "description": "Submit a raw recipe payload (text and/or uploaded file) to Tandoor for AI parsing into a Recipe. Requires ai_provider_id (see list_ai_providers). For URL scraping use import_recipe_from_url. For staged files already sitting in the recipe-import queue use import_pending_recipe. For the curated open-data seed set use run_open_data_import.",
-    "name": "import_recipes",
   },
   {
     "description": "Run a jq filter against a previously stashed tool result and return the focused subset. Use this when a prior tool returned \`{stashed:true, handle, shape, sample_filters}\` instead of the full payload. Treat the stash like a JSON document the user already paid for: extract only what you need. Common filters: ".results | length", ".results[] | select(.id == 42)", ".results | map({id, name})", "keys", ".count".",
@@ -1047,7 +1043,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "remove_recipe_from_book",
   },
   {
-    "description": "Import the Tandoor curated open-data seed set (foods, units, categories, properties, stores, conversions) for a chosen version. Required: selected_version, selected_datatypes[]. Optional: update_existing, use_metric. This is a bulk taxonomy seed; for a single recipe use import_recipes or import_recipe_from_url.",
+    "description": "Import the Tandoor curated open-data seed set (foods, units, categories, properties, stores, conversions) for a chosen version. Required: selected_version, selected_datatypes[]. Optional: update_existing, use_metric. This is a bulk taxonomy seed; for a single recipe use import_recipe_from_url or import_recipe_from_image.",
     "name": "run_open_data_import",
   },
   {
@@ -5815,43 +5811,6 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
       "type": "object",
     },
     "name": "import_recipe_from_url",
-  },
-  {
-    "inputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "properties": {
-        "ai_provider_id": {
-          "description": "AI provider ID, from list_ai_providers.",
-          "type": "number",
-        },
-        "file": {
-          "description": "Sent to Tandoor as the file field.",
-          "type": "string",
-        },
-        "format": {
-          "description": "slim (default) returns a compact shape. full returns the raw Tandoor object.",
-          "enum": [
-            "slim",
-            "full",
-          ],
-          "type": "string",
-        },
-        "recipe_id": {
-          "description": "Recipe ID, as a string.",
-          "type": "string",
-        },
-        "text": {
-          "description": "Raw recipe text.",
-          "type": "string",
-        },
-      },
-      "required": [
-        "ai_provider_id",
-      ],
-      "type": "object",
-    },
-    "name": "import_recipes",
   },
   {
     "inputSchema": {

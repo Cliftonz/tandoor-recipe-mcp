@@ -16,7 +16,6 @@ export const SKIPS: ReviewedSkip[] = [
   { tool: 'recipe_ai_properties', reason: AI_PROVIDER },
   { tool: 'import_recipe_from_image', reason: AI_PROVIDER },
   { tool: 'ai_step_sort', reason: AI_PROVIDER },
-  { tool: 'import_recipes', reason: `${AI_PROVIDER}; Tandoor requires ai_provider_id` },
   { tool: 'import_recipe_from_url', reason: 'the strict public-URL check refuses local fixtures; needs a live public recipe page' },
   { tool: 'run_open_data_import', reason: 'downloads from raw.githubusercontent.com and bulk-seeds the space' },
   { tool: 'get_external_recipe_file_link', reason: 'works only for Nextcloud or Dropbox storage; LOCAL storage returns 500' },

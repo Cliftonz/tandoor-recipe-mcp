@@ -31,7 +31,6 @@ const NEW_TOOLS: string[] = [
   'list_invite_links', 'get_invite_link', 'create_invite_link', 'update_invite_link', 'delete_invite_link',
   'list_access_tokens', 'get_access_token', 'create_access_token', 'update_access_token', 'delete_access_token', 'authenticate',
   'export_recipes', 'list_export_logs', 'get_export_log', 'create_export_log', 'update_export_log', 'delete_export_log',
-  'import_recipes',
   'list_storages', 'get_storage', 'create_storage', 'update_storage', 'delete_storage',
   'list_syncs', 'get_sync', 'create_sync', 'update_sync', 'delete_sync', 'query_synced_folder', 'list_sync_logs', 'get_sync_log',
   'list_spaces', 'get_space', 'get_current_space', 'create_space', 'update_space',
