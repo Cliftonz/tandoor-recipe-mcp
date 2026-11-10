@@ -10,6 +10,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 - Three tool descriptions that contradicted Tandoor: `food_batch_update` no longer claims `category: null` clears the category (Tandoor sets a category only when that ID exists, and null changes nothing); `food_ai_properties` now says `provider` is required instead of defaulting to the workspace provider; `export_recipes` lists integration names (DEFAULT, SAFFRON, RECIPESAGE) as types instead of json, zip and pdf, and notes that PDF is rejected.
+- **`update_search_preference` sets the search mode.** The `search` option listed values Tandoor rejects (PLAIN, PHRASE, RAW, WEB, FUZZY), so every call failed. It now takes `plain`, `phrase`, `websearch` or `raw`; fuzzy matching is the separate `lookup` setting.
 
 ## 3.4.4 / 2026-11-08
 

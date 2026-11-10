@@ -34,7 +34,7 @@ import {
 const INLINE_CAP_MIB = INLINE_CAP_BYTES / 1024 / 1024;
 
 const connectorTypeEnum = z.enum(['HomeAssistant']);
-const searchEnum = z.enum(['PLAIN', 'PHRASE', 'RAW', 'WEB', 'FUZZY']);
+const searchEnum = z.enum(['plain', 'phrase', 'websearch', 'raw']);
 
 // ---------- Connector-config ----------
 
@@ -93,7 +93,7 @@ export const listSearchFieldsShape = { format: formatEnum } as const;
 export const listSearchPreferencesShape = { format: formatEnum } as const;
 export const updateSearchPreferenceShape = {
   user: z.number().describe('Your own user ID; Tandoor only exposes the caller\'s preference.'),
-  search: searchEnum.optional().describe('Full-text search method.'),
+  search: searchEnum.optional().describe('Full-text search mode. plain: match all words in any order. phrase: match the words as an exact phrase. websearch: web-style syntax (quotes, OR, -exclude). raw: Postgres tsquery syntax. websearch and raw turn trigram matching off. Fuzzy matching is the separate lookup setting.'),
   lookup: z.boolean().optional().describe('Fuzzy search toggle.'),
   unaccent: z.array(z.number()).optional().describe('Accent-insensitive field IDs from list_search_fields.'),
   icontains: z.array(z.number()).optional().describe('Partial-match field IDs from list_search_fields.'),

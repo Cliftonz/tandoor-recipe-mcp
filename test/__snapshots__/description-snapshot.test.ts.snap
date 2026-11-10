@@ -10147,13 +10147,12 @@ exports[`tool description snapshot > input schemas match the recorded snapshot 1
           "type": "boolean",
         },
         "search": {
-          "description": "Full-text search method.",
+          "description": "Full-text search mode. plain: match all words in any order. phrase: match the words as an exact phrase. websearch: web-style syntax (quotes, OR, -exclude). raw: Postgres tsquery syntax. websearch and raw turn trigram matching off. Fuzzy matching is the separate lookup setting.",
           "enum": [
-            "PLAIN",
-            "PHRASE",
-            "RAW",
-            "WEB",
-            "FUZZY",
+            "plain",
+            "phrase",
+            "websearch",
+            "raw",
           ],
           "type": "string",
         },

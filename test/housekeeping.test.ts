@@ -160,7 +160,7 @@ describe('handlers/housekeeping.ts', () => {
         housekeeping: {
           listSearchPreferences: async () => [{
             user: { id: 1, username: 'alice' },
-            search: 'PLAIN', lookup: true,
+            search: 'plain', lookup: true,
             unaccent: [{ id: 1, field: 'name' }],
             icontains: [], istartswith: null, trigram: [], fulltext: [],
             trigram_threshold: 0.2,
@@ -169,7 +169,7 @@ describe('handlers/housekeeping.ts', () => {
       });
       const res = await handleListSearchPreferences(client, {} as any);
       const parsed = JSON.parse(res);
-      expect(parsed[0]).toMatchObject({ user_id: 1, search: 'PLAIN', lookup: true });
+      expect(parsed[0]).toMatchObject({ user_id: 1, search: 'plain', lookup: true });
       expect(parsed[0].unaccent).toEqual([1]);
     });
 
