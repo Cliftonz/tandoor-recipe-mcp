@@ -18,6 +18,10 @@
 </p>
 
 <p align="center">
+  <a href="https://glama.ai/mcp/servers/Cliftonz/tandoor-recipe-mcp"><img src="https://glama.ai/mcp/servers/Cliftonz/tandoor-recipe-mcp/badges/card.svg" alt="Tandoor Recipes MCP MCP server – quality and maintenance score on Glama"></a>
+</p>
+
+<p align="center">
   <a href="#install">Install</a> ·
   <a href="#configure">Configure</a> ·
   <a href="#remote-mode">Remote mode</a> ·
