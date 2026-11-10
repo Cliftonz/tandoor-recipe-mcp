@@ -13,31 +13,31 @@ import {
 
 
 export const listSupermarketsShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
-  limit: z.string().optional(),
-  query: z.string().optional(),
+  page: z.number().optional().describe('Page number, from 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
+  limit: z.string().optional().describe('Maximum number of supermarkets, as a string, e.g. "10".'),
+  query: z.string().optional().describe('Case-insensitive name substring.'),
   format: formatEnum,
 } as const;
 
-export const getSupermarketShape = { id: z.number(), format: formatEnum } as const;
+export const getSupermarketShape = { id: z.number().describe('Supermarket ID, from list_supermarkets.'), format: formatEnum } as const;
 
 export const createSupermarketShape = {
-  name: z.string(),
-  description: z.string().nullable().optional(),
-  open_data_slug: z.string().nullable().optional(),
+  name: z.string().describe('Store name. Unique per space.'),
+  description: z.string().nullable().optional().describe('Free-text description.'),
+  open_data_slug: z.string().nullable().optional().describe('Tandoor Open Data identifier. Unique per space.'),
   format: formatEnum,
 } as const;
 
 export const updateSupermarketShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  description: z.string().nullable().optional(),
-  open_data_slug: z.string().nullable().optional(),
+  id: z.number().describe('Supermarket ID, from list_supermarkets.'),
+  name: z.string().optional().describe('New store name. Unique per space.'),
+  description: z.string().nullable().optional().describe('Free-text description.'),
+  open_data_slug: z.string().nullable().optional().describe('Tandoor Open Data identifier. Unique per space.'),
   format: formatEnum,
 } as const;
 
-export const deleteSupermarketShape = { id: z.number() } as const;
+export const deleteSupermarketShape = { id: z.number().describe('Supermarket ID, from list_supermarkets.') } as const;
 
 export type ListSupermarketsArgs = z.infer<z.ZodObject<typeof listSupermarketsShape>>;
 export type GetSupermarketArgs = z.infer<z.ZodObject<typeof getSupermarketShape>>;

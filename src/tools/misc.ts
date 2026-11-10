@@ -50,134 +50,177 @@ import {
 
 // ---------- Shapes ----------
 export const listKeywordsShape = {
-  query: z.string().optional(),
-  limit: z.string().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
-  random: z.string().optional(),
-  root: z.number().optional(),
-  root_tree: z.number().optional(),
-  tree: z.number().optional(),
-  updated_at: z.string().optional(),
+  query: z.string().optional().describe('Name filter, or similarity ranking when Tandoor fuzzy search is on.'),
+  limit: z.string().optional().describe('Maximum number of keywords, as a string, e.g. "10".'),
+  page: z.number().optional().describe('Page number, from 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
+  random: z.string().optional().describe('String. Any non-empty value shuffles the order, even "false".'),
+  root: z.number().optional().describe('Parent keyword ID; lists its direct children. 0 lists top-level keywords.'),
+  root_tree: z.number().optional().describe('Keyword ID; lists the whole tree that keyword belongs to.'),
+  tree: z.number().optional().describe('Keyword ID; lists that keyword and all its descendants.'),
+  updated_at: z.string().optional().describe('ISO datetime; only keywords updated at or after it.'),
   format: formatEnum,
 } as const;
-export const getKeywordShape = { id: z.number(), format: formatEnum } as const;
-export const createKeywordShape = { name: z.string(), description: z.string().optional(), format: formatEnum } as const;
-export const updateKeywordShape = { id: z.number(), name: z.string().optional(), description: z.string().optional(), format: formatEnum } as const;
-export const deleteKeywordShape = { id: z.number() } as const;
-export const mergeKeywordShape = { id: z.number(), target: z.number() } as const;
-export const moveKeywordShape = { id: z.number(), parent: z.number() } as const;
+export const getKeywordShape = { id: z.number().describe('Keyword ID, from list_keywords.'), format: formatEnum } as const;
+export const createKeywordShape = {
+  name: z.string().describe('Keyword name, max 64 characters. Unique per space.'),
+  description: z.string().optional().describe('Free-text description.'),
+  format: formatEnum,
+} as const;
+export const updateKeywordShape = {
+  id: z.number().describe('Keyword ID, from list_keywords.'),
+  name: z.string().optional().describe('New keyword name, max 64 characters.'),
+  description: z.string().optional().describe('Free-text description.'),
+  format: formatEnum,
+} as const;
+export const deleteKeywordShape = { id: z.number().describe('Keyword ID, from list_keywords.') } as const;
+export const mergeKeywordShape = {
+  id: z.number().describe('Keyword ID to absorb; it is deleted.'),
+  target: z.number().describe('Keyword ID that remains and takes the references.'),
+} as const;
+export const moveKeywordShape = {
+  id: z.number().describe('Keyword ID to move.'),
+  parent: z.number().describe('New parent keyword ID; 0 moves it to the top level.'),
+} as const;
 
-export const listSupermarketCategoriesShape = { page: z.number().optional(), page_size: z.number().optional(), format: formatEnum } as const;
-export const getSupermarketCategoryShape = { id: z.number(), format: formatEnum } as const;
-export const createSupermarketCategoryShape = { name: z.string(), description: z.string().optional(), format: formatEnum } as const;
-export const updateSupermarketCategoryShape = { id: z.number(), name: z.string().optional(), description: z.string().optional(), format: formatEnum } as const;
-export const deleteSupermarketCategoryShape = { id: z.number() } as const;
-export const mergeSupermarketCategoryShape = { id: z.number(), target: z.number() } as const;
+export const listSupermarketCategoriesShape = {
+  page: z.number().optional().describe('Page number, from 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
+  format: formatEnum,
+} as const;
+export const getSupermarketCategoryShape = { id: z.number().describe('Category ID, from list_supermarket_categories.'), format: formatEnum } as const;
+export const createSupermarketCategoryShape = {
+  name: z.string().describe('Category name, e.g. Produce. Unique per space.'),
+  description: z.string().optional().describe('Free-text description.'),
+  format: formatEnum,
+} as const;
+export const updateSupermarketCategoryShape = {
+  id: z.number().describe('Category ID, from list_supermarket_categories.'),
+  name: z.string().optional().describe('New category name. Unique per space.'),
+  description: z.string().optional().describe('Free-text description.'),
+  format: formatEnum,
+} as const;
+export const deleteSupermarketCategoryShape = { id: z.number().describe('Category ID, from list_supermarket_categories.') } as const;
+export const mergeSupermarketCategoryShape = {
+  id: z.number().describe('Category ID to absorb; it is deleted.'),
+  target: z.number().describe('Category ID that remains and takes the references.'),
+} as const;
 
 export const listUnitConversionsShape = {
-  food_id: z.number().optional(),
-  query: z.string().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  food_id: z.number().optional().describe('Only conversions for this food ID.'),
+  query: z.string().optional().describe('Matches food, base unit or converted unit name.'),
+  page: z.number().optional().describe('Page number, from 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
-export const getUnitConversionShape = { id: z.number(), format: formatEnum } as const;
+export const getUnitConversionShape = { id: z.number().describe('Unit conversion ID, from list_unit_conversions.'), format: formatEnum } as const;
 export const createUnitConversionShape = {
-  base_amount: z.number(),
-  base_unit_id: z.number(),
-  converted_amount: z.number(),
-  converted_unit_id: z.number(),
-  food_id: z.number().nullable().optional(),
+  base_amount: z.number().describe('Amount of the base unit, e.g. 1.'),
+  base_unit_id: z.number().describe('Unit ID to convert from, from list_units.'),
+  converted_amount: z.number().describe('Equal amount of the converted unit, e.g. 240.'),
+  converted_unit_id: z.number().describe('Unit ID to convert to, from list_units.'),
+  food_id: z.number().nullable().optional().describe('Food ID for a food-specific conversion; null for none.'),
   format: formatEnum,
 } as const;
 export const updateUnitConversionShape = {
-  id: z.number(),
-  base_amount: z.number().optional(),
-  base_unit_id: z.number().optional(),
-  converted_amount: z.number().optional(),
-  converted_unit_id: z.number().optional(),
-  food_id: z.number().nullable().optional(),
+  id: z.number().describe('Unit conversion ID, from list_unit_conversions.'),
+  base_amount: z.number().optional().describe('Amount of the base unit, e.g. 1.'),
+  base_unit_id: z.number().optional().describe('Unit ID to convert from, from list_units.'),
+  converted_amount: z.number().optional().describe('Equal amount of the converted unit, e.g. 240.'),
+  converted_unit_id: z.number().optional().describe('Unit ID to convert to, from list_units.'),
+  food_id: z.number().nullable().optional().describe('Food ID for a food-specific conversion; null for none.'),
   format: formatEnum,
 } as const;
-export const deleteUnitConversionShape = { id: z.number() } as const;
+export const deleteUnitConversionShape = { id: z.number().describe('Unit conversion ID, from list_unit_conversions.') } as const;
 
 export const listPropertyTypesShape = {
-  category: z.array(z.enum(['ALLERGEN', 'GOAL', 'NUTRITION', 'OTHER', 'PRICE'])).optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  category: z.array(z.enum(['ALLERGEN', 'GOAL', 'NUTRITION', 'OTHER', 'PRICE'])).optional().describe('Category filter. Tandoor currently ignores it.'),
+  page: z.number().optional().describe('Page number, from 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
-export const getPropertyTypeShape = { id: z.number(), format: formatEnum } as const;
+export const getPropertyTypeShape = { id: z.number().describe('Property type ID, from list_property_types.'), format: formatEnum } as const;
 export const createPropertyTypeShape = {
-  name: z.string(),
-  unit: z.string().nullable().optional(),
-  description: z.string().nullable().optional(),
-  order: z.number().optional(),
-  open_data_slug: z.string().nullable().optional(),
-  fdc_id: z.number().nullable().optional(),
+  name: z.string().describe('Property name, e.g. Protein.'),
+  unit: z.string().nullable().optional().describe('Unit label as free text, e.g. g or kcal.'),
+  description: z.string().nullable().optional().describe('Free text, max 512 characters.'),
+  order: z.number().optional().describe('Sort position. Tandoor default 0.'),
+  open_data_slug: z.string().nullable().optional().describe('Tandoor Open Data identifier.'),
+  fdc_id: z.number().nullable().optional().describe('USDA nutrient ID; food_fdc_lookup fills matching values.'),
   format: formatEnum,
 } as const;
 export const updatePropertyTypeShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  unit: z.string().nullable().optional(),
-  description: z.string().nullable().optional(),
-  order: z.number().optional(),
-  open_data_slug: z.string().nullable().optional(),
-  fdc_id: z.number().nullable().optional(),
+  id: z.number().describe('Property type ID, from list_property_types.'),
+  name: z.string().optional().describe('New property name.'),
+  unit: z.string().nullable().optional().describe('Unit label as free text, e.g. g or kcal.'),
+  description: z.string().nullable().optional().describe('Free text, max 512 characters.'),
+  order: z.number().optional().describe('Sort position.'),
+  open_data_slug: z.string().nullable().optional().describe('Tandoor Open Data identifier.'),
+  fdc_id: z.number().nullable().optional().describe('USDA nutrient ID; food_fdc_lookup fills matching values.'),
   format: formatEnum,
 } as const;
-export const deletePropertyTypeShape = { id: z.number() } as const;
+export const deletePropertyTypeShape = { id: z.number().describe('Property type ID, from list_property_types.') } as const;
 
-export const listPropertiesShape = { page: z.number().optional(), page_size: z.number().optional(), format: formatEnum } as const;
-export const getPropertyShape = { id: z.number(), format: formatEnum } as const;
+export const listPropertiesShape = {
+  page: z.number().optional().describe('Page number, from 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
+  format: formatEnum,
+} as const;
+export const getPropertyShape = { id: z.number().describe('Property ID, from list_properties.'), format: formatEnum } as const;
 export const createPropertyShape = {
-  property_type_id: z.number(),
-  property_amount: z.number(),
+  property_type_id: z.number().describe('Property type ID, from list_property_types.'),
+  property_amount: z.number().describe('Value in the property type\'s unit.'),
   format: formatEnum,
 } as const;
 export const updatePropertyShape = {
-  id: z.number(),
-  property_type_id: z.number().optional(),
-  property_amount: z.number().optional(),
+  id: z.number().describe('Property ID, from list_properties.'),
+  property_type_id: z.number().optional().describe('Property type ID, from list_property_types.'),
+  property_amount: z.number().optional().describe('Value in the property type\'s unit.'),
   format: formatEnum,
 } as const;
-export const deletePropertyShape = { id: z.number() } as const;
+export const deletePropertyShape = { id: z.number().describe('Property ID, from list_properties.') } as const;
 
-export const listCustomFiltersShape = { page: z.number().optional(), page_size: z.number().optional(), format: formatEnum } as const;
-export const getCustomFilterShape = { id: z.number(), format: formatEnum } as const;
+export const listCustomFiltersShape = {
+  page: z.number().optional().describe('Page number, from 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
+  format: formatEnum,
+} as const;
+export const getCustomFilterShape = { id: z.number().describe('Custom filter ID, from list_custom_filters.'), format: formatEnum } as const;
 export const createCustomFilterShape = {
-  name: z.string(),
-  search: z.string(),
-  shared_user_ids: z.array(z.number()).optional(),
+  name: z.string().describe('Filter name.'),
+  search: z.string().describe('Saved recipe search parameters as a JSON string.'),
+  shared_user_ids: z.array(z.number()).optional().describe('User IDs to share the filter with.'),
   format: formatEnum,
 } as const;
 export const updateCustomFilterShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  search: z.string().optional(),
-  shared_user_ids: z.array(z.number()).optional(),
+  id: z.number().describe('Custom filter ID, from list_custom_filters.'),
+  name: z.string().optional().describe('New filter name.'),
+  search: z.string().optional().describe('Saved recipe search parameters as a JSON string.'),
+  shared_user_ids: z.array(z.number()).optional().describe('User IDs to share with; replaces the current list.'),
   format: formatEnum,
 } as const;
-export const deleteCustomFilterShape = { id: z.number() } as const;
+export const deleteCustomFilterShape = { id: z.number().describe('Custom filter ID, from list_custom_filters.') } as const;
 
-export const listSupermarketCategoryRelationsShape = { page: z.number().optional(), page_size: z.number().optional(), format: formatEnum } as const;
-export const getSupermarketCategoryRelationShape = { id: z.number(), format: formatEnum } as const;
+export const listSupermarketCategoryRelationsShape = {
+  page: z.number().optional().describe('Page number, from 1.'),
+  page_size: z.number().optional().describe('Results per page. Default 50, max 200.'),
+  format: formatEnum,
+} as const;
+export const getSupermarketCategoryRelationShape = { id: z.number().describe('Relation ID, from list_supermarket_category_relations.'), format: formatEnum } as const;
 export const createSupermarketCategoryRelationShape = {
-  category_id: z.number(),
-  supermarket: z.number(),
-  order: z.number().optional(),
+  category_id: z.number().describe('Category ID, from list_supermarket_categories.'),
+  supermarket: z.number().describe('Supermarket ID, from list_supermarkets.'),
+  order: z.number().optional().describe('Category position in this supermarket. Tandoor default 0.'),
   format: formatEnum,
 } as const;
 export const updateSupermarketCategoryRelationShape = {
-  id: z.number(),
-  category_id: z.number().optional(),
-  supermarket: z.number().optional(),
-  order: z.number().optional(),
+  id: z.number().describe('Relation ID, from list_supermarket_category_relations.'),
+  category_id: z.number().optional().describe('Category ID, from list_supermarket_categories.'),
+  supermarket: z.number().optional().describe('Supermarket ID, from list_supermarkets.'),
+  order: z.number().optional().describe('Category position in this supermarket.'),
   format: formatEnum,
 } as const;
-export const deleteSupermarketCategoryRelationShape = { id: z.number() } as const;
+export const deleteSupermarketCategoryRelationShape = { id: z.number().describe('Relation ID, from list_supermarket_category_relations.') } as const;
 
 // ---------- Inferred types ----------
 export type ListKeywordsArgs = z.infer<z.ZodObject<typeof listKeywordsShape>>;
