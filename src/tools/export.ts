@@ -63,7 +63,7 @@ export function registerExportTools(server: McpServer, client: TandoorClient): v
   registerStringTool(server, client, 'export_recipes', {
     title: 'Export recipes',
     annotations: { ...READ, readOnlyHint: false, idempotentHint: false },
-    description: 'Trigger a recipe export job. Required: type (e.g. json, zip, pdf; depends on Tandoor build). Provide recipes[] (ids), all=true, or custom_filter (saved filter id); recipes[] cannot be combined with custom_filter, even when all=true. all=true overrides custom_filter. Filters reachable only via a shared recipe book return 404. A deleted or empty filter exports every recipe. Returns the ExportLog for the queued job.',
+    description: 'Trigger a recipe export job. Required: type (integration name, e.g. DEFAULT, SAFFRON, RECIPESAGE; PDF is rejected). Provide recipes[] (ids), all=true, or custom_filter (saved filter id); recipes[] cannot be combined with custom_filter, even when all=true. all=true overrides custom_filter. Filters reachable only via a shared recipe book return 404. A deleted or empty filter exports every recipe. Returns the ExportLog for the queued job.',
     inputSchema: exportRecipesShape,
   }, handleExportRecipes);
 
