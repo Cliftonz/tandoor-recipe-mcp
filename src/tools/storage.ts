@@ -20,37 +20,37 @@ const credentialNote =
   "Storage records contain credentials for external file backends. Slim mode redacts token/password; use format='full' only if needed.";
 
 export const listStoragesShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page: z.number().optional().describe('1-based page number.'),
+  page_size: z.number().optional().describe('Rows per page. Default 50, max 200.'),
   format: formatEnum,
 } as const;
 
-export const getStorageShape = { id: z.number(), format: formatEnum } as const;
+export const getStorageShape = { id: z.number().describe('Storage ID from list_storages.'), format: formatEnum } as const;
 
 export const createStorageShape = {
-  name: z.string(),
-  method: methodEnum,
-  path: z.string(),
-  username: z.string().nullable().optional(),
-  password: z.string().nullable().optional(),
-  token: z.string().nullable().optional(),
-  url: z.string().nullable().optional(),
+  name: z.string().describe('Display name.'),
+  method: methodEnum.describe('Backend: DB is Dropbox, NEXTCLOUD, or LOCAL.'),
+  path: z.string().describe('Nextcloud WebDAV root; empty uses the user files root.'),
+  username: z.string().nullable().optional().describe('Nextcloud login username.'),
+  password: z.string().nullable().optional().describe('Nextcloud password; write-only in Tandoor.'),
+  token: z.string().nullable().optional().describe('Dropbox access token; write-only in Tandoor.'),
+  url: z.string().nullable().optional().describe('Nextcloud server URL.'),
   format: formatEnum,
 } as const;
 
 export const updateStorageShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  method: methodEnum.optional(),
-  path: z.string().optional(),
-  username: z.string().nullable().optional(),
-  password: z.string().nullable().optional(),
-  token: z.string().nullable().optional(),
-  url: z.string().nullable().optional(),
+  id: z.number().describe('Storage ID from list_storages.'),
+  name: z.string().optional().describe('Display name.'),
+  method: methodEnum.optional().describe('Backend: DB is Dropbox, NEXTCLOUD, or LOCAL.'),
+  path: z.string().optional().describe('Nextcloud WebDAV root; empty uses the user files root.'),
+  username: z.string().nullable().optional().describe('Nextcloud login username.'),
+  password: z.string().nullable().optional().describe('Nextcloud password; write-only in Tandoor.'),
+  token: z.string().nullable().optional().describe('Dropbox access token; write-only in Tandoor.'),
+  url: z.string().nullable().optional().describe('Nextcloud server URL.'),
   format: formatEnum,
 } as const;
 
-export const deleteStorageShape = { id: z.number() } as const;
+export const deleteStorageShape = { id: z.number().describe('Storage ID from list_storages.') } as const;
 
 export type ListStoragesArgs = z.infer<z.ZodObject<typeof listStoragesShape>>;
 export type GetStorageArgs = z.infer<z.ZodObject<typeof getStorageShape>>;

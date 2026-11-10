@@ -28,7 +28,7 @@ export const RESOURCES: { resource: string; slug: string }[] = [
 
 const ACTIONS: TreeSafetyAction[] = ['cascading', 'nulling', 'protecting'];
 
-const shape = { id: z.number() } as const;
+const shape = { id: z.number().describe('ID of the object you plan to delete.') } as const;
 
 const deleteToolNameFor: Record<string, string> = {
   food: 'delete_food',
