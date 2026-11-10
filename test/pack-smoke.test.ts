@@ -95,7 +95,7 @@ beforeAll(async () => {
     console.error('[pack-smoke setup] failed:', err);
     throw err;
   }
-}, 120_000);
+}, process.platform === 'win32' ? 240_000 : 120_000);
 
 afterAll(async () => {
   if (stub) await stub.close();
