@@ -18,54 +18,59 @@ import {
 } from '../handlers/recipebook.js';
 
 
+const page = z.number().optional().describe('Page number, starting at 1.');
+const pageSize = z.number().optional().describe('Results per page.');
+const bookId = z.number().describe('Recipe book ID, from list_recipe_books.');
+const entryId = z.number().describe('Recipe book entry ID, from list_recipe_book_entries.');
+
 export const listBooksShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
-  limit: z.string().optional(),
-  order_field: z.enum(['id', 'name', 'order']).optional(),
-  order_direction: z.enum(['asc', 'desc']).optional(),
+  page,
+  page_size: pageSize,
+  limit: z.string().optional().describe('Maximum number of books, as a numeric string.'),
+  order_field: z.enum(['id', 'name', 'order']).optional().describe('Sort field. Default order.'),
+  order_direction: z.enum(['asc', 'desc']).optional().describe('Sort direction. Default asc.'),
   format: formatEnum,
 } as const;
 
-export const getBookShape = { id: z.number(), format: formatEnum } as const;
+export const getBookShape = { id: bookId, format: formatEnum } as const;
 
 export const createBookShape = {
-  name: z.string(),
-  description: z.string().optional(),
-  order: z.number().optional(),
-  filter_id: z.number().nullable().optional(),
-  shared_user_ids: z.array(z.number()).optional(),
+  name: z.string().describe('Book name, up to 128 characters.'),
+  description: z.string().optional().describe('Free-text description.'),
+  order: z.number().optional().describe('Sort position among books. Default 0.'),
+  filter_id: z.number().nullable().optional().describe('Saved custom filter ID, from list_custom_filters.'),
+  shared_user_ids: z.array(z.number()).optional().describe('User IDs to share the book with, from list_users.'),
   format: formatEnum,
 } as const;
 
 export const updateBookShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  description: z.string().optional(),
-  order: z.number().optional(),
-  filter_id: z.number().nullable().optional(),
-  shared_user_ids: z.array(z.number()).optional(),
+  id: bookId,
+  name: z.string().optional().describe('Book name, up to 128 characters.'),
+  description: z.string().optional().describe('Free-text description.'),
+  order: z.number().optional().describe('Sort position among books.'),
+  filter_id: z.number().nullable().optional().describe('Saved custom filter ID, from list_custom_filters. null clears it.'),
+  shared_user_ids: z.array(z.number()).optional().describe('User IDs to share with, from list_users. Replaces the list; [] clears, omitted keeps.'),
   format: formatEnum,
 } as const;
 
-export const deleteBookShape = { id: z.number() } as const;
+export const deleteBookShape = { id: bookId } as const;
 
 export const listBookEntriesShape = {
-  book: z.number().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  book: z.number().optional().describe('Only entries in this book ID, from list_recipe_books.'),
+  page,
+  page_size: pageSize,
   format: formatEnum,
 } as const;
 
-export const getBookEntryShape = { id: z.number(), format: formatEnum } as const;
+export const getBookEntryShape = { id: entryId, format: formatEnum } as const;
 
 export const createBookEntryShape = {
-  book: z.number(),
-  recipe: z.number(),
+  book: bookId,
+  recipe: z.number().describe('Recipe ID, from search_recipes.'),
   format: formatEnum,
 } as const;
 
-export const deleteBookEntryShape = { id: z.number() } as const;
+export const deleteBookEntryShape = { id: entryId } as const;
 
 export type ListBooksArgs = z.infer<z.ZodObject<typeof listBooksShape>>;
 export type GetBookArgs = z.infer<z.ZodObject<typeof getBookShape>>;

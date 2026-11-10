@@ -14,35 +14,39 @@ import {
 } from '../handlers/cooklog.js';
 
 
+const page = z.number().optional().describe('Page number, starting at 1.');
+const pageSize = z.number().optional().describe('Results per page.');
+const cookLogId = z.number().describe('Cook log ID, from list_cook_logs.');
+
 export const listCookLogsShape = {
-  recipe: z.number().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  recipe: z.number().optional().describe('Only entries for this recipe ID, from search_recipes.'),
+  page,
+  page_size: pageSize,
   format: formatEnum,
 } as const;
 
-export const getCookLogShape = { id: z.number(), format: formatEnum } as const;
+export const getCookLogShape = { id: cookLogId, format: formatEnum } as const;
 
 export const createCookLogShape = {
-  recipe: z.number(),
-  servings: z.number().nullable().optional(),
-  rating: z.number().nullable().optional(),
-  comment: z.string().nullable().optional(),
-  created_at: z.string().optional(),
+  recipe: z.number().describe('Recipe ID, from search_recipes.'),
+  servings: z.number().nullable().optional().describe('Servings made.'),
+  rating: z.number().nullable().optional().describe('Whole-number rating.'),
+  comment: z.string().nullable().optional().describe('Free-text comment.'),
+  created_at: z.string().optional().describe('When it was cooked, ISO 8601 datetime. Default now.'),
   format: formatEnum,
 } as const;
 
 export const updateCookLogShape = {
-  id: z.number(),
-  recipe: z.number().optional(),
-  servings: z.number().nullable().optional(),
-  rating: z.number().nullable().optional(),
-  comment: z.string().nullable().optional(),
-  created_at: z.string().optional(),
+  id: cookLogId,
+  recipe: z.number().optional().describe('Recipe ID, from search_recipes.'),
+  servings: z.number().nullable().optional().describe('Servings made. null clears it.'),
+  rating: z.number().nullable().optional().describe('Whole-number rating. null clears it.'),
+  comment: z.string().nullable().optional().describe('Free-text comment. null clears it.'),
+  created_at: z.string().optional().describe('When it was cooked, ISO 8601 datetime.'),
   format: formatEnum,
 } as const;
 
-export const deleteCookLogShape = { id: z.number() } as const;
+export const deleteCookLogShape = { id: cookLogId } as const;
 
 export type ListCookLogsArgs = z.infer<z.ZodObject<typeof listCookLogsShape>>;
 export type GetCookLogArgs = z.infer<z.ZodObject<typeof getCookLogShape>>;

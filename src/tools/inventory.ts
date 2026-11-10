@@ -20,93 +20,98 @@ import {
   handleGetInventoryLog,
 } from '../handlers/inventory.js';
 
+const page = z.number().optional().describe('Page number, starting at 1.');
+const pageSize = z.number().optional().describe('Results per page.');
+const locationId = z.number().describe('Inventory location ID, from list_inventory_locations.');
+const entryId = z.number().describe('Inventory entry ID, from list_inventory_entries.');
+
 export const listInventoryLocationsShape = {
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  page,
+  page_size: pageSize,
   format: formatEnum,
 } as const;
 
-export const getInventoryLocationShape = { id: z.number(), format: formatEnum } as const;
+export const getInventoryLocationShape = { id: locationId, format: formatEnum } as const;
 
 export const createInventoryLocationShape = {
-  name: z.string(),
-  is_freezer: z.boolean().optional(),
+  name: z.string().describe('Location name, up to 64 characters.'),
+  is_freezer: z.boolean().optional().describe('Location is a freezer. Default false.'),
   format: formatEnum,
 } as const;
 
 export const updateInventoryLocationShape = {
-  id: z.number(),
-  name: z.string().optional(),
-  is_freezer: z.boolean().optional(),
+  id: locationId,
+  name: z.string().optional().describe('Location name, up to 64 characters.'),
+  is_freezer: z.boolean().optional().describe('Location is a freezer.'),
   format: formatEnum,
 } as const;
 
-export const deleteInventoryLocationShape = { id: z.number() } as const;
+export const deleteInventoryLocationShape = { id: locationId } as const;
 
 export const listInventoryEntriesShape = {
-  location_id: z.number().optional(),
-  food_id: z.number().optional(),
-  include_empty: z.boolean().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  location_id: z.number().optional().describe('Only entries at this location ID, from list_inventory_locations.'),
+  food_id: z.number().optional().describe('Only entries for this food ID, from list_foods.'),
+  include_empty: z.boolean().optional().describe('Include entries with amount 0 or less. Default false.'),
+  page,
+  page_size: pageSize,
   format: formatEnum,
 } as const;
 
-export const getInventoryEntryShape = { id: z.number(), format: formatEnum } as const;
+export const getInventoryEntryShape = { id: entryId, format: formatEnum } as const;
 
 export const addInventoryItemShape = {
-  food_id: z.number(),
-  unit_id: z.number(),
-  amount: z.number().positive(),
-  location_id: z.number(),
-  expires: z.iso.date().optional(),
-  sub_location: z.string().optional(),
-  note: z.string().optional(),
-  code: z.string().optional(),
+  food_id: z.number().describe('Food ID, from list_foods.'),
+  unit_id: z.number().describe('Unit ID, from list_units.'),
+  amount: z.number().positive().describe('Amount, in unit_id.'),
+  location_id: locationId,
+  expires: z.iso.date().optional().describe('Expiry date, YYYY-MM-DD.'),
+  sub_location: z.string().optional().describe('Spot within the location, such as a shelf.'),
+  note: z.string().optional().describe('Free-text note, up to 256 characters.'),
+  code: z.string().optional().describe('Short label, up to 16 characters. Default: the entry ID in hex.'),
   format: formatEnum,
 } as const;
 
 export const updateInventoryEntryShape = {
-  id: z.number(),
-  food_id: z.number().optional(),
-  unit_id: z.number().optional(),
-  amount: z.number().nonnegative().optional(),
-  location_id: z.number().optional(),
-  expires: z.iso.date().nullable().optional(),
-  sub_location: z.string().nullable().optional(),
-  note: z.string().nullable().optional(),
-  code: z.string().optional(),
+  id: entryId,
+  food_id: z.number().optional().describe('Food ID, from list_foods.'),
+  unit_id: z.number().optional().describe('Unit ID, from list_units.'),
+  amount: z.number().nonnegative().optional().describe('Amount, in the entry unit.'),
+  location_id: z.number().optional().describe('Inventory location ID, from list_inventory_locations.'),
+  expires: z.iso.date().nullable().optional().describe('Expiry date, YYYY-MM-DD. null clears it.'),
+  sub_location: z.string().nullable().optional().describe('Spot within the location. null clears it.'),
+  note: z.string().nullable().optional().describe('Free-text note, up to 256 characters. null clears it.'),
+  code: z.string().optional().describe('Short label, up to 16 characters.'),
   format: formatEnum,
 } as const;
 
-export const deleteInventoryEntryShape = { id: z.number() } as const;
+export const deleteInventoryEntryShape = { id: entryId } as const;
 
 export const consumeInventoryItemShape = {
-  entry_id: z.number().optional(),
-  food_id: z.number().optional(),
-  location_id: z.number().optional(),
-  amount: z.number().positive().optional(),
-  all: z.literal(true).optional(),
-  unit_id: z.number().optional(),
+  entry_id: z.number().optional().describe('Inventory entry ID, from list_inventory_entries. Give this or food_id.'),
+  food_id: z.number().optional().describe('Food ID, from list_foods. Give this or entry_id.'),
+  location_id: z.number().optional().describe('Narrows food_id to this location. Not with entry_id.'),
+  amount: z.number().positive().optional().describe('Amount to use, in the entry unit.'),
+  all: z.literal(true).optional().describe('Use up the whole entry instead of an amount.'),
+  unit_id: z.number().optional().describe('Must equal the entry unit. No conversion.'),
   format: formatEnum,
 } as const;
 
 export const moveInventoryItemShape = {
-  entry_id: z.number(),
-  to_location_id: z.number(),
-  sub_location: z.string().nullable().optional(),
+  entry_id: entryId,
+  to_location_id: z.number().describe('Target location ID, from list_inventory_locations.'),
+  sub_location: z.string().nullable().optional().describe('Spot within the new location. null clears it.'),
   format: formatEnum,
 } as const;
 
 export const listInventoryLogsShape = {
-  entry_id: z.number().optional(),
-  food_id: z.number().optional(),
-  page: z.number().optional(),
-  page_size: z.number().optional(),
+  entry_id: z.number().optional().describe('Only rows for this inventory entry ID.'),
+  food_id: z.number().optional().describe('Only rows for this food ID.'),
+  page,
+  page_size: pageSize,
   format: formatEnum,
 } as const;
 
-export const getInventoryLogShape = { id: z.number(), format: formatEnum } as const;
+export const getInventoryLogShape = { id: z.number().describe('Inventory log ID, from list_inventory_logs.'), format: formatEnum } as const;
 
 export type ListInventoryLocationsArgs = z.infer<z.ZodObject<typeof listInventoryLocationsShape>>;
 export type GetInventoryLocationArgs = z.infer<z.ZodObject<typeof getInventoryLocationShape>>;
