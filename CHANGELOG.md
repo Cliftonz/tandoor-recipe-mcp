@@ -14,8 +14,8 @@ All notable changes to this project are documented in this file.
 ### Fixed
 - Three tool descriptions that contradicted Tandoor: `food_batch_update` no longer claims `category: null` clears the category (Tandoor sets a category only when that ID exists, and null changes nothing); `food_ai_properties` now says `provider` is required instead of defaulting to the workspace provider; `export_recipes` lists integration names (DEFAULT, SAFFRON, RECIPESAGE) as types instead of json, zip and pdf, and notes that PDF is rejected.
 - **`update_search_preference` sets the search mode.** The `search` option listed values Tandoor rejects (PLAIN, PHRASE, RAW, WEB, FUZZY), so every call failed. It now takes `plain`, `phrase`, `websearch` or `raw`; fuzzy matching is the separate `lookup` setting.
-- Text-only `import_recipe_from_image` no longer fails with a 500. Tandoor reads a `file` field even when no file is uploaded, so the tool now always sends one.
-- `ai_step_sort` works. It now takes a required `provider_id` and returns the sorted recipe without saving it; save the result with `update_recipe`.
+- **Text-only `import_recipe_from_image` works.** Every call with `text` and no file failed with a Tandoor 500, because Tandoor needs a `file` part in the form even when no file is uploaded. The tool now sends an empty `file` part when there is no file.
+- **`ai_step_sort` works, and `provider_id` is now required.** This is a breaking input change: calls without `provider_id` now fail validation. Every call failed before, because the tool sent no AI provider and sent only the recipe id where Tandoor expects the full recipe. The tool now sends the full recipe with the provider and returns the sorted recipe without saving it; save the result with `update_recipe`.
 
 ## 3.4.4 / 2026-11-08
 

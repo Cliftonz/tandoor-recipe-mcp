@@ -13,20 +13,25 @@ Import the recipe by the route that fits the source. Then review what Tandoor sa
 | --- | --- | --- |
 | A web page | `import_recipe_from_url` | `recipes` |
 | A photo, scan or PDF | `import_recipe_from_image` | `ai` |
-| Text the user typed or pasted | `parse_ingredient`, then `create_recipe` | `foods`, `recipes` |
+| Text the user typed or pasted, with an AI provider | `import_recipe_from_image` | `ai` |
+| Text the user typed or pasted, without an AI provider | `parse_ingredient`, then `create_recipe` | `foods`, `recipes` |
+
+`import_recipe_from_image` is in the `ai` section, which is off by default. On a local server, turn it on with `enable_tool_group`. See [Missing tools](#missing-tools).
 
 ### Web page
 
 Call `import_recipe_from_url` with the URL. The server first asks Tandoor's scraper to read the page. If that fails, the server fetches the page itself and reads the schema.org recipe data in it. The result names the recipe and its id.
 
-### Photo, scan or PDF
+### Photo, scan, PDF or text through AI
 
-`import_recipe_from_image` sends the file to the AI provider configured in Tandoor. It works only when the space has an AI provider (Tandoor Settings, AI). Call `list_ai_providers` to check. If the list is empty, tell the user an admin must add one, and offer the typed-text route instead.
+`import_recipe_from_image` sends the file or text to the AI provider configured in Tandoor. It works only when the space has an AI provider (Tandoor Settings, AI). Call `list_ai_providers` to check. If the list is empty, tell the user an admin must add one, and offer the typed-text route instead.
 
-Give the file in one of two ways:
+Give a file in one of two ways:
 
 - file_path: an absolute path on the machine that runs the MCP server.
 - file_url: a link to the image or PDF. The server downloads it and uploads the bytes.
+
+For pasted text, pass it as text and leave out file_path and file_url.
 
 When the image is blurry, handwritten or in another language, set save to false first. The tool then returns the parse without saving it. Show the user what the AI read, and import again with save left on once they agree.
 

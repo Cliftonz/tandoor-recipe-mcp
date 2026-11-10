@@ -281,14 +281,14 @@ export function registerAdminTools(server: McpServer, client: TandoorClient): vo
 
   registerStringTool(server, client, 'food_ai_properties', {
     title: 'Generate food properties with AI',
-    annotations: CREATE,
+    annotations: { ...CREATE, openWorldHint: true },
     description: 'Enrich a food with AI-generated properties (fallback path when USDA FDC is incomplete). Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend: (1) prefer food_fdc_lookup when the food has an fdc_id, since it is deterministic, free, and does not need AI setup; (2) otherwise ask the operator to add an AI provider in Tandoor Settings → AI (OpenAI/Anthropic/Ollama/etc.).',
     inputSchema: foodAiPropertiesShape,
   }, handleFoodAiProperties);
 
   registerStringTool(server, client, 'recipe_ai_properties', {
     title: 'Generate recipe properties with AI',
-    annotations: CREATE,
+    annotations: { ...CREATE, openWorldHint: true },
     description: 'Have AI compute nutrition/properties for a full recipe. Requires a configured AI provider on the Tandoor server (check via list_ai_providers). If none is configured, recommend the operator add one in Tandoor Settings → AI. For single-ingredient nutrition use food_fdc_lookup instead (deterministic, no AI setup required).',
     inputSchema: recipeAiPropertiesShape,
   }, handleRecipeAiProperties);

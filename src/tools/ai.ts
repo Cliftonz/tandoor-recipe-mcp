@@ -84,7 +84,7 @@ export function registerAiTools(server: McpServer, client: TandoorClient): void 
     title: 'Import recipe from image',
     annotations: { ...CREATE, openWorldHint: true },
     description:
-      'Import a recipe from an image, PDF, or text via Tandoor AI provider. Provide one of: file_path (local file readable by the MCP server), file_url (remote URL we fetch then upload), or text. By default the parsed recipe is saved to Tandoor; pass save=false to only return the parse result. ai_provider_id is auto-picked if omitted. If no AI provider is configured, this tool cannot work. Recommend: (1) ask the operator to add one in Tandoor Settings → AI; (2) for web recipes, fall back to import_recipe_from_url (uses Tandoor scraper + JSON-LD, no AI required); (3) for text-only input, type up the structure manually via create_recipe.',
+      'Import a recipe from an image, PDF, or text via Tandoor AI provider. Provide at least one of: file_path (local file readable by the MCP server), file_url (remote URL we fetch then upload), or text (raw recipe text; works without a file). By default the parsed recipe is saved to Tandoor; pass save=false to only return the parse result. ai_provider_id is auto-picked if omitted. If no AI provider is configured, this tool cannot work. Recommend: (1) ask the operator to add one in Tandoor Settings → AI; (2) for web recipes, fall back to import_recipe_from_url (uses Tandoor scraper + JSON-LD, no AI required); (3) for text input, build the recipe with create_recipe instead.',
     inputSchema: aiImportRecipeShape,
   }, handleAiImportRecipe);
 
@@ -118,8 +118,8 @@ export function registerAiTools(server: McpServer, client: TandoorClient): void 
 
   registerStringTool(server, client, 'ai_step_sort', {
     title: 'Sort recipe steps with AI',
-    annotations: CREATE,
-    description: 'Preview an AI sort of a recipe\'s steps. Returns the recipe with sorted steps without saving it; save with update_recipe. Required: recipe_id, provider_id.',
+    annotations: { ...CREATE, openWorldHint: true },
+    description: 'Preview an AI sort of a recipe\'s steps. Returns the recipe with sorted steps without saving it. The AI output is not validated, so check it before saving with update_recipe. Required: recipe_id, provider_id.',
     inputSchema: aiStepSortShape,
   }, handleAiStepSort);
 }
