@@ -52,7 +52,7 @@ See [CHANGELOG.md](CHANGELOG.md) for earlier releases.
 - **Per-section tool settings.** One env var per section (recipes, meal plan, shopping, and so on) sets it. Tiered sections take `off`, `simple`, or `full`. Toggle sections take `off` or `on`. In stdio mode the LLM can turn a hidden section on mid-session with `enable_tool_group`. See [Tool sections](#tool-sections).
 - **jq stash for large payloads.** Responses larger than 5KB return a stash handle plus a schema summary; the LLM follows up with `jq_query` to project just the fields it needs.
 - **3-stage URL import with a real fallback.** Tries Tandoor's native scraper first, then extracts schema.org JSON-LD from the page directly (works when Tandoor can't reach the URL or doesn't support the site), with an optional stub-on-failure escape hatch.
-- **AI import from images / PDFs.** Multipart upload to Tandoor's `ai-import/` endpoint, saves the parsed recipe.
+- **AI import from text, images or PDFs.** Multipart upload to Tandoor's `ai-import/` endpoint, saves the parsed recipe.
 - **Local or remote.** Stdio (default, for Claude Desktop / Claude Code), stateless HTTP (for out-of-Claude callers), or [remote mode](#remote-mode): a self-hosted server with OAuth sign-in that Claude and ChatGPT connect to as a custom connector.
 - **Destructive-action safety layer.** Every tree-shaped delete has a `preview_*` sibling that projects the cascade before it runs; every token-mint tool leads with an ESCALATION SURFACE warning.
 

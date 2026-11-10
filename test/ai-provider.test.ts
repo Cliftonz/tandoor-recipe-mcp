@@ -251,3 +251,26 @@ describe('ai_step_sort', () => {
     expect(JSON.parse(res)).toEqual(sorted);
   });
 });
+
+describe('aiImport', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('sends an empty string file part with text-only input, which Tandoor requires', async () => {
+    const bodies: FormData[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+      bodies.push(init!.body as FormData);
+      return new Response(JSON.stringify({ recipe: null }), { status: 200 });
+    });
+    const client = new TandoorClient({ url: 'https://tandoor.test', token: 't' });
+
+    await client.ai.aiImport({ ai_provider_id: 3, text: 'Pancakes. Whisk and fry.' });
+
+    expect(bodies).toHaveLength(1);
+    expect(Object.fromEntries(bodies[0].entries())).toEqual({
+      ai_provider_id: '3',
+      text: 'Pancakes. Whisk and fry.',
+      recipe_id: '',
+      file: '',
+    });
+  });
+});

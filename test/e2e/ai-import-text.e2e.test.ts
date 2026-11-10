@@ -5,7 +5,7 @@ import { COVERS } from './helpers/coverage.js';
 const url = process.env.TANDOOR_URL;
 const token = process.env.TANDOOR_TOKEN;
 
-describe.skipIf(!(url && token))('import_recipe_from_image text-only against live Tandoor', () => {
+(url && token ? describe : describe.skip)('import_recipe_from_image text-only against live Tandoor', () => {
   const prefix = `e2e-ait-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   let s: Surface;
   let providerId: number;
