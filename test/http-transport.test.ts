@@ -570,7 +570,7 @@ describe('createHttpTransport round-trip', () => {
         expect(parsed.error.message).toBe('Shutting down');
       }
     } catch {
-      // Connection refused after close is acceptable — still counts as "not serving".
+      // Connection refused after close is acceptable; still counts as "not serving".
       seen503 = true;
     }
     await stopping;

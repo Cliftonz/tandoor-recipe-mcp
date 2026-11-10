@@ -31,7 +31,7 @@ describe('evaluateVersion', () => {
     ['2', 'unsupported'], // bare major, minor taken as 0
     ['1.5.35', 'unsupported'],
     ['0.9', 'unsupported'],
-    ['v2.1', 'unknown'], // v-prefix is NOT parsed — fails the digit-first shape
+    ['v2.1', 'unknown'], // v-prefix is NOT parsed; fails the digit-first shape
     ['2-garbage', 'unknown'], // parseInt would say 2; strict parse refuses
     ['develop', 'unknown'],
     ['', 'unknown'],

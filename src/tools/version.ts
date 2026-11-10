@@ -1,4 +1,4 @@
-// `get_version` — lets the LLM (and therefore the user) ask which MCP server
+// `get_version`: lets the LLM (and therefore the user) ask which MCP server
 // version is running and what Tandoor version/compatibility was detected at
 // startup. Answers from boot-time state; no network call.
 

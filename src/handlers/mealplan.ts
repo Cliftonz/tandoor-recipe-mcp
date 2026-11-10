@@ -1,9 +1,9 @@
 // Handlers for meal plan tools.
 //
 // ---- Tandoor MealPlanSerializer quirks (all enforced here) ----
-// 1. Nested `recipe` write must be `{id, name, keywords}` — bare `{id}` is 400.
+// 1. Nested `recipe` write must be `{id, name, keywords}`; bare `{id}` is 400.
 //    We hydrate `name` + `keywords` via GET /api/recipe/{id}/ before POST.
-// 2. Nested `meal_type` write must be `{id, name}` — bare `{id}` is 400.
+// 2. Nested `meal_type` write must be `{id, name}`; bare `{id}` is 400.
 //    We hydrate via GET /api/meal-type/{id}/ before POST.
 // 3. `servings` must be a string, not a number.
 // 4. `from_date` / `to_date` must include a time component; bare `YYYY-MM-DD`
@@ -57,7 +57,7 @@ function slimKeywords(keywords: unknown): { id: number; name: string }[] {
 
 /**
  * Wrap hydration-step errors so the LLM/on-call can tell which leg failed and
- * which tool call triggered it — not just "Tandoor API error: 404".
+ * which tool call triggered it, not just "Tandoor API error: 404".
  */
 function labelHydrationError<T>(
   p: Promise<T>,
@@ -273,7 +273,7 @@ export async function handleListMealTypes(
  * Client-side batched create_meal_plan. Tandoor has no server-side bulk
  * endpoint for meal plans, so we:
  *   1. Dedupe unique recipe_ids + meal_type_ids across entries.
- *   2. Hydrate each unique id ONCE (parallel Promise.all) — shares the cost
+ *   2. Hydrate each unique id ONCE (parallel Promise.all); shares the cost
  *      across all entries that reference the same recipe/meal_type.
  *   3. Build hydrated bodies + POST in parallel via Promise.allSettled so one
  *      Tandoor rejection doesn't tank the whole batch.
@@ -378,5 +378,5 @@ export async function handleBulkCreateMealPlans(
   return `${summary}\n\n${JSON.stringify({ count: args.entries.length, created, failed })}`;
 }
 
-// Test-only exports — not part of the public handler surface.
+// Test-only exports; not part of the public handler surface.
 export const __test__ = { appendMidnightIfDateOnly, slimKeywords, slimCreated };

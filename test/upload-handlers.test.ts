@@ -9,7 +9,7 @@ import { startStub, Stub } from './helpers/stub-http.js';
 import { mockClient } from './helpers/mock-client.js';
 import type { TandoorClient } from '../src/clients/index.js';
 
-// Typed mock — misspelled client methods fail at typecheck.
+// Typed mock: misspelled client methods fail at typecheck.
 const mock = (impl: Parameters<typeof mockClient<TandoorClient>>[0]) => mockClient<TandoorClient>(impl);
 
 let tmp: string;
@@ -17,7 +17,7 @@ beforeEach(() => { tmp = mkdtempSync(path.join(tmpdir(), 'upload-test-')); });
 afterEach(() => { rmSync(tmp, { recursive: true, force: true }); });
 
 // Handler-boundary path-guard tests. These prove the handler calls
-// assertSafeUploadPath BEFORE readFile AND uploadRecipeImage — a refactor
+// assertSafeUploadPath BEFORE readFile AND uploadRecipeImage; a refactor
 // that drops the guard from the handler would slip past path-guard's
 // own unit tests (Codex F1 high).
 describe('handler-boundary: upload_recipe_image refuses paths outside the allow-list', () => {
@@ -74,7 +74,7 @@ describe('handlers/recipe.ts upload_recipe_image branches', () => {
   it('image_url branch hands URL straight to Tandoor (no local fetch)', async () => {
     // image_url runs through assertPublicUrl strictly. example.test is RFC
     // 6761 reserved so the test-only env lets the URL through without
-    // real DNS — production paths use real domains and skip this branch.
+    // real DNS; production paths use real domains and skip this branch.
     process.env.TANDOOR_MCP_TEST_SKIP_URL_CHECK = '1';
     try {
       const upload = vi.fn().mockResolvedValue({ id: 1, image: '/p/1.png' });
@@ -118,7 +118,7 @@ describe('handlers/recipe.ts upload_recipe_image branches', () => {
     let mode: 'ok-png' | 'ok-no-ct' | 'fail' = 'ok-png';
 
     // Test stubs bind 127.0.0.1, which the SSRF guard refuses by default.
-    // Opt out for the duration of these tests — the real behavior is
+    // Opt out for the duration of these tests; the real behavior is
     // covered by test/safe-fetch.test.ts.
     beforeEach(() => { process.env.TANDOOR_MCP_ALLOW_PRIVATE_FETCH = '1'; });
     afterEach(() => { delete process.env.TANDOOR_MCP_ALLOW_PRIVATE_FETCH; });

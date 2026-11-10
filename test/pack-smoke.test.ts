@@ -6,7 +6,7 @@
 // `process.cwd()` instead of the package's own install location, so
 // everything worked in `npm test` (cwd = repo) and broke under any consumer
 // (cwd = user's project). The published tarball is the only test surface
-// that catches this — source tests cannot.
+// that catches this; source tests cannot.
 //
 // To actually exercise jq-wasm (QA F1), the stub returns a payload large
 // enough to trip the default stash threshold, and the scenario calls
@@ -75,7 +75,7 @@ beforeAll(async () => {
       if (req.url?.startsWith('/api/recipe/')) {
         return res.end(JSON.stringify(bigPayload()));
       }
-      // Top-level bare array — exercises the isJsonObject guard end-to-end
+      // Top-level bare array; exercises the isJsonObject guard end-to-end
       // through the packed binary, so a regression that re-introduces the
       // rc.x-class "expected: record" failure is caught here too (QA F10).
       if (req.url?.startsWith('/api/meal-type/')) {
@@ -118,7 +118,7 @@ describe('packed tarball smoke', () => {
         TANDOOR_URL: stub.url,
         TANDOOR_TOKEN: 'tok',
         // Low threshold guarantees the payload trips the stash gate so the
-        // jq path actually runs — this is the regression guard for the rc.2
+        // jq path actually runs; this is the regression guard for the rc.2
         // jq-wasm cwd-resolution bug. With the default 25KB threshold the
         // 80-row stub payload sits below the cutoff on some Node versions.
         TANDOOR_MCP_STASH_THRESHOLD: '500',
@@ -149,7 +149,7 @@ describe('packed tarball smoke', () => {
 
       const listed = await client.callTool({ name: 'list_recipes', arguments: { page_size: 80 } }) as any;
       expect(listed.isError).not.toBe(true);
-      // Must stash — 80 padded rows comfortably exceeds the default threshold.
+      // Must stash: 80 padded rows comfortably exceeds the default threshold.
       const sc = listed.structuredContent;
       expect(sc?.stashed).toBe(true);
       const handle = sc?.handle as string;

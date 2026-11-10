@@ -54,7 +54,7 @@ function sketch(value: unknown, depth: number): unknown {
         count++;
       }
       const item: Record<string, unknown> = { type: 'object', keys };
-      // _truncated lives on the wrapper, not inside keys — so a real
+      // _truncated lives on the wrapper, not inside keys, so a real
       // upstream key literally named "_truncated" cannot collide.
       if (keyTypes.size > MAX_KEYS) item._truncated = keyTypes.size - MAX_KEYS;
       out.item = item;

@@ -73,7 +73,7 @@ export class RecipeClient extends BaseClient {
   }
 
   /**
-   * List recipes in the "flat" projection — just id/name/image per row, no
+   * List recipes in the "flat" projection: just id/name/image per row, no
    * keywords/foods/steps. Cheaper than listRecipes for large browse-style
    * queries. Tandoor's flat endpoint returns a bare array, not a paginated
    * envelope, and declares no query parameters in the OpenAPI spec.
@@ -85,7 +85,7 @@ export class RecipeClient extends BaseClient {
   /**
    * Remove only the external-source link on a recipe (source_url + external
    * flags). The recipe itself is preserved; this is not a delete. Tandoor
-   * models the endpoint as a PATCH accepting a PatchedRecipe body — empty
+   * models the endpoint as a PATCH accepting a PatchedRecipe body; empty
    * object is enough because the server-side action ignores it.
    */
   async deleteRecipeExternal(id: number): Promise<Recipe> {
@@ -97,7 +97,7 @@ export class RecipeClient extends BaseClient {
 
   /**
    * Get a single recipe by ID. Optional `opts` lets callers pass an AbortSignal
-   * and cap retries — useful when this GET is a hydration step whose failure
+   * and cap retries, useful when this GET is a hydration step whose failure
    * should not burn the full retry budget of a larger operation.
    *
    * Known payload cost: Tandoor's recipe detail endpoint returns the full
@@ -171,7 +171,7 @@ export class RecipeClient extends BaseClient {
   /**
    * Batch-update keyword tags, serving counts, shared users, privacy, and a
    * handful of other flags across many recipes in one call. Narrow set of
-   * fields — see RecipeBatchUpdate in the Tandoor API spec. Use for bulk
+   * fields; see RecipeBatchUpdate in the Tandoor API spec. Use for bulk
    * keyword retagging ("add keyword X to these 50 recipes") rather than
    * arbitrary per-recipe edits.
    */
@@ -215,7 +215,7 @@ export class RecipeClient extends BaseClient {
 
   /**
    * Scrape a recipe from a URL (or raw source data) using Tandoor's extractor.
-   * Returns the parsed recipe structure — NOT persisted. Caller must POST to
+   * Returns the parsed recipe structure, NOT persisted. Caller must POST to
    * /api/recipe/ to save.
    */
   async recipeFromSource(params: { url?: string; data?: string }): Promise<any> {
@@ -228,7 +228,7 @@ export class RecipeClient extends BaseClient {
   /**
    * Generic find-or-create. Handles the common race where two concurrent
    * callers both miss the lookup, both POST create, and one hits a uniqueness
-   * violation. On 400/409 we re-list and return whichever one won — no
+   * violation. On 400/409 we re-list and return whichever one won, no
    * duplicates, no user-facing error.
    *
    * Tandoor returns 400 (not 409) for uniqueness violations on keyword/food,
@@ -255,7 +255,7 @@ export class RecipeClient extends BaseClient {
         body: JSON.stringify({ name }),
       });
     } catch (err) {
-      // Another caller beat us to the insert — re-lookup and return their row.
+      // Another caller beat us to the insert; re-lookup and return their row.
       const msg = err instanceof Error ? err.message : String(err);
       if (/400|409|already exists|unique/i.test(msg)) {
         const raced = await doLookup();

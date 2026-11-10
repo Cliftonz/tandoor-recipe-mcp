@@ -8,18 +8,18 @@
 // file_path pointing at a secret. The data flows out as recipe-image bytes.
 //
 // Defense layers:
-//   1. **Allow-list with realpath** — every file_path argument is checked
+//   1. **Allow-list with realpath**: every file_path argument is checked
 //      against a configured set of roots. Symlinks are resolved to their
 //      real path before comparison so a symlink pointing outside the
 //      allow-list cannot smuggle access.
-//   2. **TOCTOU-resistant open** — handlers use `openSafeUpload` which
+//   2. **TOCTOU-resistant open**: handlers use `openSafeUpload` which
 //      opens with O_NOFOLLOW (where available) and re-stats the file
 //      descriptor against the inode + device captured during validation.
 //      An attacker who swaps the file for a symlink between validate and
 //      read is detected.
 //
 // Configuration:
-//   TANDOOR_MCP_UPLOAD_ROOT — colon-separated list (POSIX) / semicolon
+//   TANDOOR_MCP_UPLOAD_ROOT: colon-separated list (POSIX) / semicolon
 //     (Windows) of allowed root paths. `~` and `$HOME` expand to homedir.
 //     - UNSET → defaults to ~/Downloads, ~/Pictures, ~/Documents, os.tmpdir().
 //     - SET to empty/whitespace → explicit deny-all (every upload rejected).
@@ -45,7 +45,7 @@ export function expandHome(p: string): string {
 
 /**
  * Parse the configured root list (the user-supplied form). Distinguishes
- * unset (defaults) from set-but-empty (deny-all). Pure — no fs access.
+ * unset (defaults) from set-but-empty (deny-all). Pure: no fs access.
  */
 export function getAllowedRoots(env: NodeJS.ProcessEnv = process.env): string[] {
   const raw = env.TANDOOR_MCP_UPLOAD_ROOT;
@@ -59,7 +59,7 @@ export function getAllowedRoots(env: NodeJS.ProcessEnv = process.env): string[] 
       tmpdir(),
     ];
   }
-  // Explicit empty (incl. whitespace-only) is deny-all — distinct from unset.
+  // Explicit empty (incl. whitespace-only) is deny-all; distinct from unset.
   if (raw.trim() === '') return [];
   return raw.split(DELIM)
     .map((p) => p.trim())
@@ -70,7 +70,7 @@ export function getAllowedRoots(env: NodeJS.ProcessEnv = process.env): string[] 
 interface ResolvedRoots {
   /** Roots that resolved cleanly (used for the under-check). */
   resolved: string[];
-  /** Roots configured but failed to resolve — surfaced to operator + user. */
+  /** Roots configured but failed to resolve; surfaced to operator + user. */
   unreachable: string[];
 }
 
@@ -92,7 +92,7 @@ async function getResolvedRoots(env: NodeJS.ProcessEnv = process.env): Promise<R
       unreachable.push(r);
       if (!_loggedUnreachable.has(r)) {
         _loggedUnreachable.add(r);
-        // Stderr — visible to the operator. Not echoed to the LLM unless
+        // Stderr: visible to the operator. Not echoed to the LLM unless
         // a rejection fires (rejection message includes the list).
         console.error(`[tandoor-mcp] upload root unresolvable (check TANDOOR_MCP_UPLOAD_ROOT): ${r}`);
       }
@@ -137,8 +137,8 @@ export interface ValidatedPath {
  * caller can verify the same file is being read (TOCTOU defense). Throws
  * `PathGuardError` with operator-actionable wording on any rejection.
  *
- * **Callers must open the returned `safePath` via `openSafeUpload` — not
- * `readFile` — to keep the TOCTOU defense intact.**
+ * **Callers must open the returned `safePath` via `openSafeUpload`, not
+ * `readFile`, to keep the TOCTOU defense intact.**
  */
 export async function assertSafeUploadPath(userPath: string): Promise<ValidatedPath> {
   if (isRemoteMode()) {
@@ -151,7 +151,7 @@ export async function assertSafeUploadPath(userPath: string): Promise<ValidatedP
   let stat: BigIntStats;
   let real: string;
   try {
-    // bigint mode so ino/dev are bigint — matches fh.stat({ bigint: true })
+    // bigint mode so ino/dev are bigint; matches fh.stat({ bigint: true })
     // used in openSafeUpload, no cross-type comparison gymnastics.
     stat = await lstat(expanded, { bigint: true });
     real = await realpath(expanded);
@@ -179,9 +179,9 @@ export async function assertSafeUploadPath(userPath: string): Promise<ValidatedP
 /**
  * Open a validated upload path with TOCTOU protection.
  *
- * 1. O_NOFOLLOW where supported (POSIX) — open refuses if the path is now
+ * 1. O_NOFOLLOW where supported (POSIX): open refuses if the path is now
  *    a symlink (it wasn't at validation time, so a swap was attempted).
- * 2. Post-open fstat — re-checks the file's inode + device against what
+ * 2. Post-open fstat: re-checks the file's inode + device against what
  *    validation saw. A rename/replace race between validate and open
  *    surfaces as `PathGuardError` instead of silently uploading the
  *    wrong file.

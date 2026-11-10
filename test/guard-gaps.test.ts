@@ -32,7 +32,7 @@ import { mockClient } from './helpers/mock-client.js';
 const mock = (impl: Parameters<typeof mockClient<TandoorClient>>[0]) => mockClient<TandoorClient>(impl);
 
 // ============================================================
-// T1 — guard counters + get_guard_stats
+// T1: guard counters + get_guard_stats
 // ============================================================
 describe('guard rejection counters', () => {
   const client = new TandoorClient({ url: 'https://x.test', token: 't' });
@@ -123,7 +123,7 @@ describe('guard rejection counters', () => {
 });
 
 // ============================================================
-// T6 — guard log line format
+// T6: guard log line format
 // ============================================================
 describe('guard log line format', () => {
   const client = new TandoorClient({ url: 'https://x.test', token: 't' });
@@ -191,7 +191,7 @@ describe('guard log line format', () => {
 });
 
 // ============================================================
-// T2 — image_url SSRF handler-boundary (mirror of url-import)
+// T2: image_url SSRF handler-boundary (mirror of url-import)
 // ============================================================
 describe('upload_recipe_image image_url SSRF rejections', () => {
   beforeEach(() => {
@@ -219,7 +219,7 @@ describe('upload_recipe_image image_url SSRF rejections', () => {
 
   it('image_url strict pre-check ignores TANDOOR_MCP_ALLOW_PRIVATE_FETCH', async () => {
     // Even with the dev opt-out on, image_url goes to Tandoor server-side.
-    // Tandoor in a cloud VPC could reach IMDS — must stay strict.
+    // Tandoor in a cloud VPC could reach IMDS; must stay strict.
     process.env.TANDOOR_MCP_ALLOW_PRIVATE_FETCH = '1';
     try {
       const upload = vi.fn();
@@ -251,7 +251,7 @@ describe('upload_recipe_image image_url SSRF rejections', () => {
 });
 
 // ============================================================
-// T3 — TEST_SKIP_URL_CHECK escape-hatch scoping
+// T3: TEST_SKIP_URL_CHECK escape-hatch scoping
 // ============================================================
 describe('TANDOOR_MCP_TEST_SKIP_URL_CHECK is scoped to reserved TLDs', () => {
   beforeEach(() => {
@@ -262,7 +262,7 @@ describe('TANDOOR_MCP_TEST_SKIP_URL_CHECK is scoped to reserved TLDs', () => {
   });
 
   it('reserved .test TLD bypasses DNS via the escape hatch', async () => {
-    // No resolver injected — if the escape hatch didn't fire we'd hit real
+    // No resolver injected; if the escape hatch didn't fire we'd hit real
     // DNS which would NXDOMAIN. The mock fetch never fires because we have
     // no real stub; we just confirm the pre-DNS rejection path was skipped
     // and the call proceeds far enough to hit fetch failure (not SSRF).
@@ -276,11 +276,11 @@ describe('TANDOOR_MCP_TEST_SKIP_URL_CHECK is scoped to reserved TLDs', () => {
   });
 
   it('non-reserved TLD (.com) still goes through DNS even with escape hatch set', async () => {
-    // attacker.com has no resolver injected — assertSafeUrl performs real DNS.
+    // attacker.com has no resolver injected; assertSafeUrl performs real DNS.
     // The lookup will resolve (or NXDOMAIN), but either way the SSRF guard
     // controls the path. We assert fetch was NOT called via test-skip (since
     // the escape hatch only fires for reserved TLDs, real DNS gates this).
-    // Mock the real DNS to point at IMDS — must reject on always-forbidden.
+    // Mock the real DNS to point at IMDS; must reject on always-forbidden.
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     try {
       await expect(safeFetch('http://attacker.com/loot', {}, {
@@ -294,7 +294,7 @@ describe('TANDOOR_MCP_TEST_SKIP_URL_CHECK is scoped to reserved TLDs', () => {
   });
 
   it('attacker-controlled hostname ending in non-reserved TLD is NOT a free pass', async () => {
-    // `127.0.0.1.attacker.com` — hostname ends in `.com`, not `.test`.
+    // `127.0.0.1.attacker.com`; hostname ends in `.com`, not `.test`.
     // Escape hatch must NOT fire. Resolver returns loopback (which a
     // hostile DNS could legitimately do); strict checks still gate it.
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
@@ -319,7 +319,7 @@ describe('TANDOOR_MCP_TEST_SKIP_URL_CHECK is scoped to reserved TLDs', () => {
 });
 
 // ============================================================
-// T4 — openSafeUpload symlink-swap race
+// T4: openSafeUpload symlink-swap race
 // ============================================================
 describe('openSafeUpload symlink-swap race', () => {
   let allowed: string;
@@ -363,7 +363,7 @@ describe('openSafeUpload symlink-swap race', () => {
 });
 
 // ============================================================
-// T5 — cross-origin Authorization header drop
+// T5: cross-origin Authorization header drop
 // ============================================================
 describe('safeFetch drops Authorization on cross-origin redirect', () => {
   beforeEach(() => {
@@ -395,7 +395,7 @@ describe('safeFetch drops Authorization on cross-origin redirect', () => {
         headers: {
           Authorization: 'Bearer SECRET',
           Cookie: 'session=ABC',
-          'X-Custom': 'keep-me', // non-credential — should pass through
+          'X-Custom': 'keep-me', // non-credential; should pass through
         },
       });
       const body = await res.json() as any;

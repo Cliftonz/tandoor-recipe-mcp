@@ -6,9 +6,9 @@
 //
 // Entries store the raw JSON *text* the handler produced, not the parsed
 // object. jq-wasm accepts a string input verbatim, so the handler can pass
-// `entry.text` straight through — no per-call re-serialization, and the
+// `entry.text` straight through with no per-call re-serialization; the
 // retained RAM is the JSON byte count (predictable) instead of a V8 object
-// graph (2–5× larger and unpredictable).
+// graph (2-5x larger and unpredictable).
 
 import { randomUUID } from 'node:crypto';
 
@@ -35,7 +35,7 @@ const DEFAULTS = {
 };
 
 // One-shot stderr warnings for bad env values. We don't want a noisy
-// per-tool-call log when an operator typos a number — one line per process
+// per-tool-call log when an operator typos a number; one line per process
 // is enough to surface the misconfiguration without flooding.
 const _warnedEnv = new Set<string>();
 function warnEnvOnce(name: string, value: string, fallback: string | number): void {
@@ -109,7 +109,7 @@ function sweepExpired(cfg: StashConfig): void {
 
 // Drop oldest entries until both caps are satisfied. `protectId` (set during
 // stashPut) keeps the just-inserted entry alive even if it is itself over
-// the byte cap — see stashPut's reject-oversized check for that case.
+// the byte cap; see stashPut's reject-oversized check for that case.
 function enforceCaps(cfg: StashConfig, protectId?: string): void {
   while (store.size > cfg.maxEntries || totalBytes > cfg.maxBytes) {
     const first = store.keys().next().value;

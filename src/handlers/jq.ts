@@ -1,11 +1,11 @@
 // Handler for the jq_query tool: looks up a stashed JSON payload by handle,
 // runs a jq filter against it via worker-isolated WebAssembly jq, returns
 // the result. If the result is still big, the register middleware re-stashes
-// it — recursion is handled by the same code path that handled the original.
+// it; recursion is handled by the same code path that handled the original.
 //
 // Untrusted inputs: both `handle` and `filter` come from the MCP client.
 // Tightening lives in src/tools/jq.ts (zod regex + length cap). Resource
-// limits — timeout + output cap — live in src/lib/jq-runner.ts.
+// limits (timeout + output cap) live in src/lib/jq-runner.ts.
 
 import { TandoorClient } from '../clients/index.js';
 import type { HandlerContext } from '../lib/register.js';
@@ -15,7 +15,7 @@ import { emit } from '../lib/slim.js';
 import type { JqQueryArgs } from '../tools/jq.js';
 
 // Lazy: re-read TANDOOR_MCP_LOG on each call so a long-running stdio server
-// honors verbosity changes without restart. Cheap — one env read + one tiny
+// honors verbosity changes without restart. Cheap: one env read + one tiny
 // Set per call (Observability F14).
 let _lastObservedLogRaw: string | undefined;
 function getLogModes(): Set<string> {
@@ -40,7 +40,7 @@ export async function handleJqQuery(
   const entry = stashGet(args.handle, cfg);
   if (!entry) {
     const { count } = stashStats();
-    // Generic phrasing — do not echo args.handle back into prose the LLM
+    // Generic phrasing; do not echo args.handle back into prose the LLM
     // will read next turn (the handle is attacker-shaped if the client is
     // compromised / confused). The remedy stays actionable.
     throw new Error(

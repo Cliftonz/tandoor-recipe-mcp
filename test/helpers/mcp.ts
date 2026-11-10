@@ -29,7 +29,7 @@ export interface RegisteredToolInfo {
    * the description snapshot so a refactor that drops a field, renames a
    * param, or relaxes a type shows up as a reviewable diff (QA F9).
    * `null` when the SDK serializer can't produce one (no inputSchema, or
-   * an SDK shape we don't recognize) — bias toward "snapshot null" over
+   * an SDK shape we don't recognize); bias toward "snapshot null" over
    * a noisy partial.
    */
   inputSchema: unknown;

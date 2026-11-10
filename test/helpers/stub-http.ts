@@ -1,7 +1,7 @@
 // Five places independently boot a localhost HTTP stub for tests
 // (stdio-protocol-e2e, pack-smoke, upload-handlers, ai-import-handler).
 // The listen-on-random-port + address-parse + teardown ceremony is identical
-// across them — the discriminating logic is the per-test request handler.
+// across them; the discriminating logic is the per-test request handler.
 // This helper extracts only the ceremony; the handler stays inline at each
 // call site so each test's actual surface is still local + obvious.
 

@@ -1,29 +1,29 @@
 // SSRF-safe fetch wrapper. Defends LLM-supplied URLs from reaching:
 //   - Loopback (127.0.0.0/8, ::1)
-//   - Link-local (169.254.0.0/16, fe80::/10) — includes cloud IMDS endpoints
+//   - Link-local (169.254.0.0/16, fe80::/10), including cloud IMDS endpoints
 //   - Private networks (10/8, 172.16/12, 192.168/16, fc00::/7, fd00::/8)
 //   - Unspecified addresses (0.0.0.0, ::)
 //
 // Threat: a prompt-injected LLM is fed a URL like `http://169.254.169.254/...`
 // (AWS/GCE/Azure metadata service) or `http://127.0.0.1:9200/_cluster/state`
 // (local Elasticsearch). The bytes flow into the MCP response and the LLM
-// can echo them back into the conversation — credentials leaked.
+// can echo them back into the conversation, leaking credentials.
 //
 // Defense: resolve the host via DNS BEFORE connecting AND pin the resolved
 // address into undici's dispatcher so the actual fetch connects to the
 // *exact* IP we validated. Without pinning, undici resolves DNS again
 // internally and a short-TTL attacker can flip the answer between our
-// validation and the connect — that's the classic DNS-rebinding bypass.
+// validation and the connect; that's the classic DNS-rebinding bypass.
 // Re-validate every redirect hop. The previous implementation used a
 // mutable module-scope resolver export which (a) didn't pin the connect
 // and (b) was a supply-chain risk; both are fixed here.
 //
 // Configuration:
-//   TANDOOR_MCP_ALLOW_PRIVATE_FETCH=1 — narrow opt-out: still resolves DNS,
+//   TANDOOR_MCP_ALLOW_PRIVATE_FETCH=1: a narrow opt-out that still resolves DNS,
 //     still blocks IMDS/link-local, but permits literal loopback / RFC1918
 //     for test stubs. Hostnames are NOT auto-allowed under this env (the
 //     prior behavior was to skip DNS entirely, which was a much wider hole
-//     than the docstring implied — see R3 security F2).
+//     than the docstring implied; see R3 security F2).
 
 import { lookup as defaultDnsLookup } from 'node:dns/promises';
 import net from 'node:net';
@@ -51,7 +51,7 @@ export interface SafeFetchOptions {
   dnsTimeoutMs?: number;
   /**
    * Strict mode ignores TANDOOR_MCP_ALLOW_PRIVATE_FETCH. Used for Tandoor-
-   * delegated URLs that the user supplies via tool args — those flow into
+   * delegated URLs that the user supplies via tool args; those flow into
    * Tandoor's own scraper and must never reach loopback even in dev.
    */
   strict?: boolean;
@@ -60,11 +60,11 @@ export interface SafeFetchOptions {
 }
 
 /**
- * True when `ip` is in a forbidden range. Pure function — exposed for tests.
+ * True when `ip` is in a forbidden range. Pure function, exposed for tests.
  *
  * IPv4 checks the four classic private blocks + loopback + link-local +
  * unspecified. IPv6 checks ::1, ::, fe80::/10 (link-local), and fc00::/7
- * (unique local — includes fc00::/8 and fd00::/8).
+ * (unique local, includes fc00::/8 and fd00::/8).
  */
 export function isPrivateIp(ip: string): boolean {
   if (net.isIPv4(ip)) {
@@ -87,19 +87,19 @@ export function isPrivateIp(ip: string): boolean {
     if (v4 && isPrivateIp(v4[1]!)) return true;
     return false;
   }
-  // Not a parseable IP — refuse to make a decision; treat as forbidden so a
+  // Not a parseable IP, so refuse to make a decision; treat as forbidden so a
   // malformed input doesn't fall through to the network layer.
   return true;
 }
 
 function isLinkLocalIPv6(lower: string): boolean {
-  // fe80::/10 covers fe80–febf in the first-byte high nibble.
+  // fe80::/10 covers fe80-febf in the first-byte high nibble.
   return lower.startsWith('fe8') || lower.startsWith('fe9') ||
          lower.startsWith('fea') || lower.startsWith('feb');
 }
 
 /**
- * Always-forbidden IPs — even when TANDOOR_MCP_ALLOW_PRIVATE_FETCH=1.
+ * Always-forbidden IPs, even when TANDOOR_MCP_ALLOW_PRIVATE_FETCH=1.
  * These are cloud metadata services that have no legitimate test/dev use
  * case and represent the highest-value exfil target (instance credentials).
  */
@@ -140,7 +140,7 @@ interface ValidatedUrl {
 
 /**
  * Validate a URL and resolve its host to the address we'll connect to.
- * Both the validation and the connect use the SAME address — no DNS
+ * Both the validation and the connect use the SAME address; no DNS
  * rebinding window between the two lookups. Exported so callers that
  * forward URLs to a downstream service (e.g. Tandoor's own scraper) can
  * pre-check without making a network call.
@@ -172,7 +172,7 @@ async function validateAndPin(rawUrl: string, opts: SafeFetchOptions): Promise<V
   // Test-only escape hatch: unit tests that mock fetch and use RFC-6761
   // reserved TLDs (.test, .example, .invalid, .localhost) cannot rely on
   // real DNS. When the test env is set AND the hostname is a reserved
-  // TLD, skip the DNS check — the mocked fetch never reaches a real host
+  // TLD, skip the DNS check; the mocked fetch never reaches a real host
   // so there's no SSRF risk. Production callers must never set this; the
   // env var name encodes that.
   const isReservedTld = /\.(test|example|invalid|localhost)$/i.test(host) || host === 'localhost';
@@ -196,7 +196,7 @@ async function validateAndPin(rawUrl: string, opts: SafeFetchOptions): Promise<V
     }
   }
   if (resolved.length === 0) {
-    // NODATA / empty A+AAAA. Refuse — otherwise undici's connect would
+    // NODATA / empty A+AAAA. Refuse; otherwise undici's connect would
     // perform its own DNS query, which is exactly the rebinding window
     // we're trying to close.
     throw new SsrfBlockedError(rawUrl, 'dns returned no addresses');
@@ -239,7 +239,7 @@ async function validateAndPin(rawUrl: string, opts: SafeFetchOptions): Promise<V
 /**
  * SSRF-safe `fetch`. Validates host (and every redirect hop) lives outside
  * loopback/RFC1918/link-local AND uses an undici Agent with `connect.lookup`
- * pinned to the validated address — so undici's internal DNS cannot rebind
+ * pinned to the validated address, so undici's internal DNS cannot rebind
  * between validation and connect.
  *
  * Throws `SsrfBlockedError` on any refused host.
@@ -264,7 +264,7 @@ export async function safeFetch(
   // prevent a redirect from leaking the bearer to a partner CDN / attacker
   // host. The web Fetch spec already does this for redirect: 'follow' but
   // we use 'manual' to re-validate per hop, so we have to enforce it
-  // ourselves. Today no caller passes Authorization to safeFetch — this is
+  // ourselves. Today no caller passes Authorization to safeFetch; this is
   // defensive against future callers adding one (e.g. authenticated recipe
   // imports from gated sites).
   let currentInit: RequestInit = { ...init };
@@ -344,8 +344,8 @@ function stripCredentialsHeaders(init: RequestInit): RequestInit {
 
 /**
  * Byte-capped fetch wrapper. Refuses oversized responses before reading the
- * body into memory. Use for upload handlers that buffer the entire response
- * — a hostile content-length header is a cheap DoS vector otherwise.
+ * body into memory. Use for upload handlers that buffer the entire response;
+ * a hostile content-length header is a cheap DoS vector otherwise.
  */
 export async function safeFetchBytes(
   url: string,

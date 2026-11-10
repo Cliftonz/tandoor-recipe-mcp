@@ -18,8 +18,8 @@
 # GitHub Actions (`scripts/tandoor-bootstrap.sh`).
 #
 # Env overrides:
-#   TANDOOR_TEST_DIR   — where docker-compose.yml lives (default: /tmp/tandoor-test)
-#   TANDOOR_TEST_PORT  — host port to expose (default: 8088)
+#   TANDOOR_TEST_DIR: where docker-compose.yml lives (default: /tmp/tandoor-test)
+#   TANDOOR_TEST_PORT: host port to expose (default: 8088)
 #   TANDOOR_IMAGE_TAG: vabene1111/recipes image tag, [0-9A-Za-z._-] only (default: latest)
 
 set -euo pipefail
@@ -103,7 +103,7 @@ echo "[tandoor-bootstrap] waiting for Tandoor on $URL …" >&2
 START=$(date +%s)
 DEADLINE=$(( START + 300 ))
 attempt=0
-# Wall-clock cadence — log when elapsed - last_log_t >= LOG_INTERVAL so the
+# Wall-clock cadence: log when elapsed - last_log_t >= LOG_INTERVAL so the
 # cadence stays at ~9s even if curl --max-time or sleep duration is tuned
 # later (Observability F10).
 LOG_INTERVAL="${TANDOOR_BOOTSTRAP_LOG_INTERVAL:-9}"
@@ -164,7 +164,7 @@ done
 # Deadline-on-exit log so a confusing OperationalError in bootstrap-django.log
 # can be traced to "migrations never settled" instead of "image schema broke".
 if [ "$last_pending" != "0" ]; then
-  echo "[tandoor-bootstrap] migrations did not settle within 120s (last pending=${last_pending}). Continuing — provisioning shell-exec will race the migrations lock if any remain." >&2
+  echo "[tandoor-bootstrap] migrations did not settle within 120s (last pending=${last_pending}). Continuing; provisioning shell-exec will race the migrations lock if any remain." >&2
 fi
 
 # Provision admin user + space + group + OAuth2 access token. Idempotent
@@ -220,7 +220,7 @@ print('__TOKEN__:' + tok.token)
 # release that adds a stdout warning won't silently break the bootstrap.
 TOKEN=$(echo "$RAW" | grep '^__TOKEN__:' | sed 's/^__TOKEN__://' | tail -1)
 
-# Shape validation — strong belt-and-braces against the F5/F6 stream-mixing
+# Shape validation: strong belt-and-braces against the F5/F6 stream-mixing
 # failure mode. token_urlsafe(32) produces 43 chars of URL-safe base64.
 if ! [[ "$TOKEN" =~ ^[A-Za-z0-9_-]{32,}$ ]]; then
   echo "[tandoor-bootstrap] token shape invalid (got ${#TOKEN} chars). Django log:" >&2
@@ -260,7 +260,7 @@ LOCAL_PDF_RECIPE_ID=$(sed -n 's/^__LOCAL_PDF__://p' <<<"$LOCAL_RAW")
 LOCAL_JPEG_RECIPE_ID=$(sed -n 's/^__LOCAL_JPEG__://p' <<<"$LOCAL_RAW")
 
 # When running in GitHub Actions, mask the token before anything else so GHA
-# redacts it in every subsequent log line — even an accidental future echo
+# redacts it in every subsequent log line; even an accidental future echo
 # would still get scrubbed. Then write the assignments to $GITHUB_ENV (also
 # auto-masked) and stay silent on stdout (Security F2).
 if [ -n "${GITHUB_ENV:-}" ]; then

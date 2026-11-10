@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BaseClient } from '../src/clients/base.js';
 
-// BaseClient is protected — subclass to expose `request` and surface the
+// BaseClient is protected; subclass to expose `request` and surface the
 // URL/options so we can assert what the client tried to send.
 class TestClient extends BaseClient {
   exec<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {

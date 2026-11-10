@@ -9,7 +9,7 @@
     {
       "name": "tandoor-recipes-mcp",
       "source": "./plugins/claude",
-      "description": "Tandoor Recipes MCP server — full Tandoor API coverage with resources, prompts, and AI URL/image import.",
+      "description": "Tandoor Recipes MCP server: full Tandoor API coverage with resources, prompts, and AI URL/image import.",
       "version": "3.4.4"
     }
   ]

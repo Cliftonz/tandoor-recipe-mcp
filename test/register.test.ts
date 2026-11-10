@@ -70,7 +70,7 @@ describe('registerStringTool structuredContent behavior', () => {
 
   // Lock the JSON-detection + structuredContent-mirror contract across every
   // top-level shape JSON can produce. tryExtractStructured currently only
-  // fires for `{` and `[` prefixes — but if that's ever widened, this matrix
+  // fires for `{` and `[` prefixes, but if that's ever widened, this matrix
   // catches a regression where primitives or null end up attached to
   // structuredContent (a strict SDK rejection mode).
   describe('structuredContent matrix across JSON top-level shapes', () => {
@@ -190,7 +190,7 @@ describe('registerStringTool structuredContent behavior', () => {
       delete process.env.TANDOOR_MCP_STASH_ENABLED;
       process.env.TANDOOR_MCP_STASH_THRESHOLD = '100';
       const server = freshServer();
-      // Deliberately do NOT register jq tools — simulates an operator who
+      // Deliberately do NOT register jq tools; simulates an operator who
       // filtered jq_query out via TANDOOR_MCP_EXCLUDE.
       const big = { results: Array.from({ length: 50 }, (_, i) => ({ id: i })) };
       registerStringTool(server, client, 'big_tool', {
@@ -199,7 +199,7 @@ describe('registerStringTool structuredContent behavior', () => {
       }, async () => JSON.stringify(big));
 
       const result = await invokeTool(server, 'big_tool', {});
-      // Raw payload comes through — no orphaned stash handle.
+      // Raw payload comes through; no orphaned stash handle.
       expect(result.structuredContent).toEqual(big);
       expect(stashStats().count).toBe(0);
     });

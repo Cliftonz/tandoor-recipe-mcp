@@ -24,14 +24,14 @@ import { isRemoteMode } from './lib/register.js';
 import { instanceKey, loadSavedSections } from './lib/section-store.js';
 import { SECTION_ENV_VARS, SectionSettingsError, formatSectionModes, parseSectionModes, type SectionModes } from './lib/sections.js';
 
-// dotenv is a dev convenience — only load it if it's available (it's a
+// dotenv is a dev convenience; only load it if it's available (it's a
 // devDependency, not a production dep). Real deployments inject env via the
 // MCP client config.
 try {
   const { config } = await import('dotenv');
   config();
 } catch {
-  // dotenv not installed — fine in production installs.
+  // dotenv not installed; fine in production installs.
 }
 
 const pluginOptionOr = (pluginOption: string, envVar: string): string | undefined =>
@@ -111,7 +111,7 @@ const httpCfg = tandoor.remote ? tandoor.httpCfg : localHttpCfg;
 
 // Resolve once at startup so the instructions string (sent to the client on
 // initialize) and the operator-facing startup log show the same effective
-// numbers — including any overrides from TANDOOR_MCP_STASH_*.
+// numbers, including any overrides from TANDOOR_MCP_STASH_*.
 const stashCfgAtBoot = getStashConfig();
 
 // Probe the Tandoor version at startup so an incompatibility

@@ -1,7 +1,7 @@
 // Spawns the built MCP server as a child process and drives it over real
 // stdio JSON-RPC. Catches MCP-spec compliance bugs that the in-process
 // `invokeTool` helper misses, because the SDK Client validates every
-// response against the spec schema before resolving — exactly what Claude
+// response against the spec schema before resolving, which is exactly what Claude
 // Desktop and other strict clients do.
 //
 // The Tandoor HTTP boundary is stubbed by a localhost server; no live
@@ -15,7 +15,7 @@
 // beforeEach resets the flags to a known state to keep `it.only` honest.
 //
 // Each scenario spawns its own MCP server process so env vars (stash TTL,
-// max entries, threshold, enabled flag) actually take effect — they are
+// max entries, threshold, enabled flag) actually take effect; they are
 // read once at process start.
 //
 // Requires: `npm run build` has been run, since this test spawns the
@@ -37,7 +37,7 @@ const BUILT_INDEX = path.join(REPO, 'build', 'index.js');
 
 // Skip clearly when the build is missing OR stale relative to src/ or top-
 // level build inputs. A locally-edited register.ts that didn't trigger a
-// rebuild would otherwise be tested against last build's compiled output —
+// rebuild would otherwise be tested against last build's compiled output;
 // silent false-pass (QA F8). Lazy-eval at first describe-block evaluation
 // so we don't walk src/ on every test-file import (Perf F1).
 let _builtCache: boolean | null = null;
@@ -99,7 +99,7 @@ beforeAll(async () => {
       return res.end(JSON.stringify({ version: tandoorVersionMode }));
     }
     // Endpoints that legitimately return bare top-level arrays. These exercise
-    // the structuredContent guard at the register layer — without the
+    // the structuredContent guard at the register layer; without the
     // isJsonObject check, strict SDK clients reject these responses.
     if (req.url?.startsWith('/api/user-preference/')) {
       return res.end(JSON.stringify([
@@ -159,7 +159,7 @@ beforeAll(async () => {
         case 'proto':
           // Prototype-pollution attempt. schema-summary uses Object.create(null)
           // for untrusted-key maps; this scenario is a smoke check that the
-          // SERVER does not crash on the payload — the real assertion lives
+          // SERVER does not crash on the payload; the real assertion lives
           // in test/schema-summary.test.ts where we can attest server-side
           // behavior directly.
           return res.end(JSON.stringify({
@@ -255,7 +255,7 @@ async function call(c: Client, name: string, args: Record<string, unknown>): Pro
 }
 
 /**
- * Stderr arrives via an OS pipe asynchronously — a log line written by the
+ * Stderr arrives via an OS pipe asynchronously; a log line written by the
  * server might not be in `buf` yet when an assertion runs. Poll the joined
  * buffer for the expected regex up to `timeoutMs`; resolve as soon as it
  * appears, throw with the current buffer on timeout. Keeps assertions
@@ -278,7 +278,7 @@ const d = buildIsFresh() ? describe : describe.skip;
 
 d('MCP stdio protocol e2e (strict SDK client)', () => {
   if (!buildIsFresh()) {
-    it.skip('build is missing or stale relative to src/ — run `npm run build`', () => {});
+    it.skip('build is missing or stale relative to src/; run `npm run build`', () => {});
     return;
   }
 
@@ -302,13 +302,13 @@ d('MCP stdio protocol e2e (strict SDK client)', () => {
       expect((r.parsed as number[]).length).toBe(40);
       expect(r.structured).toBeUndefined();
       // The new array-skip log must fire exactly once per tool. waitForStderr
-      // polls the buffer because stderr arrives via an OS pipe asynchronously
-      // — the chunk may not be present at the moment the round-trip resolves.
+      // polls the buffer because stderr arrives via an OS pipe asynchronously,
+      // so the chunk may not be present at the moment the round-trip resolves.
       await waitForStderr(stderr, /structuredContent downgraded for 'jq_query'/);
     });
   });
 
-  it('concurrent jq_query against one handle — no worker race', async () => {
+  it('concurrent jq_query against one handle, no worker race', async () => {
     await withClient({ TANDOOR_MCP_STASH_THRESHOLD: '500' }, async (c) => {
       const listed = await call(c, 'list_recipes', { page_size: 40 });
       const handle = listed.structured!.handle as string;
