@@ -1,6 +1,7 @@
 // AI provider + AI import API client.
 
 import { BaseClient, qs } from './base.js';
+import { Recipe } from '../types/index.js';
 
 type Opts = { signal?: AbortSignal };
 
@@ -25,8 +26,8 @@ export class AiClient extends BaseClient {
     return this.request(`/api/ai-provider/${id}/`, { method: 'DELETE', signal: opts?.signal });
   }
 
-  async aiStepSort(body: { recipe: number }, opts?: Opts): Promise<any> {
-    return this.request('/api/ai-step-sort/', { method: 'POST', body: JSON.stringify(body), signal: opts?.signal });
+  async aiStepSort(recipe: Recipe, provider: number, opts?: Opts): Promise<Recipe> {
+    return this.request(`/api/ai-step-sort/?provider=${provider}`, { method: 'POST', body: JSON.stringify(recipe), signal: opts?.signal });
   }
 
   /**
@@ -48,6 +49,8 @@ export class AiClient extends BaseClient {
         type: args.file.mimeType || 'application/octet-stream',
       });
       fd.append('file', blob, args.file.filename);
+    } else {
+      fd.append('file', '');
     }
     return this.request('/api/ai-import/', {
       method: 'POST',

@@ -59,7 +59,10 @@ export const updateAiProviderShape = {
 
 export const deleteAiProviderShape = { id: z.number().describe('AI provider ID, from list_ai_providers.') } as const;
 
-export const aiStepSortShape = { recipe_id: z.number().describe('Recipe ID whose steps to sort.') } as const;
+export const aiStepSortShape = {
+  recipe_id: z.number().describe('Recipe ID whose steps to sort.'),
+  provider_id: z.number().describe('AI provider ID, from list_ai_providers.'),
+} as const;
 
 export type ListAiProvidersArgs = z.infer<z.ZodObject<typeof listAiProvidersShape>>;
 export type AiImportRecipeArgs = z.infer<z.ZodObject<typeof aiImportRecipeShape>>;
@@ -116,7 +119,7 @@ export function registerAiTools(server: McpServer, client: TandoorClient): void 
   registerStringTool(server, client, 'ai_step_sort', {
     title: 'Sort recipe steps with AI',
     annotations: CREATE,
-    description: 'Bulk-sort a recipe steps via AI. Required: recipe_id.',
+    description: 'Preview an AI sort of a recipe\'s steps. Returns the recipe with sorted steps without saving it; save with update_recipe. Required: recipe_id, provider_id.',
     inputSchema: aiStepSortShape,
   }, handleAiStepSort);
 }

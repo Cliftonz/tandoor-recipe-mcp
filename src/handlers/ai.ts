@@ -190,6 +190,6 @@ export async function handleAiStepSort(
   args: AiStepSortArgs,
   ctx?: HandlerContext,
 ): Promise<string> {
-  const r = await client.ai.aiStepSort({ recipe: args.recipe_id }, { signal: ctx?.signal });
-  return emit(r);
+  const recipe = await client.recipes.getRecipe(args.recipe_id, { signal: ctx?.signal });
+  return emit(await client.ai.aiStepSort(recipe, args.provider_id, { signal: ctx?.signal }));
 }
