@@ -6,8 +6,8 @@ Only the latest minor release gets security fixes.
 
 | Version | Supported |
 | ------- | --------- |
-| 3.4.x   | Yes       |
-| < 3.4   | No        |
+| 3.5.x   | Yes       |
+| < 3.5   | No        |
 
 ## Reporting a vulnerability
 
