@@ -2,20 +2,27 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased
-
-### Changed
-- **Every tool parameter has a description.** About 900 parameters that had none now explain formats, defaults, units and where IDs come from, so clients pick values correctly. `update_meal_plan` explains partial updates and how it handles `servings`. With every section turned on, the tool list grows from about 40,400 to 53,100 tokens; with the default sections, from about 9,300 to 12,700.
-- Tool, parameter, prompt and resource text, along with a few error messages, no longer uses em-dashes. A new test fails if one comes back in tool, resource or prompt text or in the server instructions.
+## 3.5.0 / 2026-11-10
 
 ### Removed
-- **`import_recipes` is removed.** It sent JSON to Tandoor's file-upload import endpoint, so every call failed with 415 on Tandoor 2.x. Use `import_recipe_from_image` to import from text, a file or a URL.
+- **`import_recipes` is removed.** This is a breaking change for anyone who called it. It sent JSON to Tandoor's file-upload import endpoint, so every call failed with 415 on Tandoor 2.x. Use `import_recipe_from_image` to import from text, a file or a URL. The server now has 306 tools.
 
 ### Fixed
-- Three tool descriptions that contradicted Tandoor: `food_batch_update` no longer claims `category: null` clears the category (Tandoor sets a category only when that ID exists, and null changes nothing); `food_ai_properties` now says `provider` is required instead of defaulting to the workspace provider; `export_recipes` lists integration names (DEFAULT, SAFFRON, RECIPESAGE) as types instead of json, zip and pdf, and notes that PDF is rejected.
-- **`update_search_preference` sets the search mode.** The `search` option listed values Tandoor rejects (PLAIN, PHRASE, RAW, WEB, FUZZY), so every call failed. It now takes `plain`, `phrase`, `websearch` or `raw`; fuzzy matching is the separate `lookup` setting.
-- **Text-only `import_recipe_from_image` works.** Every call with `text` and no file failed with a Tandoor 500, because Tandoor needs a `file` part in the form even when no file is uploaded. The tool now sends an empty `file` part when there is no file.
-- **`ai_step_sort` works, and `provider_id` is now required.** This is a breaking input change: calls without `provider_id` now fail validation. Every call failed before, because the tool sent no AI provider and sent only the recipe id where Tandoor expects the full recipe. The tool now sends the full recipe with the provider and returns the sorted recipe without saving it; save the result with `update_recipe`.
+- **Text-only `import_recipe_from_image` works.** Every call with `text` and no file failed with a Tandoor 500, because Tandoor needs a `file` part in the form even when no file is uploaded. The tool now sends an empty `file` part when there is no file. The `import-recipes` skill now uses this tool for pasted text when the space has an AI provider.
+- **`ai_step_sort` works, and `provider_id` is now required.** This is a breaking input change: calls without `provider_id` now fail validation. Every call failed before, because the tool sent no AI provider and sent only the recipe id where Tandoor expects the full recipe. The tool now sends the full recipe with the provider and returns the sorted recipe without saving it. Check the result, then save it with `update_recipe`.
+- **`update_search_preference` sets the search mode.** The `search` option listed values Tandoor rejects (PLAIN, PHRASE, RAW, WEB, FUZZY), so every call failed. It now takes `plain`, `phrase`, `websearch` or `raw`. Fuzzy matching is the separate `lookup` setting.
+- **Three tool descriptions no longer contradict Tandoor.** `food_batch_update` no longer claims `category: null` clears the category. Tandoor sets a category only when that ID exists, and null changes nothing. `food_ai_properties` now says `provider` is required instead of defaulting to the workspace provider. `export_recipes` lists integration names (DEFAULT, SAFFRON, RECIPESAGE) as types instead of json, zip and pdf, and notes that Tandoor rejects PDF.
+
+### Changed
+- **Every tool parameter has a description.** About 900 parameters that had none now explain formats, defaults, units and where IDs come from, so clients pick values correctly. `update_meal_plan` explains partial updates and how it handles `servings`. With every section turned on, the tool list grows from about 40,400 to 53,100 tokens. With the default sections, it grows from about 9,300 to 12,700.
+- **`food_ai_properties`, `recipe_ai_properties` and `ai_step_sort` declare the open-world hint,** because they call an outside AI provider.
+- **No em-dashes in server text.** Tool, parameter, prompt and resource text, the server instructions and a few error messages no longer use em-dashes. A new test fails if one comes back.
+- **The Docker image runs on Node 26** (`node:26-slim`, up from `node:24-slim`). The Dockerfile pins the base image by digest, and Dependabot now updates it.
+- **Runtime dependency updates:** express 5.3.0, express-rate-limit 8.7.3 and undici 8.12.4.
+
+### Notes
+- Release and CodeQL workflows now default to read-only permissions, workflows install with `npm ci`, and test and dev-dependency updates (vitest, oxlint) do not change the published package.
+- The README has a Glama quality card.
 
 ## 3.4.4 / 2026-11-08
 

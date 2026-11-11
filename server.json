@@ -6,12 +6,12 @@
     "url": "https://github.com/Cliftonz/tandoor-recipe-mcp",
     "source": "github"
   },
-  "version": "3.4.4",
+  "version": "3.5.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@cliftonz/tandoor-recipes-mcp",
-      "version": "3.4.4",
+      "version": "3.5.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
@@ -32,14 +32,14 @@
     },
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/Cliftonz/tandoor-recipe-mcp/releases/download/v3.4.4/tandoor-recipes-mcp.mcpb",
+      "identifier": "https://github.com/Cliftonz/tandoor-recipe-mcp/releases/download/v3.5.0/tandoor-recipes-mcp.mcpb",
       "transport": {
         "type": "stdio"
       }
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/cliftonz/tandoor-recipes-mcp:3.4.4",
+      "identifier": "ghcr.io/cliftonz/tandoor-recipes-mcp:3.5.0",
       "transport": {
         "type": "stdio"
       },
