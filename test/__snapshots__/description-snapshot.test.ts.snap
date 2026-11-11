@@ -31,7 +31,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "auto_meal_plan",
   },
   {
-    "description": "Bulk check or uncheck many shopping entries by ID list.",
+    "description": "Check or uncheck many shopping entries in one call. Checking sets completed_at to now, also on entries already checked; unchecking clears it. Ids that do not exist or are not visible to you are skipped, and the entries need not share a shopping list. Returns the ids and checked value sent plus a timestamp; it does not return the entries or say which ids were skipped. To change lists too, use bulk_update_shopping_entries; to change other fields, use update_shopping_entry.",
     "name": "bulk_check_shopping_entries",
   },
   {
@@ -747,7 +747,7 @@ exports[`tool description snapshot > descriptions match the recorded snapshot 1`
     "name": "list_search_preferences",
   },
   {
-    "description": "List shopping list entries (auto-filtered to unchecked + recent by Tandoor). Optional: mealplan, updated_after (ISO), page, page_size, format. Entries cannot be filtered by shopping list; use the shopping_lists field of the results.",
+    "description": "List the shopping list entries of you and your household. Tandoor returns only unchecked entries and entries checked since the start of the day N days ago, where N is the shopping_recent_days preference capped at 14, and at most 1000 entries; to read an older checked entry, use get_shopping_entry. mealplan keeps only entries added from that meal plan. Entries cannot be filtered by shopping list; use the shopping_lists field of the results. Returns {count, next, previous, results}, 50 per page by default.",
     "name": "list_shopping_entries",
   },
   {

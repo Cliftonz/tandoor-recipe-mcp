@@ -15,6 +15,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 - **Every tool parameter has a description.** About 900 parameters that had none now explain formats, defaults, units and where IDs come from, so clients pick values correctly. `update_meal_plan` explains partial updates and how it handles `servings`. With every section turned on, the tool list grows from about 40,400 to 53,100 tokens. With the default sections, it grows from about 9,300 to 12,700.
+- **Clearer `bulk_check_shopping_entries` and `list_shopping_entries` descriptions.** `bulk_check_shopping_entries` now says that ids it cannot find are skipped, what it returns, and when to use `bulk_update_shopping_entries` or `update_shopping_entry` instead. `list_shopping_entries` now says which checked entries Tandoor hides (those checked before the last `shopping_recent_days`, at most 14 days), that it returns at most 1000 entries, and that `get_shopping_entry` reads an older entry.
 - **`food_ai_properties`, `recipe_ai_properties` and `ai_step_sort` declare the open-world hint,** because they call an outside AI provider.
 - **No em-dashes in server text.** Tool, parameter, prompt and resource text, the server instructions and a few error messages no longer use em-dashes. A new test fails if one comes back.
 - **The Docker image runs on Node 26** (`node:26-slim`, up from `node:24-slim`). The Dockerfile pins the base image by digest, and Dependabot now updates it.
