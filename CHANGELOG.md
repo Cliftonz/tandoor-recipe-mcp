@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 3.5.1 / 2026-11-15
+
+### Changed
+- **Runtime dependency updates:** hono 4.13.18 (from 4.13.13) and @hono/node-server 2.1.8 (from 2.1.5). These versions include the upstream fixes for 7 published security advisories, 5 in hono and 2 in @hono/node-server. The server does not import either package directly. Both are dependencies of `@modelcontextprotocol/sdk`, and the SDK's HTTP transport uses @hono/node-server.
+
+### Notes
+- `docs/build-mcp-server-prompt.md` is new. It is a prompt for building an MCP server for another service, with this repository as the reference. It is not part of the npm package.
+
 ## 3.5.0 / 2026-11-10
 
 ### Removed
