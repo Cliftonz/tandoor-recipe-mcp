@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 ## 3.5.2 / 2026-11-25
 
 ### Fixed
-- **`update_user_preference` sets `default_meal_type_id` on Tandoor 2.7.4 and later.** These calls failed with a Tandoor 500, because Tandoor 2.7.4 crashes when the PATCH carries a meal type under `default_meal_type`. The tool now reads the server version and sends `default_meal_type_id` to Tandoor 2.7 and later, and `default_meal_type` to Tandoor 2.6. Setting a meal type costs one extra request. Clearing it with null does not.
+- **`update_user_preference` sets `default_meal_type_id` on Tandoor 2.7.4 and later.** These calls failed with a Tandoor 500, because Tandoor 2.7.4 crashes when the PATCH carries a meal type under `default_meal_type`. The tool now reads the server version and sends `default_meal_type_id` to Tandoor 2.7 and later, and `default_meal_type` to Tandoor 2.6. Setting a meal type costs one extra request. Clearing it with null does not. Upstream report: [TandoorRecipes/recipes#4966](https://github.com/TandoorRecipes/recipes/issues/4966).
 
 ### Changed
 - **Runtime dependency update:** express-rate-limit 8.7.5 (from 8.7.3).
