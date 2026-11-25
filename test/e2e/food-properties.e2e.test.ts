@@ -83,9 +83,12 @@ describeE2E('update_food properties against live Tandoor', () => {
   });
 
   it('surfaces Tandoor\'s response for a nonexistent property type id', async () => {
+    const onTandoor26 = (await client.serverSettings.getCurrent()).version.startsWith('2.6.');
     await expect(handleUpdateFood(client, {
       id: foodId,
       properties: [{ property_type_id: 999999999, property_amount: 1 }],
-    })).rejects.toThrow(/Tandoor API error: 500/);
+    })).rejects.toThrow(onTandoor26
+      ? /Tandoor API error: 500/
+      : /^Tandoor API error: 400 Bad Request\n[\s\S]*"property_type": \[\s*"This field is required\."/);
   });
 });

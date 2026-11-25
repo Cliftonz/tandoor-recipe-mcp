@@ -22,10 +22,13 @@ const token = process.env.TANDOOR_TOKEN;
   });
 
   it('hands text-only input to Tandoor\'s AI step', async () => {
+    const onTandoor26 = s.tandoorVersion.startsWith('2.6.');
     const res = await s.raw('import_recipe_from_image', {
       ai_provider_id: providerId,
       text: 'Pancakes. 1 cup flour, 1 egg, 1 cup milk. Whisk and fry.',
     });
-    expect(textOf(res)).toMatch(/The AI could not process your request/);
+    expect(textOf(res)).toMatch(onTandoor26
+      ? /The AI could not process your request/
+      : /^Error: Tandoor API error: 500 Internal Server Error\n[\s\S]*<title>Server Error \(500\)<\/title>/);
   });
 });
