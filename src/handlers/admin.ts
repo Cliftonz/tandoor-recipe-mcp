@@ -98,7 +98,11 @@ export async function handleUpdateUserPreference(
 ): Promise<string> {
   const { user_id, format, default_meal_type_id, ...rest } = args;
   const body: any = { ...rest };
-  if (default_meal_type_id !== undefined) body.default_meal_type = default_meal_type_id;
+  if (default_meal_type_id === null) body.default_meal_type = null;
+  else if (default_meal_type_id !== undefined) {
+    const { version } = await client.serverSettings.getCurrent();
+    body[version.startsWith('2.6.') ? 'default_meal_type' : 'default_meal_type_id'] = default_meal_type_id;
+  }
   assertNonEmptyBody(body);
   const r = await client.userPreferences.patchPreference(user_id, body);
   return `User preferences updated.\n\n${emit(format === 'full' ? r : slimUserPrefs(r))}`;
