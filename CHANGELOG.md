@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented in this file.
 
+## 3.5.2 / 2026-11-25
+
+### Fixed
+- **`update_user_preference` sets `default_meal_type_id` on Tandoor 2.7.4 and later.** These calls failed with a Tandoor 500, because Tandoor 2.7.4 crashes when the PATCH carries a meal type under `default_meal_type`. The tool now reads the server version and sends `default_meal_type_id` to Tandoor 2.7 and later, and `default_meal_type` to Tandoor 2.6. Setting a meal type costs one extra request. Clearing it with null does not. Upstream report: [TandoorRecipes/recipes#4966](https://github.com/TandoorRecipes/recipes/issues/4966).
+
+### Changed
+- **Runtime dependency update:** express-rate-limit 8.7.5 (from 8.7.3).
+- **The Docker image uses an updated `node:26-slim` digest.**
+
+### Notes
+- The e2e tests now assert the error responses of each Tandoor version (2.6 and 2.7). The nightly run against the latest Tandoor passes again.
+- Dev-only updates: vitest 5.1.1, oxlint 1.94.0, dotenv 18.0.10 and ossf/scorecard-action 2.6.0. They do not change the published package.
+
 ## 3.5.1 / 2026-11-15
 
 ### Changed

@@ -31,7 +31,10 @@ const token = process.env.TANDOOR_TOKEN;
   });
 
   it('ai_step_sort with a provider reaches the AI call', async () => {
+    const onTandoor26 = s.tandoorVersion.startsWith('2.6.');
     const res = await s.raw('ai_step_sort', { recipe_id: recipeId, provider_id: providerId });
-    expect(textOf(res)).toMatch(/The AI could not process your request/);
+    expect(textOf(res)).toMatch(onTandoor26
+      ? /The AI could not process your request/
+      : /^Error: Tandoor API error: 500 Internal Server Error\n[\s\S]*An unexpected error occurred while processing your AI request\.[\s\S]*Unknown AI model\/provider: e2e-unrouted-model/);
   });
 });
